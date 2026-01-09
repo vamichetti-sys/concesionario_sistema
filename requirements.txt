@@ -7,7 +7,9 @@ dj-database-url==3.1.0
 Django==4.2.27
 et_xmlfile==2.0.0
 fonttools==4.61.1
+gunicorn==23.0.0
 openpyxl==3.1.5
+packaging==25.0
 pillow==12.1.0
 pycparser==2.23
 pydyf==0.12.1
