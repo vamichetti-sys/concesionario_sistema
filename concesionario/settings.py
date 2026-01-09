@@ -33,12 +33,10 @@ ALLOWED_HOSTS = [
     "127.0.0.1",
 ]
 
-# Host automático de Render
 RENDER_HOST = os.getenv("RENDER_EXTERNAL_HOSTNAME")
 if RENDER_HOST:
     ALLOWED_HOSTS.append(RENDER_HOST)
 
-# Permite cualquier subdominio de Render (fallback seguro)
 ALLOWED_HOSTS.append(".onrender.com")
 
 # ==========================================================
@@ -73,6 +71,7 @@ INSTALLED_APPS = [
 # ==========================================================
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",  # 👈 AGREGADO (logo / estáticos)
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -151,6 +150,10 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
+
+STATICFILES_STORAGE = (
+    "whitenoise.storage.CompressedManifestStaticFilesStorage"
+)  # 👈 AGREGADO (logo / estáticos)
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
