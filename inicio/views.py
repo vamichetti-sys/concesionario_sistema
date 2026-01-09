@@ -18,10 +18,15 @@ from vehiculos.models import Vehiculo
 def ingreso(request):
 
     if request.method == 'POST':
-        usuario = request.POST.get('usuario')
-        password = request.POST.get('password')
+        # ✅ FIX: limpiar espacios invisibles
+        usuario = request.POST.get('usuario', '').strip()
+        password = request.POST.get('password', '').strip()
 
-        user = authenticate(request, username=usuario, password=password)
+        user = authenticate(
+            request,
+            username=usuario,
+            password=password
+        )
 
         if user is not None:
             login(request, user)
