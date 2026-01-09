@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}Boletos{% endblock %}
+
+{% block content %}
+
+<div class="mb-4">
+    <h2 class="fw-bold mb-1" style="color:#002855;">
+        Boletos
+    </h2>
+    <p class="text-muted mb-0">
+        Documentación comercial y legal de las operaciones
+    </p>
+</div>
+
+<div class="row g-4">
+
+    <!-- ===============================
+         BOLETO
+    =============================== -->
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0 rounded-4 h-100">
+            <div class="card-body">
+                <h4 class="fw-bold mb-2" style="color:#002855;">
+                    Boleto
+                </h4>
+                <p class="text-muted mb-3">
+                    Impresión de boleto de compraventa
+                </p>
+                <a href="{% url 'boletos:lista' %}"
+                   class="btn btn-primary rounded-pill px-4 fw-bold">
+                    Ingresar
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===============================
+         PAGARÉ
+    =============================== -->
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0 rounded-4 h-100">
+            <div class="card-body">
+                <h4 class="fw-bold mb-2" style="color:#002855;">
+                    Pagaré
+                </h4>
+                <p class="text-muted mb-3">
+                    Documentos de pagaré y compromisos de pago
+                </p>
+                <a href="{% url 'boletos:lista_pagares' %}"
+                   class="btn btn-primary rounded-pill px-4 fw-bold">
+                    Ingresar
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===============================
+         RESERVA
+    =============================== -->
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0 rounded-4 h-100">
+            <div class="card-body">
+                <h4 class="fw-bold mb-2" style="color:#002855;">
+                    Reserva
+                </h4>
+                <p class="text-muted mb-3">
+                    Constancias de reserva de unidades
+                </p>
+                <a href="{% url 'boletos:lista' %}"
+                   class="btn btn-primary rounded-pill px-4 fw-bold">
+                    Ingresar
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===============================
+         DOCUMENTACIÓN
+    =============================== -->
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0 rounded-4 h-100">
+            <div class="card-body">
+                <h4 class="fw-bold mb-2" style="color:#002855;">
+                    Documentación
+                </h4>
+                <p class="text-muted mb-3">
+                    Control y entrega de documentación
+                </p>
+                <a href="{% url 'boletos:lista' %}"
+                   class="btn btn-primary rounded-pill px-4 fw-bold">
+                    Ingresar
+                </a>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

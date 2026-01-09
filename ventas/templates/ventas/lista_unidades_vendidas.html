@@ -1,0 +1,174 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Ventas{% endblock %}
+
+{% block content %}
+
+<h2 class="fw-bold mb-1" style="color:#002855;">
+    Ventas
+</h2>
+
+<p class="text-muted mb-3">
+    Unidades vendidas y pendientes de confirmación.
+</p>
+
+<!-- ===============================
+     BUSCADOR DE VENTAS
+=============================== -->
+<form method="get" class="mb-4">
+    <div class="input-group">
+        <input
+            type="text"
+            name="q"
+            class="form-control"
+            placeholder="Buscar por vehículo, dominio, cliente o venta…"
+            value="{{ query }}"
+        >
+        <button class="btn btn-primary" type="submit">
+            🔍 Buscar
+        </button>
+
+        {% if query %}
+        <a href="{% url 'ventas:lista_unidades_vendidas' %}"
+           class="btn btn-outline-secondary">
+            Limpiar
+        </a>
+        {% endif %}
+    </div>
+</form>
+
+<div class="card shadow-sm rounded-4">
+    <div class="card-body p-0">
+
+        <table class="table table-striped mb-0 align-middle">
+            <thead style="background:#002855; color:white;">
+                <tr>
+                    <th style="width:220px;">Acción</th>
+                    <th>Vehículo</th>
+                    <th>Dominio</th>
+                    <th>Precio</th>
+                    <th>Cliente</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for venta in ventas %}
+                <tr>
+
+                    <!-- ACCIONES -->
+                    <td>
+                        <div class="d-flex flex-column gap-1">
+
+                            <!-- MÁS INFO -->
+                            {% if venta.id %}
+                                <a href="{% url 'ventas:crear_venta' venta.id %}"
+                                   class="btn btn-sm"
+                                   style="border:1px solid #002855; color:#002855;">
+                                    Más info
+                                </a>
+                            {% endif %}
+
+                            <!-- ASIGNAR CLIENTE (CORREGIDO) -->
+                            {% if not venta.cliente %}
+                                <a href="{% url 'ventas:asignar_cliente_venta' venta.vehiculo.id %}"
+                                   class="btn btn-sm"
+                                   style="background:#002855; color:white;">
+                                    Asignar cliente
+                                </a>
+                            {% endif %}
+                            <!-- REVERTIR -->
+                            {% if venta.id %}
+                                <form method="POST"
+                                      action="{% url 'ventas:revertir_venta' venta.id %}"
+                                      onsubmit="return confirm('¿Revertir la venta y devolver el vehículo a stock?');">
+                                    {% csrf_token %}
+                                    <button type="submit"
+                                            class="btn btn-sm"
+                                            style="border:1px solid #dc3545; color:#dc3545;">
+                                        Revertir venta
+                                    </button>
+                                </form>
+                            {% endif %}
+
+                        </div>
+                    </td>
+
+                    <!-- VEHÍCULO -->
+                    <td>
+                        {{ venta.vehiculo.marca }}
+                        {{ venta.vehiculo.modelo }}
+                        ({{ venta.vehiculo.anio }})
+                    </td>
+
+                    <!-- DOMINIO -->
+                    <td>
+                        {{ venta.vehiculo.dominio }}
+                    </td>
+
+                    <!-- PRECIO -->
+                    <td>
+                        {% if venta.precio_venta %}
+                            ${{ venta.precio_venta }}
+                        {% else %}
+                            ${{ venta.vehiculo.precio }}
+                        {% endif %}
+                    </td>
+
+                    <!-- CLIENTE -->
+                    <td>
+                        {% if venta.cliente %}
+                            {{ venta.cliente.nombre_completo }}
+                        {% else %}
+                            <span class="text-muted">
+                                Sin asignar
+                            </span>
+                        {% endif %}
+                    </td>
+
+                    <!-- ESTADO -->
+                    <td>
+                        {% if not venta.cliente %}
+                            <span class="badge rounded-pill px-3"
+                                  style="background:#0dcaf0; color:#002855;">
+                                Pendiente – Asignar cliente
+                            </span>
+
+                        {% elif venta.estado == "confirmada" %}
+                            <span class="badge rounded-pill px-3"
+                                  style="background:#198754;">
+                                Confirmada
+                            </span>
+
+                        {% elif venta.estado == "revertida" %}
+                            <span class="badge rounded-pill px-3"
+                                  style="background:#6c757d;">
+                                Revertida
+                            </span>
+
+                        {% else %}
+                            <span class="badge rounded-pill px-3"
+                                  style="background:#ffc107; color:#212529;">
+                                Pendiente
+                            </span>
+                        {% endif %}
+                    </td>
+
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center py-4">
+                        No hay ventas registradas.
+                    </td>
+                </tr>
+                {% endfor %}
+
+            </tbody>
+        </table>
+
+    </div>
+</div>
+
+{% endblock %}

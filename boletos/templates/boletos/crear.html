@@ -1,0 +1,333 @@
+{% extends "base.html" %}
+
+{% block title %}Crear Boleto{% endblock %}
+
+{% block content %}
+<div class="container-fluid" style="max-width:1100px;">
+
+    <!-- ===============================
+         ENCABEZADO
+    =============================== -->
+    <div class="card border-0 rounded-4 mb-4"
+         style="background:#002855; color:white;">
+        <div class="card-body py-4 px-4">
+            <h4 class="fw-semibold mb-1">
+                Boleto de Compraventa
+            </h4>
+            <small class="opacity-75">
+                Boleto N° {{ numero }} · Rojas, Buenos Aires
+            </small>
+        </div>
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+
+        <div class="card shadow-sm border-0 rounded-4">
+            <div class="card-body p-4">
+
+                <!-- ===============================
+                     SELECCIÓN DE VEHÍCULO
+                ================================ -->
+                <h6 class="fw-semibold text-uppercase mb-3"
+                    style="color:#002855; letter-spacing:.5px;">
+                    Seleccionar vehículo
+                </h6>
+
+                <div class="mb-4">
+                    {{ form.vehiculo.label_tag }}
+                    {{ form.vehiculo }}
+                </div>
+
+                <hr class="my-4" style="opacity:.1;">
+
+                <!-- ===============================
+                     DATOS DEL VEHÍCULO VENDIDO
+                ================================ -->
+                <h6 class="fw-semibold text-uppercase mb-3"
+                    style="color:#002855; letter-spacing:.5px;">
+                    Datos del vehículo vendido
+                </h6>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        {{ form.marca.label_tag }}
+                        {{ form.marca }}
+                    </div>
+                    <div class="col-md-4">
+                        {{ form.modelo.label_tag }}
+                        {{ form.modelo }}
+                    </div>
+                    <div class="col-md-4">
+                        {{ form.anio.label_tag }}
+                        {{ form.anio }}
+                    </div>
+
+                    <div class="col-md-4">
+                        {{ form.patente.label_tag }}
+                        {{ form.patente }}
+                    </div>
+                    <div class="col-md-4">
+                        {{ form.motor.label_tag }}
+                        {{ form.motor }}
+                    </div>
+                    <div class="col-md-4">
+                        {{ form.chasis.label_tag }}
+                        {{ form.chasis }}
+                    </div>
+                </div>
+
+                <hr class="my-4" style="opacity:.1;">
+
+                <!-- ===============================
+                     CLIENTE
+                ================================ -->
+                <h6 class="fw-semibold text-uppercase mb-3"
+                    style="color:#002855; letter-spacing:.5px;">
+                    Cliente
+                </h6>
+
+                <div class="mb-4">
+                    {{ form.cliente.label_tag }}
+                    {{ form.cliente }}
+                </div>
+
+                <hr class="my-4" style="opacity:.1;">
+
+                <!-- ===============================
+                     DATOS DEL COMPRADOR
+                ================================ -->
+                <h6 class="fw-semibold text-uppercase mb-3"
+                    style="color:#002855; letter-spacing:.5px;">
+                    Datos del comprador
+                </h6>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-12">
+                        {{ form.comprador_texto.label_tag }}
+                        {{ form.comprador_texto }}
+                    </div>
+
+                    <div class="col-md-6">
+                        {{ form.domicilio_comprador.label_tag }}
+                        {{ form.domicilio_comprador }}
+                    </div>
+
+                    <div class="col-md-6">
+                        {{ form.dni_comprador.label_tag }}
+                        {{ form.dni_comprador }}
+                    </div>
+                </div>
+
+                <hr class="my-4" style="opacity:.1;">
+
+                <!-- ===============================
+                     DATOS LEGALES
+                ================================ -->
+                <h6 class="fw-semibold text-uppercase mb-3"
+                    style="color:#002855; letter-spacing:.5px;">
+                    Datos legales
+                </h6>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        {{ form.compania_seguro.label_tag }}
+                        {{ form.compania_seguro }}
+                    </div>
+
+                    <div class="col-md-6">
+                        {{ form.domicilio_legal.label_tag }}
+                        {{ form.domicilio_legal }}
+                    </div>
+                </div>
+
+                <hr class="my-4" style="opacity:.1;">
+
+                <!-- ===============================
+                     PRECIO TOTAL DE LA UNIDAD
+                ================================ -->
+                <h6 class="fw-semibold text-uppercase mb-3"
+                    style="color:#002855; letter-spacing:.5px;">
+                    Precio total de la unidad
+                </h6>
+
+                <div class="mb-4">
+                    {{ form.precio_total_unidad.label_tag }}
+                    {{ form.precio_total_unidad }}
+                </div>
+
+                <hr class="my-4" style="opacity:.1;">
+
+                <!-- ===============================
+                     CONDICIONES DE PAGO
+                ================================ -->
+                <h6 class="fw-semibold text-uppercase mb-3"
+                    style="color:#002855; letter-spacing:.5px;">
+                    Condiciones de pago
+                </h6>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        {{ form.precio_letras.label_tag }}
+                        {{ form.precio_letras }}
+                    </div>
+
+                    <div class="col-md-6">
+                        {{ form.precio_numeros.label_tag }}
+                        {{ form.precio_numeros }}
+                    </div>
+
+                    <div class="col-md-12">
+                        {{ form.saldo_forma_pago.label_tag }}
+                        {{ form.saldo_forma_pago }}
+                    </div>
+                </div>
+
+                <hr class="my-4" style="opacity:.1;">
+
+                <!-- ===============================
+                     FIRMA
+                ================================ -->
+                <h6 class="fw-semibold text-uppercase mb-3"
+                    style="color:#002855; letter-spacing:.5px;">
+                    Datos de firma
+                </h6>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        {{ form.apellido_comprador.label_tag }}
+                        {{ form.apellido_comprador }}
+                    </div>
+
+                    <div class="col-md-4">
+                        {{ form.nombre_comprador.label_tag }}
+                        {{ form.nombre_comprador }}
+                    </div>
+
+                    <div class="col-md-4">
+                        {{ form.direccion_firma.label_tag }}
+                        {{ form.direccion_firma }}
+                    </div>
+                </div>
+
+                <hr class="my-4" style="opacity:.1;">
+
+                <!-- ===============================
+                     NOTA
+                ================================ -->
+                <h6 class="fw-semibold text-uppercase mb-2 text-muted"
+                    style="letter-spacing:.5px;">
+                    Nota adicional
+                </h6>
+
+                <div class="mb-4">
+                    {{ form.nota }}
+                </div>
+
+                <!-- ===============================
+                     BOTÓN
+                ================================ -->
+                <div class="d-grid mt-4">
+                    <button class="btn btn-lg rounded-pill fw-semibold"
+                            style="background:#FF6C1A; color:white;">
+                        Generar boleto de compraventa
+                    </button>
+                </div>
+
+            </div>
+        </div>
+
+    </form>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(function () {
+
+    $('#id_vehiculo').select2({
+        placeholder: 'Seleccionar vehículo...',
+        width: '100%'
+    });
+
+    $('#id_vehiculo').on('change', function () {
+
+        const vehiculoId = $(this).val();
+
+        if (!vehiculoId) {
+            limpiarCamposVehiculo();
+            return;
+        }
+
+        fetch(`/vehiculos/ajax/vehiculo-datos/?vehiculo_id=${vehiculoId}`, {
+            credentials: 'same-origin'
+        })
+        .then(response => response.json())
+        .then(data => {
+
+            if (data.error) {
+                limpiarCamposVehiculo();
+                return;
+            }
+
+            $('#id_marca').val(data.marca || '');
+            $('#id_modelo').val(data.modelo || '');
+            $('#id_anio').val(data.anio || '');
+            $('#id_patente').val(data.patente || '');
+            $('#id_motor').val(data.motor || '');
+            $('#id_chasis').val(data.chasis || '');
+        })
+        .catch(() => limpiarCamposVehiculo());
+    });
+
+    function limpiarCamposVehiculo() {
+        $('#id_marca').val('');
+        $('#id_modelo').val('');
+        $('#id_anio').val('');
+        $('#id_patente').val('');
+        $('#id_motor').val('');
+        $('#id_chasis').val('');
+    }
+
+    $('#id_cliente').select2({
+        placeholder: 'Seleccionar cliente...',
+        width: '100%'
+    });
+
+    $('#id_cliente').on('change', function () {
+
+        const clienteId = $(this).val();
+
+        if (!clienteId) {
+            limpiarCamposCliente();
+            return;
+        }
+
+        fetch(`/clientes/ajax/cliente-datos/?cliente_id=${clienteId}`, {
+            credentials: 'same-origin'
+        })
+        .then(response => response.json())
+        .then(data => {
+
+            if (data.error) {
+                limpiarCamposCliente();
+                return;
+            }
+
+            $('#id_comprador_texto').val(data.nombre_completo || '');
+            $('#id_dni_comprador').val(data.dni || '');
+            $('#id_domicilio_comprador').val(data.domicilio || '');
+        })
+        .catch(() => limpiarCamposCliente());
+    });
+
+    function limpiarCamposCliente() {
+        $('#id_comprador_texto').val('');
+        $('#id_dni_comprador').val('');
+        $('#id_domicilio_comprador').val('');
+    }
+
+});
+</script>
+{% endblock %}

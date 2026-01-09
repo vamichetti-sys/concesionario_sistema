@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block title %}Cuentas Corrientes{% endblock %}
+
+{% block content %}
+
+<!-- ENCABEZADO -->
+<div class="mb-4">
+    <h2 class="fw-bold mb-1" style="color:#002855;">
+        Cuentas Corrientes
+    </h2>
+    <p class="text-muted mb-0">
+        Gestión de cuentas por venta y estado financiero
+    </p>
+</div>
+
+<!-- ===============================
+     BUSCADOR DE CUENTAS
+=============================== -->
+<form method="get" class="mb-4">
+    <div class="input-group">
+        <input
+            type="text"
+            name="q"
+            class="form-control"
+            placeholder="Buscar cliente, DNI, CUIT o venta…"
+            value="{{ query }}"
+        >
+        <button class="btn btn-primary" type="submit">
+            🔍 Buscar
+        </button>
+
+        {% if query %}
+        <a href="{% url 'cuentas:lista_cuentas_corrientes' %}"
+           class="btn btn-outline-secondary">
+            Limpiar
+        </a>
+        {% endif %}
+    </div>
+</form>
+
+<!-- ===============================
+     LISTADO PRINCIPAL DE CUENTAS
+=============================== -->
+<div class="card shadow-sm rounded-4">
+    <div class="card-body p-0">
+
+        <table class="table table-hover mb-0 align-middle">
+            <thead style="background:#002855; color:white;">
+                <tr>
+                    <th>Cliente</th>
+                    <th>Venta</th>
+                    <th>Saldo</th>
+                    <th>Estado</th>
+                    <th class="text-center" style="width:120px;">Acción</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for cuenta in cuentas %}
+                <tr>
+
+                    <!-- CLIENTE -->
+                    <td>
+                        <strong>{{ cuenta.cliente }}</strong>
+                    </td>
+
+                    <!-- VENTA -->
+                    <td>
+                        {% if cuenta.venta %}
+                            <span class="fw-semibold">
+                                #{{ cuenta.venta.id }}
+                            </span>
+                        {% else %}
+                            <span class="text-muted fst-italic">
+                                Sin venta
+                            </span>
+                        {% endif %}
+                    </td>
+
+                    <!-- SALDO -->
+                    <td class="fw-bold">
+                        {% if cuenta.saldo > 0 %}
+                            <span class="text-danger">
+                                $ {{ cuenta.saldo|floatformat:0 }}
+                            </span>
+                        {% elif cuenta.saldo < 0 %}
+                            <span class="text-success">
+                                $ {{ cuenta.saldo|floatformat:0 }}
+                            </span>
+                        {% else %}
+                            <span class="text-success">
+                                $ 0
+                            </span>
+                        {% endif %}
+                    </td>
+
+                    <!-- ESTADO -->
+                    <td>
+                        {% if cuenta.estado == 'al_dia' %}
+                            <span class="badge rounded-pill px-3 py-2"
+                                  style="background:#198754;">
+                                Al día
+                            </span>
+                        {% elif cuenta.estado == 'deuda' %}
+                            <span class="badge rounded-pill px-3 py-2 text-dark"
+                                  style="background:#ffc107;">
+                                Con deuda
+                            </span>
+                        {% elif cuenta.estado == 'cerrada' %}
+                            <span class="badge rounded-pill px-3 py-2"
+                                  style="background:#6c757d;">
+                                Cerrada
+                            </span>
+                        {% endif %}
+                    </td>
+
+                    <!-- ACCIÓN -->
+                    <td class="text-center">
+                        <a href="{% url 'cuentas:cuenta_corriente_detalle' cuenta.id %}"
+                           class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold">
+                            Ver
+                        </a>
+                    </td>
+
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center text-muted py-4">
+                        No hay cuentas corrientes creadas
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+
+        </table>
+
+    </div>
+</div>
+
+<!-- ===============================
+     AVISOS DE CUOTAS VENCIDAS
+=============================== -->
+{% if alertas_cuotas %}
+<div class="card shadow-sm rounded-4 mt-4 border-0">
+    <div class="card-header fw-bold text-danger"
+         style="background:#fff; border-bottom:1px solid #f1f1f1;">
+        ⚠️ Avisos de cuotas vencidas
+    </div>
+
+    <ul class="list-group list-group-flush">
+        {% for alerta in alertas_cuotas %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+
+            <div>
+                <strong>{{ alerta.plan__cuenta__cliente__nombre_completo }}</strong>
+                <span class="text-muted">
+                    · Venta #{{ alerta.plan__cuenta__venta__id }}
+                </span>
+            </div>
+
+            <div class="text-end">
+                <span class="badge bg-danger me-2">
+                    {{ alerta.cuotas_vencidas }} cuotas vencidas
+                </span>
+                <span class="fw-bold text-danger">
+                    $ {{ alerta.monto_vencido|floatformat:0 }}
+                </span>
+            </div>
+
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+{% endblock %}

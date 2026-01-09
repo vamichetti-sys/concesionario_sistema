@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}Boletos{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+    <div class="d-flex justify-content-between mb-3">
+        <h2 class="fw-bold" style="color:#002855;">
+            Boletos de Compraventa
+        </h2>
+
+        <a href="{% url 'boletos:crear_manual' %}"
+           class="btn btn-primary">
+            📄 Crear boleto
+        </a>
+    </div>
+
+    <form method="get" class="mb-3">
+        <input type="text"
+               name="q"
+               class="form-control"
+               placeholder="Buscar por cliente, vehículo o dominio"
+               value="{{ query }}">
+    </form>
+
+    <table class="table align-middle">
+        <thead>
+            <tr>
+                <th>N°</th>
+                <th>Cliente</th>
+                <th>Vehículo</th>
+                <th>Fecha</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for b in boletos %}
+            <tr>
+                <td>{{ b.numero }}</td>
+                <td>{{ b.cliente }}</td>
+                <td>{{ b.vehiculo }}</td>
+                <td>{{ b.creado|date:"d/m/Y" }}</td>
+                <td>
+                    <a href="{% url 'boletos:ver_boleto' b.id %}"
+                       class="btn btn-sm btn-outline-primary">
+                        Ver / Imprimir
+                    </a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" class="text-center text-muted">
+                    No hay boletos cargados.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+</div>
+{% endblock %}

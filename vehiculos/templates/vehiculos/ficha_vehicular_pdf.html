@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Ficha Vehicular</title>
+
+    <style>
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 12px;
+            color: #000;
+        }
+
+        h1 {
+            text-align: center;
+            color: #002855;
+            margin-bottom: 5px;
+        }
+
+        h2 {
+            text-align: center;
+            font-size: 14px;
+            margin-top: 0;
+            margin-bottom: 20px;
+            color: #555;
+        }
+
+        .section {
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            background: #002855;
+            color: #fff;
+            padding: 6px 8px;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        td {
+            padding: 6px;
+            border: 1px solid #ccc;
+            vertical-align: top;
+        }
+
+        .label {
+            width: 35%;
+            font-weight: bold;
+            background: #f2f2f2;
+        }
+
+        .footer {
+            margin-top: 40px;
+            font-size: 10px;
+            text-align: center;
+            color: #777;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>AMICHETTI AUTOMOTORES</h1>
+    <h2>Ficha del Vehículo</h2>
+
+    <!-- =========================
+         DATOS DEL VEHÍCULO
+    ========================== -->
+    <div class="section">
+        <div class="section-title">Datos del Vehículo</div>
+        <table>
+            <tr>
+                <td class="label">Marca</td>
+                <td>{{ vehiculo.marca|default:"—" }}</td>
+            </tr>
+            <tr>
+                <td class="label">Modelo</td>
+                <td>{{ vehiculo.modelo|default:"—" }}</td>
+            </tr>
+            <tr>
+                <td class="label">Dominio</td>
+                <td>{{ vehiculo.dominio|default:"—" }}</td>
+            </tr>
+            <tr>
+                <td class="label">Año</td>
+                <td>{{ vehiculo.anio|default:"—" }}</td>
+            </tr>
+            <tr>
+                <td class="label">Kilómetros</td>
+                <td>{{ vehiculo.kilometros|default:"—" }}</td>
+            </tr>
+            <tr>
+                <td class="label">Estado</td>
+                <td>{{ vehiculo.get_estado_display|default:"—" }}</td>
+            </tr>
+            <tr>
+                <td class="label">Precio</td>
+                <td>
+                    {% if vehiculo.precio %}
+                        ${{ vehiculo.precio }}
+                    {% else %}
+                        —
+                    {% endif %}
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- =========================
+         DATOS TÉCNICOS / REGISTRALES
+    ========================== -->
+    <div class="section">
+        <div class="section-title">Datos Técnicos y Registrales</div>
+        <table>
+            <tr>
+                <td class="label">Número de motor</td>
+                <td>{{ ficha.numero_motor|default:"No informado" }}</td>
+            </tr>
+            <tr>
+                <td class="label">Número de chasis</td>
+                <td>{{ ficha.numero_chasis|default:"No informado" }}</td>
+            </tr>
+            <tr>
+                <td class="label">Fecha inscripción inicial</td>
+                <td>{{ ficha.fecha_inscripcion|default:"No informado" }}</td>
+            </tr>
+            <tr>
+                <td class="label">Combustible</td>
+                <td>{{ ficha.combustible|default:"No informado" }}</td>
+            </tr>
+            <tr>
+                <td class="label">Transmisión</td>
+                <td>{{ ficha.transmision|default:"No informado" }}</td>
+            </tr>
+            <tr>
+                <td class="label">Color</td>
+                <td>{{ ficha.color|default:"No informado" }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- =========================
+         TITULARIDAD E INGRESO
+    ========================== -->
+    <div class="section">
+        <div class="section-title">Titularidad e Ingreso</div>
+        <table>
+            <tr>
+                <td class="label">Titular</td>
+                <td>{{ ficha.titular|default:"No informado" }}</td>
+            </tr>
+            <tr>
+                <td class="label">DNI / CUIT</td>
+                <td>{{ ficha.documento_titular|default:"No informado" }}</td>
+            </tr>
+            <tr>
+                <td class="label">Domicilio</td>
+                <td>{{ ficha.domicilio_titular|default:"No informado" }}</td>
+            </tr>
+            <tr>
+                <td class="label">Tipo de ingreso</td>
+                <td>{{ ficha.tipo_ingreso|default:"No informado" }}</td>
+            </tr>
+            <tr>
+                <td class="label">N° consignación / factura</td>
+                <td>{{ ficha.numero_consignacion|default:"No informado" }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- =========================
+     OBSERVACIONES + ACCESORIOS
+========================== -->
+<div class="section">
+    <div class="section-title">Observaciones y Documentación Física</div>
+    <table>
+
+        {% if ficha.observaciones %}
+        <tr>
+            <td class="label">Observaciones generales</td>
+            <td>{{ ficha.observaciones }}</td>
+        </tr>
+        {% endif %}
+
+        {% if ficha.duplicado_llave_estado or ficha.duplicado_llave_obs %}
+        <tr>
+            <td class="label">Duplicado de llave</td>
+            <td>
+                {{ ficha.duplicado_llave_estado }}
+                {% if ficha.duplicado_llave_obs %}<br>{{ ficha.duplicado_llave_obs }}{% endif %}
+            </td>
+        </tr>
+        {% endif %}
+
+        {% if ficha.codigo_llave_estado or ficha.codigo_llave_obs %}
+        <tr>
+            <td class="label">Código de llave</td>
+            <td>
+                {{ ficha.codigo_llave_estado }}
+                {% if ficha.codigo_llave_obs %}<br>{{ ficha.codigo_llave_obs }}{% endif %}
+            </td>
+        </tr>
+        {% endif %}
+
+        {% if ficha.codigo_radio_estado or ficha.codigo_radio_obs %}
+        <tr>
+            <td class="label">Código de radio</td>
+            <td>
+                {{ ficha.codigo_radio_estado }}
+                {% if ficha.codigo_radio_obs %}<br>{{ ficha.codigo_radio_obs }}{% endif %}
+            </td>
+        </tr>
+        {% endif %}
+
+        {% if ficha.manuales_estado or ficha.manuales_obs %}
+        <tr>
+            <td class="label">Manuales</td>
+            <td>
+                {{ ficha.manuales_estado }}
+                {% if ficha.manuales_obs %}<br>{{ ficha.manuales_obs }}{% endif %}
+            </td>
+        </tr>
+        {% endif %}
+
+        {% if ficha.oblea_gnc_estado or ficha.oblea_gnc_obs %}
+        <tr>
+            <td class="label">Oblea GNC</td>
+            <td>
+                {{ ficha.oblea_gnc_estado }}
+                {% if ficha.oblea_gnc_obs %}<br>{{ ficha.oblea_gnc_obs }}{% endif %}
+            </td>
+        </tr>
+        {% endif %}
+
+        {% if ficha.titulo_estado or ficha.titulo_obs %}
+        <tr>
+            <td class="label">Título</td>
+            <td>
+                {{ ficha.titulo_estado }}
+                {% if ficha.titulo_obs %}<br>{{ ficha.titulo_obs }}{% endif %}
+            </td>
+        </tr>
+        {% endif %}
+
+        {% if ficha.cedula_check_estado or ficha.cedula_check_obs %}
+        <tr>
+            <td class="label">Cédula (física)</td>
+            <td>
+                {{ ficha.cedula_check_estado }}
+                {% if ficha.cedula_check_obs %}<br>{{ ficha.cedula_check_obs }}{% endif %}
+            </td>
+        </tr>
+        {% endif %}
+
+        {% if ficha.prenda_estado or ficha.prenda_obs %}
+        <tr>
+            <td class="label">Prenda</td>
+            <td>
+                {{ ficha.prenda_estado }}
+                {% if ficha.prenda_obs %}<br>{{ ficha.prenda_obs }}{% endif %}
+            </td>
+        </tr>
+        {% endif %}
+
+    </table>
+</div>

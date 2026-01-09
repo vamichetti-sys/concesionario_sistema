@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}Pagaré{% endblock %}
+
+{% block content %}
+
+<div class="mb-4">
+    <h2 class="fw-bold mb-1" style="color:#002855;">
+        Pagaré Nº {{ pagare.numero }}
+    </h2>
+    <p class="text-muted mb-0">
+        {{ pagare.cliente }}
+    </p>
+</div>
+
+<div class="card shadow-sm border-0 rounded-4">
+    <div class="card-body">
+
+        <p><strong>Beneficiario:</strong> {{ pagare.beneficiario }}</p>
+        <p><strong>Monto:</strong> $ {{ pagare.monto|floatformat:0 }}</p>
+        <p><strong>Fecha de emisión:</strong>
+            {{ pagare.lugar_emision }} · {{ pagare.fecha_emision|date:"d/m/Y" }}
+        </p>
+
+        <p><strong>Vencimiento:</strong>
+            {% if pagare.fecha_vencimiento %}
+                {{ pagare.lugar_vencimiento }} · {{ pagare.fecha_vencimiento|date:"d/m/Y" }}
+            {% else %}
+                Pagadero a la vista
+            {% endif %}
+        </p>
+
+        <div class="mt-4">
+            <a href="{% url 'boletos:pagare_pdf' pagare.id %}"
+               target="_blank"
+               class="btn btn-outline-success rounded-pill fw-bold px-4">
+                📄 Imprimir PDF
+            </a>
+
+            <a href="{% url 'boletos:lista_pagares' %}"
+               class="btn btn-outline-secondary rounded-pill fw-bold px-4">
+                Volver
+            </a>
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}

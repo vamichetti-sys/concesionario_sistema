@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}Agregar Cliente{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid">
+
+    <!-- TÍTULO -->
+    <div class="mb-4">
+        <h2 class="fw-bold" style="color:#002855;">
+            Agregar Cliente
+        </h2>
+        <p class="text-muted mb-0">
+            Cargá los datos básicos del cliente. No es necesario crear una cuenta corriente.
+        </p>
+    </div>
+
+    <!-- CARD FORM -->
+    <div class="card shadow-sm border-0 rounded-4" style="max-width: 700px;">
+        <div class="card-body p-4">
+
+            <form method="post">
+                {% csrf_token %}
+
+                <!-- NOMBRE -->
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">
+                        Nombre completo
+                    </label>
+                    {{ form.nombre_completo }}
+                </div>
+
+                <!-- TELÉFONO -->
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">
+                        Teléfono
+                    </label>
+                    {{ form.telefono }}
+                </div>
+
+                <!-- EMAIL -->
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">
+                        Email
+                    </label>
+                    {{ form.email }}
+                </div>
+
+                <!-- DNI / CUIT -->
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">
+                        DNI / CUIT
+                    </label>
+                    {{ form.dni_cuit }}
+                </div>
+
+                <!-- DIRECCIÓN -->
+                <div class="mb-4">
+                    <label class="form-label fw-semibold">
+                        Dirección
+                    </label>
+                    {{ form.direccion }}
+                </div>
+
+                <!-- BOTONES -->
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary fw-bold px-4">
+                        Guardar Cliente
+                    </button>
+
+                    <!-- ✅ CORREGIDO: respeta el namespace -->
+                    <a href="{% url 'clientes:lista_clientes' %}" class="btn btn-secondary px-4">
+                        Cancelar
+                    </a>
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

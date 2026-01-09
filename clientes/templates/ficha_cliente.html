@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}Ficha de cliente{% endblock %}
+
+{% block content %}
+<div class="card-clean mb-4">
+
+    <h5 class="mb-3">{{ cliente.nombre_completo }}</h5>
+
+    <div class="row">
+        <div class="col-md-4">
+            <strong>Teléfono:</strong><br>
+            {{ cliente.telefono|default:"-" }}
+        </div>
+        <div class="col-md-4">
+            <strong>Email:</strong><br>
+            {{ cliente.email|default:"-" }}
+        </div>
+        <div class="col-md-4">
+            <strong>DNI / CUIT:</strong><br>
+            {{ cliente.dni_cuit|default:"-" }}
+        </div>
+    </div>
+
+</div>
+
+<div class="card-clean">
+
+    <h5 class="mb-3">Cuenta corriente</h5>
+
+    {% if cuenta_corriente %}
+        <p>
+            <strong>Estado:</strong> {{ cuenta_corriente.get_estado_display }}<br>
+            <strong>Saldo actual:</strong>
+            {% if cuenta_corriente.saldo_actual < 0 %}
+                <span class="text-danger fw-semibold">
+                    {{ cuenta_corriente.saldo_actual }}
+                </span>
+            {% else %}
+                <span class="text-success fw-semibold">
+                    {{ cuenta_corriente.saldo_actual }}
+                </span>
+            {% endif %}
+        </p>
+
+        <table class="table table-sm table-bordered">
+            <thead class="table-light">
+                <tr>
+                    <th>Fecha</th>
+                    <th>Descripción</th>
+                    <th>Importe</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for mov in movimientos %}
+                <tr>
+                    <td>{{ mov.fecha|date:"d/m/Y H:i" }}</td>
+                    <td>{{ mov.descripcion }}</td>
+                    <td>
+                        {% if mov.importe < 0 %}
+                            <span class="text-danger">{{ mov.importe }}</span>
+                        {% else %}
+                            <span class="text-success">{{ mov.importe }}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3" class="text-center text-muted">
+                        No hay movimientos registrados
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+    {% else %}
+        <p class="text-muted">
+            Este cliente no posee cuenta corriente.
+        </p>
+    {% endif %}
+
+</div>
+{% endblock %}

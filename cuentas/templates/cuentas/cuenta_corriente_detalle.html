@@ -1,0 +1,341 @@
+{% extends "base.html" %}
+
+{% block title %}Cuenta Corriente{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+    <!-- ===============================
+         ENCABEZADO
+    =============================== -->
+    <div class="mb-4">
+        <h2 class="fw-bold mb-1" style="color:#002855;">
+            Cuenta Corriente
+        </h2>
+        <p class="text-muted mb-0">
+            Cliente: <strong>{{ cuenta.cliente }}</strong> ·
+            Venta: <strong>#{{ cuenta.venta.id }}</strong>
+        </p>
+    </div>
+
+    <!-- ===============================
+         NEGOCIO / VENTA
+    =============================== -->
+    <div class="card shadow-sm border-0 rounded-4 mb-4">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <h5 class="fw-bold" style="color:#002855;">Negocio / Venta</h5>
+            </div>
+
+            <div class="row">
+                <div class="col-md-3">
+                    <small class="text-muted">Vehículo</small>
+                    <div class="fw-semibold">
+                        {{ cuenta.venta.vehiculo.marca }} {{ cuenta.venta.vehiculo.modelo }}
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <small class="text-muted">Dominio</small>
+                    <div class="fw-semibold">{{ cuenta.venta.vehiculo.dominio }}</div>
+                </div>
+                <div class="col-md-3">
+                    <small class="text-muted">Año</small>
+                    <div class="fw-semibold">{{ cuenta.venta.vehiculo.anio }}</div>
+                </div>
+                <div class="col-md-3">
+                    <small class="text-muted">Precio</small>
+                    <div class="fw-semibold">
+                        $ {{ cuenta.venta.precio_venta|floatformat:0 }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===============================
+         RESUMEN
+    =============================== -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-6">
+            <div class="card shadow-sm border-0 rounded-4 h-100">
+                <div class="card-body">
+                    <p class="mb-1 fw-semibold">Estado de la cuenta</p>
+                    {% if cuenta.estado == 'al_dia' %}
+                        <span class="badge rounded-pill px-3 py-2 bg-success">Al día</span>
+                    {% elif cuenta.estado == 'deuda' %}
+                        <span class="badge rounded-pill px-3 py-2 bg-warning text-dark">Con deuda</span>
+                    {% elif cuenta.estado == 'cerrada' %}
+                        <span class="badge rounded-pill px-3 py-2 bg-secondary">Cerrada</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card shadow-sm border-0 rounded-4 h-100">
+                <div class="card-body">
+                    <p class="mb-1 fw-semibold">Deuda total</p>
+                    <span class="fs-4 fw-bold {% if cuenta.saldo > 0 %}text-danger{% else %}text-success{% endif %}">
+                        $ {{ cuenta.saldo|floatformat:0 }}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===============================
+         ACCIÓN ÚNICA DE COBRO ✅ RESTAURADO (sin condicionar a saldo)
+    =============================== -->
+    <div class="d-flex justify-content-end mb-4">
+        <a href="{% url 'cuentas:registrar_movimiento' cuenta.id %}"
+           class="btn btn-primary rounded-pill px-4 fw-bold">
+            Generar movimiento
+        </a>
+    </div>
+
+    <!-- ===============================
+         ACCIONES PLAN DE PAGO
+    =============================== -->
+    <div class="mb-3">
+        <a href="{% url 'cuentas:crear_plan_pago' cuenta.id %}"
+           class="btn btn-primary rounded-pill px-4 fw-bold me-2">
+            Crear plan de pago
+        </a>
+
+        {% if plan %}
+            <a href="{% url 'cuentas:eliminar_plan_pago' cuenta.id %}"
+               class="btn btn-outline-danger rounded-pill px-4 fw-bold"
+               onclick="return confirm('¿Eliminar el plan de pago?');">
+                Eliminar plan
+            </a>
+        {% endif %}
+    </div>
+
+    <!-- ===============================
+         PLAN DE PAGO
+    =============================== -->
+    <div class="card shadow-sm border-0 rounded-4 mb-4">
+        <div class="card-body">
+            <h5 class="fw-bold mb-3" style="color:#002855;">Plan de pago</h5>
+
+            {% if cuenta.plan_pago %}
+                <ul class="list-group list-group-flush">
+                    {% for cuota in cuenta.plan_pago.cuotas.all %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="fw-semibold">
+                                    Cuota {{ cuota.numero }}
+                                    <small class="text-muted">
+                                        ({{ cuota.get_estado_display }})
+                                    </small>
+                                </div>
+                                <small class="text-muted">
+                                    Vencimiento: {{ cuota.vencimiento|date:"d/m/Y" }}
+                                </small>
+                            </div>
+
+                            <div class="text-end">
+                                {% if cuota.total_pagado > 0 %}
+                                    <div class="fw-semibold text-danger">
+                                        $ {{ cuota.saldo_pendiente|floatformat:0 }}
+                                    </div>
+                                    <small class="text-muted">
+                                        Pagado: $ {{ cuota.total_pagado|floatformat:0 }}
+                                    </small>
+                                {% else %}
+                                    <div class="fw-semibold">
+                                        $ {{ cuota.monto|floatformat:0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="text-muted mb-0">No hay plan de pago creado.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- ===============================
+         HISTORIAL DE PAGOS
+    =============================== -->
+    {% if cuenta.pagos.exists %}
+    <div class="card shadow-sm border-0 rounded-4 mb-4">
+        <div class="card-body">
+            <h5 class="fw-bold mb-3" style="color:#002855;">Pagos registrados</h5>
+
+            {% for pago in cuenta.pagos.all %}
+                <div class="border rounded-3 p-3 mb-3">
+                    <div class="d-flex justify-content-between mb-2">
+                        <div class="fw-semibold">
+                            {{ pago.fecha|date:"d/m/Y H:i" }}
+                        </div>
+                        <span class="badge rounded-pill px-3 py-2
+                            {% if pago.forma_pago == 'efectivo' %}bg-success{% else %}bg-primary{% endif %}">
+                            {{ pago.get_forma_pago_display }}
+                        </span>
+                    </div>
+
+                    <div><strong>Recibo Nº:</strong> {{ pago.numero_recibo }}</div>
+                    <div class="fw-bold mb-2">
+                        Monto abonado: $ {{ pago.monto_total|floatformat:0 }}
+                    </div>
+
+                    <a href="{% url 'cuentas:recibo_pago_pdf' pago.id %}"
+                       target="_blank"
+                       class="btn btn-outline-primary btn-sm rounded-pill fw-bold">
+                        Reimprimir recibo
+                    </a>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    <!-- ===============================
+         GASTOS DE INGRESO
+    =============================== -->
+    <div class="card shadow-sm border-0 rounded-4 mb-4">
+        <div class="card-body">
+            <h5 class="fw-bold mb-3" style="color:#002855;">Gastos de ingreso</h5>
+
+            <div class="d-flex justify-content-end gap-2 mb-3">
+                {% if vehiculo_gastos %}
+                    <a href="{% url 'vehiculos:ficha_completa' vehiculo_gastos.id %}?from=cuenta"
+                       class="btn btn-outline-warning rounded-pill fw-bold">
+                        Ver gastos (vista)
+                    </a>
+                {% endif %}
+
+                <button type="button"
+                        class="btn btn-warning rounded-pill fw-bold"
+                        data-bs-toggle="modal"
+                        data-bs-target="#modalVincularVehiculo">
+                    Vincular vehículo
+                </button>
+            </div>
+
+            <div class="border rounded-3 p-3 d-flex justify-content-between">
+                <div class="fw-semibold">Total gastos de ingreso</div>
+                <div class="fw-bold text-danger fs-5">
+                    $ {{ total_gastos_ingreso|floatformat:0 }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===============================
+         MODAL VINCULAR VEHÍCULO
+    =============================== -->
+    <div class="modal fade" id="modalVincularVehiculo" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-4">
+
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Vincular vehículo en stock</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <form method="post"
+                      data-url-base="{% url 'cuentas:conectar_vehiculo_permuta' cuenta.id 9999 %}"
+                      action=""
+                      id="formVincularVehiculo"
+                      onsubmit="return validarVinculacionVehiculo();">
+                    {% csrf_token %}
+
+                    <div class="modal-body">
+                        <label class="form-label fw-semibold">Seleccioná el vehículo</label>
+                        <select class="form-select"
+                                id="selectVehiculoVincular"
+                                required
+                                onchange="setearVehiculoVincular(this.value)">
+                            <option value="">Elegir vehículo…</option>
+                            {% for v in vehiculos %}
+                                <option value="{{ v.id }}">
+                                    {{ v.marca }} {{ v.modelo }}{% if v.dominio %} ({{ v.dominio }}){% endif %}
+                                </option>
+                            {% endfor %}
+                        </select>
+
+                        <p class="text-muted small mt-2">
+                            Los gastos de ingreso se imputarán automáticamente a la cuenta corriente.
+                        </p>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button"
+                                class="btn btn-outline-secondary rounded-pill"
+                                data-bs-dismiss="modal">
+                            Cancelar
+                        </button>
+                        <button type="submit"
+                                class="btn btn-danger rounded-pill fw-bold"
+                                id="btnVincularVehiculo"
+                                disabled>
+                            Vincular y cargar gastos
+                        </button>
+                    </div>
+                </form>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- ===============================
+         JS CONTROL VINCULACIÓN
+    =============================== -->
+    <script>
+        function setearVehiculoVincular(vehiculoId) {
+            const form = document.getElementById('formVincularVehiculo');
+            const btn = document.getElementById('btnVincularVehiculo');
+            const baseUrl = form.dataset.urlBase;
+
+            if (!vehiculoId) {
+                form.action = "";
+                btn.disabled = true;
+                return;
+            }
+
+            form.action = baseUrl.replace('9999', vehiculoId);
+            btn.disabled = false;
+        }
+
+        function validarVinculacionVehiculo() {
+            const form = document.getElementById('formVincularVehiculo');
+            if (!form.action) {
+                alert("Tenés que seleccionar un vehículo antes de continuar.");
+                return false;
+            }
+            return true;
+        }
+    </script>
+
+    <!-- ===============================
+         GESTORÍA
+    =============================== -->
+    <div class="card shadow-sm border-0 rounded-4 mb-4">
+        <div class="card-body">
+            <h5 class="fw-bold mb-3" style="color:#002855;">Gestoría</h5>
+
+            <div class="d-flex justify-content-end mb-3">
+                {% if cuenta.venta.gestoria %}
+                    <a href="{% url 'gestoria:editar_gestoria' cuenta.venta.gestoria.id %}"
+                       class="btn btn-outline-primary rounded-pill fw-bold">
+                        Ir a Gestoría
+                    </a>
+                {% else %}
+                    <span class="text-muted fst-italic">No hay gestoría asociada.</span>
+                {% endif %}
+            </div>
+
+            <div class="border rounded-3 p-3 d-flex justify-content-between">
+                <div class="fw-semibold">Total gestoría</div>
+                <div class="fw-bold text-danger fs-5">
+                    $ {{ total_gestoria|floatformat:0 }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

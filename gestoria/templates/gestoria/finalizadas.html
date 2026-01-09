@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}Gestoría – Finalizadas{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+    <!-- ===============================
+         ENCABEZADO
+    =============================== -->
+    <div class="mb-4">
+        <h2 class="fw-bold mb-1" style="color:#002855;">
+            Gestoría
+        </h2>
+        <p class="text-muted mb-0">
+            Transferencias y trámites finalizados
+        </p>
+    </div>
+
+    <!-- ===============================
+         TABS / ESTADOS
+    =============================== -->
+    <div class="mb-4 d-flex gap-2">
+        <a href="{% url 'gestoria:vigentes' %}"
+           class="btn btn-outline-primary px-4">
+            Vigentes
+        </a>
+        <a href="{% url 'gestoria:finalizadas' %}"
+           class="btn btn-success px-4">
+            Finalizadas
+        </a>
+    </div>
+
+    <!-- ===============================
+         BUSCADOR
+    =============================== -->
+    <form method="get" class="mb-4">
+        <div class="input-group">
+            <input
+                type="text"
+                name="q"
+                class="form-control"
+                placeholder="Buscar cliente, vehículo, dominio o venta…"
+                value="{{ query }}"
+            >
+            <button class="btn btn-primary" type="submit">
+                🔍 Buscar
+            </button>
+
+            {% if query %}
+            <a href="{% url 'gestoria:finalizadas' %}"
+               class="btn btn-outline-secondary">
+                Limpiar
+            </a>
+            {% endif %}
+        </div>
+    </form>
+
+    <!-- ===============================
+         TABLA DE FINALIZADAS
+    =============================== -->
+    <div class="card shadow-sm rounded-4 border-0">
+        <div class="card-body p-0">
+
+            <table class="table align-middle mb-0">
+                <thead style="background:#f4f6f8; color:#002855;">
+                    <tr>
+                        <th>Vehículo</th>
+                        <th>Cliente</th>
+                        <th>Estado</th>
+                        <th>Monto</th>
+                        <th>Fecha cierre</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for g in gestorias %}
+                    <tr>
+
+                        <!-- VEHÍCULO -->
+                        <td>
+                            <div class="fw-semibold">
+                                {{ g.vehiculo.marca }} {{ g.vehiculo.modelo }}
+                            </div>
+                            <div class="text-muted small">
+                                Dominio {{ g.vehiculo.dominio }}
+                            </div>
+                        </td>
+
+                        <!-- CLIENTE -->
+                        <td>
+                            {% if g.venta and g.venta.cliente %}
+                                <div class="fw-semibold">
+                                    {{ g.venta.cliente.nombre_completo }}
+                                </div>
+                                <div class="text-muted small">
+                                    DNI {{ g.venta.cliente.dni }}
+                                </div>
+                            {% else %}
+                                <span class="text-muted fst-italic">
+                                    Cliente no vinculado
+                                </span>
+                            {% endif %}
+                        </td>
+
+                        <!-- ESTADO -->
+                        <td>
+                            <span class="badge bg-success rounded-pill px-3">
+                                Finalizada
+                            </span>
+                        </td>
+
+                        <!-- MONTO -->
+                        <td class="fw-bold">
+                            $ {{ g.monto_transferencia|floatformat:0 }}
+                        </td>
+
+                        <!-- FECHA CIERRE -->
+                        <td>
+                            {% if g.fecha_finalizacion %}
+                                {{ g.fecha_finalizacion|date:"d/m/Y" }}
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5"
+                            class="text-center text-muted py-5">
+                            No hay gestorías finalizadas.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+
+            </table>
+
+        </div>
+    </div>
+
+</div>
+{% endblock %}

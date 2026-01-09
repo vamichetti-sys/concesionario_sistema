@@ -1,0 +1,147 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Asignar cliente{% endblock %}
+
+{% block content %}
+
+<h2 class="fw-bold" style="color:#002855;">
+    Asignar cliente a unidad vendida
+</h2>
+
+<div class="card-clean mb-4">
+    <h5 class="fw-semibold mb-3">Datos del vehículo</h5>
+
+    <div class="row">
+        <div class="col-md-4">
+            <strong>Vehículo:</strong><br>
+            {{ vehiculo.marca }} {{ vehiculo.modelo }}
+        </div>
+        <div class="col-md-3">
+            <strong>Dominio:</strong><br>
+            {{ vehiculo.dominio }}
+        </div>
+        <div class="col-md-2">
+            <strong>Año:</strong><br>
+            {{ vehiculo.anio }}
+        </div>
+        <div class="col-md-3">
+            <strong>Precio:</strong><br>
+            ${{ vehiculo.precio }}
+        </div>
+    </div>
+</div>
+
+<div class="card-clean">
+    <h5 class="fw-semibold mb-3">Seleccionar cliente</h5>
+
+    <form method="POST" id="formAsignarCliente">
+        {% csrf_token %}
+
+        <!-- ===============================
+             BUSCADOR DE CLIENTE
+        =============================== -->
+        <div class="mb-3">
+            <label class="form-label fw-semibold">
+                Buscar cliente (Nombre o DNI)
+            </label>
+
+            <input
+                type="text"
+                id="buscadorCliente"
+                class="form-control"
+                placeholder="Escriba nombre o DNI…"
+                autocomplete="off"
+            >
+
+            <div
+                id="resultadosClientes"
+                class="list-group mt-2"
+                style="max-height: 240px; overflow-y: auto;"
+            ></div>
+
+            <!-- ID DEL CLIENTE SELECCIONADO -->
+            <input type="hidden" name="cliente" id="clienteSeleccionado">
+        </div>
+
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary fw-bold">
+                Confirmar venta
+            </button>
+
+            <a href="{% url 'ventas:lista_unidades_vendidas' %}"
+               class="btn btn-secondary">
+                Cancelar
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- ===============================
+     JS BUSCADOR CLIENTE (AJUSTADO)
+=============================== -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const buscador = document.getElementById("buscadorCliente");
+    const resultados = document.getElementById("resultadosClientes");
+    const clienteInput = document.getElementById("clienteSeleccionado");
+    const form = document.getElementById("formAsignarCliente");
+
+    buscador.addEventListener("input", function () {
+        const query = this.value.trim();
+        resultados.innerHTML = "";
+
+        // 🔴 si el usuario vuelve a escribir, limpiamos selección previa
+        clienteInput.value = "";
+
+        if (query.length < 2) {
+            return;
+        }
+
+        fetch("{% url 'ventas:buscar_cliente_venta' %}?q=" + encodeURIComponent(query))
+            .then(response => response.json())
+            .then(data => {
+                resultados.innerHTML = "";
+
+                if (data.length === 0) {
+                    resultados.innerHTML = `
+                        <div class="list-group-item text-muted">
+                            No se encontraron clientes
+                        </div>`;
+                    return;
+                }
+
+                data.forEach(cliente => {
+                    const item = document.createElement("button");
+                    item.type = "button";
+                    item.className = "list-group-item list-group-item-action";
+                    item.innerHTML = `
+                        <strong>${cliente.nombre}</strong><br>
+                        <small class="text-muted">DNI ${cliente.dni}</small>
+                    `;
+
+                    item.onclick = function () {
+                        // ✅ ACA SE GUARDA EL ID REAL
+                        clienteInput.value = cliente.id;
+                        buscador.value = cliente.nombre;
+                        resultados.innerHTML = "";
+                    };
+
+                    resultados.appendChild(item);
+                });
+            });
+    });
+
+    // 🔒 BLOQUEAR SUBMIT SI NO HAY CLIENTE
+    form.addEventListener("submit", function (e) {
+        if (!clienteInput.value) {
+            e.preventDefault();
+            alert("Debe seleccionar un cliente antes de confirmar la venta.");
+        }
+    });
+
+});
+</script>
+
+{% endblock %}

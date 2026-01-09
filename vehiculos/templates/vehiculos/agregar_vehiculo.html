@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Agregar Vehículo{% endblock %}
+
+{% block content %}
+
+<h2 class="fw-bold mb-4" style="color:#002855;">Agregar Vehículo al Stock</h2>
+
+<div class="card shadow-sm rounded-4 p-4" style="max-width: 700px;">
+
+    {# 🔴 MOSTRAR ERRORES DEL FORM (NO ROMPE NADA) #}
+    {% if form.errors %}
+        <div class="alert alert-danger rounded-3 mb-4">
+            <strong>No se pudo guardar el vehículo.</strong>
+            <ul class="mb-0">
+                {% for field, errors in form.errors.items %}
+                    {% for error in errors %}
+                        <li>
+                            <strong>{{ field|capfirst }}:</strong> {{ error }}
+                        </li>
+                    {% endfor %}
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+
+    <form method="POST">
+        {% csrf_token %}
+
+        <div class="row g-3">
+
+            <div class="col-md-6">
+                <label class="fw-bold">Marca</label>
+                {{ form.marca }}
+            </div>
+
+            <div class="col-md-6">
+                <label class="fw-bold">Modelo</label>
+                {{ form.modelo }}
+            </div>
+
+            <div class="col-md-6">
+                <label class="fw-bold">Dominio</label>
+                {{ form.dominio }}
+            </div>
+
+            <div class="col-md-6">
+                <label class="fw-bold">Año</label>
+                {{ form.anio }}
+            </div>
+
+            <div class="col-md-6">
+                <label class="fw-bold">Kilómetros</label>
+                {{ form.kilometros }}
+            </div>
+
+            <div class="col-md-6">
+                <label class="fw-bold">Precio</label>
+                {{ form.precio }}
+            </div>
+
+            <div class="col-md-6">
+                <label class="fw-bold">Estado</label>
+                {{ form.estado }}
+            </div>
+
+        </div>
+
+        <div class="mt-4 d-flex" style="gap: 10px;">
+
+            <button type="submit" class="btn btn-primary fw-bold">
+                Guardar Vehículo
+            </button>
+
+            <a href="/vehiculos/" class="btn btn-secondary">
+                Cancelar
+            </a>
+
+        </div>
+
+    </form>
+
+</div>
+
+{% endblock %}

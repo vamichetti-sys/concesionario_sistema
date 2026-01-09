@@ -1,0 +1,200 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Detalle del Cliente{% endblock %}
+
+{% block content %}
+
+<!-- ENCABEZADO -->
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+        <h2 class="fw-bold mb-1" style="color:#002855;">
+            Detalle del Cliente
+        </h2>
+        <p class="text-muted mb-0">
+            Información general y estado de cuenta
+        </p>
+    </div>
+
+    <div class="d-flex gap-2">
+        <a href="{% url 'clientes:editar_cliente' cliente.id %}"
+           class="btn btn-outline-primary rounded-pill px-4 fw-bold">
+            ✏️ Editar
+        </a>
+
+        <a href="{% url 'clientes:lista_clientes' %}"
+           class="btn btn-outline-secondary rounded-pill px-4 fw-bold">
+            ← Volver
+        </a>
+    </div>
+</div>
+
+<!-- ===============================
+     DATOS DEL CLIENTE
+=============================== -->
+<div class="card shadow-sm border-0 rounded-4 mb-4">
+    <div class="card-body p-4">
+
+        <h4 class="fw-bold mb-1" style="color:#002855;">
+            {{ cliente.nombre_completo }}
+        </h4>
+
+        <p class="text-muted mb-3">
+            Datos personales del cliente
+        </p>
+
+        <hr>
+
+        <div class="row mt-3">
+            <div class="col-md-6">
+                <p class="mb-2">
+                    <strong>Teléfono:</strong><br>
+                    {{ cliente.telefono|default:"No registrado" }}
+                </p>
+
+                <p class="mb-2">
+                    <strong>Email:</strong><br>
+                    {{ cliente.email|default:"No registrado" }}
+                </p>
+            </div>
+
+            <div class="col-md-6">
+                <p class="mb-2">
+                    <strong>DNI / CUIT:</strong><br>
+                    {{ cliente.dni_cuit|default:"-" }}
+                </p>
+
+                <p class="mb-2">
+                    <strong>Dirección:</strong><br>
+                    {{ cliente.direccion|default:"-" }}
+                </p>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ===============================
+     📄 DOCUMENTACIÓN LEGAL (BOLETOS)
+     SIEMPRE VISIBLE EN LA FICHA
+=============================== -->
+{% if boletos %}
+<div class="card shadow-sm border-0 rounded-4 mb-4">
+    <div class="card-body p-4">
+
+        <h5 class="fw-bold mb-3" style="color:#002855;">
+            Documentación legal
+        </h5>
+
+        {% for boleto in boletos %}
+            {% if boleto.pdf %}
+                <div class="d-flex justify-content-between align-items-center
+                            border rounded-pill px-3 py-2 mb-2">
+                    <div>
+                        <strong>Boleto Nº {{ boleto.numero }}</strong><br>
+                        <small class="text-muted">
+                            {{ boleto.creado|date:"d/m/Y" }}
+                        </small>
+                    </div>
+
+                    <a href="{{ boleto.pdf.url }}"
+                       target="_blank"
+                       class="btn btn-sm btn-outline-dark rounded-pill px-3">
+                        Ver PDF
+                    </a>
+                </div>
+            {% endif %}
+        {% endfor %}
+
+    </div>
+</div>
+{% endif %}
+<!-- ===============================
+     CUENTA CORRIENTE ACTIVA
+=============================== -->
+{% if cuenta_activa %}
+<div class="card shadow-sm border-0 rounded-4 mb-4">
+    <div class="card-body p-4">
+
+        <h5 class="fw-bold mb-3" style="color:#002855;">
+            Cuenta Corriente
+        </h5>
+
+        <p class="mb-2">
+            <strong>Estado de la cuenta:</strong><br>
+            {{ cuenta_activa.get_estado_display }}
+        </p>
+
+        <p class="mb-3">
+            <strong>Estado de pago:</strong>
+            {% with estado=cliente.cumplimiento_pago %}
+                {% if estado == 'verde' %}
+                    <span class="badge rounded-pill px-3 py-2 ms-2"
+                          style="background:#198754;">
+                        AL DÍA
+                    </span>
+                {% elif estado == 'amarillo' %}
+                    <span class="badge rounded-pill px-3 py-2 ms-2 text-dark"
+                          style="background:#ffc107;">
+                        MOROSO
+                    </span>
+                {% elif estado == 'rojo' %}
+                    <span class="badge rounded-pill px-3 py-2 ms-2"
+                          style="background:#dc3545;">
+                        INCOBRABLE
+                    </span>
+                {% endif %}
+            {% endwith %}
+        </p>
+
+        <p class="mb-4">
+            <strong>Saldo actual:</strong><br>
+            <span class="fw-bold fs-5 {% if cuenta_activa.saldo > 0 %}text-danger{% else %}text-success{% endif %}">
+                $ {{ cuenta_activa.saldo|floatformat:0 }}
+            </span>
+        </p>
+
+        <a href="{% url 'cuentas:cuenta_corriente_detalle' cuenta_activa.id %}"
+           class="btn btn-dark fw-bold rounded-pill px-4">
+            Ver cuenta corriente
+        </a>
+
+    </div>
+</div>
+{% endif %}
+
+<!-- ===============================
+     HISTORIAL DE COMPRAS (CUENTAS CERRADAS)
+=============================== -->
+{% if cuentas_historial %}
+<div class="card shadow-sm border-0 rounded-4">
+    <div class="card-body p-4">
+
+        <h5 class="fw-bold mb-3" style="color:#002855;">
+            Historial de Compras
+        </h5>
+
+        {% for cuenta in cuentas_historial %}
+            <div class="mb-3">
+
+                <a href="/cuentas/historial/{{ cuenta.id }}/"
+                   class="btn btn-outline-primary fw-bold rounded-pill px-4">
+                    {{ cuenta.venta.vehiculo.marca }}
+                    {{ cuenta.venta.vehiculo.modelo }}
+                    {{ cuenta.venta.vehiculo.anio }}
+                </a>
+
+            </div>
+        {% endfor %}
+
+    </div>
+</div>
+{% endif %}
+
+{% if not cuenta_activa and not cuentas_historial %}
+<p class="text-muted">
+    Este cliente no posee cuenta corriente ni historial.
+</p>
+{% endif %}
+
+{% endblock %}

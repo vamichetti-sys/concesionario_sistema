@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+
+{% block title %}Movimiento de Cuenta{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+    <!-- ===============================
+         ENCABEZADO
+    =============================== -->
+    <div class="mb-4">
+        <h2 class="fw-bold mb-1" style="color:#002855;">
+            Generar movimiento
+        </h2>
+        <p class="text-muted mb-0">
+            Cliente: <strong>{{ cuenta.cliente }}</strong> ·
+            Venta: <strong>#{{ cuenta.venta.id }}</strong>
+        </p>
+    </div>
+
+    <!-- ===============================
+         FORMULARIO MOVIMIENTO
+    =============================== -->
+    <div class="card shadow-sm border-0 rounded-4">
+        <div class="card-body">
+
+            <form method="post" onsubmit="return validarMovimiento();">
+                {% csrf_token %}
+
+                <!-- TIPO DE MOVIMIENTO -->
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">
+                        Tipo de movimiento
+                    </label>
+                    <select name="tipo_movimiento"
+                            id="tipo_movimiento"
+                            class="form-select"
+                            required
+                            onchange="toggleCuotas(this.value)">
+                        <option value="">Seleccionar</option>
+                        <option value="cuota">Pago de cuota</option>
+                        <option value="transferencia">Transferencia / pago general</option>
+                    </select>
+                </div>
+
+                <!-- CUOTAS -->
+                <div class="mb-3" id="bloque-cuotas" style="display:none;">
+                    <label class="form-label fw-semibold">
+                        Cuota a imputar
+                    </label>
+                    <select name="cuota_id"
+                            id="cuota_id"
+                            class="form-select">
+                        <option value="">Seleccionar cuota</option>
+                        {% for cuota in cuotas %}
+                            {% if cuota.estado == 'pendiente' %}
+                                <option value="{{ cuota.id }}">
+                                    Cuota {{ cuota.numero }} – $
+                                    {{ cuota.monto|floatformat:0 }}
+                                </option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                    <div class="form-text">
+                        Si el monto supera esta cuota, se descontará de las siguientes.
+                    </div>
+                </div>
+
+                <!-- MONTO -->
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">
+                        Monto
+                    </label>
+                    <input type="number"
+                           name="monto"
+                           id="monto"
+                           class="form-control"
+                           step="0.01"
+                           min="0.01"
+                           required>
+                </div>
+
+                <!-- FORMA DE PAGO -->
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">
+                        Forma de pago
+                    </label>
+                    <select name="forma_pago"
+                            class="form-select"
+                            required>
+                        <option value="efectivo">Efectivo</option>
+                        <option value="transferencia">Transferencia</option>
+                        <option value="cheque">Cheque</option>
+                    </select>
+                </div>
+
+                <!-- OBSERVACIONES -->
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">
+                        Observaciones
+                    </label>
+                    <textarea name="observaciones"
+                              class="form-control"
+                              rows="2"></textarea>
+                </div>
+
+                <!-- MENSAJE DE ERROR -->
+                <div id="error-movimiento"
+                     class="alert alert-danger d-none">
+                </div>
+
+                <!-- BOTONES -->
+                <div class="d-flex justify-content-between mt-4">
+                    <a href="{% url 'cuentas:cuenta_corriente_detalle' cuenta.id %}"
+                       class="btn btn-outline-secondary rounded-pill px-4 fw-bold">
+                        ← Volver
+                    </a>
+
+                    <button type="submit"
+                            class="btn btn-success rounded-pill px-4 fw-bold">
+                        Registrar movimiento
+                    </button>
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+
+</div>
+
+<script>
+function toggleCuotas(valor) {
+    const bloque = document.getElementById("bloque-cuotas");
+    const cuotaSelect = document.getElementById("cuota_id");
+
+    if (valor === "cuota") {
+        bloque.style.display = "block";
+    } else {
+        bloque.style.display = "none";
+        cuotaSelect.value = "";
+    }
+}
+
+function validarMovimiento() {
+    const tipo = document.getElementById("tipo_movimiento").value;
+    const cuota = document.getElementById("cuota_id").value;
+    const monto = parseFloat(document.getElementById("monto").value);
+    const errorBox = document.getElementById("error-movimiento");
+
+    errorBox.classList.add("d-none");
+    errorBox.innerText = "";
+
+    if (tipo === "cuota" && !cuota) {
+        errorBox.innerText = "Seleccioná la cuota a imputar.";
+        errorBox.classList.remove("d-none");
+        return false;
+    }
+
+    if (!monto || monto <= 0) {
+        errorBox.innerText = "El monto debe ser mayor a 0.";
+        errorBox.classList.remove("d-none");
+        return false;
+    }
+
+    return true;
+}
+</script>
+
+{% endblock %}

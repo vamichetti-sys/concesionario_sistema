@@ -1,0 +1,220 @@
+{% extends 'base.html' %}
+
+{% block title %}Detalle de Venta{% endblock %}
+
+{% block content %}
+
+<h2 class="fw-bold mb-3" style="color:#002855;">
+    Detalle de Venta
+</h2>
+
+<!-- ============================= -->
+<!-- ESTADO CREDITICIO DEL CLIENTE -->
+<!-- ============================= -->
+{% if cliente and estado_crediticio %}
+    {% if estado_crediticio == 'verde' %}
+        <div class="alert alert-success rounded-4">
+            Cliente al día. Financiación habilitada.
+        </div>
+    {% elif estado_crediticio == 'amarillo' %}
+        <div class="alert alert-warning rounded-4">
+            Cliente con atrasos. La financiación debe evaluarse con precaución.
+        </div>
+    {% elif estado_crediticio == 'rojo' %}
+        <div class="alert alert-danger rounded-4">
+            Cliente incobrable. La financiación se encuentra bloqueada.
+        </div>
+    {% endif %}
+{% endif %}
+
+<div class="row g-3">
+
+    <!-- ============================= -->
+    <!-- VEHÍCULO -->
+    <!-- ============================= -->
+    <div class="col-md-6">
+        <div class="card shadow-sm rounded-4 h-100">
+            <div class="card-body">
+
+                <h5 class="fw-semibold mb-3" style="color:#002855;">
+                    Vehículo
+                </h5>
+
+                <p class="mb-1">
+                    {{ vehiculo.marca }} {{ vehiculo.modelo }} ({{ vehiculo.anio }})
+                </p>
+
+                <p class="mb-1">
+                    Dominio:
+                    <strong>{{ vehiculo.dominio }}</strong>
+                </p>
+
+                <p class="mb-3">
+                    Precio de venta:
+                    <strong>
+                        {% if venta.precio_venta %}
+                            ${{ venta.precio_venta|floatformat:0 }}
+                        {% else %}
+                            ${{ vehiculo.precio|floatformat:0 }}
+                        {% endif %}
+                    </strong>
+                </p>
+
+                <a href="{% url 'vehiculos:ficha_completa' vehiculo.id %}"
+                   class="btn btn-sm"
+                   style="border:1px solid #002855; color:#002855;">
+                    Ver ficha completa
+                </a>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================= -->
+    <!-- CLIENTE / CUENTA -->
+    <!-- ============================= -->
+    <div class="col-md-6">
+        <div class="card shadow-sm rounded-4 h-100">
+            <div class="card-body">
+
+                <h5 class="fw-semibold mb-3" style="color:#002855;">
+                    Cliente / Cuenta corriente
+                </h5>
+
+                {% if cliente %}
+                    <p class="mb-1">
+                        {{ cliente.nombre_completo }}
+                    </p>
+                {% else %}
+                    <p class="text-muted mb-1">
+                        Sin cliente asignado
+                    </p>
+                {% endif %}
+
+                {% if cuenta %}
+                    <p class="mb-2">
+                        Saldo cuenta corriente:
+                        <strong>${{ cuenta.saldo|floatformat:0 }}</strong>
+                    </p>
+
+                    <div class="d-flex flex-wrap gap-2">
+                        <a href="{% url 'cuentas:cuenta_corriente_detalle' cuenta.id %}"
+                           class="btn btn-sm"
+                           style="border:1px solid #002855; color:#002855;">
+                            Ver cuenta corriente
+                        </a>
+
+                        {% if cuenta.estado == "cerrada" %}
+                            <a href="{% url 'cuentas:historial_financiacion' cuenta.id %}"
+                               class="btn btn-sm btn-outline-success">
+                                📜 Ver historial
+                            </a>
+                        {% endif %}
+                    </div>
+                {% endif %}
+
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- ============================= -->
+<!-- GESTORÍA / TRANSFERENCIA -->
+<!-- ============================= -->
+<div class="card shadow-sm rounded-4 mt-4">
+    <div class="card-body">
+
+        <h5 class="fw-semibold mb-3" style="color:#002855;">
+            Gestoría / Transferencia
+        </h5>
+
+        {% if vehiculo.gestoria %}
+            <div class="row">
+                <div class="col-md-4">
+                    <strong>Monto transferencia</strong><br>
+                    ${{ vehiculo.gestoria.monto_transferencia|default:"—"|floatformat:0 }}
+                </div>
+
+                <div class="col-md-4">
+                    <strong>Pago</strong><br>
+                    {% if vehiculo.gestoria.pago %}
+                        <span class="badge bg-success">Pagado</span>
+                    {% else %}
+                        <span class="badge bg-warning text-dark">Pendiente</span>
+                    {% endif %}
+                </div>
+
+                <div class="col-md-4">
+                    <strong>Transferencia</strong><br>
+                    {% if vehiculo.gestoria.transferido %}
+                        <span class="badge bg-success">Transferido</span>
+                    {% else %}
+                        <span class="badge bg-danger">No transferido</span>
+                    {% endif %}
+                </div>
+            </div>
+        {% else %}
+            <p class="text-muted mb-0">
+                No hay gestoría iniciada para este vehículo.
+            </p>
+        {% endif %}
+
+    </div>
+</div>
+
+<!-- ============================= -->
+<!-- FINANCIACIÓN DEL VEHÍCULO -->
+<!-- ============================= -->
+<div class="card shadow-sm rounded-4 mt-4">
+    <div class="card-body">
+
+        <h5 class="fw-semibold mb-3" style="color:#002855;">
+            Financiación del vehículo
+        </h5>
+
+        {% if cuenta %}
+            <a href="{% url 'cuentas:historial_financiacion' cuenta.id %}"
+               class="btn btn-outline-primary rounded-pill fw-bold">
+                🚗 {{ vehiculo.marca }} {{ vehiculo.modelo }}
+                {% if vehiculo.dominio %}· {{ vehiculo.dominio }}{% endif %}
+            </a>
+
+            {% if cuenta.estado != "cerrada" %}
+                <p class="text-muted mt-2 small">
+                    La financiación se mostrará completa cuando finalice el plan de pago.
+                </p>
+            {% endif %}
+        {% else %}
+            <p class="text-muted mb-0">
+                Este vehículo no posee financiación asociada.
+            </p>
+        {% endif %}
+
+    </div>
+</div>
+
+<!-- ============================= -->
+<!-- ACCIONES -->
+<!-- ============================= -->
+<div class="mt-4 d-flex gap-2">
+
+    <a href="{% url 'ventas:lista_unidades_vendidas' %}"
+       class="btn btn-secondary">
+        Volver
+    </a>
+
+    <form method="POST"
+          action="{% url 'ventas:revertir_venta' venta.id %}"
+          onsubmit="return confirm('¿Seguro que desea revertir la venta y devolver el vehículo a stock?');">
+        {% csrf_token %}
+        <button type="submit"
+                class="btn"
+                style="border:1px solid #dc3545; color:#dc3545;">
+            Revertir venta
+        </button>
+    </form>
+
+</div>
+
+{% endblock %}

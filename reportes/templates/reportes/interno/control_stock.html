@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h4 class="fw-bold mb-2" style="color:#002855;">
+    Control de Stock
+</h4>
+<p class="text-muted mb-4">
+    Gestión interna de vehículos y control económico.
+</p>
+
+<div class="card-clean">
+
+    {% if vehiculos %}
+    <div class="table-responsive">
+        <table class="table table-sm align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Vehículo</th>
+                    <th>Dominio</th>
+                    <th>Estado</th>
+                    <th>Compra</th>
+                    <th>Venta</th>
+                    <th class="text-end">Gastos</th>
+                    <th class="text-end">Ganancia</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+
+                {% for v in vehiculos %}
+                {% with ficha=v.ficha_reporte %}
+                <tr>
+
+                    <!-- VEHÍCULO -->
+                    <td>
+                        {{ v.marca }} {{ v.modelo }}<br>
+                        <small class="text-muted">{{ v.anio }}</small>
+                    </td>
+
+                    <!-- DOMINIO -->
+                    <td>{{ v.dominio }}</td>
+
+                    <!-- ESTADO -->
+                    <td>
+                        {% if v.estado == "stock" %}
+                            En stock
+                        {% elif v.estado == "vendido" %}
+                            Vendido
+                        {% else %}
+                            Temporal
+                        {% endif %}
+                    </td>
+
+                    <!-- COMPRA -->
+                    <td>
+                        {% if ficha.fecha_compra %}
+                            {{ ficha.fecha_compra }}<br>
+                            <strong>${{ ficha.precio_compra }}</strong>
+                        {% else %}
+                            <span class="text-muted">Sin datos</span>
+                        {% endif %}
+                    </td>
+
+                    <!-- VENTA -->
+                    <td>
+                        {% if ficha.fecha_venta %}
+                            {{ ficha.fecha_venta }}<br>
+                            <strong>${{ ficha.precio_venta }}</strong>
+                        {% else %}
+                            <span class="text-muted">Sin vender</span>
+                        {% endif %}
+                    </td>
+
+                    <!-- GASTOS (SUMA AUTOMÁTICA) -->
+                    <td class="text-end">
+                        ${% if ficha.total_gastos_calculado %}
+                            {{ ficha.total_gastos_calculado }}
+                        {% else %}
+                            0
+                        {% endif %}
+                    </td>
+
+                    <!-- GANANCIA REAL -->
+                    <td class="text-end">
+                        {% if ficha.ganancia != None %}
+                            <strong>${{ ficha.ganancia }}</strong>
+                        {% else %}
+                            <span class="text-muted">—</span>
+                        {% endif %}
+                    </td>
+
+                    <!-- EDITAR -->
+                    <td class="text-end">
+                        <a href="{% url 'reportes:editar_ficha_reporte' v.id %}"
+                           class="btn btn-sm btn-outline-primary">
+                            Editar
+                        </a>
+                    </td>
+
+                </tr>
+                {% endwith %}
+                {% endfor %}
+
+            </tbody>
+        </table>
+    </div>
+
+    {% else %}
+        <p class="text-muted mb-0">
+            No hay vehículos cargados en el sistema.
+        </p>
+    {% endif %}
+
+</div>
+
+{% endblock %}

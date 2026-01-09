@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h4 class="fw-bold mb-2" style="color:#002855;">
+    Editar ficha interna
+</h4>
+
+<p class="text-muted mb-4">
+    {{ vehiculo.marca }} {{ vehiculo.modelo }} · {{ vehiculo.dominio }}
+</p>
+
+<div class="card-clean">
+
+    <!-- ===============================
+         DATOS GENERALES
+    ================================ -->
+    <form method="post">
+        {% csrf_token %}
+
+        <div class="row g-3">
+
+            <!-- COMPRA -->
+            <div class="col-md-6">
+                <label class="form-label fw-semibold">
+                    Fecha de compra
+                </label>
+                {{ form.fecha_compra }}
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label fw-semibold">
+                    Precio de compra
+                </label>
+                {{ form.precio_compra }}
+            </div>
+
+            <!-- VENTA -->
+            <div class="col-md-6">
+                <label class="form-label fw-semibold">
+                    Fecha de venta
+                </label>
+                {{ form.fecha_venta }}
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label fw-semibold">
+                    Precio de venta
+                </label>
+                {{ form.precio_venta }}
+            </div>
+
+            <!-- COMPRADOR -->
+            <div class="col-md-12">
+                <label class="form-label fw-semibold">
+                    Comprador
+                </label>
+                {{ form.comprador }}
+            </div>
+
+        </div>
+
+        <!-- ACCIONES -->
+        <div class="mt-4 d-flex gap-2">
+            <button type="submit" class="btn btn-primary">
+                Guardar datos
+            </button>
+
+            <a href="{% url 'reportes:control_stock' %}"
+               class="btn btn-outline-secondary">
+                Volver
+            </a>
+        </div>
+
+    </form>
+
+    <!-- ===============================
+         GASTOS DEL VEHÍCULO
+    ================================ -->
+    <hr class="my-4">
+
+    <h6 class="fw-bold mb-3">
+        Gastos del vehículo
+    </h6>
+
+    <!-- AGREGAR GASTO -->
+    <form method="post"
+          action="{% url 'reportes:agregar_gasto_reporte' ficha.id %}"
+          class="row g-2 mb-3">
+        {% csrf_token %}
+
+        <div class="col-md-6">
+            {{ gasto_form.concepto }}
+        </div>
+
+        <div class="col-md-4">
+            {{ gasto_form.monto }}
+        </div>
+
+        <div class="col-md-2">
+            <button class="btn btn-outline-primary w-100">
+                Agregar
+            </button>
+        </div>
+    </form>
+
+    <!-- LISTADO DE GASTOS -->
+    <table class="table table-sm">
+        <thead>
+            <tr>
+                <th>Fecha</th>
+                <th>Concepto</th>
+                <th class="text-end">Monto</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+
+            {% for g in ficha.gastos.all %}
+            <tr>
+                <td>{{ g.fecha }}</td>
+                <td>{{ g.concepto }}</td>
+                <td class="text-end">${{ g.monto }}</td>
+                <td class="text-end">
+                    <a href="{% url 'reportes:eliminar_gasto_reporte' g.id %}"
+                       class="btn btn-sm btn-outline-danger">
+                        Eliminar
+                    </a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4" class="text-muted">
+                    No hay gastos cargados.
+                </td>
+            </tr>
+            {% endfor %}
+
+        </tbody>
+    </table>
+
+    <!-- TOTAL -->
+    <div class="mt-3 text-end fw-bold">
+        Total de gastos: ${{ ficha.total_gastos_calculado }}
+    </div>
+
+</div>
+
+{% endblock %}

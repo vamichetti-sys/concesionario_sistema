@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block title %}Deudas{% endblock %}
+
+{% block content %}
+
+<!-- ===============================
+     BUSCADOR DE DEUDAS
+=============================== -->
+<form method="get" class="mb-4">
+    <div class="input-group">
+        <input
+            type="text"
+            name="q"
+            class="form-control"
+            placeholder="Buscar por dominio / patente / modelo…"
+            value="{{ query }}"
+        >
+        <button class="btn btn-primary" type="submit">
+            🔍 Buscar
+        </button>
+
+        {% if query %}
+            <a href="{% url 'deudas:listado' %}" class="btn btn-outline-secondary">
+                Limpiar
+            </a>
+        {% endif %}
+    </div>
+</form>
+
+<h2 class="fw-bold mb-3" style="color:#002855;">
+    Vehículos con deuda
+</h2>
+
+<p class="text-muted mb-4">
+    Unidades con saldo pendiente por cuenta corriente o gastos de ingreso.
+</p>
+
+{% if deudas %}
+<div class="table-responsive">
+    <table class="table table-sm align-middle">
+        <thead>
+            <tr>
+                <th>Vehículo</th>
+                <th>Dominio</th>
+                <th>Cliente</th>
+                <th>Origen</th>
+                <th class="text-end">Deuda</th>
+                <th class="text-end">Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in deudas %}
+            <tr>
+                <td>
+                    {{ item.vehiculo.marca }} {{ item.vehiculo.modelo }}
+                </td>
+                <td>
+                    {{ item.vehiculo.dominio|default:"—" }}
+                </td>
+                <td>
+                    {{ item.cliente|default:"—" }}
+                </td>
+                <td>
+                    {% if item.tipo == "cuenta" %}
+                        <span class="badge bg-warning text-dark">
+                            Cuenta corriente
+                        </span>
+                    {% else %}
+                        <span class="badge bg-info text-dark">
+                            Gastos de ingreso
+                        </span>
+                    {% endif %}
+                </td>
+                <td class="text-end text-danger fw-bold">
+                    $ {{ item.total_deuda|floatformat:0 }}
+                </td>
+                <td class="text-end">
+                    {% if item.tipo == "cuenta" %}
+                        <a href="{% url 'cuentas:cuenta_corriente_detalle' item.cuenta.id %}"
+                           class="btn btn-sm btn-outline-primary">
+                            Ver cuenta
+                        </a>
+                    {% else %}
+                        <a href="{% url 'vehiculos:ficha_completa' item.vehiculo.id %}"
+                           class="btn btn-sm btn-outline-secondary">
+                            Ver vehículo
+                        </a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="alert alert-success">
+    No hay vehículos con deuda pendiente 🎉
+</div>
+{% endif %}
+
+{% endblock %}

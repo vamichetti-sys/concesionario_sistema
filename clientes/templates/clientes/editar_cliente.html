@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Cliente{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+    <!-- ENCABEZADO -->
+    <div class="d-flex justify-content-between align-items-start mb-4">
+        <div>
+            <h2 class="fw-bold" style="color:#002855;">
+                Editar Cliente
+            </h2>
+            <p class="text-muted mb-0">
+                {{ cliente.nombre_completo }}
+            </p>
+        </div>
+
+        <a href="{% url 'clientes:detalle_cliente' cliente.id %}"
+           class="btn btn-outline-secondary rounded-pill px-4 fw-bold">
+            ← Volver
+        </a>
+    </div>
+
+    <form method="post" class="card shadow-sm border-0 rounded-4 p-4" style="max-width:700px;">
+        {% csrf_token %}
+
+        <div class="row g-3">
+
+            <div class="col-md-6">
+                {{ form.telefono.label_tag }}
+                {{ form.telefono }}
+            </div>
+
+            <div class="col-md-6">
+                {{ form.email.label_tag }}
+                {{ form.email }}
+            </div>
+
+            <div class="col-md-6">
+                {{ form.dni_cuit.label_tag }}
+                {{ form.dni_cuit }}
+            </div>
+
+            <div class="col-md-6">
+                {{ form.direccion.label_tag }}
+                {{ form.direccion }}
+            </div>
+
+        </div>
+
+        <div class="mt-4 d-flex gap-2">
+            <button type="submit" class="btn btn-primary">
+                Guardar cambios
+            </button>
+
+            <a href="{% url 'clientes:detalle_cliente' cliente.id %}"
+               class="btn btn-secondary">
+                Cancelar
+            </a>
+        </div>
+    </form>
+
+</div>
+{% endblock %}

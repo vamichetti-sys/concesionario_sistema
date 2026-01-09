@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Vehículos Vendidos{% endblock %}
+
+{% block content %}
+
+<h2 class="fw-bold" style="color:#002855;">Vehículos Vendidos</h2>
+
+<div class="card shadow-sm rounded-4">
+    <div class="card-body p-0">
+
+        <table class="table table-striped mb-0 align-middle">
+            <thead style="background:#002855; color: white;">
+                <tr>
+                    <th style="width:200px;">Acción</th>
+                    <th>Marca</th>
+                    <th>Modelo</th>
+                    <th>Dominio</th>
+                    <th>Año</th>
+                    <th>Kilómetros</th>
+                    <th>Precio</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for v in vehiculos %}
+                <tr>
+
+                    <!-- ACCIONES -->
+                    <td class="d-flex flex-column" style="gap:6px;">
+
+                        <!-- MODAL FICHA (EXISTENTE, NO SE TOCA) -->
+                        <button type="button"
+                                class="btn btn-warning fw-bold"
+                                onclick="abrirFicha('{{ v.id }}')">
+                            Mas info
+                        </button>
+
+                        <!-- FICHA COMPLETA -->
+                        <a href="{% url 'vehiculos:detalle_vehiculo' v.id %}"
+                           class="btn btn-sm"
+                           style="
+                             background:#f8f9fa;
+                             border:1px solid #002855;
+                             color:#002855;
+                             font-weight:500;
+                           ">
+                            Ver ficha del vehículo
+                        </a>
+
+                        <!-- CUENTA CORRIENTE DEL COMPRADOR -->
+                        {% if v.venta and v.venta.cliente and v.venta.cliente.cuenta_corriente %}
+                            <a href="{% url 'cuentas:cuenta_detalle' v.venta.cliente.cuenta_corriente.id %}"
+                               class="btn btn-sm"
+                               style="
+                                 background:#f8f9fa;
+                                 border:1px solid #198754;
+                                 color:#198754;
+                                 font-weight:500;
+                               ">
+                                Cuenta corriente del cliente
+                            </a>
+                        {% else %}
+                            <span class="fw-semibold" style="color:#dc3545;">
+                                Sin cliente asignado
+                            </span>
+                        {% endif %}
+
+                    </td>
+
+                    <!-- DATOS VEHÍCULO -->
+                    <td>{{ v.marca }}</td>
+                    <td>{{ v.modelo }}</td>
+                    <td>{{ v.dominio }}</td>
+                    <td>{{ v.anio }}</td>
+                    <td>{{ v.kilometros|default:"No informado" }}</td>
+                    <td>${{ v.precio }}</td>
+
+                    <!-- ESTADO -->
+                    <td>
+                        <span class="badge bg-success">
+                            Vendido
+                        </span>
+                    </td>
+
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="text-center py-4">
+                        No hay vehículos vendidos.
+                    </td>
+                </tr>
+                {% endfor %}
+
+            </tbody>
+        </table>
+
+    </div>
+</div>
+
+<!-- CONTENEDOR MODAL -->
+<div id="modalFichaContainer"></div>
+
+<script>
+function abrirFicha(id) {
+    var url = "/vehiculos/ficha-vehicular/" + id + "/";
+
+    fetch(url)
+        .then(function(response) {
+            if (!response.ok) {
+                alert("No se pudo cargar la ficha del vehículo.");
+                return null;
+            }
+            return response.json();
+        })
+        .then(function(data) {
+            if (!data || !data.html) {
+                alert("Respuesta inválida del servidor.");
+                return;
+            }
+
+            var contenedor = document.getElementById("modalFichaContainer");
+            contenedor.innerHTML = data.html;
+
+            var modalElement = document.getElementById("modalFicha");
+            if (!modalElement) {
+                alert("No se pudo abrir el detalle del vehículo.");
+                return;
+            }
+
+            var modal = new bootstrap.Modal(modalElement);
+            modal.show();
+        })
+        .catch(function(error) {
+            alert("Error al cargar la ficha del vehículo.");
+        });
+}
+</script>
+
+{% endblock %}

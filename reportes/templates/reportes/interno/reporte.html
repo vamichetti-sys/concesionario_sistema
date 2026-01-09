@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h4 class="fw-bold mb-2" style="color:#002855;">
+    Reporte Interno de Ganancias
+</h4>
+<p class="text-muted mb-4">
+    Análisis económico del negocio por períodos.
+</p>
+
+<!-- ===============================
+     GANANCIA TOTAL
+=============================== -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card-clean text-center">
+            <h6 class="text-muted mb-1">Ganancia total</h6>
+            <h4 class="fw-bold mb-0">
+                ${{ ganancia_total }}
+            </h4>
+        </div>
+    </div>
+</div>
+
+<!-- ===============================
+     GRÁFICO GANANCIA MENSUAL
+=============================== -->
+<div class="card-clean mb-4">
+    <h6 class="fw-bold mb-3">
+        Evolución mensual de ganancias
+    </h6>
+    <canvas id="graficoMensual" height="120"></canvas>
+</div>
+
+<!-- ===============================
+     GRÁFICO GANANCIA ANUAL
+=============================== -->
+<div class="card-clean mb-4">
+    <h6 class="fw-bold mb-3">
+        Ganancia anual
+    </h6>
+    <canvas id="graficoAnual" height="120"></canvas>
+</div>
+
+<!-- ===============================
+     GANANCIA MENSUAL (TABLA)
+=============================== -->
+<div class="card-clean mb-4">
+    <h6 class="fw-bold mb-3">
+        Ganancia mensual
+    </h6>
+
+    {% if data_mensual %}
+        <div class="table-responsive">
+            <table class="table table-sm align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Mes</th>
+                        <th class="text-end">Ganancia</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for m in data_mensual %}
+                    <tr>
+                        <td>{{ m.periodo }}</td>
+                        <td class="text-end fw-semibold">
+                            ${{ m.total }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p class="text-muted mb-0">
+            No hay datos mensuales de ganancia.
+        </p>
+    {% endif %}
+</div>
+
+<!-- ===============================
+     GANANCIA ANUAL (TABLA)
+=============================== -->
+<div class="card-clean mb-4">
+    <h6 class="fw-bold mb-3">
+        Ganancia anual
+    </h6>
+
+    {% if data_anual %}
+        <div class="table-responsive">
+            <table class="table table-sm align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Año</th>
+                        <th class="text-end">Ganancia</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for a in data_anual %}
+                    <tr>
+                        <td class="fw-semibold">
+                            {{ a.anio }}
+                        </td>
+                        <td class="text-end fw-semibold">
+                            ${{ a.total }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p class="text-muted mb-0">
+            No hay datos anuales de ganancia.
+        </p>
+    {% endif %}
+</div>
+
+<!-- ===============================
+     JSON SEGURO PARA JS
+=============================== -->
+{{ labels_mensual|json_script:"labels-mensual" }}
+{{ valores_mensual|json_script:"valores-mensual" }}
+{{ labels_anual|json_script:"labels-anual" }}
+{{ valores_anual|json_script:"valores-anual" }}
+
+<!-- ===============================
+     CHART.JS
+=============================== -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    const labelsMensual = JSON.parse(
+        document.getElementById("labels-mensual").textContent
+    );
+    const valoresMensual = JSON.parse(
+        document.getElementById("valores-mensual").textContent
+    );
+
+    const labelsAnual = JSON.parse(
+        document.getElementById("labels-anual").textContent
+    );
+    const valoresAnual = JSON.parse(
+        document.getElementById("valores-anual").textContent
+    );
+
+    new Chart(document.getElementById("graficoMensual"), {
+        type: "line",
+        data: {
+            labels: labelsMensual,
+            datasets: [{
+                label: "Ganancia mensual",
+                data: valoresMensual,
+                tension: 0.3,
+            }]
+        }
+    });
+
+    new Chart(document.getElementById("graficoAnual"), {
+        type: "bar",
+        data: {
+            labels: labelsAnual,
+            datasets: [{
+                label: "Ganancia anual",
+                data: valoresAnual,
+            }]
+        }
+    });
+</script>
+
+{% endblock %}

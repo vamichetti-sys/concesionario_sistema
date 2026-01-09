@@ -1,0 +1,4 @@
+#!/bin/bash
+FECHA=$(date +"%Y-%m-%d")
+cp db.sqlite3 "$HOME/Documents/Backups_Sistema/db_$FECHA.sqlite3"
+

@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+
+{% block title %}Gestoría – Vigentes{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+    <!-- ===============================
+         ENCABEZADO
+    =============================== -->
+    <div class="mb-4">
+        <h2 class="fw-bold mb-1" style="color:#002855;">
+            Gestoría
+        </h2>
+        <p class="text-muted mb-0">
+            Seguimiento de transferencias y trámites vigentes
+        </p>
+    </div>
+
+    <!-- ===============================
+         TABS / ESTADOS
+    =============================== -->
+    <div class="mb-4 d-flex gap-2">
+        <a href="{% url 'gestoria:vigentes' %}"
+           class="btn btn-primary px-4">
+            Vigentes
+        </a>
+        <a href="{% url 'gestoria:finalizadas' %}"
+           class="btn btn-outline-success px-4">
+            Finalizadas
+        </a>
+    </div>
+
+    <!-- ===============================
+         BUSCADOR
+    =============================== -->
+    <form method="get" class="mb-4">
+        <div class="input-group">
+            <input
+                type="text"
+                name="q"
+                class="form-control"
+                placeholder="Buscar cliente, vehículo, dominio o venta…"
+                value="{{ query }}"
+            >
+            <button class="btn btn-primary" type="submit">
+                🔍 Buscar
+            </button>
+
+            {% if query %}
+            <a href="{% url 'gestoria:vigentes' %}"
+               class="btn btn-outline-secondary">
+                Limpiar
+            </a>
+            {% endif %}
+        </div>
+    </form>
+
+    <!-- ===============================
+         TABLA
+    =============================== -->
+    <div class="card shadow-sm rounded-4 border-0">
+        <div class="card-body p-0">
+
+            <table class="table align-middle mb-0">
+                <thead style="background:#f4f6f8; color:#002855;">
+                    <tr>
+                        <th>Vehículo</th>
+                        <th>Cliente</th>
+                        <th>Estado</th>
+                        <th>Monto</th>
+                        <th>Pago</th>
+                        <th>Transferido</th>
+                        <th class="text-center">Finalizar</th>
+                        <th class="text-center">Acciones</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for g in gestorias %}
+                    <tr>
+
+                        <!-- VEHÍCULO -->
+                        <td>
+                            <div class="fw-semibold">
+                                {{ g.vehiculo.marca }} {{ g.vehiculo.modelo }}
+                            </div>
+                            <div class="text-muted small">
+                                Dominio {{ g.vehiculo.dominio }}
+                            </div>
+                        </td>
+
+                        <!-- CLIENTE -->
+                        <td>
+                            {% if g.venta and g.venta.cliente %}
+                                <div class="fw-semibold">
+                                    {{ g.venta.cliente.nombre_completo }}
+                                </div>
+                                <div class="text-muted small">
+                                    DNI {{ g.venta.cliente.dni }}
+                                </div>
+                            {% else %}
+                                <span class="text-muted fst-italic">
+                                    Cliente no vinculado
+                                </span>
+                            {% endif %}
+                        </td>
+
+                        <!-- ESTADO TRANSFERENCIA -->
+                        <td>
+                            {% if g.estado == "no_presentada" %}
+                                <span class="badge bg-secondary rounded-pill px-3">
+                                    No presentada
+                                </span>
+
+                            {% elif g.estado == "en_tramite" %}
+                                <span class="badge bg-primary rounded-pill px-3">
+                                    En trámite
+                                </span>
+
+                            {% elif g.estado == "vigente" %}
+                                <span class="badge bg-primary rounded-pill px-3">
+                                    Vigente
+                                </span>
+
+                            {% elif g.estado == "finalizada" %}
+                                <span class="badge bg-success rounded-pill px-3">
+                                    Finalizada
+                                </span>
+                            {% endif %}
+                        </td>
+
+                        <!-- MONTO -->
+                        <td class="fw-bold">
+                            $ {{ g.monto_transferencia|floatformat:0 }}
+                        </td>
+
+                        <!-- PAGO -->
+                        <td>
+                            <span class="badge rounded-pill px-3
+                                {% if g.pagado %}
+                                    bg-success
+                                {% else %}
+                                    bg-warning text-dark
+                                {% endif %}
+                            ">
+                                {% if g.pagado %}
+                                    Pagado
+                                {% else %}
+                                    Pendiente
+                                {% endif %}
+                            </span>
+                        </td>
+
+                        <!-- TRANSFERIDO -->
+                        <td>
+                            <span class="badge rounded-pill px-3
+                                {% if g.transferido %}
+                                    bg-success
+                                {% else %}
+                                    bg-secondary
+                                {% endif %}
+                            ">
+                                {% if g.transferido %}
+                                    Sí
+                                {% else %}
+                                    No
+                                {% endif %}
+                            </span>
+                        </td>
+
+                        <!-- FINALIZAR -->
+                        <td class="text-center">
+                            {% if g.estado != "finalizada" %}
+                            <form method="post"
+                                  action="{% url 'gestoria:finalizar' g.id %}">
+                                {% csrf_token %}
+                                <input
+                                    type="checkbox"
+                                    onchange="this.form.submit()"
+                                    title="Marcar como finalizada"
+                                >
+                                <div class="text-muted small mt-1">
+                                    Finalizar
+                                </div>
+                            </form>
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- ACCIONES -->
+                        <td class="text-center">
+                            <a href="{% url 'gestoria:editar_gestoria' g.id %}"
+                               class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                                ✏️ Editar
+                            </a>
+                        </td>
+
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8"
+                            class="text-center text-muted py-5">
+                            No hay transferencias vigentes.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+
+            </table>
+
+        </div>
+    </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Panel Administrativo{% endblock %}
+
+{% block content %}
+
+<!-- ===============================
+     ENCABEZADO
+=============================== -->
+<div class="mb-4">
+    <h2 class="fw-bold" style="color:#002855;">
+        Panel general
+    </h2>
+    <p class="text-secondary mb-0">
+        Resumen operativo del negocio
+    </p>
+</div>
+
+<!-- ===============================
+     RESUMEN CLAVE
+=============================== -->
+<div class="row g-4 mb-4">
+
+    <!-- 🔴 CUENTAS CON DEUDA -->
+    <div class="col-md-3">
+        <div class="card-clean shadow-sm border-start border-danger border-4">
+            <h6 class="text-muted mb-1">Cuentas con deuda</h6>
+            <h4 class="fw-bold mb-0">{{ cantidad_deudores }}</h4>
+            <small class="text-danger fw-semibold">
+                ${{ total_deuda }}
+            </small>
+        </div>
+    </div>
+
+    <!-- 🟡 GESTORÍA VIGENTE -->
+    <div class="col-md-3">
+        <div class="card-clean shadow-sm border-start border-warning border-4">
+            <h6 class="text-muted mb-1">Gestorías vigentes</h6>
+            <h4 class="fw-bold mb-0">{{ transferencias_vigentes }}</h4>
+        </div>
+    </div>
+
+    <!-- 🔵 VENTAS ABIERTAS -->
+    <div class="col-md-3">
+        <div class="card-clean shadow-sm border-start border-primary border-4">
+            <h6 class="text-muted mb-1">Ventas abiertas</h6>
+            <h4 class="fw-bold mb-0">{{ ventas_activas }}</h4>
+        </div>
+    </div>
+
+    <!-- 🟢 VEHÍCULOS EN STOCK -->
+    <div class="col-md-3">
+        <div class="card-clean shadow-sm border-start border-success border-4">
+            <h6 class="text-muted mb-1">Vehículos en stock</h6>
+            <h4 class="fw-bold mb-0">{{ vehiculos_stock }}</h4>
+        </div>
+    </div>
+
+</div>
+
+<!-- ===============================
+     PANTALLAZO INFORME (EN EL MISMO TEMPLATE)
+=============================== -->
+<div class="card-clean shadow-sm">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
+        <div>
+            <h5 class="fw-bold mb-1" style="color:#002855;">
+                Informe económico (pantallazo)
+            </h5>
+            <p class="text-muted mb-0">
+                Período: {{ reporte_desde }} → {{ reporte_hasta }}
+            </p>
+        </div>
+
+        <div class="d-flex gap-2">
+            <a href="/reportes/" class="btn btn-sm btn-outline-primary">
+                Ver informe completo
+            </a>
+        </div>
+    </div>
+
+    <hr class="my-3">
+
+    <!-- Si todavía no conectamos el reporte real, mostramos placeholder prolijo -->
+    {% if ganancia_total %}
+        <div class="row g-3">
+            <div class="col-md-4">
+                <div class="card-clean text-center">
+                    <h6 class="text-muted mb-1">Ganancia total</h6>
+                    <h4 class="fw-bold mb-0">${{ ganancia_total }}</h4>
+                </div>
+            </div>
+        </div>
+
+        {% if data_mensual %}
+            <div class="table-responsive mt-3">
+                <table class="table table-sm align-middle">
+                    <thead>
+                        <tr>
+                            <th>Mes</th>
+                            <th class="text-end">Ganancia</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in data_mensual %}
+                        <tr>
+                            <td>{{ row.mes }}</td>
+                            <td class="text-end">${{ row.ganancia }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+
+    {% else %}
+        <div class="alert alert-light border rounded-4 mb-0">
+            <div class="fw-semibold mb-1" style="color:#002855;">Informe aún no conectado al inicio</div>
+            <div class="text-muted">
+                Pegame el template del informe web (el que hoy ves en <strong>Reportes</strong>) y te lo integro acá como “pantallazo” sin duplicar código.
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+{% endblock %}

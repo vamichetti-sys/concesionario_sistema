@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block title %}Nuevo pagaré{% endblock %}
+
+{% block content %}
+
+<div class="mb-4">
+    <h2 class="fw-bold mb-1" style="color:#002855;">
+        Nuevo pagaré
+    </h2>
+    <p class="text-muted mb-0">
+        Definí cliente, monto total y cantidad de pagarés
+    </p>
+</div>
+
+{% if messages %}
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">
+            {{ message }}
+        </div>
+    {% endfor %}
+{% endif %}
+
+{% if form.errors %}
+    <div class="alert alert-danger">
+        <strong>Hay errores en el formulario:</strong>
+        <ul class="mb-0">
+            {% for field, errors in form.errors.items %}
+                {% for error in errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+            {% endfor %}
+        </ul>
+    </div>
+{% endif %}
+
+<div class="card shadow-sm border-0 rounded-4">
+    <div class="card-body">
+
+        <!-- ✅ EL BLOQUEO VA ACÁ -->
+        <form method="post" novalidate onsubmit="bloquearSubmit(this)">
+            {% csrf_token %}
+
+            <div class="mb-3">
+                {{ form.cliente.label_tag }}
+                {{ form.cliente }}
+            </div>
+
+            <div class="mb-3">
+                {{ form.beneficiario.label_tag }}
+                {{ form.beneficiario }}
+            </div>
+
+            <div class="mb-3">
+                {{ form.monto_total.label_tag }}
+                <input
+                    type="number"
+                    step="0.01"
+                    id="monto_total"
+                    name="monto_total"
+                    class="form-control"
+                    value="{{ form.monto_total.value|default:'' }}"
+                >
+            </div>
+
+            <div class="mb-3">
+                {{ form.cantidad.label_tag }}
+                <input
+                    type="number"
+                    id="cantidad"
+                    name="cantidad"
+                    class="form-control"
+                    min="1"
+                    value="{{ form.cantidad.value|default:'' }}"
+                >
+            </div>
+
+            <div class="mb-3">
+                {{ form.lugar_emision.label_tag }}
+                {{ form.lugar_emision }}
+            </div>
+
+            <div class="mb-3">
+                {{ form.fecha_emision.label_tag }}
+                {{ form.fecha_emision }}
+            </div>
+
+            <!-- DESGLOSE -->
+            <div class="mt-4">
+                <p class="text-muted mb-2">
+                    Detalle de pagarés (podés editar montos y fechas):
+                </p>
+                <div id="desglose"></div>
+            </div>
+
+            <div class="mt-4 d-flex gap-2">
+                <button
+                    type="submit"
+                    id="btn-submit"
+                    class="btn btn-primary rounded-pill fw-bold px-4">
+                    Continuar
+                </button>
+
+                <a href="{% url 'boletos:lista_pagares' %}"
+                   class="btn btn-outline-secondary rounded-pill fw-bold px-4">
+                    Cancelar
+                </a>
+            </div>
+
+        </form>
+
+    </div>
+</div>
+
+<script>
+let enviando = false;
+
+function bloquearSubmit(form) {
+    if (enviando) {
+        return false;
+    }
+    enviando = true;
+
+    const btn = document.getElementById("btn-submit");
+    btn.disabled = true;
+    btn.innerText = "Generando…";
+
+    return true; // 🔑 deja continuar el submit
+}
+
+function sumarDias(fecha, dias) {
+    const f = new Date(fecha);
+    f.setDate(f.getDate() + dias);
+    return f.toISOString().split("T")[0];
+}
+
+function actualizarDesglose() {
+    const cantidad = parseInt(document.getElementById("cantidad").value);
+    const montoTotal = parseFloat(document.getElementById("monto_total").value);
+    const fechaEmision = document.getElementById("id_fecha_emision").value;
+    const contenedor = document.getElementById("desglose");
+
+    contenedor.innerHTML = "";
+
+    if (!cantidad || !montoTotal || !fechaEmision) return;
+
+    const base = (montoTotal / cantidad).toFixed(2);
+
+    for (let i = 1; i <= cantidad; i++) {
+        const fecha = sumarDias(fechaEmision, i * 30);
+
+        contenedor.innerHTML += `
+            <div class="row g-2 align-items-end mb-2">
+                <div class="col-md-2"><strong>Pagaré ${i}</strong></div>
+                <div class="col-md-5">
+                    <label class="form-label">Monto</label>
+                    <input type="number" step="0.01"
+                           class="form-control"
+                           name="monto_${i}"
+                           value="${base}">
+                </div>
+                <div class="col-md-5">
+                    <label class="form-label">Fecha de vencimiento</label>
+                    <input type="date"
+                           class="form-control"
+                           name="fecha_vencimiento_${i}"
+                           value="${fecha}">
+                </div>
+            </div>
+        `;
+    }
+}
+
+document.getElementById("cantidad").addEventListener("input", actualizarDesglose);
+document.getElementById("monto_total").addEventListener("input", actualizarDesglose);
+document.getElementById("id_fecha_emision").addEventListener("change", actualizarDesglose);
+</script>
+
+{% endblock %}

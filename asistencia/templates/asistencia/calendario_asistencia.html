@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<style>
+    .dia {
+        width:34px;
+        height:34px;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        font-size:12px;
+        border-radius:6px;
+        color:white;
+        cursor:pointer;
+        position: relative;
+        z-index: 10;
+        pointer-events: auto;
+    }
+
+    .card-clean {
+        position: relative;
+        z-index: 1;
+    }
+
+    .presente { background:#2ecc71; }
+    .falta_justificada { background:#f1c40f; color:#333; }
+    .falta_injustificada { background:#e74c3c; }
+    .permiso { background:#fd7e14; }
+    .vacaciones { background:#3498db; }
+    .estudio { background:#6f42c1; }
+    .sin-carga { background:#bdc3c7; }
+
+    .text-purple { color:#6f42c1; }
+    .text-orange { color:#fd7e14; }
+</style>
+
+<h4 class="fw-bold mb-2" style="color:#002855;">
+    {{ empleado.nombre }} – {{ anio }}
+</h4>
+
+<!-- ===============================
+     BOTÓN PDF FALTAS ANUALES
+=============================== -->
+<div class="mb-4">
+    <a
+        href="{% url 'asistencia:pdf_faltas_anuales' empleado.id anio %}"
+        target="_blank"
+        class="btn btn-outline-danger btn-sm"
+    >
+        🧾 Imprimir faltas anuales (PDF)
+    </a>
+</div>
+
+<!-- ===============================
+     LEYENDA DE COLORES
+=============================== -->
+<div class="d-flex flex-wrap gap-3 mb-3">
+    <div class="d-flex align-items-center gap-2"><span class="dia presente"></span> Presente</div>
+    <div class="d-flex align-items-center gap-2"><span class="dia falta_justificada"></span> Falta justificada</div>
+    <div class="d-flex align-items-center gap-2"><span class="dia falta_injustificada"></span> Falta injustificada</div>
+    <div class="d-flex align-items-center gap-2"><span class="dia vacaciones"></span> Vacaciones</div>
+    <div class="d-flex align-items-center gap-2"><span class="dia estudio"></span> Estudio</div>
+    <div class="d-flex align-items-center gap-2"><span class="dia permiso"></span> Permiso</div>
+</div>
+
+<!-- ===============================
+     RESUMEN ANUAL
+=============================== -->
+<div class="card-clean mb-4">
+    <div class="row text-center">
+        <div class="col">
+            <div class="fw-bold text-danger">{{ resumen.falta_injustificada|default:0 }}</div>
+            <small class="text-muted">Faltas injustificadas</small>
+        </div>
+        <div class="col">
+            <div class="fw-bold text-warning">{{ resumen.falta_justificada|default:0 }}</div>
+            <small class="text-muted">Faltas justificadas</small>
+        </div>
+        <div class="col">
+            <div class="fw-bold text-primary">{{ resumen.vacaciones|default:0 }}</div>
+            <small class="text-muted">Vacaciones</small>
+        </div>
+        <div class="col">
+            <div class="fw-bold text-purple">{{ resumen.estudio|default:0 }}</div>
+            <small class="text-muted">Estudio</small>
+        </div>
+        <div class="col">
+            <div class="fw-bold text-orange">{{ resumen.permiso|default:0 }}</div>
+            <small class="text-muted">Permisos</small>
+        </div>
+    </div>
+</div>
+
+{% for mes, dias in calendario.items %}
+<div class="card-clean mb-4">
+    <h6 class="fw-bold mb-3">{{ mes }}/{{ anio }}</h6>
+
+    <div class="d-flex flex-wrap gap-1">
+        {% for d in dias %}
+            <div
+                class="dia {% if d.estado %}{{ d.estado }}{% else %}sin-carga{% endif %}"
+                data-empleado="{{ empleado.id }}"
+                data-fecha="{{ d.fecha|date:'Y-m-d' }}"
+                data-estado="{{ d.estado|default:'' }}"
+                onclick="abrirModalAsistencia(this)"
+            >
+                {{ d.fecha.day }}
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endfor %}
+
+<!-- ==========================================================
+     MODAL MARCAR ASISTENCIA
+========================================================== -->
+<div class="modal fade" id="modalAsistencia" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="formAsistencia">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title">Marcar asistencia</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+                    <input type="hidden" name="empleado_id" id="empleado_id">
+                    <input type="hidden" name="fecha" id="fecha">
+
+                    <div class="mb-3">
+                        <label class="form-label">Estado</label>
+                        <select name="estado" id="estado" class="form-select">
+                            <option value="presente">Presente</option>
+                            <option value="falta_justificada">Falta justificada</option>
+                            <option value="falta_injustificada">Falta injustificada</option>
+                            <option value="vacaciones">Vacaciones</option>
+                            <option value="estudio">Día por estudio</option>
+                            <option value="permiso">Permiso</option>
+                        </select>
+                    </div>
+
+                    <textarea name="observaciones" class="form-control" placeholder="Opcional"></textarea>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary w-100">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ==========================================================
+     JS (NO SE TOCA)
+========================================================== -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const modalEl = document.getElementById("modalAsistencia");
+    const form = document.getElementById("formAsistencia");
+
+    window.abrirModalAsistencia = function (el) {
+        document.getElementById("empleado_id").value = el.dataset.empleado;
+        document.getElementById("fecha").value = el.dataset.fecha;
+        document.getElementById("estado").value = el.dataset.estado || "presente";
+        new bootstrap.Modal(modalEl).show();
+    };
+
+    form.addEventListener("submit", function(e){
+        e.preventDefault();
+
+        fetch("{% url 'asistencia:marcar_asistencia' %}", {
+            method: "POST",
+            body: new FormData(form),
+            credentials: "same-origin"
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.ok) {
+                location.reload();
+            } else {
+                alert("No se pudo guardar la asistencia");
+            }
+        });
+    });
+
+});
+</script>
+
+{% endblock %}

@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h4 class="fw-bold mb-2" style="color:#002855;">
+    Reportes
+</h4>
+<p class="text-muted mb-4">
+    Análisis y seguimiento de información del sistema
+</p>
+
+<!-- SELECTOR DE REPORTES -->
+<div class="row mb-5">
+    <div class="col-md-6">
+        <div class="card-clean h-100 d-flex flex-column justify-content-between">
+            <div>
+                <h6 class="fw-bold mb-2">Reporte Web</h6>
+                <p class="text-muted mb-3">
+                    Información operativa del sistema: ventas y seguimiento general.
+                </p>
+            </div>
+            <a href="{% url 'reportes:reporte_web' %}" class="btn btn-primary">
+                Ingresar
+            </a>
+        </div>
+    </div>
+
+    {% if request.user.is_staff %}
+    <div class="col-md-6">
+        <div class="card-clean h-100 d-flex flex-column justify-content-between">
+            <div>
+                <h6 class="fw-bold mb-2">Reporte Interno</h6>
+                <p class="text-muted mb-3">
+                    Control interno de stock, compras, ventas y resultados.
+                </p>
+            </div>
+            <a href="{% url 'reportes:reporte_interno' %}" class="btn btn-outline-primary">
+                Ingresar
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- ACCIONES DE CIERRE -->
+<div class="mb-4 d-flex gap-2">
+    <a href="{% url 'reportes:cerrar_mes' %}" class="btn btn-outline-primary">
+        Cerrar mes {{ mes_actual }}/{{ anio_actual }}
+    </a>
+    <a href="{% url 'reportes:cerrar_anio' %}" class="btn btn-outline-dark">
+        Cerrar año {{ anio_actual }}
+    </a>
+</div>
+
+<!-- REPORTES GUARDADOS -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="card-clean">
+            <h6 class="fw-bold mb-3">Reportes Mensuales</h6>
+            {% for r in reportes_mensuales %}
+                <div class="d-flex justify-content-between">
+                    <span>{{ r.mes }}/{{ r.anio }}</span>
+                    <strong>${{ r.total_facturado }}</strong>
+                </div>
+            {% empty %}
+                <p class="text-muted">No hay reportes mensuales</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card-clean">
+            <h6 class="fw-bold mb-3">Reportes Anuales</h6>
+            {% for r in reportes_anuales %}
+                <div class="d-flex justify-content-between">
+                    <span>{{ r.anio }}</span>
+                    <strong>${{ r.total_facturado }}</strong>
+                </div>
+            {% empty %}
+                <p class="text-muted">No hay reportes anuales</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+{% endblock %}

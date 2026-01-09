@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Agregar gasto de ingreso{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+    <!-- ===============================
+         ENCABEZADO
+    =============================== -->
+    <div class="mb-4">
+        <h2 class="fw-bold mb-1" style="color:#002855;">
+            Gasto de ingreso
+        </h2>
+        <p class="text-muted mb-0">
+            Vehículo: <strong>{{ vehiculo }}</strong>
+        </p>
+    </div>
+
+    <!-- ===============================
+         FORMULARIO SIMPLE
+    =============================== -->
+    <div class="card shadow-sm border-0 rounded-4" style="max-width:600px;">
+        <div class="card-body p-4">
+
+            <form method="post">
+                {% csrf_token %}
+
+                <div class="mb-3">
+                    <label class="fw-semibold">Descripción</label>
+                    <input type="text"
+                           name="descripcion"
+                           class="form-control"
+                           placeholder="Ej: Transferencia, gestoría, verificación…"
+                           required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="fw-semibold">Monto</label>
+                    <input type="number"
+                           name="monto"
+                           class="form-control"
+                           step="0.01"
+                           required>
+                </div>
+
+                <div class="d-flex justify-content-between mt-4">
+                    <a href="{% url 'cuentas:cuenta_corriente_detalle' vehiculo.venta.cuenta_corriente.id %}"
+                       class="btn btn-outline-secondary rounded-pill px-4 fw-bold">
+                        Cancelar
+                    </a>
+
+                    <button type="submit"
+                            class="btn btn-warning rounded-pill px-4 fw-bold">
+                        Guardar gasto
+                    </button>
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+
+</div>
+{% endblock %}

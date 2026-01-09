@@ -1,0 +1,333 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Ficha del Vehículo{% endblock %}
+
+{% block content %}
+
+<h2 class="fw-bold mb-4" style="color:#002855;">
+  {{ vehiculo.marca }} {{ vehiculo.modelo }} — {{ vehiculo.dominio|default:"Sin dominio" }}
+</h2>
+
+<div class="mb-4 d-flex" style="gap: 15px;">
+  <a href="/vehiculos/" class="btn btn-secondary rounded-3">Volver al stock</a>
+  <a href="/vehiculos/pdf/{{ vehiculo.id }}/" class="btn btn-warning rounded-3">Descargar PDF</a>
+
+  {% if vehiculo.estado == "vendido" and request.GET.from != "cuenta" %}
+    <a href="/ventas/" class="btn btn-primary rounded-3">
+      Ir a Ventas
+    </a>
+  {% endif %}
+
+  {% if vehiculo.venta and vehiculo.venta.cuenta_corriente %}
+    <a href="{% url 'cuentas:cuenta_corriente_detalle' vehiculo.venta.cuenta_corriente.id %}"
+       class="btn btn-outline-secondary rounded-3">
+      Volver a Cuenta Corriente
+    </a>
+  {% endif %}
+</div>
+
+{% if vehiculo.estado == "vendido" %}
+<div class="alert alert-warning rounded-4 mb-4">
+  <strong>Unidad vendida.</strong><br>
+
+  {% if vehiculo.venta %}
+    Cliente asignado: <strong>{{ vehiculo.venta.cliente.nombre_completo }}</strong><br>
+    Estado de la venta: <span class="badge bg-success">Confirmada</span>
+  {% else %}
+    <span class="text-danger fw-bold">
+      Falta asignar cliente para completar la venta.
+    </span>
+  {% endif %}
+</div>
+{% endif %}
+
+<!-- ========================================================= -->
+<!-- DATOS BASICOS DEL VEHICULO -->
+<!-- ========================================================= -->
+<div class="card shadow-sm rounded-4 p-4 mb-4">
+
+  <h4 class="fw-bold mb-3" style="color:#002855;">Datos del Vehículo</h4>
+
+  <div class="row g-3">
+
+      <div class="col-md-4">
+        <label class="fw-bold">Marca</label>
+        <div>{{ vehiculo.marca }}</div>
+      </div>
+
+      <div class="col-md-4">
+        <label class="fw-bold">Modelo</label>
+        <div>{{ vehiculo.modelo }}</div>
+      </div>
+
+      <div class="col-md-4">
+        <label class="fw-bold">Dominio</label>
+        <div>{{ vehiculo.dominio }}</div>
+      </div>
+
+      <div class="col-md-4">
+        <label class="fw-bold">Año</label>
+        <div>{{ vehiculo.anio }}</div>
+      </div>
+
+      <div class="col-md-4">
+        <label class="fw-bold">Kilómetros</label>
+        <div>{{ vehiculo.kilometros|default:"No informado" }}</div>
+      </div>
+
+      <div class="col-md-4">
+        <label class="fw-bold">Estado</label>
+        <div>{{ vehiculo.get_estado_display }}</div>
+      </div>
+
+      <div class="col-md-4">
+        <label class="fw-bold">Precio</label>
+        <div>${{ vehiculo.precio|default:0 }}</div>
+      </div>
+
+      <div class="col-md-4">
+        <label class="fw-bold">Número motor</label>
+        <div>{{ ficha.numero_motor|default:"No informado" }}</div>
+      </div>
+
+      <div class="col-md-4">
+        <label class="fw-bold">Número chasis</label>
+        <div>{{ ficha.numero_chasis|default:"No informado" }}</div>
+      </div>
+
+      <div class="col-md-4">
+        <label class="fw-bold">Fecha inscripción inicial</label>
+        <div>{{ ficha.fecha_inscripcion_inicial|default:"No informado" }}</div>
+      </div>
+
+      <div class="col-md-4">
+        <label class="fw-bold">Color</label>
+        <div>{{ ficha.color|default:"No informado" }}</div>
+      </div>
+
+      <div class="col-md-4">
+        <label class="fw-bold">Combustible</label>
+        <div>{{ ficha.combustible|default:"No informado" }}</div>
+      </div>
+
+      <div class="col-md-4">
+        <label class="fw-bold">Transmisión</label>
+        <div>{{ ficha.transmision|default:"No informado" }}</div>
+      </div>
+
+  </div>
+</div>
+
+<!-- ========================================================= -->
+<!-- TITULARIDAD -->
+<!-- ========================================================= -->
+<div class="card shadow-sm rounded-4 p-4 mb-4">
+
+  <h4 class="fw-bold mb-3" style="color:#002855;">Titularidad e Ingreso</h4>
+
+  <div class="row g-3">
+
+      <div class="col-md-4">
+        <label class="fw-bold">Vendedor</label>
+        <div>{{ ficha.vendedor|default:"No informado" }}</div>
+      </div>
+
+      <div class="col-md-4">
+        <label class="fw-bold">Contacto</label>
+        <div>{{ ficha.contacto|default:"No informado" }}</div>
+      </div>
+
+      <div class="col-md-4">
+        <label class="fw-bold">Email contacto</label>
+        <div>{{ ficha.email_contacto|default:"No informado" }}</div>
+      </div>
+
+      <div class="col-md-4">
+        <label class="fw-bold">Titular</label>
+        <div>{{ ficha.titular|default:"No informado" }}</div>
+      </div>
+
+      <div class="col-md-4">
+        <label class="fw-bold">Domicilio</label>
+        <div>{{ ficha.domicilio_titular|default:"No informado" }}</div>
+      </div>
+
+      <div class="col-md-4">
+        <label class="fw-bold">DNI</label>
+        <div>{{ ficha.dni_titular|default:"No informado" }}</div>
+      </div>
+
+      <div class="col-md-4">
+        <label class="fw-bold">Estado civil</label>
+        <div>{{ ficha.estado_civil|default:"No informado" }}</div>
+      </div>
+
+      <div class="col-md-4">
+        <label class="fw-bold">CUIT / CUIL / DNI</label>
+        <div>{{ ficha.cuit_cuil_dni|default:"No informado" }}</div>
+      </div>
+
+      <div class="col-md-4">
+        <label class="fw-bold">Tipo ingreso</label>
+        <div>
+          {% if ficha.tipo_ingreso %}
+            {{ ficha.get_tipo_ingreso_display }}
+          {% else %}
+            No informado
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <label class="fw-bold">N° consignación / factura</label>
+        <div>{{ ficha.numero_consignacion_factura|default:"No informado" }}</div>
+      </div>
+
+  </div>
+</div>
+
+<!-- ========================================================= -->
+<!-- DOCUMENTACION -->
+<!-- ========================================================= -->
+<div class="card shadow-sm rounded-4 p-4 mb-4">
+
+  <h4 class="fw-bold mb-3" style="color:#002855;">Documentación</h4>
+
+  <div class="row g-3">
+
+      <div class="col-md-3">
+        <label class="fw-bold">VTV</label>
+        <div>
+          {% if ficha.vtv_estado == "tiene" %}Si{% else %}No{% endif %}
+        </div>
+      </div>
+
+      <div class="col-md-3">
+        <label class="fw-bold">Vencimiento</label>
+        <div>{{ ficha.vtv_vencimiento|default:"No informado" }}</div>
+      </div>
+
+  </div>
+</div>
+
+<!-- ========================================================= -->
+<!-- GASTOS DE INGRESO -->
+<!-- ========================================================= -->
+<div class="card shadow-sm rounded-4 p-4 mb-4">
+
+  <h4 class="fw-bold mb-3" style="color:#002855;">Gastos de ingreso</h4>
+
+  <div class="row g-3">
+
+      <div class="col-md-3">
+        <label class="fw-bold">Total gastos</label>
+        <div>
+          {% if ficha.total_gastos %}
+            ${{ ficha.total_gastos }}
+          {% else %}
+            No informado
+          {% endif %}
+        </div>
+      </div>
+
+  </div>
+</div>
+
+<!-- ========================================================= -->
+<!-- PAGO DE GASTOS -->
+<!-- ========================================================= -->
+<div class="card shadow-sm rounded-4 p-4 mb-4">
+
+  <h4 class="fw-bold mb-3" style="color:#002855;">Pago de gastos</h4>
+
+  {% for gasto in gastos_ingreso %}
+  <div class="border rounded-3 p-3 mb-3">
+
+    <div class="fw-bold mb-2">
+      {{ gasto.concepto }} — ${{ gasto.monto }}
+    </div>
+
+    <div class="row g-3 mb-3">
+      <div class="col-md-4">
+        <label class="fw-bold">Total pagado</label>
+        <div>${{ gasto.total_pagado }}</div>
+      </div>
+
+      <div class="col-md-4">
+        <label class="fw-bold">Saldo</label>
+        <div class="{% if gasto.saldo > 0 %}text-danger{% else %}text-success{% endif %}">
+          ${{ gasto.saldo }}
+        </div>
+      </div>
+    </div>
+
+    <form method="post"
+          action="{% url 'vehiculos:registrar_pago_gasto' vehiculo.id %}">
+      {% csrf_token %}
+      <input type="hidden" name="gasto_id" value="{{ gasto.concepto }}">
+
+      <div class="row g-3">
+        <div class="col-md-3">
+          <label class="fw-bold">Fecha de pago</label>
+          <input type="date" name="fecha_pago" class="form-control">
+        </div>
+
+        <div class="col-md-3">
+          <label class="fw-bold">Monto</label>
+          <input type="number" step="0.01" name="monto" class="form-control">
+        </div>
+
+        <div class="col-md-4">
+          <label class="fw-bold">Observaciones</label>
+          <input type="text" name="observaciones" class="form-control">
+        </div>
+
+        <div class="col-md-2 d-flex align-items-end">
+          <button class="btn btn-primary w-100">
+            Registrar pago
+          </button>
+        </div>
+      </div>
+
+    </form>
+
+  </div>
+  {% empty %}
+    <p class="text-muted">No hay gastos de ingreso cargados.</p>
+  {% endfor %}
+
+  <hr class="my-4">
+
+  <div class="d-flex justify-content-end">
+    <div class="text-end">
+      <div class="fw-bold text-muted">
+        Total pendiente de gastos
+      </div>
+
+      <div class="fs-4 fw-bold
+        {% if total_pendiente > 0 %}
+          text-danger
+        {% else %}
+          text-success
+        {% endif %}
+      ">
+        ${{ total_pendiente|default:"0" }}
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ========================================================= -->
+<!-- OBSERVACIONES -->
+<!-- ========================================================= -->
+<div class="card shadow-sm rounded-4 p-4 mb-4">
+
+  <h4 class="fw-bold mb-3" style="color:#002855;">Observaciones</h4>
+
+  <p>{{ ficha.observaciones|default_if_none:"No hay observaciones cargadas"|linebreaks }}</p>
+
+</div>
+
+{% endblock %}

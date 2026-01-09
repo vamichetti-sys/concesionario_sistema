@@ -1,0 +1,292 @@
+{% extends "base.html" %}
+
+{% block title %}Crear Plan de Pago{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+    <!-- ===============================
+         ENCABEZADO
+    =============================== -->
+    <div class="mb-4">
+        <h2 class="fw-bold" style="color:#002855;">
+            Crear Plan de Pago
+        </h2>
+        <p class="text-muted mb-0">
+            Cliente: <strong>{{ cuenta.cliente }}</strong>
+        </p>
+        <p class="text-muted mb-0">
+            Saldo actual de la cuenta:
+            <strong>$ {{ cuenta.saldo|floatformat:0 }}</strong>
+        </p>
+    </div>
+
+    <!-- ===============================
+         FORMULARIO
+    =============================== -->
+    <div class="card shadow-sm border-0 rounded-4" style="max-width:900px;">
+        <div class="card-body p-4">
+
+            <form method="post" onsubmit="return validarPlan();">
+                {% csrf_token %}
+
+                <!-- ===============================
+                     DESCRIPCIÓN
+                =============================== -->
+                <div class="mb-3">
+                    {{ form.descripcion.label_tag }}
+                    {{ form.descripcion }}
+                </div>
+
+                <!-- ===============================
+                     TIPO DE PLAN
+                =============================== -->
+                <div class="mb-3">
+                    {{ form.tipo_plan.label_tag }}
+                    {{ form.tipo_plan }}
+                </div>
+
+                <!-- ===============================
+                     MONTO / MONEDA
+                =============================== -->
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        {{ form.monto_financiado.label_tag }}
+                        {{ form.monto_financiado }}
+                    </div>
+                    <div class="col-md-6">
+                        {{ form.moneda.label_tag }}
+                        {{ form.moneda }}
+                    </div>
+                </div>
+
+                <!-- ===============================
+                     ANTICIPO
+                =============================== -->
+                <div class="mb-3">
+                    {{ form.anticipo.label_tag }}
+                    {{ form.anticipo }}
+                </div>
+
+                <!-- ===============================
+                     CUOTAS
+                =============================== -->
+                <div id="bloque-cuotas">
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            {{ form.cantidad_cuotas.label_tag }}
+                            {{ form.cantidad_cuotas }}
+                        </div>
+                        <div class="col-md-6">
+                            {{ form.monto_cuota.label_tag }}
+                            {{ form.monto_cuota }}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===============================
+                     FECHA INICIO
+                =============================== -->
+                <div class="mb-3">
+                    {{ form.fecha_inicio.label_tag }}
+                    {{ form.fecha_inicio }}
+                </div>
+
+                <!-- ===============================
+                     INTERESES
+                =============================== -->
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        {{ form.interes_mora_mensual.label_tag }}
+                        {{ form.interes_mora_mensual }}
+                        <div class="form-text">
+                            Interés automático por cuota vencida (%)
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        {{ form.interes_descripcion.label_tag }}
+                        {{ form.interes_descripcion }}
+                    </div>
+                </div>
+
+                <!-- ==================================================
+                     🔴 PREVIEW DE CUOTAS (AHORA EDITABLE Y FUNCIONAL)
+                ================================================== -->
+                <div id="preview-cuotas" class="mt-4" style="display:none;">
+                    <h6 class="fw-bold mb-3" style="color:#002855;">
+                        Detalle de cuotas (editable)
+                    </h6>
+
+                    <!-- 🔑 Management form del formset -->
+                    <input type="hidden" name="form-TOTAL_FORMS" id="id_form-TOTAL_FORMS">
+                    <input type="hidden" name="form-INITIAL_FORMS" value="0">
+                    <input type="hidden" name="form-MIN_NUM_FORMS" value="0">
+                    <input type="hidden" name="form-MAX_NUM_FORMS" value="1000">
+
+                    <div id="lista-cuotas"></div>
+                </div>
+
+                <!-- ===============================
+                     ERRORES FRONTEND
+                =============================== -->
+                <div id="error-plan"
+                     class="alert alert-danger mt-3 d-none"></div>
+
+                <!-- ===============================
+                     ERRORES BACKEND
+                =============================== -->
+                {% if form.errors %}
+                <div class="alert alert-danger mt-3">
+                    {{ form.errors }}
+                </div>
+                {% endif %}
+
+                <!-- ===============================
+                     BOTONES
+                =============================== -->
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <a href="{% url 'cuentas:cuenta_corriente_detalle' cuenta.id %}"
+                       class="btn btn-outline-secondary rounded-pill">
+                        Cancelar
+                    </a>
+
+                    <button type="submit"
+                            class="btn btn-primary rounded-pill px-4 fw-bold">
+                        Crear Plan
+                    </button>
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+
+</div>
+
+<!-- ===============================
+     JS: VALIDACIONES + PREVIEW (MISMAS FUNCIONES)
+=============================== -->
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    const tipoPlan = document.getElementById('id_tipo_plan');
+    const montoFinanciado = document.getElementById('id_monto_financiado');
+    const cantidadCuotas = document.getElementById('id_cantidad_cuotas');
+    const montoCuota = document.getElementById('id_monto_cuota');
+    const fechaInicio = document.getElementById('id_fecha_inicio');
+    const anticipo = document.getElementById('id_anticipo');
+
+    const preview = document.getElementById('preview-cuotas');
+    const lista = document.getElementById('lista-cuotas');
+    const bloqueCuotas = document.getElementById('bloque-cuotas');
+    const errorBox = document.getElementById('error-plan');
+    const totalFormsInput = document.getElementById('id_form-TOTAL_FORMS');
+
+    function toggleCuotas() {
+        if (tipoPlan.value === 'cuotas') {
+            bloqueCuotas.style.display = 'block';
+        } else {
+            bloqueCuotas.style.display = 'none';
+            preview.style.display = 'none';
+        }
+    }
+
+    function calcularMontoCuota() {
+        if (tipoPlan.value !== 'cuotas') return;
+
+        const monto = parseFloat(montoFinanciado.value);
+        const cuotas = parseInt(cantidadCuotas.value);
+
+        if (!isNaN(monto) && monto > 0 && !isNaN(cuotas) && cuotas > 0) {
+            montoCuota.value = (monto / cuotas).toFixed(2);
+        }
+    }
+
+    function generarPreviewCuotas() {
+        lista.innerHTML = '';
+        preview.style.display = 'none';
+
+        if (tipoPlan.value !== 'cuotas') return;
+
+        const cuotas = parseInt(cantidadCuotas.value);
+        const monto = parseFloat(montoFinanciado.value);
+        const inicio = fechaInicio.value;
+
+        if (!cuotas || cuotas <= 0 || !monto || monto <= 0 || !inicio) return;
+
+        const montoUnitario = (monto / cuotas).toFixed(2);
+        const fechaBase = new Date(inicio);
+
+        totalFormsInput.value = cuotas;
+        preview.style.display = 'block';
+
+        for (let i = 0; i < cuotas; i++) {
+            const fecha = new Date(fechaBase);
+            fecha.setDate(fecha.getDate() + (30 * i));
+            const fechaStr = fecha.toISOString().split('T')[0];
+
+            lista.insertAdjacentHTML('beforeend', `
+                <div class="row g-2 align-items-center mb-2">
+                    <div class="col-md-2">
+                        <span class="fw-semibold">Cuota ${i + 1}</span>
+                    </div>
+                    <div class="col-md-5">
+                        <input type="date"
+                               name="form-${i}-vencimiento"
+                               class="form-control"
+                               value="${fechaStr}">
+                    </div>
+                    <div class="col-md-5">
+                        <input type="number"
+                               class="form-control"
+                               value="${montoUnitario}"
+                               readonly>
+                    </div>
+                </div>
+            `);
+        }
+    }
+
+    window.validarPlan = function () {
+        errorBox.classList.add('d-none');
+        errorBox.innerText = '';
+
+        const monto = parseFloat(montoFinanciado.value);
+        const anticipoVal = parseFloat(anticipo.value) || 0;
+        const cuotas = parseInt(cantidadCuotas.value);
+
+        if (!monto || monto <= 0) {
+            errorBox.innerText = "El monto financiado debe ser mayor a 0.";
+            errorBox.classList.remove('d-none');
+            return false;
+        }
+
+        if (anticipoVal > monto) {
+            errorBox.innerText = "El anticipo no puede ser mayor al monto financiado.";
+            errorBox.classList.remove('d-none');
+            return false;
+        }
+
+        if (tipoPlan.value === 'cuotas' && (!cuotas || cuotas <= 0)) {
+            errorBox.innerText = "Indicá la cantidad de cuotas.";
+            errorBox.classList.remove('d-none');
+            return false;
+        }
+
+        return true;
+    };
+
+    tipoPlan.addEventListener('change', toggleCuotas);
+    [montoFinanciado, cantidadCuotas].forEach(el => {
+        el.addEventListener('input', () => {
+            calcularMontoCuota();
+            generarPreviewCuotas();
+        });
+    });
+    fechaInicio.addEventListener('change', generarPreviewCuotas);
+
+    toggleCuotas();
+});
+</script>
+
+{% endblock %}

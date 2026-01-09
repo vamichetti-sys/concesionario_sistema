@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+
+{% block title %}Calendario{% endblock %}
+
+{% block content %}
+
+<div class="card-clean">
+    <h3 class="mb-2">Calendario de vencimientos y turnos</h3>
+    <p class="text-muted mb-3">
+        Vencimientos de documentación y turnos programados por vehículo.
+    </p>
+
+    <!-- ===============================
+         ACCIONES
+    =============================== -->
+    <div class="d-flex justify-content-end mb-3">
+        <button
+            id="btnPdfMes"
+            class="btn btn-outline-primary btn-sm">
+            📄 Exportar PDF del mes
+        </button>
+    </div>
+
+    <!-- LEYENDA -->
+    <div class="d-flex flex-wrap gap-3 mb-3 small">
+        <div class="d-flex align-items-center gap-2">
+            <span style="width:14px; height:14px; background:#dc3545; display:inline-block; border-radius:3px;"></span>
+            VTV (Vencimiento)
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <span style="width:14px; height:14px; background:#0d6efd; display:inline-block; border-radius:3px;"></span>
+            Verificación policial
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <span style="width:14px; height:14px; background:#fd7e14; display:inline-block; border-radius:3px;"></span>
+            Patentes
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <span style="width:14px; height:14px; background:#20c997; display:inline-block; border-radius:3px;"></span>
+            Turno VTV
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <span style="width:14px; height:14px; background:#6f42c1; display:inline-block; border-radius:3px;"></span>
+            Turno grabado de autopartes
+        </div>
+    </div>
+
+    <div id="calendar"></div>
+</div>
+
+<!-- ===============================
+     FULLCALENDAR
+     =============================== -->
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+
+<!-- ===============================
+     IDENTIDAD VISUAL AMICHETTI
+     =============================== -->
+<style>
+.fc {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto;
+}
+
+.fc-toolbar-title {
+    font-weight: 700;
+    color: #002855;
+}
+
+.fc-button {
+    background: #002855 !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+.fc-button:hover {
+    background: #001c3d !important;
+}
+
+.fc-button-primary:not(:disabled).fc-button-active {
+    background: #FF6C1A !important;
+}
+
+/* EVENTOS */
+.fc-event {
+    border: none !important;
+    border-radius: 6px !important;
+    padding: 3px 6px !important;
+    font-size: 0.75rem;
+    cursor: pointer;
+    color: #ffffff !important;
+    font-weight: 600;
+    text-shadow: 0 1px 2px rgba(0,0,0,.35);
+}
+
+.fc-event[style*="#20c997"] {
+    background-color: #7fdcc2 !important;
+}
+
+.fc-event[style*="#6f42c1"] {
+    background-color: #b79ae3 !important;
+}
+
+.fc-event[style*="#fd7e14"] {
+    background-color: #f5b77a !important;
+    color: #2b2b2b !important;
+    text-shadow: none;
+}
+
+.fc-day-today {
+    background: #fff7e6 !important;
+}
+
+.fc-daygrid-event {
+    margin-top: 4px;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    let calendarEl = document.getElementById('calendar');
+    let btnPdf = document.getElementById('btnPdfMes');
+
+    let calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        locale: 'es',
+        height: 'auto',
+
+        headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth,listWeek'
+        },
+
+        buttonText: {
+            today: 'Hoy',
+            month: 'Mes',
+            week: 'Semana',
+            list: 'Lista'
+        },
+
+        buttonIcons: false,
+
+        events: "{% url 'api_calendario_vencimientos' %}",
+
+        eventDidMount: function(info) {
+            let titulo = info.event.title;
+
+            titulo = titulo
+                .replace("Turno ", "")
+                .replace("VTV (Venc.) - ", "VTV · ")
+                .replace("VTV - ", "VTV · ")
+                .replace("Grabado de autopartes - ", "Autopartes · ")
+                .replace("Patente - ", "Patente · ")
+                .replace("Verificación - ", "Verificación · ");
+
+            info.el.innerHTML = `
+                <div class="fc-event-title fw-semibold small">
+                    ${titulo}
+                </div>
+            `;
+        },
+
+        eventClick: function(info) {
+            if (info.event.url) {
+                window.open(info.event.url, "_blank");
+                info.jsEvent.preventDefault();
+            }
+        }
+    });
+
+    calendar.render();
+
+    // ===============================
+    // PDF DEL MES VISIBLE
+    // ===============================
+    btnPdf.addEventListener("click", function () {
+        let fecha = calendar.getDate();   // fecha visible
+        let mes = fecha.getMonth() + 1;   // JS: 0-11
+        let anio = fecha.getFullYear();
+
+        let url = `/calendario/pdf/${anio}/${mes}/`;
+        window.open(url, "_blank");
+    });
+});
+</script>
+
+{% endblock %}

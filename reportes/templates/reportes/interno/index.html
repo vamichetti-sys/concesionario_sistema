@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h4 class="fw-bold mb-2" style="color:#002855;">
+    Reporte Interno
+</h4>
+<p class="text-muted mb-4">
+    Control y análisis interno del negocio.
+</p>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card-clean h-100 d-flex flex-column justify-content-between">
+            <div>
+                <h6 class="fw-bold mb-2">Control de Stock</h6>
+                <p class="text-muted mb-3">
+                    Gestión interna de vehículos, precios de compra y estado.
+                </p>
+            </div>
+            <a href="{% url 'reportes:control_stock' %}" class="btn btn-primary">
+                Ingresar
+            </a>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card-clean h-100 d-flex flex-column justify-content-between">
+            <div>
+                <h6 class="fw-bold mb-2">Reporte</h6>
+                <p class="text-muted mb-3">
+                    Análisis de ganancias y resultados del negocio.
+                </p>
+            </div>
+            <a href="{% url 'reportes:reporte_ganancias' %}" class="btn btn-outline-primary">
+                Ver reporte
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

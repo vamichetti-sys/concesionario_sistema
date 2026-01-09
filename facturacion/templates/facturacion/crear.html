@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h4 class="fw-bold mb-4" style="color:#002855;">
+    Registrar factura
+</h4>
+
+<div class="card-clean" style="max-width:600px;">
+    <form method="post">
+        {% csrf_token %}
+
+        <!-- ================= VENTA ================= -->
+        <div class="mb-3">
+            <label class="form-label fw-bold">Venta</label>
+            {{ form.venta }}
+        </div>
+
+        <!-- ================= NÚMERO ================= -->
+        <div class="mb-3">
+            <label class="form-label fw-bold">Número de factura / comprobante</label>
+            {{ form.numero }}
+        </div>
+
+        <!-- ================= FECHA ================= -->
+        <div class="mb-3">
+            <label class="form-label fw-bold">Fecha</label>
+            {{ form.fecha }}
+        </div>
+
+        <hr class="my-4">
+
+        <!-- ================= NETO ================= -->
+        <div class="mb-3">
+            <label class="form-label fw-bold">Monto neto</label>
+            {{ form.monto_neto }}
+        </div>
+
+        <!-- ================= IVA % ================= -->
+        <div class="mb-3">
+            <label class="form-label fw-bold">IVA %</label>
+            {{ form.iva_porcentaje }}
+        </div>
+
+        <!-- ================= IVA CALCULADO ================= -->
+        <div class="mb-3">
+            <label class="form-label fw-bold">IVA</label>
+            {{ form.monto_iva }}
+        </div>
+
+        <!-- ================= TOTAL ================= -->
+        <div class="mb-3">
+            <label class="form-label fw-bold">Monto total</label>
+            {{ form.monto }}
+        </div>
+
+        <div class="mt-4">
+            <button type="submit" class="btn btn-primary">
+                Guardar
+            </button>
+            <a href="{% url 'facturacion:lista' %}" class="btn btn-outline-secondary">
+                Cancelar
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- ================= JS IVA AUTOMÁTICO ================= -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const netoInput = document.getElementById("id_monto_neto");
+    const ivaPorcentajeInput = document.getElementById("id_iva_porcentaje");
+    const ivaInput = document.getElementById("id_monto_iva");
+    const totalInput = document.getElementById("id_monto");
+
+    function calcularIVA() {
+        const neto = parseFloat(netoInput.value) || 0;
+        const ivaPorcentaje = parseFloat(ivaPorcentajeInput.value) || 0;
+
+        const iva = neto * ivaPorcentaje / 100;
+        const total = neto + iva;
+
+        ivaInput.value = iva.toFixed(2);
+        totalInput.value = total.toFixed(2);
+    }
+
+    netoInput.addEventListener("input", calcularIVA);
+    ivaPorcentajeInput.addEventListener("input", calcularIVA);
+});
+</script>
+
+{% endblock %}

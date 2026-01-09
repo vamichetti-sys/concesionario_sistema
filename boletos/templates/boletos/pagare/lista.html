@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Pagarés{% endblock %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+        <h2 class="fw-bold mb-1" style="color:#002855;">
+            Pagarés
+        </h2>
+        <p class="text-muted mb-0">
+            Documentos de pagaré emitidos
+        </p>
+    </div>
+
+    <a href="{% url 'boletos:crear_pagares' %}"
+       class="btn btn-primary rounded-pill fw-bold px-4">
+        + Nuevo pagaré
+    </a>
+</div>
+
+<form method="get" class="mb-4">
+    <div class="input-group">
+        <input type="text"
+               name="q"
+               class="form-control"
+               placeholder="Buscar por cliente, DNI o número…"
+               value="{{ query }}">
+        <button class="btn btn-outline-secondary" type="submit">
+            🔍 Buscar
+        </button>
+    </div>
+</form>
+
+<div class="card shadow-sm border-0 rounded-4">
+    <div class="card-body">
+
+        {% if pagares %}
+        <div class="table-responsive">
+            <table class="table table-sm align-middle">
+                <thead>
+                    <tr>
+                        <th>Nº</th>
+                        <th>Cliente</th>
+                        <th class="text-end">Monto</th>
+                        <th>Vencimiento</th>
+                        <th class="text-end">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in pagares %}
+                    <tr>
+                        <td>{{ p.numero }}</td>
+                        <td>{{ p.cliente }}</td>
+                        <td class="text-end fw-semibold">
+                            $ {{ p.monto|floatformat:0 }}
+                        </td>
+                        <td>
+                            {% if p.fecha_vencimiento %}
+                                {{ p.fecha_vencimiento|date:"d/m/Y" }}
+                            {% else %}
+                                <span class="text-muted">A la vista</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <a href="{% url 'boletos:ver_pagare' p.id %}"
+                               class="btn btn-sm btn-outline-primary">
+                                Ver
+                            </a>
+                            <a href="{% url 'boletos:pagare_pdf' p.id %}"
+                               target="_blank"
+                               class="btn btn-sm btn-outline-success">
+                                PDF
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+            <div class="alert alert-success mb-0">
+                No hay pagarés registrados.
+            </div>
+        {% endif %}
+
+    </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Gestoría{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+    <!-- ===============================
+         ENCABEZADO
+    =============================== -->
+    <div class="mb-5">
+        <h2 class="fw-bold mb-1" style="color:#002855;">
+            Gestoría
+        </h2>
+        <p class="text-muted mb-0">
+            Administración y seguimiento de transferencias y trámites legales
+        </p>
+    </div>
+
+    <!-- ===============================
+         ACCESOS PRINCIPALES
+    =============================== -->
+    <div class="row g-4">
+
+        <!-- VIGENTES -->
+        <div class="col-md-6">
+            <a href="{% url 'gestoria:vigentes' %}"
+               class="text-decoration-none">
+                <div class="card shadow-sm border-0 rounded-4 h-100">
+                    <div class="card-body p-4">
+                        <h4 class="fw-bold mb-2" style="color:#002855;">
+                            Transferencias Vigentes
+                        </h4>
+                        <p class="text-muted mb-4">
+                            Trámites en curso, pendientes de control o finalización
+                        </p>
+                        <span class="btn btn-primary btn-lg px-4">
+                            Ingresar
+                        </span>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <!-- FINALIZADAS -->
+        <div class="col-md-6">
+            <a href="{% url 'gestoria:finalizadas' %}"
+               class="text-decoration-none">
+                <div class="card shadow-sm border-0 rounded-4 h-100">
+                    <div class="card-body p-4">
+                        <h4 class="fw-bold mb-2 text-success">
+                            Transferencias Finalizadas
+                        </h4>
+                        <p class="text-muted mb-4">
+                            Trámites cerrados y documentación completa
+                        </p>
+                        <span class="btn btn-outline-success btn-lg px-4">
+                            Ver historial
+                        </span>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}

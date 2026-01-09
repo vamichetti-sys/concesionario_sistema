@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h4 class="fw-bold mb-4" style="color:#002855;">
+    Facturación
+</h4>
+
+<!-- =========================
+     RESÚMENES
+========================= -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card-clean">
+            <strong>Facturación del mes</strong>
+            <h5>${{ total_mes }}</h5>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card-clean">
+            <strong>Facturación anual</strong>
+            <h5>${{ total_anio }}</h5>
+        </div>
+    </div>
+
+    <div class="col-md-4 d-flex align-items-center justify-content-end gap-2">
+        <a href="{% url 'facturacion:crear' %}" class="btn btn-primary">
+            + Registrar factura
+        </a>
+    </div>
+</div>
+
+<!-- =========================
+     EXPORTACIONES
+========================= -->
+<div class="mb-3 d-flex flex-wrap gap-2">
+    <a href="{% url 'facturacion:excel_mensual' %}" class="btn btn-success btn-sm">
+        Excel mensual
+    </a>
+    <a href="{% url 'facturacion:excel_anual' %}" class="btn btn-success btn-sm">
+        Excel anual
+    </a>
+    <a href="{% url 'facturacion:pdf_mensual' %}" class="btn btn-danger btn-sm">
+        PDF mensual
+    </a>
+    <a href="{% url 'facturacion:pdf_anual' %}" class="btn btn-danger btn-sm">
+        PDF anual
+    </a>
+</div>
+
+<!-- =========================
+     LISTADO
+========================= -->
+<div class="card-clean">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Número</th>
+                <th>Fecha</th>
+                <th>Monto</th>
+                <th>Venta</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for f in facturas %}
+            <tr>
+                <td>{{ f.numero }}</td>
+                <td>{{ f.fecha }}</td>
+                <td>${{ f.monto }}</td>
+                <td>
+                    {% if f.venta %}
+                        Venta {{ f.venta.id }}
+                    {% else %}
+                        —
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4" class="text-muted">
+                    No hay facturas registradas
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Boleto {{ boleto.numero }}{% endblock %}
+
+{% block content %}
+<style>
+/* ===============================
+   CONFIGURACIÓN A4
+=============================== */
+@page {
+    size: A4;
+    margin: 15mm;
+}
+
+/* RESET */
+html, body {
+    margin: 0;
+    padding: 0;
+    background: #fff;
+    font-family: "Times New Roman", serif;
+    font-size: 10pt;
+    line-height: 1.35;
+    color: #000;
+}
+
+/* CONTENEDOR HOJA */
+.boleto-page {
+    position: relative;
+    width: 100%;
+}
+
+/* ===============================
+   ENCABEZADO
+=============================== */
+.header-top {
+    text-align: center;
+    margin-bottom: 10mm;
+}
+
+.header-top .empresa {
+    font-size: 18pt;
+    font-weight: bold;
+}
+
+.header-top .linea {
+    border-bottom: 2px solid #000;
+    width: 65%;
+    margin: 3mm auto;
+}
+
+.header-top .sub {
+    font-size: 11pt;
+    font-weight: bold;
+}
+
+.header-top .direccion {
+    font-size: 9.5pt;
+}
+
+/* ===============================
+   TÍTULO
+=============================== */
+.header-title {
+    text-align: center;
+    margin-bottom: 10mm;
+}
+
+.header-title h3 {
+    font-size: 12pt;
+    font-weight: bold;
+    border-bottom: 2px solid #000;
+    display: inline-block;
+    padding-bottom: 1mm;
+}
+
+/* ===============================
+   DATOS
+=============================== */
+.boleto-datos {
+    width: 72%;
+    margin: 0 auto 8mm auto;
+    font-size: 10pt;
+}
+
+/* ===============================
+   TEXTO LEGAL
+=============================== */
+.boleto-body {
+    width: 72%;
+    margin: 0 auto;
+    text-align: justify;
+    white-space: pre-line;
+
+    text-indent: 18px;
+    hyphens: auto;
+    word-break: normal;
+}
+
+/* ===============================
+   FIRMAS (VISIBLES SIEMPRE)
+=============================== */
+.boleto-firmas {
+    width: 100%;
+    margin-top: 35mm;              /* ⬅️ las baja */
+    display: flex;
+    justify-content: space-between;
+    font-size: 9.5pt;
+}
+
+.firma-col {
+    width: 40%;
+    text-align: left;
+}
+
+.firma-linea {
+    border-top: 1px solid #000;
+    margin-bottom: 3mm;
+}
+
+/* ===============================
+   BOTONES
+=============================== */
+.acciones {
+    width: 210mm;
+    margin: 25px auto;
+    display: flex;
+    justify-content: space-between;
+}
+
+/* ===============================
+   IMPRESIÓN
+=============================== */
+@media print {
+    .sidebar,
+    .topbar,
+    .acciones {
+        display: none !important;
+    }
+
+    .content {
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+}
+</style>
+
+<div class="boleto-page">
+
+    <!-- ENCABEZADO -->
+    <div class="header-top">
+        <div class="empresa">HUGO AMICHETTI AUTOMOTORES</div>
+        <div class="linea"></div>
+        <div class="sub">AUTOMOTORES NUEVOS Y USADOS</div>
+        <div class="direccion">LARREA 255, ROJAS BS AS (2705)</div>
+    </div>
+
+    <!-- TÍTULO -->
+    <div class="header-title">
+        <h3>BOLETO DE COMPRA VENTA</h3>
+    </div>
+
+    <!-- DATOS -->
+    <div class="boleto-datos">
+        {% if boleto.vehiculo %}
+            {{ boleto.vehiculo.marca }} {{ boleto.vehiculo.modelo }}
+            {% if boleto.vehiculo.dominio %}
+                – {{ boleto.vehiculo.dominio }}
+            {% endif %}
+        {% endif %}
+    </div>
+
+    <!-- TEXTO LEGAL -->
+    <div class="boleto-body">
+{{ texto_boleto }}
+    </div>
+
+    <!-- FIRMAS -->
+    <div class="boleto-firmas">
+
+        <div class="firma-col">
+            <div class="firma-linea"></div>
+            <strong>APELLIDO:</strong> {{ vendedor.apellido }}<br>
+            <strong>NOMBRE:</strong> {{ vendedor.nombre }}<br>
+            <strong>DIRECCIÓN:</strong> {{ vendedor.direccion }}<br>
+            <strong>DNI:</strong> {{ vendedor.dni }}
+        </div>
+
+        <div class="firma-col">
+            <div class="firma-linea"></div>
+            <strong>APELLIDO:</strong> {{ comprador.apellido }}<br>
+            <strong>NOMBRE:</strong> {{ comprador.nombre }}<br>
+            <strong>DIRECCIÓN:</strong> {{ comprador.direccion }}<br>
+            <strong>DNI:</strong> {{ comprador.dni }}
+        </div>
+
+    </div>
+
+</div>
+
+<div class="acciones">
+    <button onclick="window.print()" class="btn btn-dark">🖨️ Imprimir en A4</button>
+    <a href="{% url 'boletos:lista' %}" class="btn btn-outline-secondary">Volver</a>
+</div>
+
+{% endblock %}

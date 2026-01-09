@@ -1,0 +1,621 @@
+<div class="modal fade" id="modalFicha" tabindex="-1">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content rounded-4 shadow-lg">
+
+      <!-- HEADER -->
+      <div class="modal-header" style="background:#002855;">
+        <h5 class="modal-title text-white fw-bold">
+          {{ vehiculo.marca }} {{ vehiculo.modelo }} — {{ vehiculo.dominio|default:"Sin dominio" }}
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+
+      <!-- BODY -->
+      <div class="modal-body">
+
+        <form id="formFichaVehicular"
+              method="post"
+              action="{% url 'vehiculos:guardar_ficha_vehicular' vehiculo.id %}">
+          {% csrf_token %}
+
+          <!-- TABS -->
+          <ul class="nav nav-tabs mb-3 fw-semibold">
+            <li class="nav-item">
+              <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-basicos" type="button">
+                Datos Básicos
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-titularidad" type="button">
+                Titularidad
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-documentacion" type="button">
+                Documentación
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-turnos" type="button">
+                Turnos
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-gastos" type="button">
+                Gastos de ingreso
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-pago-gastos" type="button">
+                Pago de gastos
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-observaciones" type="button">
+                Observaciones
+              </button>
+            </li>
+          </ul>
+
+          <div class="tab-content">
+
+<!-- ================= TAB 1: DATOS BÁSICOS ================= -->
+<div class="tab-pane fade show active" id="tab-basicos">
+  <h4 class="fw-bold mb-3" style="color:#002855;">Datos Básicos del Vehículo</h4>
+
+  <div class="row g-3">
+
+    <div class="col-md-4">
+      <label class="fw-bold">Marca</label>
+      {{ vehiculo_form.marca }}
+    </div>
+
+    <div class="col-md-4">
+      <label class="fw-bold">Modelo</label>
+      {{ vehiculo_form.modelo }}
+    </div>
+
+    <div class="col-md-4">
+      <label class="fw-bold">Número de carpeta</label>
+      {{ vehiculo_form.numero_carpeta }}
+    </div>
+
+    <div class="col-md-4">
+      <label class="fw-bold">Año</label>
+      {{ vehiculo_form.anio }}
+    </div>
+
+    <div class="col-md-4">
+      <label class="fw-bold">Kilometraje</label>
+      {{ vehiculo_form.kilometros }}
+    </div>
+
+    <div class="col-md-4">
+      <label class="fw-bold">Dominio</label>
+      {{ vehiculo_form.dominio }}
+    </div>
+
+    <div class="col-md-4">
+      <label class="fw-bold">Estado</label>
+      {{ vehiculo_form.estado }}
+    </div>
+
+    <hr class="my-3">
+
+    <div class="col-md-4">
+      <label class="fw-bold">Número motor</label>
+      {{ ficha_form.numero_motor }}
+    </div>
+
+    <div class="col-md-4">
+      <label class="fw-bold">Número chasis</label>
+      {{ ficha_form.numero_chasis }}
+    </div>
+
+    <div class="col-md-4">
+      <label class="fw-bold">Fecha inscripción inicial</label>
+      {{ ficha_form.fecha_inscripcion_inicial }}
+    </div>
+
+    <div class="col-md-4">
+      <label class="fw-bold">Color</label>
+      {{ ficha_form.color }}
+    </div>
+
+    <div class="col-md-4">
+      <label class="fw-bold">Combustible</label>
+      {{ ficha_form.combustible }}
+    </div>
+
+    <div class="col-md-4">
+      <label class="fw-bold">Transmisión</label>
+      {{ ficha_form.transmision }}
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= TAB 2: TITULARIDAD ================= -->
+<div class="tab-pane fade" id="tab-titularidad">
+  <h4 class="fw-bold mb-3" style="color:#002855;">Titularidad / Ingreso</h4>
+
+  <div class="row g-3">
+
+    <div class="col-md-6">
+      <label class="fw-bold">Vendedor</label>
+      {{ ficha_form.vendedor }}
+    </div>
+
+    <div class="col-md-6">
+      <label class="fw-bold">Contacto</label>
+      {{ ficha_form.contacto }}
+    </div>
+
+    <div class="col-md-6">
+      <label class="fw-bold">Email contacto</label>
+      {{ ficha_form.email_contacto }}
+    </div>
+
+    <div class="col-md-6">
+      <label class="fw-bold">Titular</label>
+      {{ ficha_form.titular }}
+    </div>
+
+    <div class="col-md-4">
+      <label class="fw-bold">Domicilio titular</label>
+      {{ ficha_form.domicilio_titular }}
+    </div>
+
+    <div class="col-md-4">
+      <label class="fw-bold">DNI titular</label>
+      {{ ficha_form.dni_titular }}
+    </div>
+
+    <div class="col-md-4">
+      <label class="fw-bold">Estado civil</label>
+      {{ ficha_form.estado_civil }}
+    </div>
+
+    <div class="col-md-4">
+      <label class="fw-bold">CUIT / CUIL / DNI</label>
+      {{ ficha_form.cuit_cuil_dni }}
+    </div>
+
+    <div class="col-md-4">
+      <label class="fw-bold">Tipo ingreso</label>
+      {{ ficha_form.tipo_ingreso }}
+    </div>
+
+    <div class="col-md-4">
+      <label class="fw-bold">N° consignación / factura</label>
+      {{ ficha_form.numero_consignacion_factura }}
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= TAB 3: DOCUMENTACIÓN ================= -->
+<div class="tab-pane fade" id="tab-documentacion">
+  <h4 class="fw-bold mb-3" style="color:#002855;">Documentación</h4>
+
+  <div class="row g-3">
+    <div class="col-md-3">
+      <label class="fw-bold">Patentes - Estado</label>
+      {{ ficha_form.patentes_estado }}
+    </div>
+
+    <div class="col-md-3">
+      <label class="fw-bold">Monto deuda</label>
+      {{ ficha_form.patentes_monto }}
+    </div>
+
+    <div class="col-md-3">
+      <label class="fw-bold">Vencimiento 1</label>
+      {{ ficha_form.patentes_vto1 }}
+    </div>
+
+    <div class="col-md-3">
+      <label class="fw-bold">Vencimiento 2</label>
+      {{ ficha_form.patentes_vto2 }}
+    </div>
+
+    <div class="col-md-3">
+      <label class="fw-bold">Vencimiento 3</label>
+      {{ ficha_form.patentes_vto3 }}
+    </div>
+
+    <div class="col-md-3">
+      <label class="fw-bold">Vencimiento 4</label>
+      {{ ficha_form.patentes_vto4 }}
+    </div>
+
+    <div class="col-md-3">
+      <label class="fw-bold">Vencimiento 5</label>
+      {{ ficha_form.patentes_vto5 }}
+    </div>
+
+  </div>
+
+  <hr class="my-4">
+
+  <div class="row g-3">
+
+    <div class="col-md-3">
+      <label class="fw-bold">Formulario 08</label>
+      {{ ficha_form.f08_estado }}
+    </div>
+
+    <div class="col-md-3">
+      <label class="fw-bold">Cédula</label>
+      {{ ficha_form.cedula_estado }}
+    </div>
+
+  </div>
+
+  <hr class="my-4">
+
+  <div class="row g-3">
+
+    <div class="col-md-3">
+      <label class="fw-bold">Verificación policial</label>
+      {{ ficha_form.verificacion_estado }}
+    </div>
+
+    <div class="col-md-3">
+      <label class="fw-bold">Vencimiento</label>
+      {{ ficha_form.verificacion_vencimiento }}
+    </div>
+
+  </div>
+
+  <hr class="my-4">
+
+  <div class="row g-3">
+    <div class="col-md-3">
+      <label class="fw-bold">Grabado de autopartes</label>
+      {{ ficha_form.autopartes_estado }}
+    </div>
+  </div>
+
+  <hr class="my-4">
+
+  <div class="row g-3">
+
+    <div class="col-md-3">
+      <label class="fw-bold">VTV</label>
+      {{ ficha_form.vtv_estado }}
+    </div>
+
+    <div class="col-md-3">
+      <label class="fw-bold">Vencimiento</label>
+      {{ ficha_form.vtv_vencimiento }}
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= TAB 4: TURNOS ================= -->
+<div class="tab-pane fade" id="tab-turnos">
+  <h4 class="fw-bold mb-3" style="color:#002855;">Turnos</h4>
+
+  <div class="row g-3">
+
+    <div class="col-md-6">
+      <label class="fw-bold">VTV – Turno</label>
+      {{ ficha_form.vtv_turno }}
+    </div>
+
+    <div class="col-md-6">
+      <label class="fw-bold">Grabado de autopartes – Turno</label>
+      {{ ficha_form.autopartes_turno }}
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= TAB 5: GASTOS ================= -->
+<div class="tab-pane fade" id="tab-gastos">
+  <h4 class="fw-bold mb-3" style="color:#002855;">Gastos de ingreso</h4>
+
+  <div class="row g-3">
+
+    <div class="col-md-4">
+      <label class="fw-bold">Formulario 08</label>
+      {{ ficha_form.gasto_f08 }}
+    </div>
+
+    <div class="col-md-4">
+      <label class="fw-bold">Informe de informes</label>
+      {{ ficha_form.gasto_informes }}
+    </div>
+
+    <div class="col-md-4">
+      <label class="fw-bold">Patentes</label>
+      {{ ficha_form.gasto_patentes }}
+    </div>
+
+    <div class="col-md-4">
+      <label class="fw-bold">Verificación policial</label>
+      {{ ficha_form.gasto_verificacion }}
+    </div>
+
+    <div class="col-md-4">
+      <label class="fw-bold">Autopartes</label>
+      {{ ficha_form.gasto_autopartes }}
+    </div>
+
+    <div class="col-md-4">
+      <label class="fw-bold">VTV</label>
+      {{ ficha_form.gasto_vtv }}
+    </div>
+
+    <div class="col-md-4">
+      <label class="fw-bold">R-541</label>
+      {{ ficha_form.gasto_r541 }}
+    </div>
+
+    <div class="col-md-4">
+      <label class="fw-bold">Firmas</label>
+      {{ ficha_form.gasto_firmas }}
+    </div>
+
+    <div class="col-md-4">
+      <label class="fw-bold">Total gastos</label>
+      <input type="text"
+             class="form-control"
+             value="{{ ficha_form.instance.total_gastos }}"
+             readonly>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= TAB NUEVO: PAGO DE GASTOS ================= -->
+<div class="tab-pane fade" id="tab-pago-gastos">
+  <h4 class="fw-bold mb-3" style="color:#002855;">Pago de gastos</h4>
+
+  {% for gasto in gastos_ingreso %}
+  <div class="border rounded-3 p-3 mb-3">
+
+    <div class="fw-bold mb-2">
+      {{ gasto.concepto }} — ${{ gasto.monto }}
+    </div>
+
+    <div class="row g-3 mb-3">
+      <div class="col-md-4">
+        <label class="fw-bold">Total pagado</label>
+        <div>${{ gasto.total_pagado }}</div>
+      </div>
+
+      <div class="col-md-4">
+        <label class="fw-bold">Saldo</label>
+        <div class="{% if gasto.saldo > 0 %}text-danger{% else %}text-success{% endif %}">
+          ${{ gasto.saldo }}
+        </div>
+      </div>
+    </div>
+
+    <form method="post"
+          action="{% url 'vehiculos:registrar_pago_gasto' vehiculo.id %}">
+      {% csrf_token %}
+      <input type="hidden" name="gasto_id" value="{{ gasto.concepto }}">
+
+      <div class="row g-3">
+        <div class="col-md-3">
+          <label class="fw-bold">Fecha de pago</label>
+          <input type="date" name="fecha_pago" class="form-control">
+        </div>
+
+        <div class="col-md-3">
+          <label class="fw-bold">Monto</label>
+          <input type="number" step="0.01" name="monto" class="form-control">
+        </div>
+
+        <div class="col-md-4">
+          <label class="fw-bold">Observaciones</label>
+          <input type="text" name="observaciones" class="form-control">
+        </div>
+
+        <div class="col-md-2 d-flex align-items-end">
+          <button class="btn btn-primary w-100">
+            Registrar pago
+          </button>
+        </div>
+      </div>
+
+    </form>
+
+  </div>
+  {% empty %}
+    <p class="text-muted">No hay gastos de ingreso cargados.</p>
+  {% endfor %}
+</div>
+<!-- ================= TAB 6: OBSERVACIONES ================= -->
+<div class="tab-pane fade" id="tab-observaciones">
+  <h4 class="fw-bold mb-3" style="color:#002855;">Observaciones</h4>
+  {{ ficha_form.observaciones }}
+
+  <hr class="my-4">
+
+  <h5 class="fw-bold mb-3" style="color:#002855;">
+    Accesorios / Documentación física
+  </h5>
+
+  <div class="row g-3 align-items-center">
+
+    <!-- DUPLICADO LLAVE -->
+    <div class="col-md-3 fw-bold">Duplicado de llave</div>
+    <div class="col-md-2">
+      {{ ficha_form.duplicado_llave_estado }}
+    </div>
+    <div class="col-md-7">
+      {{ ficha_form.duplicado_llave_obs }}
+    </div>
+
+    <!-- CÓDIGO LLAVE -->
+    <div class="col-md-3 fw-bold">Código de llave</div>
+    <div class="col-md-2">
+      {{ ficha_form.codigo_llave_estado }}
+    </div>
+    <div class="col-md-7">
+      {{ ficha_form.codigo_llave_obs }}
+    </div>
+
+    <!-- CÓDIGO RADIO -->
+    <div class="col-md-3 fw-bold">Código de radio</div>
+    <div class="col-md-2">
+      {{ ficha_form.codigo_radio_estado }}
+    </div>
+    <div class="col-md-7">
+      {{ ficha_form.codigo_radio_obs }}
+    </div>
+
+    <!-- MANUALES -->
+    <div class="col-md-3 fw-bold">Manuales</div>
+    <div class="col-md-2">
+      {{ ficha_form.manuales_estado }}
+    </div>
+    <div class="col-md-7">
+      {{ ficha_form.manuales_obs }}
+    </div>
+
+    <!-- OBLEA GNC -->
+    <div class="col-md-3 fw-bold">Oblea GNC</div>
+    <div class="col-md-2">
+      {{ ficha_form.oblea_gnc_estado }}
+    </div>
+    <div class="col-md-7">
+      {{ ficha_form.oblea_gnc_obs }}
+    </div>
+
+    <!-- ================= NUEVOS ÍTEMS (A MANO) ================= -->
+
+    <!-- TÍTULO -->
+    <div class="col-md-3 fw-bold">Título</div>
+    <div class="col-md-2">
+      <div>
+        <input type="radio" name="titulo_estado" value="si"
+               {% if ficha.titulo_estado == "si" %}checked{% endif %}>
+        Sí
+      </div>
+      <div>
+        <input type="radio" name="titulo_estado" value="no"
+               {% if ficha.titulo_estado == "no" %}checked{% endif %}>
+        No
+      </div>
+    </div>
+    <div class="col-md-7">
+      <input type="text"
+             class="form-control"
+             name="titulo_obs"
+             value="{{ ficha.titulo_obs|default:'' }}">
+    </div>
+
+    <!-- CÉDULA FÍSICA -->
+    <div class="col-md-3 fw-bold">Cédula (física)</div>
+    <div class="col-md-2">
+      <div>
+        <input type="radio" name="cedula_check_estado" value="si"
+               {% if ficha.cedula_check_estado == "si" %}checked{% endif %}>
+        Sí
+      </div>
+      <div>
+        <input type="radio" name="cedula_check_estado" value="no"
+               {% if ficha.cedula_check_estado == "no" %}checked{% endif %}>
+        No
+      </div>
+    </div>
+    <div class="col-md-7">
+      <input type="text"
+             class="form-control"
+             name="cedula_check_obs"
+             value="{{ ficha.cedula_check_obs|default:'' }}">
+    </div>
+
+    <!-- PRENDA -->
+    <div class="col-md-3 fw-bold">Prenda</div>
+    <div class="col-md-2">
+      <div>
+        <input type="radio" name="prenda_estado" value="si"
+               {% if ficha.prenda_estado == "si" %}checked{% endif %}>
+        Sí
+      </div>
+      <div>
+        <input type="radio" name="prenda_estado" value="no"
+               {% if ficha.prenda_estado == "no" %}checked{% endif %}>
+        No
+      </div>
+    </div>
+    <div class="col-md-7">
+      <input type="text"
+             class="form-control"
+             name="prenda_obs"
+             value="{{ ficha.prenda_obs|default:'' }}">
+    </div>
+
+  </div>
+</div>
+
+          </div> <!-- cierre tab-content -->
+        </form>
+      </div>
+
+      <!-- FOOTER -->
+      <div class="modal-footer">
+        <a href="/vehiculos/ficha-completa/{{ vehiculo.id }}/" class="btn btn-outline-primary">
+          Ver página completa
+        </a>
+        <a href="/vehiculos/pdf/{{ vehiculo.id }}/" class="btn btn-outline-warning">
+          Descargar PDF
+        </a>
+
+        <button type="submit"
+                form="formFichaVehicular"
+                class="btn fw-bold"
+                style="background:#FF6C1A; color:white; border-radius:10px; box-shadow:0 4px 10px rgba(0,0,0,.15);">
+          Guardar cambios
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+function guardarFicha(id) {
+    let form = document.querySelector("#formFichaVehicular");
+    let formData = new FormData(form);
+
+    fetch(form.action, {
+        method: "POST",
+        body: formData,
+        headers: {
+            "X-CSRFToken": getCookie("csrftoken")
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert("Cambios guardados correctamente");
+        } else {
+            console.error(data.errores);
+        }
+    })
+    .catch(error => console.error(error));
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== "") {
+        const cookies = document.cookie.split(";");
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + "=")) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
