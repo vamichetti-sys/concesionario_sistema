@@ -25,10 +25,21 @@ SECRET_KEY = os.getenv(
 
 DEBUG = os.getenv("DEBUG", "True") == "True"
 
-ALLOWED_HOSTS = os.getenv(
-    "ALLOWED_HOSTS",
-    "127.0.0.1,localhost"
-).split(",")
+# ==========================================================
+# ALLOWED HOSTS (FIX DEFINITIVO PARA RENDER)
+# ==========================================================
+ALLOWED_HOSTS = [
+    "localhost",
+    "127.0.0.1",
+]
+
+# Host automático de Render
+RENDER_HOST = os.getenv("RENDER_EXTERNAL_HOSTNAME")
+if RENDER_HOST:
+    ALLOWED_HOSTS.append(RENDER_HOST)
+
+# Permite cualquier subdominio de Render (fallback seguro)
+ALLOWED_HOSTS.append(".onrender.com")
 
 # ==========================================================
 # APPLICATIONS
@@ -78,7 +89,7 @@ ROOT_URLCONF = "concesionario.urls"
 WSGI_APPLICATION = "concesionario.wsgi.application"
 
 # ==========================================================
-# DATABASE (LOCAL SEGURO + PRODUCCIÓN)
+# DATABASE (LOCAL SQLITE + PRODUCCIÓN POSTGRES)
 # ==========================================================
 DATABASES = {
     "default": {
@@ -98,7 +109,7 @@ if DATABASE_URL:
         DATABASES["default"] = dj_database_url.parse(
             DATABASE_URL,
             conn_max_age=600,
-            ssl_require=True
+            ssl_require=True,
         )
     except Exception:
         pass
@@ -132,7 +143,7 @@ USE_I18N = True
 USE_TZ = True
 
 # ==========================================================
-# STATIC & MEDIA FILES (PRODUCCIÓN READY)
+# STATIC & MEDIA FILES
 # ==========================================================
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
