@@ -142,7 +142,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
         buttonIcons: false,
 
-        events: "{% url 'api_calendario_vencimientos' %}",
+        /* ===============================
+           ÚNICA CORRECCIÓN NECESARIA
+           =============================== */
+        events: "/calendario/api/eventos/",
 
         eventDidMount: function(info) {
             let titulo = info.event.title;
@@ -176,8 +179,8 @@ document.addEventListener('DOMContentLoaded', function () {
     // PDF DEL MES VISIBLE
     // ===============================
     btnPdf.addEventListener("click", function () {
-        let fecha = calendar.getDate();   // fecha visible
-        let mes = fecha.getMonth() + 1;   // JS: 0-11
+        let fecha = calendar.getDate();
+        let mes = fecha.getMonth() + 1;
         let anio = fecha.getFullYear();
 
         let url = `/calendario/pdf/${anio}/${mes}/`;

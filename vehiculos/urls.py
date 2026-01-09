@@ -102,14 +102,15 @@ urlpatterns = [
         name="registrar_pago_gasto"
     ),
 
-    # ==================================================
-    # PDF FICHA VEHICULAR
-    # ==================================================
-    path(
-        "pdf/<int:vehiculo_id>/",
-        views.ficha_vehicular_pdf,
-        name="ficha_vehicular_pdf"
-    ),
+  # ==================================================
+# PDF FICHA VEHICULAR
+# ==================================================
+# path(
+#     "pdf/<int:vehiculo_id>/",
+#     views.ficha_vehicular_pdf,
+#     name="ficha_vehicular_pdf",
+# ),
+
 
     # ==================================================
     # ❌ ELIMINAR VEHÍCULO

@@ -356,66 +356,75 @@ def registrar_pago_gasto(request, vehiculo_id):
         vehiculo_id=vehiculo.id
     )
 # ==========================================================
-# PDF FICHA VEHICULAR (LIMPIO – SIN MENÚ)
-# ==========================================================
-def ficha_vehicular_pdf(request, vehiculo_id):
-    vehiculo = get_object_or_404(Vehiculo, id=vehiculo_id)
-    ficha, _ = FichaVehicular.objects.get_or_create(vehiculo=vehiculo)
-
-    html_string = render_to_string(
-        "vehiculos/ficha_vehicular_pdf.html",
-        {
-            "vehiculo": vehiculo,
-            "ficha": ficha,
-        }
-    )
-
-    css = CSS(string="""
-        @page { size: A4; margin: 2cm; }
-        body { font-family: Arial, Helvetica, sans-serif; font-size: 12px; }
-        h2 { text-align: center; color: #002855; margin-bottom: 20px; }
-        table { width: 100%; border-collapse: collapse; }
-        td { padding: 6px; border: 1px solid #ccc; }
-        .label { font-weight: bold; width: 35%; }
-    """)
-
-    pdf = HTML(
-        string=html_string,
-        base_url=request.build_absolute_uri()
-    ).write_pdf(stylesheets=[css])
-
-    response = HttpResponse(pdf, content_type="application/pdf")
-    response["Content-Disposition"] = (
-        f'attachment; filename="ficha_{vehiculo.dominio or vehiculo.id}.pdf"'
-    )
-    return response
-
-
-# ==========================================================
-# SINCRONIZAR TURNOS
+# SINCRONIZAR TURNOS Y VENCIMIENTOS CON CALENDARIO
 # ==========================================================
 def sincronizar_turnos_calendario(vehiculo, ficha):
+
+    # Limpiar eventos previos del vehículo
     Evento.objects.filter(
         vehiculo=vehiculo,
-        tipo__in=["vtv", "autopartes"]
+        tipo__in=[
+            "vtv_turno",
+            "vtv_vencimiento",
+            "autopartes_turno",
+            "verificacion_vencimiento",
+            "patentes_vencimiento",
+            "vtv",
+            "autopartes",
+        ]
     ).delete()
+
+    # ================= TURNOS =================
 
     if ficha.vtv_turno:
         Evento.objects.create(
             vehiculo=vehiculo,
             titulo=f"Turno VTV – {vehiculo}",
             fecha=ficha.vtv_turno,
-            tipo="vtv",
+            tipo="vtv",   # ✅ visible en calendario
         )
 
     if ficha.autopartes_turno:
         Evento.objects.create(
             vehiculo=vehiculo,
-            titulo=f"Grabado autopartes – {vehiculo}",
+            titulo=f"Turno grabado autopartes – {vehiculo}",
             fecha=ficha.autopartes_turno,
-            tipo="autopartes",
+            tipo="autopartes",  # ✅ visible en calendario
         )
 
+    # ================= VENCIMIENTOS =================
+
+    if ficha.vtv_vencimiento:
+        Evento.objects.create(
+            vehiculo=vehiculo,
+            titulo=f"Vencimiento VTV – {vehiculo}",
+            fecha=ficha.vtv_vencimiento,
+            tipo="vtv_vencimiento",
+        )
+
+    if ficha.verificacion_vencimiento:
+        Evento.objects.create(
+            vehiculo=vehiculo,
+            titulo=f"Vencimiento verificación policial – {vehiculo}",
+            fecha=ficha.verificacion_vencimiento,
+            tipo="verificacion_vencimiento",
+        )
+
+    # Patentes (hasta 5 vencimientos)
+    for vto in [
+        ficha.patentes_vto1,
+        ficha.patentes_vto2,
+        ficha.patentes_vto3,
+        ficha.patentes_vto4,
+        ficha.patentes_vto5,
+    ]:
+        if vto:
+            Evento.objects.create(
+                vehiculo=vehiculo,
+                titulo=f"Vencimiento patentes – {vehiculo}",
+                fecha=vto,
+                tipo="patentes_vencimiento",
+            )
 
 # ==========================================================
 # ELIMINAR VEHÍCULO (SIN DELETE)

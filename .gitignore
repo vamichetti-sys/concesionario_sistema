@@ -2,6 +2,26 @@
 .venv/
 
 # Python
+# Entornos virtuales
+.venv/
+venv/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Django
+db.sqlite3
+staticfiles/
+media/
+
+# Entorno
+.env
+.env.*
+
+# OS
+.DS_Store
 __pycache__/
 *.pyc
 
