@@ -11,7 +11,7 @@ from django.core.files.base import ContentFile
 from django.template.loader import render_to_string
 from io import BytesIO
 
-from weasyprint import HTML
+# from weasyprint import HTML
 
 from .models import BoletoCompraventa, Pagare
 from .forms import CrearBoletoForm, CrearPagareLoteForm

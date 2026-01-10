@@ -11,7 +11,7 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.units import cm
 
 # ✅ SOLO PARA PDF VISUAL
-from weasyprint import HTML, CSS
+# from weasyprint import HTML, CSS
 
 from .models import Vehiculo, FichaVehicular, PagoGastoIngreso
 from .forms import VehiculoBasicoForm, VehiculoForm, FichaVehicularForm

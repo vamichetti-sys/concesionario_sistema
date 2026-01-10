@@ -40,6 +40,13 @@ if RENDER_HOST:
 ALLOWED_HOSTS.append(".onrender.com")
 
 # ==========================================================
+# CSRF (FIX 403 EN PRODUCCIÓN)
+# ==========================================================
+CSRF_TRUSTED_ORIGINS = [
+    "https://concesionario-k5i6.onrender.com",
+]
+
+# ==========================================================
 # APPLICATIONS
 # ==========================================================
 INSTALLED_APPS = [
@@ -71,7 +78,7 @@ INSTALLED_APPS = [
 # ==========================================================
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
-    "whitenoise.middleware.WhiteNoiseMiddleware",  # 👈 AGREGADO (logo / estáticos)
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -84,7 +91,6 @@ MIDDLEWARE = [
 # URLS / WSGI
 # ==========================================================
 ROOT_URLCONF = "concesionario.urls"
-
 WSGI_APPLICATION = "concesionario.wsgi.application"
 
 # ==========================================================
@@ -135,7 +141,6 @@ AUTH_PASSWORD_VALIDATORS = [
 # INTERNATIONALIZATION
 # ==========================================================
 LANGUAGE_CODE = "es-ar"
-
 TIME_ZONE = "America/Argentina/Buenos_Aires"
 
 USE_I18N = True
@@ -153,7 +158,7 @@ STATICFILES_DIRS = [
 
 STATICFILES_STORAGE = (
     "whitenoise.storage.CompressedManifestStaticFilesStorage"
-)  # 👈 AGREGADO (logo / estáticos)
+)
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
