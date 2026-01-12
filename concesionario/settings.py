@@ -26,7 +26,7 @@ SECRET_KEY = os.getenv(
 DEBUG = os.getenv("DEBUG", "True") == "True"
 
 # ==========================================================
-# ALLOWED HOSTS (FIX DEFINITIVO PARA RENDER)
+# ALLOWED HOSTS (RENDER + LOCAL)
 # ==========================================================
 ALLOWED_HOSTS = [
     "localhost",
@@ -40,17 +40,17 @@ if RENDER_HOST:
 ALLOWED_HOSTS.append(".onrender.com")
 
 # ==========================================================
-# CSRF (FIX 403 EN PRODUCCIÓN)
+# CSRF (RENDER / PRODUCCIÓN)
 # ==========================================================
 CSRF_TRUSTED_ORIGINS = [
     "https://concesionario-k5i6.onrender.com",
+    "https://*.onrender.com",
 ]
 
 # ==========================================================
 # APPLICATIONS
 # ==========================================================
 INSTALLED_APPS = [
-    # Django
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -94,7 +94,7 @@ ROOT_URLCONF = "concesionario.urls"
 WSGI_APPLICATION = "concesionario.wsgi.application"
 
 # ==========================================================
-# DATABASE (LOCAL SQLITE + PRODUCCIÓN POSTGRES)
+# DATABASE (SQLITE LOCAL + POSTGRES PRODUCCIÓN)
 # ==========================================================
 DATABASES = {
     "default": {
@@ -123,18 +123,10 @@ if DATABASE_URL:
 # PASSWORD VALIDATION
 # ==========================================================
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
-    },
+    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
 # ==========================================================
@@ -156,9 +148,7 @@ STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
 
-STATICFILES_STORAGE = (
-    "whitenoise.storage.CompressedManifestStaticFilesStorage"
-)
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
@@ -183,16 +173,17 @@ TEMPLATES = [
 ]
 
 # ==========================================================
-# AUTH / LOGIN
+# AUTH / LOGIN  ✅ FIX DEFINITIVO
 # ==========================================================
-LOGIN_URL = "/"
+LOGIN_URL = "/admin/login/"
 LOGIN_REDIRECT_URL = "/inicio/"
-LOGOUT_REDIRECT_URL = "/"
+LOGOUT_REDIRECT_URL = "/admin/login/"
 
 # ==========================================================
 # DEFAULT FIELD
 # ==========================================================
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
 # ==========================================================
 # HTTPS / PROXY (FIX DEFINITIVO CSRF EN RENDER)
 # ==========================================================
