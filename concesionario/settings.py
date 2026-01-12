@@ -43,7 +43,7 @@ ALLOWED_HOSTS.append(".onrender.com")
 # CSRF (RENDER / PRODUCCIÓN)
 # ==========================================================
 CSRF_TRUSTED_ORIGINS = [
-    "https://concesionario-k5i6.onrender.com",
+    "https://concesionario-k516.onrender.com",
     "https://*.onrender.com",
 ]
 
@@ -51,6 +51,7 @@ CSRF_TRUSTED_ORIGINS = [
 # APPLICATIONS
 # ==========================================================
 INSTALLED_APPS = [
+    # Django
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -94,7 +95,9 @@ ROOT_URLCONF = "concesionario.urls"
 WSGI_APPLICATION = "concesionario.wsgi.application"
 
 # ==========================================================
-# DATABASE (SQLITE LOCAL + POSTGRES PRODUCCIÓN)
+# DATABASE
+# - SQLite en local
+# - PostgreSQL en Render (DATABASE_URL)
 # ==========================================================
 DATABASES = {
     "default": {
@@ -123,10 +126,18 @@ if DATABASE_URL:
 # PASSWORD VALIDATION
 # ==========================================================
 AUTH_PASSWORD_VALIDATORS = [
-    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
-    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
-    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
-    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
+    {
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"
+    },
 ]
 
 # ==========================================================
@@ -148,7 +159,9 @@ STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
 
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+STATICFILES_STORAGE = (
+    "whitenoise.storage.CompressedManifestStaticFilesStorage"
+)
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
@@ -173,11 +186,11 @@ TEMPLATES = [
 ]
 
 # ==========================================================
-# AUTH / LOGIN  ✅ FIX DEFINITIVO
+# AUTH / LOGIN  ✅ CONFIGURACIÓN FINAL
 # ==========================================================
-LOGIN_URL = "/admin/login/"
+LOGIN_URL = "/"
 LOGIN_REDIRECT_URL = "/inicio/"
-LOGOUT_REDIRECT_URL = "/admin/login/"
+LOGOUT_REDIRECT_URL = "/"
 
 # ==========================================================
 # DEFAULT FIELD
@@ -185,7 +198,7 @@ LOGOUT_REDIRECT_URL = "/admin/login/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # ==========================================================
-# HTTPS / PROXY (FIX DEFINITIVO CSRF EN RENDER)
+# HTTPS / PROXY (RENDER)
 # ==========================================================
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
