@@ -48,13 +48,15 @@ class CuentaCorriente(models.Model):
         return f"{self.cliente} | Venta #{self.venta.id}"
 
     # ======================================================
-    # CÁLCULO AUTOMÁTICO DE SALDO (ROBUSTO)
+    # CÁLCULO AUTOMÁTICO DE SALDO (CORREGIDO)
     # ======================================================
     def recalcular_saldo(self):
         """
-        Compatible con:
-        - debe / haber (modelo original)
-        - deuda / pago (views nuevos)
+        Reglas:
+        - saldo > 0  → deuda
+        - saldo = 0 + plan activo → al_dia
+        - saldo = 0 + plan finalizado → cerrada
+        - saldo = 0 + sin plan → cerrada
         """
 
         total_debe = self.movimientos.filter(
@@ -70,18 +72,18 @@ class CuentaCorriente(models.Model):
         )['total'] or Decimal('0')
 
         saldo = total_debe - total_haber
+        plan = getattr(self, 'plan_pago', None)
 
         if saldo <= 0:
             self.saldo = Decimal('0')
-            self.estado = 'al_dia'
+
+            if not plan or plan.estado == 'finalizado':
+                self.estado = 'cerrada'
+            else:
+                self.estado = 'al_dia'
         else:
             self.saldo = saldo
             self.estado = 'deuda'
-
-        # 🔒 cierre automático SOLO si el plan está finalizado
-        plan = getattr(self, 'plan_pago', None)
-        if plan and plan.estado == 'finalizado' and self.saldo == 0:
-            self.estado = 'cerrada'
 
         self.save(update_fields=['saldo', 'estado'])
 
@@ -128,8 +130,6 @@ class CuentaCorriente(models.Model):
             estado='pendiente',
             vencimiento__lt=date.today()
         ).exists()
-
-
 # ==========================================================
 # MOVIMIENTOS CONTABLES
 # ==========================================================
@@ -246,10 +246,8 @@ class PlanPago(models.Model):
         es_nuevo = self.pk is None
         super().save(*args, **kwargs)
 
-        # 🔑 generar deuda inicial del plan
         if es_nuevo:
             cuenta = self.cuenta
-
             existe = cuenta.movimientos.filter(
                 tipo='debe',
                 descripcion__icontains='Plan de pago'
@@ -270,17 +268,6 @@ class PlanPago(models.Model):
             self.estado = 'finalizado'
             self.save(update_fields=['estado'])
             self.cuenta.recalcular_saldo()
-
-    @property
-    def cuotas_vencidas(self):
-        return self.cuotas.filter(
-            estado='pendiente',
-            vencimiento__lt=date.today()
-        )
-
-    @property
-    def cantidad_cuotas_vencidas(self):
-        return self.cuotas_vencidas.count()
 # ==========================================================
 # CUOTAS DEL PLAN
 # ==========================================================
@@ -377,8 +364,6 @@ class Pago(models.Model):
             self.numero_recibo = f"RC-{year}-{str(siguiente).zfill(6)}"
 
         super().save(*args, **kwargs)
-
-
 # ==========================================================
 # APLICACIÓN DEL PAGO A CUOTAS
 # ==========================================================

@@ -1,3 +1,10 @@
+# Bases de datos
+*.sqlite3
+backup_db_*.sqlite3
+
+# Entorno virtual
+venv/
+.env
 # Python
 __pycache__/
 *.pyc

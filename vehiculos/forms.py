@@ -39,16 +39,13 @@ class VehiculoBasicoForm(forms.ModelForm):
             'precio': forms.NumberInput(attrs={'class': 'form-control'}),
             'estado': forms.Select(attrs={'class': 'form-control'}),
             'numero_carpeta': forms.TextInput(
-                attrs={
-                    'class': 'form-control',
-                    'placeholder': 'Ej: C-2025-014'
-                }
+                attrs={'class': 'form-control', 'placeholder': 'Ej: C-2025-014'}
             ),
         }
 
 
 # ==========================================================
-# FORMULARIO PARA EDITAR VEHÍCULO  ✅ (PRECIO AGREGADO)
+# FORMULARIO PARA EDITAR VEHÍCULO
 # ==========================================================
 class VehiculoForm(forms.ModelForm):
     class Meta:
@@ -59,7 +56,7 @@ class VehiculoForm(forms.ModelForm):
             'anio',
             'kilometros',
             'dominio',
-            'precio',          # ✅ AGREGADO
+            'precio',
             'estado',
             'numero_carpeta',
         ]
@@ -70,7 +67,7 @@ class VehiculoForm(forms.ModelForm):
             'anio': 'Año',
             'kilometros': 'Kilometraje',
             'dominio': 'Dominio',
-            'precio': 'Precio',   # ✅ AGREGADO
+            'precio': 'Precio',
             'estado': 'Estado',
             'numero_carpeta': 'Número de carpeta',
         }
@@ -81,19 +78,19 @@ class VehiculoForm(forms.ModelForm):
             'anio': forms.NumberInput(attrs={'class': 'form-control'}),
             'kilometros': forms.NumberInput(attrs={'class': 'form-control'}),
             'dominio': forms.TextInput(attrs={'class': 'form-control'}),
-            'precio': forms.NumberInput(attrs={'class': 'form-control'}),  # ✅ AGREGADO
+            'precio': forms.NumberInput(attrs={'class': 'form-control'}),
             'estado': forms.Select(attrs={'class': 'form-control'}),
             'numero_carpeta': forms.TextInput(
-                attrs={
-                    'class': 'form-control',
-                    'placeholder': 'Ej: C-2025-014'
-                }
+                attrs={'class': 'form-control', 'placeholder': 'Ej: C-2025-014'}
             ),
         }
+
+
 # ==========================================================
 # FORMULARIO COMPLETO PARA FICHA VEHICULAR
 # ==========================================================
 class FichaVehicularForm(forms.ModelForm):
+
     class Meta:
         model = FichaVehicular
 
@@ -161,9 +158,24 @@ class FichaVehicularForm(forms.ModelForm):
         }
 
         widgets = {
+            # ================= FECHAS (FIX VISUAL) =================
+            'fecha_inscripcion_inicial': forms.DateInput(
+                format='%Y-%m-%d',
+                attrs={'class': 'form-control', 'type': 'date'}
+            ),
+            'patentes_vto1': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
+            'patentes_vto2': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
+            'patentes_vto3': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
+            'patentes_vto4': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
+            'patentes_vto5': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
+            'verificacion_vencimiento': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
+            'autopartes_turno': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
+            'vtv_turno': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
+            'vtv_vencimiento': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
+
+            # ================= RESTO =================
             'numero_motor': forms.TextInput(attrs={'class': 'form-control'}),
             'numero_chasis': forms.TextInput(attrs={'class': 'form-control'}),
-            'fecha_inscripcion_inicial': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'color': forms.TextInput(attrs={'class': 'form-control'}),
             'combustible': forms.TextInput(attrs={'class': 'form-control'}),
             'transmision': forms.TextInput(attrs={'class': 'form-control'}),
@@ -179,21 +191,11 @@ class FichaVehicularForm(forms.ModelForm):
             'numero_consignacion_factura': forms.TextInput(attrs={'class': 'form-control'}),
             'patentes_estado': forms.Select(attrs={'class': 'form-control'}),
             'patentes_monto': forms.NumberInput(attrs={'class': 'form-control'}),
-            'patentes_vto1': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'patentes_vto2': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'patentes_vto3': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'patentes_vto4': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'patentes_vto5': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'f08_estado': forms.Select(attrs={'class': 'form-control'}),
             'cedula_estado': forms.Select(attrs={'class': 'form-control'}),
             'verificacion_estado': forms.Select(attrs={'class': 'form-control'}),
-            'verificacion_vencimiento': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'autopartes_estado': forms.Select(attrs={'class': 'form-control'}),
-            'autopartes_turno': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'autopartes_turno_obs': forms.TextInput(attrs={'class': 'form-control'}),
             'vtv_estado': forms.Select(attrs={'class': 'form-control'}),
-            'vtv_turno': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'vtv_vencimiento': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'duplicado_llave_estado': forms.RadioSelect(choices=[('si', 'Sí'), ('no', 'No')]),
             'duplicado_llave_obs': forms.TextInput(attrs={'class': 'form-control'}),
             'codigo_llave_estado': forms.RadioSelect(choices=[('si', 'Sí'), ('no', 'No')]),
@@ -214,3 +216,11 @@ class FichaVehicularForm(forms.ModelForm):
             'gasto_firmas': forms.NumberInput(attrs={'class': 'form-control'}),
             'observaciones': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # 🔴 CLAVE: formatos aceptados para inputs date
+        for field in self.fields.values():
+            if isinstance(field.widget, forms.DateInput):
+                field.input_formats = ['%Y-%m-%d']

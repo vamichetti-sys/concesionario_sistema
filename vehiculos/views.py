@@ -10,16 +10,11 @@ from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 from reportlab.lib.units import cm
 
-# ✅ SOLO PARA PDF VISUAL
-# from weasyprint import HTML, CSS
-
 from .models import Vehiculo, FichaVehicular, PagoGastoIngreso
 from .forms import VehiculoBasicoForm, VehiculoForm, FichaVehicularForm
 
-# ===============================
-# 🔹 AGREGADO PARA CALENDARIO
-# ===============================
 from calendario.models import Evento
+from django.contrib.auth.decorators import login_required
 
 
 # ==========================================================
@@ -59,8 +54,6 @@ def lista_vehiculos_vendidos(request):
             "vehiculos": vehiculos,
         },
     )
-
-
 # ==========================================================
 # CAMBIAR ESTADO DE VEHÍCULO
 # ==========================================================
@@ -72,7 +65,6 @@ def cambiar_estado_vehiculo(request, vehiculo_id):
         nuevo_estado = request.POST.get("estado")
 
         if nuevo_estado == "vendido":
-
             from ventas.models import Venta
             from gestoria.models import Gestoria
 
@@ -149,12 +141,8 @@ def agregar_vehiculo(request):
     return render(
         request,
         "vehiculos/agregar_vehiculo.html",
-        {
-            "form": form,
-        },
+        {"form": form},
     )
-
-
 # ==========================================================
 # MODAL FICHA VEHICULAR (AJAX)
 # ==========================================================
@@ -212,8 +200,11 @@ def ficha_vehicular_ajax(request, vehiculo_id):
     )
 
     return JsonResponse({"html": html})
-from django.contrib.auth.decorators import login_required
 
+
+# ==========================================================
+# GUARDAR FICHA VEHICULAR (FIX REAL – NO PISA FECHAS)
+# ==========================================================
 @transaction.atomic
 def guardar_ficha_vehicular(request, vehiculo_id):
     vehiculo = get_object_or_404(Vehiculo, id=vehiculo_id)
@@ -226,21 +217,38 @@ def guardar_ficha_vehicular(request, vehiculo_id):
         if vehiculo_form.is_valid() and ficha_form.is_valid():
             vehiculo_form.save()
 
-            ficha = ficha_form.save(commit=False)
-            ficha.vehiculo = vehiculo
-            ficha.save()
+            # 🔴 GUARDADO ÚNICO (DateFields quedan persistidos)
+            ficha = ficha_form.save()
+
+            # Campos manuales (NO afectan fechas)
+            ficha.titulo_estado = request.POST.get("titulo_estado") or ficha.titulo_estado
+            ficha.titulo_obs = request.POST.get("titulo_obs") or ficha.titulo_obs
+            ficha.cedula_check_estado = request.POST.get("cedula_check_estado") or ficha.cedula_check_estado
+            ficha.cedula_check_obs = request.POST.get("cedula_check_obs") or ficha.cedula_check_obs
+            ficha.prenda_estado = request.POST.get("prenda_estado") or ficha.prenda_estado
+            ficha.prenda_obs = request.POST.get("prenda_obs") or ficha.prenda_obs
+
+            ficha.save(update_fields=[
+                "titulo_estado", "titulo_obs",
+                "cedula_check_estado", "cedula_check_obs",
+                "prenda_estado", "prenda_obs",
+            ])
 
             calcular_total_gastos(ficha)
             sincronizar_turnos_calendario(vehiculo, ficha)
 
             messages.success(request, "Cambios guardados correctamente.")
-            return redirect("vehiculos:lista_vehiculos")
+            return redirect(
+                "vehiculos:ficha_completa",
+                vehiculo_id=vehiculo.id
+            )
 
         messages.error(request, "Error al guardar los cambios.")
 
     return redirect("vehiculos:lista_vehiculos")
-
-
+# ==========================================================
+# CÁLCULO TOTAL GASTOS
+# ==========================================================
 def calcular_total_gastos(ficha):
     total = sum(
         float(v) for v in [
@@ -326,20 +334,14 @@ def registrar_pago_gasto(request, vehiculo_id):
                 request,
                 "Para registrar un pago es obligatorio ingresar la fecha."
             )
-            return redirect(
-                "vehiculos:ficha_completa",
-                vehiculo_id=vehiculo.id
-            )
+            return redirect("vehiculos:ficha_completa", vehiculo_id=vehiculo.id)
 
         if not monto_raw or Decimal(monto_raw) <= 0:
             messages.error(
                 request,
                 "El monto del pago debe ser mayor a 0."
             )
-            return redirect(
-                "vehiculos:ficha_completa",
-                vehiculo_id=vehiculo.id
-            )
+            return redirect("vehiculos:ficha_completa", vehiculo_id=vehiculo.id)
 
         PagoGastoIngreso.objects.create(
             vehiculo=vehiculo,
@@ -351,66 +353,36 @@ def registrar_pago_gasto(request, vehiculo_id):
 
         messages.success(request, "Pago de gasto registrado correctamente.")
 
-    return redirect(
-        "vehiculos:ficha_completa",
-        vehiculo_id=vehiculo.id
-    )
+    return redirect("vehiculos:ficha_completa", vehiculo_id=vehiculo.id)
+
+
 # ==========================================================
-# SINCRONIZAR TURNOS Y VENCIMIENTOS CON CALENDARIO
+# SINCRONIZAR TURNOS Y VENCIMIENTOS CON CALENDARIO (SIN ERROR)
 # ==========================================================
 def sincronizar_turnos_calendario(vehiculo, ficha):
+    """
+    Borra solo eventos del vehículo y recrea los que tienen fecha.
+    No falla si no hay fechas.
+    """
 
-    # Limpiar eventos previos del vehículo
-    Evento.objects.filter(
-        vehiculo=vehiculo,
-        tipo__in=[
-            "vtv_turno",
-            "vtv_vencimiento",
-            "autopartes_turno",
-            "verificacion_vencimiento",
-            "patentes_vencimiento",
-            "vtv",
-            "autopartes",
-        ]
-    ).delete()
+    Evento.objects.filter(vehiculo=vehiculo).delete()
 
-    # ================= TURNOS =================
+    eventos = [
+        ("vtv", ficha.vtv_turno, f"Turno VTV – {vehiculo}"),
+        ("autopartes", ficha.autopartes_turno, f"Turno grabado autopartes – {vehiculo}"),
+        ("vtv_vencimiento", ficha.vtv_vencimiento, f"Vencimiento VTV – {vehiculo}"),
+        ("verificacion_vencimiento", ficha.verificacion_vencimiento, f"Vencimiento verificación policial – {vehiculo}"),
+    ]
 
-    if ficha.vtv_turno:
-        Evento.objects.create(
-            vehiculo=vehiculo,
-            titulo=f"Turno VTV – {vehiculo}",
-            fecha=ficha.vtv_turno,
-            tipo="vtv",   # ✅ visible en calendario
-        )
+    for tipo, fecha, titulo in eventos:
+        if fecha:
+            Evento.objects.create(
+                vehiculo=vehiculo,
+                tipo=tipo,
+                fecha=fecha,
+                titulo=titulo,
+            )
 
-    if ficha.autopartes_turno:
-        Evento.objects.create(
-            vehiculo=vehiculo,
-            titulo=f"Turno grabado autopartes – {vehiculo}",
-            fecha=ficha.autopartes_turno,
-            tipo="autopartes",  # ✅ visible en calendario
-        )
-
-    # ================= VENCIMIENTOS =================
-
-    if ficha.vtv_vencimiento:
-        Evento.objects.create(
-            vehiculo=vehiculo,
-            titulo=f"Vencimiento VTV – {vehiculo}",
-            fecha=ficha.vtv_vencimiento,
-            tipo="vtv_vencimiento",
-        )
-
-    if ficha.verificacion_vencimiento:
-        Evento.objects.create(
-            vehiculo=vehiculo,
-            titulo=f"Vencimiento verificación policial – {vehiculo}",
-            fecha=ficha.verificacion_vencimiento,
-            tipo="verificacion_vencimiento",
-        )
-
-    # Patentes (hasta 5 vencimientos)
     for vto in [
         ficha.patentes_vto1,
         ficha.patentes_vto2,
@@ -421,10 +393,11 @@ def sincronizar_turnos_calendario(vehiculo, ficha):
         if vto:
             Evento.objects.create(
                 vehiculo=vehiculo,
-                titulo=f"Vencimiento patentes – {vehiculo}",
-                fecha=vto,
                 tipo="patentes_vencimiento",
+                fecha=vto,
+                titulo=f"Vencimiento patentes – {vehiculo}",
             )
+
 
 # ==========================================================
 # ELIMINAR VEHÍCULO (SIN DELETE)
@@ -523,9 +496,7 @@ def agregar_gasto_ingreso(request, vehiculo_id):
     return render(
         request,
         "vehiculos/agregar_gasto_ingreso.html",
-        {
-            "vehiculo": vehiculo,
-        },
+        {"vehiculo": vehiculo},
     )
 
 

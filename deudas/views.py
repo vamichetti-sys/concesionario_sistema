@@ -1,101 +1,84 @@
 from django.shortcuts import render
-from django.db.models import Q
+from django.db.models import Q, Sum
 
 from cuentas.models import CuentaCorriente
-from vehiculos.models import Vehiculo
+from vehiculos.models import Vehiculo, FichaVehicular, PagoGastoIngreso
 
 
 def listado_deudas(request):
     """
-    Lista deudas pendientes:
-    - Deudas de clientes (CuentaCorriente con saldo > 0)
-    - Deudas por gastos de ingreso impagos (Vehículo)
+    Vehículos con deuda (GASTOS).
+    La lógica de cuentas corrientes se conserva,
+    pero NO se ejecuta en esta pantalla.
     """
 
     q = request.GET.get("q", "").strip()
-
     deudas = []
 
     # ======================================================
-    # 1️⃣ DEUDAS DE CUENTAS CORRIENTES (CLIENTES)
+    # ⚠️ BLOQUE DE CUENTAS CORRIENTES (CONSERVADO)
+    # 👉 NO SE EJECUTA EN ESTA VISTA
     # ======================================================
-    cuentas = (
-        CuentaCorriente.objects
-        .select_related(
-            "cliente",
-            "venta",
-            "venta__vehiculo"
+    MOSTRAR_CUENTAS_CORRIENTES = False
+
+    if MOSTRAR_CUENTAS_CORRIENTES:
+        cuentas = (
+            CuentaCorriente.objects
+            .select_related("cliente")
+            .filter(saldo__gt=0)
         )
-        .filter(saldo__gt=0)
-    )
+
+        if q:
+            cuentas = cuentas.filter(
+                Q(cliente__nombre_completo__icontains=q)
+            )
+
+        for cuenta in cuentas:
+            deudas.append({
+                "tipo": "cuenta",
+                "vehiculo": None,
+                "cliente": cuenta.cliente,
+                "estado": cuenta.get_estado_display(),
+                "total_deuda": cuenta.saldo,
+                "cuenta": cuenta,
+            })
+
+    # ======================================================
+    # 2️⃣ DEUDAS OPERATIVAS DE VEHÍCULOS (DESDE FICHA)
+    # ======================================================
+    fichas = FichaVehicular.objects.select_related("vehiculo")
 
     if q:
-        cuentas = cuentas.filter(
-            Q(venta__vehiculo__dominio__icontains=q) |
-            Q(venta__vehiculo__marca__icontains=q) |
-            Q(venta__vehiculo__modelo__icontains=q)
+        fichas = fichas.filter(
+            Q(vehiculo__dominio__icontains=q) |
+            Q(vehiculo__marca__icontains=q) |
+            Q(vehiculo__modelo__icontains=q)
         )
 
-    for cuenta in cuentas:
-        vehiculo = cuenta.venta.vehiculo if cuenta.venta else None
+    for ficha in fichas:
+        total_gastos = ficha.total_gastos or 0
 
-        deudas.append({
-            "tipo": "cuenta",
-            "vehiculo": vehiculo,
-            "cliente": cuenta.cliente,
-            "estado": cuenta.get_estado_display(),
-            "total_deuda": cuenta.saldo,
-            "cuenta": cuenta,
-        })
-
-    # ======================================================
-    # 2️⃣ DEUDAS POR GASTOS DE INGRESO (VEHÍCULOS)
-    # ======================================================
-    vehiculos = Vehiculo.objects.prefetch_related("pagos_gastos_ingreso")
-
-    if q:
-        vehiculos = vehiculos.filter(
-            Q(dominio__icontains=q) |
-            Q(marca__icontains=q) |
-            Q(modelo__icontains=q)
-        )
-
-    for vehiculo in vehiculos:
-
-        gastos = list(vehiculo.pagos_gastos_ingreso.all())
-
-        if not gastos:
+        if total_gastos <= 0:
             continue
 
-        deuda_gastos = 0
-
-        for gasto in gastos:
-            # 🔒 criterio seguro:
-            # si el gasto tiene campo 'estado' y NO está cerrado → deuda
-            if hasattr(gasto, "estado"):
-                if gasto.estado != "pagado":
-                    deuda_gastos += getattr(gasto, "monto", 0)
-            else:
-                # fallback: si no hay estado, se considera deuda
-                deuda_gastos += getattr(gasto, "monto", 0)
-
-        if deuda_gastos <= 0:
-            continue
-
-        # Evitar duplicar si ya figura por cuenta corriente
-        ya_listado = any(
-            d["vehiculo"] and d["vehiculo"].id == vehiculo.id
-            for d in deudas
+        total_pagado = (
+            PagoGastoIngreso.objects
+            .filter(vehiculo=ficha.vehiculo)
+            .aggregate(total=Sum("monto"))["total"]
+            or 0
         )
-        if ya_listado:
+
+        saldo = total_gastos - total_pagado
+
+        if saldo <= 0:
             continue
 
         deudas.append({
             "tipo": "gasto",
-            "vehiculo": vehiculo,
+            "vehiculo": ficha.vehiculo,
             "cliente": None,
             "estado": "Gastos de ingreso",
-            "total_deuda": deuda_gastos,
+            "total_deuda": saldo,
             "cuenta": None,
         })
 

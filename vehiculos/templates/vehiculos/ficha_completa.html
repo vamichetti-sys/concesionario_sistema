@@ -41,7 +41,6 @@
   {% endif %}
 </div>
 {% endif %}
-
 <!-- ========================================================= -->
 <!-- DATOS BASICOS DEL VEHICULO -->
 <!-- ========================================================= -->
@@ -98,7 +97,13 @@
 
       <div class="col-md-4">
         <label class="fw-bold">Fecha inscripción inicial</label>
-        <div>{{ ficha.fecha_inscripcion_inicial|default:"No informado" }}</div>
+        <div>
+          {% if ficha.fecha_inscripcion_inicial %}
+            {{ ficha.fecha_inscripcion_inicial|date:"d/m/Y" }}
+          {% else %}
+            No informado
+          {% endif %}
+        </div>
       </div>
 
       <div class="col-md-4">
@@ -118,7 +123,6 @@
 
   </div>
 </div>
-
 <!-- ========================================================= -->
 <!-- TITULARIDAD -->
 <!-- ========================================================= -->
@@ -205,12 +209,8 @@
 
       <div class="col-md-3">
         <label class="fw-bold">Vencimiento</label>
-        <div>{{ ficha.vtv_vencimiento|default:"No informado" }}</div>
-      </div>
-
-  </div>
-</div>
-
+        <div>
+          {
 <!-- ========================================================= -->
 <!-- GASTOS DE INGRESO -->
 <!-- ========================================================= -->
