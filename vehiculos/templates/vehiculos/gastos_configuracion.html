@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}Gastos{% endblock %}
+
+{% block content %}
+<h2 class="fw-bold mb-4" style="color:#002855;">
+  Configuración de gastos de ingreso
+</h2>
+
+<form method="post">
+  {% csrf_token %}
+
+  <div class="row g-3">
+
+    <div class="col-md-3">
+      <label class="fw-bold">Formulario 08</label>
+      <input type="text" name="gasto_f08"
+             class="form-control"
+             value="{{ config.gasto_f08|default_if_none:'0.00' }}">
+    </div>
+
+    <div class="col-md-3">
+      <label class="fw-bold">Informes</label>
+      <input type="text" name="gasto_informes"
+             class="form-control"
+             value="{{ config.gasto_informes|default_if_none:'0.00' }}">
+    </div>
+
+    <div class="col-md-3">
+      <label class="fw-bold">Patentes</label>
+      <input type="text" name="gasto_patentes"
+             class="form-control"
+             value="{{ config.gasto_patentes|default_if_none:'0.00' }}">
+    </div>
+
+    <div class="col-md-3">
+      <label class="fw-bold">Verificación</label>
+      <input type="text" name="gasto_verificacion"
+             class="form-control"
+             value="{{ config.gasto_verificacion|default_if_none:'0.00' }}">
+    </div>
+
+    <div class="col-md-3">
+      <label class="fw-bold">Autopartes</label>
+      <input type="text" name="gasto_autopartes"
+             class="form-control"
+             value="{{ config.gasto_autopartes|default_if_none:'0.00' }}">
+    </div>
+
+    <div class="col-md-3">
+      <label class="fw-bold">VTV</label>
+      <input type="text" name="gasto_vtv"
+             class="form-control"
+             value="{{ config.gasto_vtv|default_if_none:'0.00' }}">
+    </div>
+
+    <div class="col-md-3">
+      <label class="fw-bold">R-541</label>
+      <input type="text" name="gasto_r541"
+             class="form-control"
+             value="{{ config.gasto_r541|default_if_none:'0.00' }}">
+    </div>
+
+    <div class="col-md-3">
+      <label class="fw-bold">Firmas</label>
+      <input type="text" name="gasto_firmas"
+             class="form-control"
+             value="{{ config.gasto_firmas|default_if_none:'0.00' }}">
+    </div>
+
+  </div>
+
+  <div class="mt-4">
+    <button class="btn btn-primary fw-bold">
+      Guardar gastos
+    </button>
+  </div>
+</form>
+{% endblock %}

@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Recibo Cuenta Corriente</title>
+
+    <style>
+        @page {
+            size: A4;
+            margin: 15mm;
+        }
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 11pt;
+            color: #000;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* ===============================
+           ENCABEZADO
+        =============================== */
+        .header {
+            background: #002855;
+            color: #fff;
+            padding: 25px;
+            text-align: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 22pt;
+        }
+
+        .header p {
+            margin: 6px 0 0 0;
+            font-size: 9.5pt;
+        }
+
+        .recibo-numero {
+            position: absolute;
+            top: 25px;
+            right: 25px;
+            font-size: 12pt;
+            font-weight: bold;
+        }
+
+        .linea-naranja {
+            height: 5px;
+            background: #ff6c1a;
+        }
+
+        /* ===============================
+           CONTENIDO
+        =============================== */
+        .content {
+            padding: 25px;
+        }
+
+        .titulo {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13pt;
+            font-weight: bold;
+            border-bottom: 2px solid #ff6c1a;
+            padding-bottom: 6px;
+            margin-bottom: 20px;
+        }
+
+        .section {
+            margin-bottom: 18px;
+        }
+
+        .section h3 {
+            margin-bottom: 8px;
+            color: #002855;
+            font-size: 12pt;
+        }
+
+        .section p {
+            margin: 3px 0;
+        }
+
+        .saldo {
+            margin-top: 15px;
+            font-size: 14pt;
+            font-weight: bold;
+            color: red;
+        }
+
+        .firma {
+            margin-top: 60px;
+            text-align: right;
+            font-size: 10pt;
+        }
+
+        .firma-linea {
+            width: 250px;
+            border-top: 1px solid #000;
+            margin-left: auto;
+            padding-top: 4px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="header">
+    <h1>Amichetti Automotores</h1>
+    <p>
+        Titular: Amichetti Hugo Alberto |
+        CUIT: 20-13814200-1 |
+        Tel: 2474660154 |
+        Email: hugoamichettiautomotores@gmail.com
+    </p>
+
+    <div class="recibo-numero">
+        RECIBO N° {{ recibo.numero|stringformat:"08d" }}
+    </div>
+</div>
+
+<div class="linea-naranja"></div>
+
+<div class="content">
+
+    <div class="titulo">
+        <span>Comprobante de pago</span>
+        <span>Fecha y hora: {{ recibo.fecha|date:"d/m/Y H:i" }}</span>
+    </div>
+
+    <div class="section">
+        <h3>Datos del cliente</h3>
+        <p><strong>Nombre:</strong> {{ cliente.nombre }}</p>
+        <p><strong>CUIT/DNI:</strong> {{ cliente.cuit_dni }}</p>
+        <p><strong>Teléfono:</strong> {{ cliente.telefono }}</p>
+        <p><strong>Email:</strong> {{ cliente.email }}</p>
+    </div>
+
+    <hr>
+
+    <div class="section">
+        <h3>Detalle del pago</h3>
+        <p><strong>Método de pago:</strong> {{ recibo.metodo_pago }}</p>
+        <p><strong>Monto abonado:</strong> ${{ recibo.monto }}</p>
+        <p><strong>Observación:</strong> {{ recibo.observacion }}</p>
+    </div>
+
+    <p class="saldo">
+        Debe pagar ${{ saldo_pendiente }}
+    </p>
+
+    <div class="firma">
+        <div class="firma-linea">
+            Firma y aclaración
+        </div>
+    </div>
+
+</div>
+
+</body>
+</html>

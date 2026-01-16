@@ -186,7 +186,7 @@ TEMPLATES = [
 ]
 
 # ==========================================================
-# AUTH / LOGIN  ✅ CONFIGURACIÓN FINAL
+# AUTH / LOGIN
 # ==========================================================
 LOGIN_URL = "/"
 LOGIN_REDIRECT_URL = "/inicio/"
@@ -202,8 +202,8 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # ==========================================================
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
-CSRF_COOKIE_SECURE = True
-SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = not DEBUG
+SESSION_COOKIE_SECURE = not DEBUG
 
 CSRF_COOKIE_SAMESITE = "Lax"
 SESSION_COOKIE_SAMESITE = "Lax"

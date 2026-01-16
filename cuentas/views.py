@@ -11,7 +11,13 @@ from django.http import HttpResponse
 # ===============================
 # REPORTLAB – PDF
 # ===============================
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.platypus import (
+    SimpleDocTemplate,
+    Paragraph,
+    Spacer,
+    Table,
+    TableStyle
+)
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
@@ -35,7 +41,11 @@ from .models import (
 # ===============================
 # FORMULARIOS
 # ===============================
-from .forms import PlanPagoForm, PagoForm, EditarCuotaForm
+from .forms import (
+    PlanPagoForm,
+    PagoForm,
+    EditarCuotaForm
+)
 
 
 # ==========================================================
@@ -235,28 +245,55 @@ def crear_plan_pago(request, cuenta_id):
 
 
 # ==========================================================
-# REGISTRAR MOVIMIENTO / PAGO  ✅ FIX DEFINITIVO
+# REGISTRAR MOVIMIENTO / PAGO  ✅ FIX DEFINITIVO (3 TIPOS)
+# - cuota   -> elige cuota e imputa desde esa cuota
+# - unico   -> NO elige cuotas, resta un monto único
+# - cheque  -> pide banco + nro cheque + monto (NO elige cuotas)
 # ==========================================================
 @login_required
 @transaction.atomic
 def registrar_movimiento(request, cuenta_id):
     cuenta = get_object_or_404(CuentaCorriente, id=cuenta_id)
-
     plan = getattr(cuenta, "plan_pago", None)
 
+    # ===============================
+    # GET: mostrar formulario
+    # ===============================
     if request.method == "GET":
-        cuotas = plan.cuotas.filter(estado="pendiente") if plan else []
+        cuotas = []
+
+        if plan:
+            for cuota in plan.cuotas.all().order_by("numero"):
+                saldo = cuota.saldo_pendiente
+                try:
+                    saldo = Decimal(saldo) if saldo is not None else Decimal("0")
+                except Exception:
+                    saldo = Decimal("0")
+
+                if saldo > 0:
+                    cuota.saldo_actual = saldo  # atributo temporal
+                    cuotas.append(cuota)
+
         return render(
             request,
             "cuentas/registrar_movimiento.html",
-            {"cuenta": cuenta, "cuotas": cuotas}
+            {
+                "cuenta": cuenta,
+                "cuotas": cuotas,
+            }
         )
 
+    # ===============================
+    # POST: leer datos
+    # ===============================
     tipo = (request.POST.get("tipo_movimiento") or "").strip()
     forma_pago = (request.POST.get("forma_pago") or "").strip()
     observaciones = (request.POST.get("observaciones") or "").strip()
 
-    # ✅ Validaciones duras (evitan rollback silencioso)
+    if tipo not in ["cuota", "unico", "cheque"]:
+        messages.error(request, "Seleccioná un tipo de pago válido.")
+        return redirect("cuentas:cuenta_corriente_detalle", cuenta_id=cuenta.id)
+
     if not forma_pago:
         messages.error(request, "Seleccioná la forma de pago.")
         return redirect("cuentas:cuenta_corriente_detalle", cuenta_id=cuenta.id)
@@ -271,9 +308,23 @@ def registrar_movimiento(request, cuenta_id):
         messages.error(request, "El monto debe ser mayor a 0.")
         return redirect("cuentas:cuenta_corriente_detalle", cuenta_id=cuenta.id)
 
-    # -------------------------------
-    # PAGO + MOVIMIENTO (SIEMPRE)
-    # -------------------------------
+    # ===============================
+    # Datos extra para CHEQUE
+    # ===============================
+    numero_cheque = (request.POST.get("numero_cheque") or "").strip()
+    banco = (request.POST.get("banco") or "").strip()
+
+    if tipo == "cheque":
+        if not banco or not numero_cheque:
+            messages.error(request, "Para cheque: ingresá banco y número de cheque.")
+            return redirect("cuentas:cuenta_corriente_detalle", cuenta_id=cuenta.id)
+
+        extra = f"Cheque N° {numero_cheque} - Banco {banco}"
+        observaciones = f"{observaciones} | {extra}" if observaciones else extra
+
+    # ===============================
+    # Crear PAGO
+    # ===============================
     pago = Pago.objects.create(
         cuenta=cuenta,
         forma_pago=forma_pago,
@@ -281,89 +332,58 @@ def registrar_movimiento(request, cuenta_id):
         observaciones=observaciones
     )
 
+    # ===============================
+    # Movimiento base
+    # ===============================
+    if tipo == "cuota":
+        descripcion_mov = observaciones or "Pago cuotas"
+        origen_mov = "manual"
+    elif tipo == "unico":
+        descripcion_mov = observaciones or "Pago único"
+        origen_mov = "manual"
+    else:
+        descripcion_mov = observaciones or f"Cheque N° {numero_cheque} ({banco})"
+        origen_mov = "cheque"
+
     MovimientoCuenta.objects.create(
         cuenta=cuenta,
         tipo="pago",
         monto=monto,
-        descripcion=observaciones or "Pago",
-        origen="manual"
+        descripcion=descripcion_mov,
+        origen=origen_mov
     )
 
-    # ==================================================
-    # PAGO ÚNICO → PLAN DE 1 CUOTA (OneToOne SAFE)
-    # ==================================================
-    # ✅ Reglas:
-    # - Si NO es "cuota", lo tratamos como "pago único / pago general"
-    # - Usamos get_or_create para no romper OneToOne
-    # - Limpiamos cuotas anteriores del plan (si existieran) SOLO en este caso
-    if tipo != "cuota":
-        plan, _ = PlanPago.objects.get_or_create(
-            cuenta=cuenta,
-            defaults={
-                "fecha_inicio": timezone.now().date(),
-                "cantidad_cuotas": 1,
-                "monto_total": monto,
-                "monto_cuota": monto,
-                "estado": "activo",
-            }
-        )
-
-        plan.cantidad_cuotas = 1
-        plan.monto_total = monto
-        plan.monto_cuota = monto
-        plan.estado = "activo"
-        plan.save()
-
-        # limpiar cuotas previas del plan para dejar SOLO 1 cuota
-        plan.cuotas.all().delete()
-
-        CuotaPlan.objects.create(
-            plan=plan,
-            numero=1,
-            vencimiento=timezone.now().date(),
-            monto=monto,
-            estado="pendiente"
-        )
-
-    # -------------------------------
+    # ===============================
     # IMPUTAR PAGO A CUOTAS
-    # -------------------------------
-    # ✅ Este bloque está blindado para que nunca tire excepción
-    # y te deje todo "sin crear" por rollback.
-    if plan:
+    # ===============================
+    if tipo == "cuota":
+        if not plan:
+            messages.error(request, "La cuenta no tiene plan de pago.")
+            return redirect("cuentas:cuenta_corriente_detalle", cuenta_id=cuenta.id)
+
         monto_restante = monto
+        cuota_id = request.POST.get("cuota_id")
 
-        if tipo == "cuota":
-            cuota_id = request.POST.get("cuota_id")
-            if not cuota_id:
-                messages.error(request, "Seleccioná la cuota a imputar.")
-                return redirect("cuentas:cuenta_corriente_detalle", cuenta_id=cuenta.id)
+        if not cuota_id:
+            messages.error(request, "Seleccioná la cuota a imputar.")
+            return redirect("cuentas:cuenta_corriente_detalle", cuenta_id=cuenta.id)
 
-            cuota_inicio = get_object_or_404(CuotaPlan, id=cuota_id, plan=plan)
-            cuotas = plan.cuotas.filter(numero__gte=cuota_inicio.numero)
-        else:
-            cuotas = plan.cuotas.all()
+        if not plan.cuotas.filter(id=cuota_id).exists():
+            messages.error(request, "La cuota seleccionada no pertenece al plan.")
+            return redirect("cuentas:cuenta_corriente_detalle", cuenta_id=cuenta.id)
+
+        cuota_inicio = plan.cuotas.get(id=cuota_id)
+        cuotas = plan.cuotas.filter(numero__gte=cuota_inicio.numero)
 
         for cuota in cuotas:
             if monto_restante <= 0:
                 break
 
-            # ✅ saldo_pendiente puede venir None → lo convertimos a 0 seguro
-            saldo = cuota.saldo_pendiente
-            try:
-                saldo = Decimal(saldo) if saldo is not None else Decimal("0")
-            except Exception:
-                saldo = Decimal("0")
-
-            if saldo <= 0:
-                # si el modelo ya la considera sin saldo, intentamos marcar pagada sin romper
-                try:
-                    cuota.marcar_pagada()
-                except Exception:
-                    pass
-                continue
-
+            saldo = cuota.saldo_pendiente or Decimal("0")
             aplicar = min(monto_restante, saldo)
+
+            if aplicar <= 0:
+                continue
 
             PagoCuota.objects.create(
                 pago=pago,
@@ -371,7 +391,6 @@ def registrar_movimiento(request, cuenta_id):
                 monto_aplicado=aplicar
             )
 
-            # ✅ marcar_pagada puede fallar si tiene lógica interna → no rompemos el flujo
             try:
                 cuota.marcar_pagada()
             except Exception:
@@ -379,19 +398,254 @@ def registrar_movimiento(request, cuenta_id):
 
             monto_restante -= aplicar
 
-        # ✅ verificar_finalizacion no debe romper el guardado
         try:
             plan.verificar_finalizacion()
         except Exception:
             pass
 
-    # ✅ recalcular_saldo tampoco debe romper el guardado
-    try:
-        cuenta.recalcular_saldo()
-    except Exception:
-        pass
+    # ===============================
+    # Recalcular saldo y salir
+    # ===============================
+        try:
+          cuenta.recalcular_saldo()
+        except Exception:
+           pass
 
     return redirect("cuentas:recibo_pago_pdf", pago_id=pago.id)
+@login_required
+@transaction.atomic
+def registrar_pago_gestoria(request, cuenta_id):
+    cuenta = get_object_or_404(CuentaCorriente, id=cuenta_id)
+
+    if not cuenta.venta or not cuenta.venta.gestoria:
+        messages.error(request, "No hay gestoría asociada a esta cuenta.")
+        return redirect(
+            "cuentas:cuenta_corriente_detalle",
+            cuenta_id=cuenta.id
+        )
+
+    if request.method == "POST":
+        try:
+            monto = _parse_monto_argentino(request.POST.get("monto"))
+        except Exception:
+            messages.error(request, "Monto inválido.")
+            return redirect(
+                "cuentas:cuenta_corriente_detalle",
+                cuenta_id=cuenta.id
+            )
+
+        if monto <= 0:
+            messages.error(request, "El monto debe ser mayor a 0.")
+            return redirect(
+                "cuentas:cuenta_corriente_detalle",
+                cuenta_id=cuenta.id
+            )
+
+        pago = Pago.objects.create(
+            cuenta=cuenta,
+            forma_pago="efectivo",
+            monto_total=monto,
+            observaciones="Pago gestoría"
+        )
+
+        MovimientoCuenta.objects.create(
+            cuenta=cuenta,
+            tipo="pago",
+            monto=monto,
+            descripcion="Pago de gestoría",
+            origen="gestoria"
+        )
+
+        cuenta.recalcular_saldo()
+
+        return redirect(
+            "cuentas:recibo_pago_pdf",
+            pago_id=pago.id
+        )
+
+    return render(
+        request,
+        "cuentas/registrar_pago_gestoria.html",
+        {"cuenta": cuenta}
+    )
+
+# ==========================================================
+# RECIBO DE PAGO PDF 
+# ==========================================================
+from django.utils import timezone
+from reportlab.platypus import (
+    SimpleDocTemplate,
+    Paragraph,
+    Spacer,
+    Table,
+    TableStyle
+)
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib import colors
+from reportlab.lib.units import cm
+
+@login_required
+def recibo_pago_pdf(request, pago_id):
+    pago = get_object_or_404(Pago, id=pago_id)
+    cuenta = pago.cuenta
+    cliente = cuenta.cliente
+
+    # ✅ DEFINIR FECHA ANTES DE USARLA
+    fecha_str = timezone.now().strftime("%d/%m/%Y %H:%M")
+
+    response = HttpResponse(content_type="application/pdf")
+    response["Content-Disposition"] = (
+        f'inline; filename="recibo_{pago.id}.pdf"'
+    )
+
+    doc = SimpleDocTemplate(
+        response,
+        pagesize=A4,
+        rightMargin=2 * cm,
+        leftMargin=2 * cm,
+        topMargin=2 * cm,
+        bottomMargin=2 * cm,
+    )
+
+    styles = getSampleStyleSheet()
+    elements = []
+
+    # ==================================================
+    # COLORES CORPORATIVOS
+    # ==================================================
+    AZUL = colors.HexColor("#002855")
+    NARANJA = colors.HexColor("#FF6C1A")
+    GRIS = colors.HexColor("#666666")
+
+    # ==================================================
+    # ENCABEZADO
+    # ==================================================
+    header = Table(
+    [[
+        Paragraph(
+            "<b>AMICHETTI AUTOMOTORES</b><br/>"
+            "Titular: Amichetti Hugo Alberto<br/>"
+            "CUIT: 20-13814200-1 – Tel: 2474660154",
+            styles["Normal"]
+        ),
+        Paragraph(
+            f"<b>RECIBO N° {pago.id:08d}</b><br/>{fecha_str}",
+            styles["Normal"]
+        )
+    ]],
+    colWidths=[11*cm, 5*cm]
+)
+
+    header.setStyle(TableStyle([
+    ("BOX", (0,0), (-1,-1), 1, colors.black),
+    ("BACKGROUND", (0,0), (-1,-1), COLOR_GRIS),
+    ("VALIGN", (0,0), (-1,-1), "TOP"),
+    ("LEFTPADDING", (0,0), (-1,-1), 8),
+    ("RIGHTPADDING", (0,0), (-1,-1), 8),
+    ("TOPPADDING", (0,0), (-1,-1), 6),
+    ("BOTTOMPADDING", (0,0), (-1,-1), 6),
+]))
+
+    elements.append(header)
+    elements.append(Spacer(1, 20))
+
+    # ==================================================
+    # TÍTULO + FECHA
+    # ==================================================
+    fecha_str = timezone.now().strftime("%d/%m/%Y %H:%M")
+
+    titulo_table = Table(
+        [[
+            Paragraph("<b>Comprobante de pago</b>", styles["Heading2"]),
+            Paragraph(f"Fecha y hora: {fecha_str}", styles["Normal"])
+        ]],
+        colWidths=[10 * cm, 6 * cm],
+        style=[
+            ("LINEBELOW", (0, 0), (-1, 0), 1, NARANJA),
+            ("BOTTOMPADDING", (0, 0), (-1, 0), 8),
+        ]
+    )
+
+    elements.append(titulo_table)
+    elements.append(Spacer(1, 18))
+
+    # ==================================================
+    # DATOS DEL CLIENTE (SEGUROS)
+    # ==================================================
+    documento = (
+        getattr(cliente, "cuit", None)
+        or getattr(cliente, "dni", None)
+        or getattr(cliente, "documento", None)
+        or "-"
+    )
+
+    telefono = getattr(cliente, "telefono", "-")
+    email = getattr(cliente, "email", "-")
+
+    elements.append(
+        Paragraph("<b><font color='#002855'>Datos del cliente</font></b>", styles["Heading3"])
+    )
+    elements.append(Spacer(1, 6))
+    elements.append(Paragraph(f"Nombre: {cliente.nombre_completo}", styles["Normal"]))
+    elements.append(Paragraph(f"CUIT/DNI: {documento}", styles["Normal"]))
+    elements.append(Paragraph(f"Teléfono: {telefono}", styles["Normal"]))
+    elements.append(Paragraph(f"Email: {email}", styles["Normal"]))
+
+    elements.append(Spacer(1, 16))
+
+    # ==================================================
+    # DETALLE DEL PAGO
+    # ==================================================
+    elements.append(
+        Paragraph("<b><font color='#FF6C1A'>Detalle del pago</font></b>", styles["Heading3"])
+    )
+    elements.append(Spacer(1, 6))
+
+    elements.append(Paragraph(
+        f"Método de pago: {pago.get_forma_pago_display()}",
+        styles["Normal"]
+    ))
+    elements.append(Paragraph(
+        f"Monto abonado: $ {pago.monto_total:,.2f}",
+        styles["Normal"]
+    ))
+    elements.append(Paragraph(
+        f"Observación: {pago.observaciones or '-'}",
+        styles["Normal"]
+    ))
+
+    elements.append(Spacer(1, 18))
+
+    # ==================================================
+    # SALDO
+    # ==================================================
+    elements.append(
+        Paragraph(
+            f"<b>Saldo pendiente del cliente:</b> "
+            f"<font color='red'><b>Debe pagar $ {cuenta.saldo:,.2f}</b></font>",
+            styles["Normal"]
+        )
+    )
+
+    elements.append(Spacer(1, 50))
+
+    # ==================================================
+    # FIRMA
+    # ==================================================
+    elements.append(
+        Paragraph(
+            "<para alignment='right'>"
+            "<font color='#666666'>"
+            "_____________________________<br/>"
+            "Firma y aclaración"
+            "</font></para>",
+            styles["Normal"]
+        )
+    )
+
+    doc.build(elements)
+    return response
 # ==========================================================
 # EDITAR CUOTA
 # ==========================================================
@@ -399,15 +653,20 @@ def registrar_movimiento(request, cuenta_id):
 @transaction.atomic
 def editar_cuota(request, cuota_id):
     cuota = get_object_or_404(CuotaPlan, id=cuota_id)
-    form = EditarCuotaForm(request.POST or None, instance=cuota)
+
+    form = EditarCuotaForm(
+        request.POST or None,
+        instance=cuota
+    )
+
     if request.method == "POST" and form.is_valid():
         form.save()
+        messages.success(request, "Cuota actualizada correctamente.")
+
     return redirect(
         "cuentas:cuenta_corriente_detalle",
         cuenta_id=cuota.plan.cuenta.id
     )
-
-
 # ==========================================================
 # CONECTAR VEHÍCULO COMO PERMUTA
 # ==========================================================
@@ -419,6 +678,7 @@ def conectar_vehiculo_permuta(request, cuenta_id, vehiculo_id):
 
     ficha = vehiculo.ficha
     ficha.imputar_gastos_permuta_en_cuenta(cuenta)
+
     messages.success(request, "Vehículo vinculado correctamente.")
 
     return redirect(
@@ -426,34 +686,6 @@ def conectar_vehiculo_permuta(request, cuenta_id, vehiculo_id):
         cuenta_id=cuenta.id
     )
 
-
-# ==========================================================
-# RECIBO DE PAGO PDF
-# ==========================================================
-@login_required
-def recibo_pago_pdf(request, pago_id):
-    pago = get_object_or_404(Pago, id=pago_id)
-    cuenta = pago.cuenta
-
-    response = HttpResponse(content_type="application/pdf")
-    response["Content-Disposition"] = f"inline; filename=recibo_{pago.id}.pdf"
-
-    doc = SimpleDocTemplate(response, pagesize=A4)
-    styles = getSampleStyleSheet()
-
-    elements = [
-        Paragraph("RECIBO DE PAGO", styles["Title"]),
-        Spacer(1, 12),
-        Paragraph(f"Cliente: {cuenta.cliente}", styles["Normal"]),
-        Paragraph(f"Monto: $ {pago.monto_total:,.0f}", styles["Normal"]),
-        Paragraph(
-            f"Forma de pago: {pago.get_forma_pago_display()}",
-            styles["Normal"]
-        ),
-    ]
-
-    doc.build(elements)
-    return response
 # ==========================================================
 # ELIMINAR PLAN DE PAGO
 # ==========================================================

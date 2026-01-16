@@ -17,10 +17,16 @@
     <button class="btn btn-primary">Buscar</button>
 </form>
 
-<!-- BOTON AGREGAR -->
-<a href="/vehiculos/agregar/" class="btn btn-dark mb-3 fw-bold">
-    Agregar Vehículo
-</a>
+<!-- BOTONES SUPERIORES -->
+<div class="d-flex mb-3" style="gap:10px;">
+    <a href="/vehiculos/agregar/" class="btn btn-dark fw-bold">
+        Agregar Vehículo
+    </a>
+
+    <a href="/vehiculos/gastos/" class="btn btn-warning fw-bold">
+        Gastos
+    </a>
+</div>
 
 <!-- TABLA -->
 <div class="card shadow-sm rounded-4">
@@ -95,13 +101,13 @@
                         <div class="d-flex align-items-center" style="gap:6px;">
 
                             <form method="POST"
-                                  action="{% url 'vehiculos:cambiar_estado_vehiculo' v.id %}">
+                                  action="{% url 'vehiculos:cambiar_estado_vehiculo' v.id %}"
+                                  class="d-flex align-items-center"
+                                  style="gap:6px;">
                                 {% csrf_token %}
 
                                 <select name="estado"
-                                        class="form-select form-select-sm"
-                                        onchange="this.form.submit()">
-
+                                        class="form-select form-select-sm">
                                     <option value="stock"
                                             {% if v.estado == 'stock' %}selected{% endif %}>
                                         En stock
@@ -116,8 +122,12 @@
                                             {% if v.estado == 'vendido' %}selected{% endif %}>
                                         Vendido
                                     </option>
-
                                 </select>
+
+                                <button type="submit"
+                                        class="btn btn-sm btn-outline-primary">
+                                    Guardar
+                                </button>
                             </form>
 
                             {% if v.estado == "stock" %}

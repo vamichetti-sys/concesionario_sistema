@@ -3,6 +3,11 @@ from django.urls import path, include
 from inicio import views as inicio_views
 from django.contrib.auth import views as auth_views
 
+# ✅ AGREGADOS PARA MEDIA (NO ROMPEN NADA)
+from django.conf import settings
+from django.conf.urls.static import static
+
+
 urlpatterns = [
 
     # ===============================
@@ -103,3 +108,12 @@ urlpatterns = [
     # ===============================
     path('deudas/', include('deudas.urls')),
 ]
+
+# ==========================================================
+# 📂 MEDIA FILES (SOLO EN DESARROLLO)
+# ==========================================================
+if settings.DEBUG:
+    urlpatterns += static(
+        settings.MEDIA_URL,
+        document_root=settings.MEDIA_ROOT
+    )

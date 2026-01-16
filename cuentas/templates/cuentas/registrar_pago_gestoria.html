@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Registrar pago de gestoría{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+    <h2 class="fw-bold mb-3" style="color:#002855;">
+        Registrar pago de gestoría
+    </h2>
+
+    <p class="text-muted">
+        Cliente: <strong>{{ cuenta.cliente }}</strong>
+    </p>
+
+    <div class="card shadow-sm border-0 rounded-4">
+        <div class="card-body">
+
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Total gestoría</label>
+                <div class="fw-bold text-danger fs-5">
+                    $ {{ total_gestoria|floatformat:0 }}
+                </div>
+            </div>
+
+            <form method="post">
+                {% csrf_token %}
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Monto a pagar</label>
+                    <input type="number"
+                           name="monto"
+                           class="form-control"
+                           step="0.01"
+                           min="0.01"
+                           required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Observaciones</label>
+                    <textarea name="observaciones"
+                              class="form-control"
+                              rows="2"></textarea>
+                </div>
+
+                <div class="d-flex justify-content-between mt-4">
+                    <a href="{% url 'cuentas:cuenta_corriente_detalle' cuenta.id %}"
+                       class="btn btn-outline-secondary rounded-pill fw-bold">
+                        ← Volver
+                    </a>
+
+                    <button type="submit"
+                            class="btn btn-success rounded-pill fw-bold">
+                        Registrar pago
+                    </button>
+                </div>
+            </form>
+
+        </div>
+    </div>
+
+</div>
+{% endblock %}

@@ -13,14 +13,6 @@
     </p>
 </div>
 
-{% if messages %}
-    {% for message in messages %}
-        <div class="alert alert-{{ message.tags }}">
-            {{ message }}
-        </div>
-    {% endfor %}
-{% endif %}
-
 {% if form.errors %}
     <div class="alert alert-danger">
         <strong>Hay errores en el formulario:</strong>
@@ -37,7 +29,7 @@
 <div class="card shadow-sm border-0 rounded-4">
     <div class="card-body">
 
-        <!-- ✅ EL BLOQUEO VA ACÁ -->
+        <!-- ✅ BLOQUEO ANTI DOBLE SUBMIT (NO SE TOCA) -->
         <form method="post" novalidate onsubmit="bloquearSubmit(this)">
             {% csrf_token %}
 
@@ -85,7 +77,9 @@
                 {{ form.fecha_emision }}
             </div>
 
-            <!-- DESGLOSE -->
+            <!-- ===============================
+                 DESGLOSE DINÁMICO
+            =============================== -->
             <div class="mt-4">
                 <p class="text-muted mb-2">
                     Detalle de pagarés (podés editar montos y fechas):
@@ -125,7 +119,7 @@ function bloquearSubmit(form) {
     btn.disabled = true;
     btn.innerText = "Generando…";
 
-    return true; // 🔑 deja continuar el submit
+    return true;
 }
 
 function sumarDias(fecha, dias) {

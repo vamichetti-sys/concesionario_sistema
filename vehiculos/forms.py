@@ -1,5 +1,6 @@
 from django import forms
 from .models import Vehiculo, FichaVehicular
+from django.conf import settings
 
 
 # ==========================================================
@@ -61,17 +62,6 @@ class VehiculoForm(forms.ModelForm):
             'numero_carpeta',
         ]
 
-        labels = {
-            'marca': 'Marca',
-            'modelo': 'Modelo',
-            'anio': 'Año',
-            'kilometros': 'Kilometraje',
-            'dominio': 'Dominio',
-            'precio': 'Precio',
-            'estado': 'Estado',
-            'numero_carpeta': 'Número de carpeta',
-        }
-
         widgets = {
             'marca': forms.TextInput(attrs={'class': 'form-control'}),
             'modelo': forms.TextInput(attrs={'class': 'form-control'}),
@@ -80,26 +70,168 @@ class VehiculoForm(forms.ModelForm):
             'dominio': forms.TextInput(attrs={'class': 'form-control'}),
             'precio': forms.NumberInput(attrs={'class': 'form-control'}),
             'estado': forms.Select(attrs={'class': 'form-control'}),
-            'numero_carpeta': forms.TextInput(
-                attrs={'class': 'form-control', 'placeholder': 'Ej: C-2025-014'}
-            ),
+            'numero_carpeta': forms.TextInput(attrs={'class': 'form-control'}),
         }
-
-
 # ==========================================================
 # FORMULARIO COMPLETO PARA FICHA VEHICULAR
 # ==========================================================
 class FichaVehicularForm(forms.ModelForm):
 
+    # ======================================================
+    # 🔑 DEFINICIÓN EXPLÍCITA DE FECHAS (FIX DEFINITIVO)
+    # ======================================================
+    fecha_inscripcion_inicial = forms.DateField(
+        required=False,
+        input_formats=['%Y-%m-%d'],
+        widget=forms.DateInput(
+            format='%Y-%m-%d',
+            attrs={'type': 'date', 'class': 'form-control'}
+        )
+    )
+
+    patentes_vto1 = forms.DateField(
+        required=False,
+        input_formats=['%Y-%m-%d'],
+        widget=forms.DateInput(
+            format='%Y-%m-%d',
+            attrs={'type': 'date', 'class': 'form-control'}
+        )
+    )
+    patentes_vto2 = forms.DateField(
+        required=False,
+        input_formats=['%Y-%m-%d'],
+        widget=forms.DateInput(
+            format='%Y-%m-%d',
+            attrs={'type': 'date', 'class': 'form-control'}
+        )
+    )
+    patentes_vto3 = forms.DateField(
+        required=False,
+        input_formats=['%Y-%m-%d'],
+        widget=forms.DateInput(
+            format='%Y-%m-%d',
+            attrs={'type': 'date', 'class': 'form-control'}
+        )
+    )
+    patentes_vto4 = forms.DateField(
+        required=False,
+        input_formats=['%Y-%m-%d'],
+        widget=forms.DateInput(
+            format='%Y-%m-%d',
+            attrs={'type': 'date', 'class': 'form-control'}
+        )
+    )
+    patentes_vto5 = forms.DateField(
+        required=False,
+        input_formats=['%Y-%m-%d'],
+        widget=forms.DateInput(
+            format='%Y-%m-%d',
+            attrs={'type': 'date', 'class': 'form-control'}
+        )
+    )
+
+    verificacion_vencimiento = forms.DateField(
+        required=False,
+        input_formats=['%Y-%m-%d'],
+        widget=forms.DateInput(
+            format='%Y-%m-%d',
+            attrs={'type': 'date', 'class': 'form-control'}
+        )
+    )
+
+    autopartes_turno = forms.DateField(
+        required=False,
+        input_formats=['%Y-%m-%d'],
+        widget=forms.DateInput(
+            format='%Y-%m-%d',
+            attrs={'type': 'date', 'class': 'form-control'}
+        )
+    )
+
+    vtv_turno = forms.DateField(
+        required=False,
+        input_formats=['%Y-%m-%d'],
+        widget=forms.DateInput(
+            format='%Y-%m-%d',
+            attrs={'type': 'date', 'class': 'form-control'}
+        )
+    )
+
+    vtv_vencimiento = forms.DateField(
+        required=False,
+        input_formats=['%Y-%m-%d'],
+        widget=forms.DateInput(
+            format='%Y-%m-%d',
+            attrs={'type': 'date', 'class': 'form-control'}
+        )
+    )
+
     class Meta:
         model = FichaVehicular
+        fields = [
+            'numero_motor',
+            'numero_chasis',
+            'fecha_inscripcion_inicial',
 
-        # ⛔ motor y chasis no se usan en UI
-        exclude = [
-            'vehiculo',
-            'total_gastos',
-            'motor',
-            'chasis',
+            'color',
+            'combustible',
+            'transmision',
+
+            'vendedor',
+            'contacto',
+            'email_contacto',
+
+            'titular',
+            'domicilio_titular',
+            'dni_titular',
+            'estado_civil',
+            'cuit_cuil_dni',
+
+            'tipo_ingreso',
+            'numero_consignacion_factura',
+
+            'patentes_estado',
+            'patentes_monto',
+            'patentes_vto1',
+            'patentes_vto2',
+            'patentes_vto3',
+            'patentes_vto4',
+            'patentes_vto5',
+
+            'f08_estado',
+            'cedula_estado',
+
+            'verificacion_estado',
+            'verificacion_vencimiento',
+
+            'autopartes_estado',
+            'autopartes_turno',
+
+            'vtv_estado',
+            'vtv_turno',
+            'vtv_vencimiento',
+
+            'duplicado_llave_estado',
+            'duplicado_llave_obs',
+            'codigo_llave_estado',
+            'codigo_llave_obs',
+            'codigo_radio_estado',
+            'codigo_radio_obs',
+            'manuales_estado',
+            'manuales_obs',
+            'oblea_gnc_estado',
+            'oblea_gnc_obs',
+
+            'gasto_f08',
+            'gasto_informes',
+            'gasto_patentes',
+            'gasto_verificacion',
+            'gasto_autopartes',
+            'gasto_vtv',
+            'gasto_r541',
+            'gasto_firmas',
+
+            'observaciones',
         ]
 
         labels = {
@@ -132,7 +264,6 @@ class FichaVehicularForm(forms.ModelForm):
             'verificacion_vencimiento': 'Vencimiento verificación',
             'autopartes_estado': 'Grabado autopartes',
             'autopartes_turno': 'Turno grabado autopartes',
-            'autopartes_turno_obs': 'Observaciones turno grabado autopartes',
             'vtv_estado': 'VTV',
             'vtv_turno': 'Turno VTV',
             'vtv_vencimiento': 'Vencimiento VTV',
@@ -158,22 +289,6 @@ class FichaVehicularForm(forms.ModelForm):
         }
 
         widgets = {
-            # ================= FECHAS (FIX VISUAL) =================
-            'fecha_inscripcion_inicial': forms.DateInput(
-                format='%Y-%m-%d',
-                attrs={'class': 'form-control', 'type': 'date'}
-            ),
-            'patentes_vto1': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
-            'patentes_vto2': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
-            'patentes_vto3': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
-            'patentes_vto4': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
-            'patentes_vto5': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
-            'verificacion_vencimiento': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
-            'autopartes_turno': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
-            'vtv_turno': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
-            'vtv_vencimiento': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
-
-            # ================= RESTO =================
             'numero_motor': forms.TextInput(attrs={'class': 'form-control'}),
             'numero_chasis': forms.TextInput(attrs={'class': 'form-control'}),
             'color': forms.TextInput(attrs={'class': 'form-control'}),
@@ -187,25 +302,8 @@ class FichaVehicularForm(forms.ModelForm):
             'dni_titular': forms.TextInput(attrs={'class': 'form-control'}),
             'estado_civil': forms.TextInput(attrs={'class': 'form-control'}),
             'cuit_cuil_dni': forms.TextInput(attrs={'class': 'form-control'}),
-            'tipo_ingreso': forms.Select(attrs={'class': 'form-control'}),
             'numero_consignacion_factura': forms.TextInput(attrs={'class': 'form-control'}),
-            'patentes_estado': forms.Select(attrs={'class': 'form-control'}),
             'patentes_monto': forms.NumberInput(attrs={'class': 'form-control'}),
-            'f08_estado': forms.Select(attrs={'class': 'form-control'}),
-            'cedula_estado': forms.Select(attrs={'class': 'form-control'}),
-            'verificacion_estado': forms.Select(attrs={'class': 'form-control'}),
-            'autopartes_estado': forms.Select(attrs={'class': 'form-control'}),
-            'vtv_estado': forms.Select(attrs={'class': 'form-control'}),
-            'duplicado_llave_estado': forms.RadioSelect(choices=[('si', 'Sí'), ('no', 'No')]),
-            'duplicado_llave_obs': forms.TextInput(attrs={'class': 'form-control'}),
-            'codigo_llave_estado': forms.RadioSelect(choices=[('si', 'Sí'), ('no', 'No')]),
-            'codigo_llave_obs': forms.TextInput(attrs={'class': 'form-control'}),
-            'codigo_radio_estado': forms.RadioSelect(choices=[('si', 'Sí'), ('no', 'No')]),
-            'codigo_radio_obs': forms.TextInput(attrs={'class': 'form-control'}),
-            'manuales_estado': forms.RadioSelect(choices=[('si', 'Sí'), ('no', 'No')]),
-            'manuales_obs': forms.TextInput(attrs={'class': 'form-control'}),
-            'oblea_gnc_estado': forms.RadioSelect(choices=[('si', 'Sí'), ('no', 'No')]),
-            'oblea_gnc_obs': forms.TextInput(attrs={'class': 'form-control'}),
             'gasto_f08': forms.NumberInput(attrs={'class': 'form-control'}),
             'gasto_informes': forms.NumberInput(attrs={'class': 'form-control'}),
             'gasto_patentes': forms.NumberInput(attrs={'class': 'form-control'}),
@@ -214,13 +312,25 @@ class FichaVehicularForm(forms.ModelForm):
             'gasto_vtv': forms.NumberInput(attrs={'class': 'form-control'}),
             'gasto_r541': forms.NumberInput(attrs={'class': 'form-control'}),
             'gasto_firmas': forms.NumberInput(attrs={'class': 'form-control'}),
-            'observaciones': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'patentes_estado': forms.Select(attrs={'class': 'form-control'}),
+            'f08_estado': forms.Select(attrs={'class': 'form-control'}),
+            'cedula_estado': forms.Select(attrs={'class': 'form-control'}),
+            'verificacion_estado': forms.Select(attrs={'class': 'form-control'}),
+            'autopartes_estado': forms.Select(attrs={'class': 'form-control'}),
+            'vtv_estado': forms.Select(attrs={'class': 'form-control'}),
+            'tipo_ingreso': forms.Select(attrs={'class': 'form-control'}),
+            'duplicado_llave_estado': forms.Select(attrs={'class': 'form-control'}),
+            'codigo_llave_estado': forms.Select(attrs={'class': 'form-control'}),
+            'codigo_radio_estado': forms.Select(attrs={'class': 'form-control'}),
+            'manuales_estado': forms.Select(attrs={'class': 'form-control'}),
+            'oblea_gnc_estado': forms.Select(attrs={'class': 'form-control'}),
+            'observaciones': forms.Textarea(attrs={'rows': 5, 'class': 'form-control'}),
+            'oblea_gnc_obs': forms.Textarea(attrs={'rows': 2, 'class': 'form-control'}),
+            'duplicado_llave_obs': forms.Textarea(attrs={'rows': 2, 'class': 'form-control'}),
         }
 
+    # ======================================================
+    # INIT (SE CONSERVA)
+    # ======================================================
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-        # 🔴 CLAVE: formatos aceptados para inputs date
-        for field in self.fields.values():
-            if isinstance(field.widget, forms.DateInput):
-                field.input_formats = ['%Y-%m-%d']

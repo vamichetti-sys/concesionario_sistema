@@ -1,67 +1,39 @@
-# Bases de datos
+# =========================
+# ENTORNOS VIRTUALES
+# =========================
+venv/
+.venv/
+venv312/
+
+# =========================
+# VARIABLES DE ENTORNO
+# =========================
+.env
+.env.*
+
+# =========================
+# PYTHON
+# =========================
+__pycache__/
+*.pyc
+*.pyo
+
+# =========================
+# DJANGO
+# =========================
+db.sqlite3
 *.sqlite3
 backup_db_*.sqlite3
-
-# Entorno virtual
-venv/
-.env
-# Python
-__pycache__/
-*.pyc
-*.pyo
-
-# Virtualenv
-.venv/
-
-# Django
-db.sqlite3
 media/
 staticfiles/
 
-# Environment
-.env
-.env.*
+# =========================
+# ARCHIVOS GENERADOS / PRUEBA
+# =========================
+*.pdf
+*.json
 
-# OS
+# =========================
+# SISTEMA OPERATIVO
+# =========================
 .DS_Store
-# Entorno virtual
-.venv/
-
-# Python
-# Entornos virtuales
-.venv/
-venv/
-
-# Python
-__pycache__/
-*.pyc
-*.pyo
-
-# Django
-db.sqlite3
-staticfiles/
-media/
-
-# Entorno
-.env
-.env.*
-
-# OS
-.DS_Store
-__pycache__/
-*.pyc
-
-# Base de datos local
-db.sqlite3
-
-# Variables de entorno
-.env
-
-# Archivos generados
-media/
-staticfiles/
-
-# Mac
-.DS_Store
-
-

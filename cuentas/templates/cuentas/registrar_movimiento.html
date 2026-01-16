@@ -13,8 +13,10 @@
             Generar movimiento
         </h2>
         <p class="text-muted mb-0">
-            Cliente: <strong>{{ cuenta.cliente }}</strong> ·
-            Venta: <strong>#{{ cuenta.venta.id }}</strong>
+            Cliente: <strong>{{ cuenta.cliente }}</strong>
+            {% if cuenta.venta %}
+                · Venta: <strong>#{{ cuenta.venta.id }}</strong>
+            {% endif %}
         </p>
     </div>
 
@@ -39,8 +41,8 @@
                             onchange="toggleCuotas(this.value)">
                         <option value="">Seleccionar</option>
                         <option value="cuota">Pago de cuota</option>
-                        <option value="pago_unico">Pago único</option>
-                        <option value="transferencia">Transferencia / pago general</option>
+                        <option value="unico">Pago único</option>
+                        <option value="cheque">Cheque</option>
                     </select>
                 </div>
 
@@ -53,14 +55,14 @@
                             id="cuota_id"
                             class="form-select">
                         <option value="">Seleccionar cuota</option>
+
                         {% for cuota in cuotas %}
-                            {% if cuota.estado == 'pendiente' %}
-                                <option value="{{ cuota.id }}">
-                                    Cuota {{ cuota.numero }} – $
-                                    {{ cuota.monto|floatformat:0 }}
-                                </option>
-                            {% endif %}
+                            <option value="{{ cuota.id }}">
+                                Cuota {{ cuota.numero }} – saldo $
+                                {{ cuota.saldo_actual|floatformat:0 }}
+                            </option>
                         {% endfor %}
+
                     </select>
                     <div class="form-text">
                         Si el monto supera esta cuota, se descontará de las siguientes.
@@ -89,6 +91,7 @@
                     <select name="forma_pago"
                             class="form-select"
                             required>
+                        <option value="">Seleccionar</option>
                         <option value="efectivo">Efectivo</option>
                         <option value="transferencia">Transferencia</option>
                         <option value="cheque">Cheque</option>

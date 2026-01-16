@@ -20,8 +20,8 @@ def calendario_vencimientos(request):
 
 # ==========================================================
 # 📅 API DE EVENTOS (VENCIMIENTOS + TURNOS)
-# 👉 MISMA FUNCIÓN, MISMO LUGAR
-# 👉 SOLO SE ADAPTA EL FORMATO DE SALIDA
+# 👉 Vencimientos: FichaVehicular
+# 👉 Turnos: Modelo Evento
 # ==========================================================
 def api_calendario_vencimientos(request):
     eventos = []
@@ -80,6 +80,20 @@ def api_calendario_vencimientos(request):
                 "allDay": True,
             })
 
+        if ficha.patentes_vto4:
+            eventos.append({
+                "start": ficha.patentes_vto4,
+                "title": f"Vencimiento Patente – {base}",
+                "allDay": True,
+            })
+
+        if ficha.patentes_vto5:
+            eventos.append({
+                "start": ficha.patentes_vto5,
+                "title": f"Vencimiento Patente – {base}",
+                "allDay": True,
+            })
+
     # ==================================================
     # 🔹 TURNOS (MODELO EVENTO)
     # ==================================================
@@ -133,6 +147,8 @@ def calendario_pdf_mensual(request, anio, mes):
         agregar(ficha.patentes_vto1, "Vencimiento Patente")
         agregar(ficha.patentes_vto2, "Vencimiento Patente")
         agregar(ficha.patentes_vto3, "Vencimiento Patente")
+        agregar(ficha.patentes_vto4, "Vencimiento Patente")
+        agregar(ficha.patentes_vto5, "Vencimiento Patente")
 
     # ==================================================
     # 🔹 TURNOS (EVENTOS)

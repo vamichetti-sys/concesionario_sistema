@@ -1,14 +1,13 @@
 from django.urls import path
 from . import views
 
-# 🔑 IMPORTANTE: namespace de la app
+# 🔑 namespace de la app
 app_name = "vehiculos"
 
 urlpatterns = [
 
     # ==================================================
     # AJAX – DATOS DE VEHÍCULO (PARA BOLETOS)
-    # ⚠️ DEBE IR ANTES DE RUTAS CON <int:vehiculo_id>
     # ==================================================
     path(
         "ajax/vehiculo-datos/",
@@ -16,11 +15,7 @@ urlpatterns = [
         name="vehiculo_datos_ajax"
     ),
 
-    # ==================================================
-    # ✅ ALIAS PARA AUTOCOMPLETADO (NUEVA RUTA)
-    # 👉 USADA POR crear.html
-    # 👉 NO rompe compatibilidad
-    # ==================================================
+    # Alias de compatibilidad
     path(
         "vehiculo-datos-ajax/",
         views.vehiculo_datos_ajax,
@@ -28,7 +23,7 @@ urlpatterns = [
     ),
 
     # ==================================================
-    # LISTA DE VEHÍCULOS (STOCK + TEMPORALES)
+    # LISTADOS
     # ==================================================
     path(
         "",
@@ -36,9 +31,6 @@ urlpatterns = [
         name="lista_vehiculos"
     ),
 
-    # ==================================================
-    # LISTA DE VEHÍCULOS VENDIDOS
-    # ==================================================
     path(
         "vendidos/",
         views.lista_vehiculos_vendidos,
@@ -46,7 +38,7 @@ urlpatterns = [
     ),
 
     # ==================================================
-    # AGREGAR VEHÍCULO
+    # ALTA / BAJA DE VEHÍCULOS
     # ==================================================
     path(
         "agregar/",
@@ -54,9 +46,14 @@ urlpatterns = [
         name="agregar_vehiculo"
     ),
 
+    path(
+        "eliminar/<int:vehiculo_id>/",
+        views.eliminar_vehiculo,
+        name="eliminar_vehiculo"
+    ),
+
     # ==================================================
-    # 🔴 CAMBIAR ESTADO DE VEHÍCULO (PUNTO CLAVE DEL FLUJO)
-    # 👉 Dispara: Venta + Cuenta Corriente + Gestoría
+    # ESTADO DEL VEHÍCULO
     # ==================================================
     path(
         "cambiar-estado/<int:vehiculo_id>/",
@@ -65,7 +62,7 @@ urlpatterns = [
     ),
 
     # ==================================================
-    # MODAL FICHA VEHICULAR (AJAX - GET)
+    # FICHA VEHICULAR
     # ==================================================
     path(
         "ficha-vehicular/<int:vehiculo_id>/",
@@ -73,19 +70,12 @@ urlpatterns = [
         name="ficha_vehicular_ajax"
     ),
 
-    # ==================================================
-    # GUARDAR FICHA VEHICULAR (POST)
-    # 👉 RUTA USADA POR EL BOTÓN "GUARDAR CAMBIOS"
-    # ==================================================
     path(
         "guardar-ficha/<int:vehiculo_id>/",
         views.guardar_ficha_vehicular,
         name="guardar_ficha_vehicular"
     ),
 
-    # ==================================================
-    # FICHA COMPLETA DEL VEHÍCULO (PÁGINA)
-    # ==================================================
     path(
         "ficha-completa/<int:vehiculo_id>/",
         views.ficha_completa,
@@ -93,41 +83,36 @@ urlpatterns = [
     ),
 
     # ==================================================
-    # 💰 REGISTRAR PAGO DE GASTO (NUEVO – PAGO DE GASTOS)
-    # 👉 USADO POR LA SOLAPA "PAGO DE GASTOS"
-    # ==================================================
-    path(
-        "pago-gasto/<int:vehiculo_id>/",
-        views.registrar_pago_gasto,
-        name="registrar_pago_gasto"
-    ),
-
-  # ==================================================
-# PDF FICHA VEHICULAR
-# ==================================================
-# path(
-#     "pdf/<int:vehiculo_id>/",
-#     views.ficha_vehicular_pdf,
-#     name="ficha_vehicular_pdf",
-# ),
-
-
-    # ==================================================
-    # ❌ ELIMINAR VEHÍCULO
-    # ==================================================
-    path(
-        "eliminar/<int:vehiculo_id>/",
-        views.eliminar_vehiculo,
-        name="eliminar_vehiculo"
-    ),
-
-    # ==================================================
-    # 🟠 GASTOS DE INGRESO (DESDE CUENTA CORRIENTE)
-    # 👉 USADO POR EL BOTÓN "Cargar gasto de ingreso"
+    # GASTOS – OPERATIVOS EXISTENTES
     # ==================================================
     path(
         "gastos-ingreso/<int:vehiculo_id>/",
         views.agregar_gasto_ingreso,
         name="agregar_gasto_ingreso"
+    ),
+
+    # 🔴 CORREGIDO: SIN vehiculo_id EN LA URL
+    path(
+        "pago-gasto/",
+        views.registrar_pago_gasto,
+        name="registrar_pago_gasto"
+    ),
+
+    # ==================================================
+    # GASTOS – CONFIGURACIÓN GLOBAL
+    # ==================================================
+    path(
+        "gastos/",
+        views.gastos_configuracion,
+        name="gastos"
+    ),
+
+    # ==================================================
+    # TEST (OPCIONAL – PODÉS BORRARLO CUANDO QUIERAS)
+    # ==================================================
+    path(
+        "test-gastos/",
+        views.test_guardado_gastos,
+        name="test_guardado_gastos"
     ),
 ]

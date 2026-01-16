@@ -311,31 +311,34 @@
     </script>
 
     <!-- ===============================
-         GESTORÍA
-    =============================== -->
-    <div class="card shadow-sm border-0 rounded-4 mb-4">
-        <div class="card-body">
-            <h5 class="fw-bold mb-3" style="color:#002855;">Gestoría</h5>
+     GESTORÍA
+     =============================== -->
+<div class="card shadow-sm border-0 rounded-4 mb-4">
+    <div class="card-body">
+        <h5 class="fw-bold mb-3" style="color:#002855;">Gestoría</h5>
 
-            <div class="d-flex justify-content-end mb-3">
-                {% if cuenta.venta.gestoria %}
-                    <a href="{% url 'gestoria:editar_gestoria' cuenta.venta.gestoria.id %}"
-                       class="btn btn-outline-primary rounded-pill fw-bold">
-                        Ir a Gestoría
-                    </a>
-                {% else %}
-                    <span class="text-muted fst-italic">No hay gestoría asociada.</span>
-                {% endif %}
-            </div>
+       <div class="d-flex justify-content-end gap-2 mb-3">
+    {% if cuenta.venta.gestoria %}
+        <a href="{% url 'gestoria:editar_gestoria' cuenta.venta.gestoria.id %}"
+           class="btn btn-outline-primary rounded-pill fw-bold">
+            Ir a Gestoría
+        </a>
 
-            <div class="border rounded-3 p-3 d-flex justify-content-between">
-                <div class="fw-semibold">Total gestoría</div>
-                <div class="fw-bold text-danger fs-5">
-                    $ {{ total_gestoria|floatformat:0 }}
-                </div>
-            </div>
+        <a href="{% url 'cuentas:registrar_pago_gestoria' cuenta.id %}"
+           class="btn btn-outline-success rounded-pill fw-bold">
+            Registrar pago
+        </a>
+    {% else %}
+        <span class="text-muted fst-italic">No hay gestoría asociada.</span>
+    {% endif %}
+</div>
+           <div class="border rounded-3 p-3 d-flex justify-content-between">
+        <div class="fw-semibold">Total gestoría</div>
+        <div class="fw-bold text-danger fs-5">
+            $ {{ total_gestoria|floatformat:0 }}
         </div>
     </div>
-
 </div>
+</div>
+
 {% endblock %}

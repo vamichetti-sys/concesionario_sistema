@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Recibo Cuenta Corriente{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+
+            <h4 class="mb-3">Recibo de cuenta corriente</h4>
+
+            <p><strong>Cliente:</strong> {{ cliente.nombre }}</p>
+            <p><strong>CUIT/DNI:</strong> {{ cliente.cuit_dni }}</p>
+            <p><strong>Fecha:</strong> {{ recibo.fecha|date:"d/m/Y H:i" }}</p>
+            <p><strong>Monto abonado:</strong> ${{ recibo.monto }}</p>
+
+            <hr>
+
+            <div class="d-flex gap-2">
+                <a href="{% url 'imprimir_recibo_cuenta_corriente' recibo.id %}"
+                   class="btn btn-primary">
+                    Imprimir recibo
+                </a>
+
+                <a href="{% url 'cuenta_corriente_detalle' cliente.id %}"
+                   class="btn btn-secondary">
+                    Volver
+                </a>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+{% endblock %}

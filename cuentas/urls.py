@@ -33,6 +33,15 @@ urlpatterns = [
     ),
 
     # ===============================
+    # REGISTRAR PAGO DE GESTORÍA  ✅ NUEVO (NO SACA NADA)
+    # ===============================
+    path(
+        "gestoria/<int:cuenta_id>/pago/",
+        views.registrar_pago_gestoria,
+        name="registrar_pago_gestoria"
+    ),
+
+    # ===============================
     # PAGAR / EDITAR CUOTA
     # ===============================
     path(
@@ -93,6 +102,15 @@ urlpatterns = [
     ),
 
     # ===============================
+    # ELIMINAR CUENTA CORRIENTE
+    # ===============================
+    path(
+        "<int:cuenta_id>/eliminar/",
+        views.eliminar_cuenta_corriente,
+        name="eliminar_cuenta_corriente"
+    ),
+
+    # ===============================
     # DETALLE DE CUENTA CORRIENTE
     # ⚠️ SIEMPRE AL FINAL
     # ===============================
@@ -100,14 +118,5 @@ urlpatterns = [
         "<int:cuenta_id>/",
         views.cuenta_corriente_detalle,
         name="cuenta_corriente_detalle"
-    ),
-
-    # ===============================
-    # ELIMINAR CUENTA CORRIENTE
-    # ===============================
-    path(
-        "<int:cuenta_id>/eliminar/",
-        views.eliminar_cuenta_corriente,
-        name="eliminar_cuenta_corriente"
     ),
 ]

@@ -268,6 +268,7 @@ class PlanPago(models.Model):
             self.estado = 'finalizado'
             self.save(update_fields=['estado'])
             self.cuenta.recalcular_saldo()
+
 # ==========================================================
 # CUOTAS DEL PLAN
 # ==========================================================
@@ -367,17 +368,23 @@ class Pago(models.Model):
 # ==========================================================
 # APLICACIÓN DEL PAGO A CUOTAS
 # ==========================================================
+from django.db import models
+from decimal import Decimal
+
+from .models import MovimientoCuenta, Pago, CuotaPlan
+
+
 class PagoCuota(models.Model):
     pago = models.ForeignKey(
         Pago,
         on_delete=models.CASCADE,
-        related_name='aplicaciones'
+        related_name="aplicaciones"
     )
 
     cuota = models.ForeignKey(
         CuotaPlan,
         on_delete=models.CASCADE,
-        related_name='pagos'
+        related_name="pagos"
     )
 
     monto_aplicado = models.DecimalField(
@@ -392,19 +399,51 @@ class PagoCuota(models.Model):
         es_nuevo = self.pk is None
         super().save(*args, **kwargs)
 
-        if es_nuevo:
-            cuenta = self.cuota.plan.cuenta
+        # ⚠️ Solo crear movimiento la primera vez
+        if not es_nuevo:
+            return
 
-            MovimientoCuenta.objects.create(
-                cuenta=cuenta,
-                descripcion=f"Pago cuota {self.cuota.numero}",
-                tipo='haber',
-                monto=self.monto_aplicado,
-                origen='venta'
-            )
+        cuenta = self.cuota.plan.cuenta
 
-            cuenta.recalcular_saldo()
+        # ==================================================
+        # DESCRIPCIÓN INTELIGENTE DEL MOVIMIENTO
+        # ==================================================
+        # Pago único vs pago en cuotas
+        if self.cuota.plan.cantidad_cuotas == 1:
+            base = "Pago único"
+        else:
+            base = f"Pago cuota {self.cuota.numero}"
 
+        # Forma de pago (efectivo / cheque / transferencia)
+        try:
+            forma = self.pago.get_forma_pago_display()
+        except Exception:
+            forma = "Pago"
+
+        # Observaciones opcionales
+        obs = (
+            f" – {self.pago.observaciones}"
+            if getattr(self.pago, "observaciones", None)
+            else ""
+        )
+
+        descripcion = f"{base} ({forma}){obs}"
+
+        # ==================================================
+        # CREAR MOVIMIENTO DE CUENTA
+        # ==================================================
+        MovimientoCuenta.objects.create(
+            cuenta=cuenta,
+            descripcion=descripcion,
+            tipo="haber",
+            monto=self.monto_aplicado,
+            origen="venta"
+        )
+
+        # ==================================================
+        # RECALCULAR SALDO
+        # ==================================================
+        cuenta.recalcular_saldo()
 
 # ==========================================================
 # BITÁCORA DE ACCIONES

@@ -6,28 +6,50 @@
 {% block content %}
 <style>
 /* ===============================
-   CONFIGURACIÓN A4
+   CONFIGURACIÓN A4 – FORZADA
 =============================== */
 @page {
     size: A4;
-    margin: 15mm;
+    margin: 0;
 }
 
-/* RESET */
+/* RESET GENERAL */
 html, body {
     margin: 0;
     padding: 0;
     background: #fff;
     font-family: "Times New Roman", serif;
     font-size: 10pt;
-    line-height: 1.35;
+    line-height: 1.3;
     color: #000;
 }
 
-/* CONTENEDOR HOJA */
+/* ===============================
+   CONTENEDOR A4 REAL
+=============================== */
 .boleto-page {
+    width: 210mm;
+    height: 297mm;
+    overflow: hidden;
     position: relative;
+}
+
+/* ===============================
+   ESCALADO DEFINITIVO
+   (GARANTIZA 1 SOLA HOJA)
+=============================== */
+.boleto-scale {
+    transform: scale(0.94);
+    transform-origin: top center;
     width: 100%;
+}
+
+/* ===============================
+   EVITAR CORTES INTERNOS
+=============================== */
+* {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
 }
 
 /* ===============================
@@ -35,7 +57,7 @@ html, body {
 =============================== */
 .header-top {
     text-align: center;
-    margin-bottom: 10mm;
+    margin: 8mm 0 6mm 0;
 }
 
 .header-top .empresa {
@@ -63,7 +85,7 @@ html, body {
 =============================== */
 .header-title {
     text-align: center;
-    margin-bottom: 10mm;
+    margin-bottom: 6mm;
 }
 
 .header-title h3 {
@@ -75,12 +97,13 @@ html, body {
 }
 
 /* ===============================
-   DATOS
+   DATOS VEHÍCULO
 =============================== */
 .boleto-datos {
     width: 72%;
-    margin: 0 auto 8mm auto;
+    margin: 0 auto 6mm auto;
     font-size: 10pt;
+    text-align: center;
 }
 
 /* ===============================
@@ -91,18 +114,16 @@ html, body {
     margin: 0 auto;
     text-align: justify;
     white-space: pre-line;
-
     text-indent: 18px;
     hyphens: auto;
-    word-break: normal;
 }
 
 /* ===============================
-   FIRMAS (VISIBLES SIEMPRE)
+   FIRMAS (SIEMPRE DENTRO DE A4)
 =============================== */
 .boleto-firmas {
     width: 100%;
-    margin-top: 35mm;              /* ⬅️ las baja */
+    margin-top: 22mm;
     display: flex;
     justify-content: space-between;
     font-size: 9.5pt;
@@ -119,7 +140,7 @@ html, body {
 }
 
 /* ===============================
-   BOTONES
+   BOTONES (NO IMPRIME)
 =============================== */
 .acciones {
     width: 210mm;
@@ -134,7 +155,8 @@ html, body {
 @media print {
     .sidebar,
     .topbar,
-    .acciones {
+    .acciones,
+    .pdf-link {
         display: none !important;
     }
 
@@ -145,62 +167,84 @@ html, body {
 }
 </style>
 
+<!-- ===============================
+     HOJA A4
+=============================== -->
 <div class="boleto-page">
+    <div class="boleto-scale">
 
-    <!-- ENCABEZADO -->
-    <div class="header-top">
-        <div class="empresa">HUGO AMICHETTI AUTOMOTORES</div>
-        <div class="linea"></div>
-        <div class="sub">AUTOMOTORES NUEVOS Y USADOS</div>
-        <div class="direccion">LARREA 255, ROJAS BS AS (2705)</div>
-    </div>
+        <!-- ENCABEZADO -->
+        <div class="header-top">
+            <div class="empresa">HUGO AMICHETTI AUTOMOTORES</div>
+            <div class="linea"></div>
+            <div class="sub">AUTOMOTORES NUEVOS Y USADOS</div>
+            <div class="direccion">LARREA 255, ROJAS BS AS (2705)</div>
+        </div>
 
-    <!-- TÍTULO -->
-    <div class="header-title">
-        <h3>BOLETO DE COMPRA VENTA</h3>
-    </div>
+        <!-- TÍTULO -->
+        <div class="header-title">
+            <h3>BOLETO DE COMPRA VENTA</h3>
+        </div>
 
-    <!-- DATOS -->
-    <div class="boleto-datos">
-        {% if boleto.vehiculo %}
-            {{ boleto.vehiculo.marca }} {{ boleto.vehiculo.modelo }}
-            {% if boleto.vehiculo.dominio %}
-                – {{ boleto.vehiculo.dominio }}
+        <!-- DATOS VEHÍCULO -->
+        <div class="boleto-datos">
+            {% if boleto.vehiculo %}
+                {{ boleto.vehiculo.marca }} {{ boleto.vehiculo.modelo }}
+                {% if boleto.vehiculo.dominio %}
+                    – {{ boleto.vehiculo.dominio }}
+                {% endif %}
             {% endif %}
-        {% endif %}
-    </div>
+        </div>
 
-    <!-- TEXTO LEGAL -->
-    <div class="boleto-body">
+        <!-- TEXTO LEGAL -->
+        <div class="boleto-body">
 {{ texto_boleto }}
-    </div>
-
-    <!-- FIRMAS -->
-    <div class="boleto-firmas">
-
-        <div class="firma-col">
-            <div class="firma-linea"></div>
-            <strong>APELLIDO:</strong> {{ vendedor.apellido }}<br>
-            <strong>NOMBRE:</strong> {{ vendedor.nombre }}<br>
-            <strong>DIRECCIÓN:</strong> {{ vendedor.direccion }}<br>
-            <strong>DNI:</strong> {{ vendedor.dni }}
         </div>
 
-        <div class="firma-col">
-            <div class="firma-linea"></div>
-            <strong>APELLIDO:</strong> {{ comprador.apellido }}<br>
-            <strong>NOMBRE:</strong> {{ comprador.nombre }}<br>
-            <strong>DIRECCIÓN:</strong> {{ comprador.direccion }}<br>
-            <strong>DNI:</strong> {{ comprador.dni }}
+        <!-- FIRMAS -->
+        <div class="boleto-firmas">
+
+            <div class="firma-col">
+                <div class="firma-linea"></div>
+                <strong>APELLIDO:</strong> {{ vendedor.apellido }}<br>
+                <strong>NOMBRE:</strong> {{ vendedor.nombre }}<br>
+                <strong>DIRECCIÓN:</strong> {{ vendedor.direccion }}<br>
+                <strong>DNI:</strong> {{ vendedor.dni }}
+            </div>
+
+            <div class="firma-col">
+                <div class="firma-linea"></div>
+                <strong>APELLIDO:</strong> {{ comprador.apellido }}<br>
+                <strong>NOMBRE:</strong> {{ comprador.nombre }}<br>
+                <strong>DIRECCIÓN:</strong> {{ comprador.direccion }}<br>
+                <strong>DNI:</strong> {{ comprador.dni }}
+            </div>
+
         </div>
 
     </div>
-
 </div>
 
+<!-- ===============================
+     ACCIONES (NO IMPRIME)
+=============================== -->
 <div class="acciones">
-    <button onclick="window.print()" class="btn btn-dark">🖨️ Imprimir en A4</button>
-    <a href="{% url 'boletos:lista' %}" class="btn btn-outline-secondary">Volver</a>
+
+    <button onclick="window.print()" class="btn btn-dark">
+        🖨️ Imprimir en A4
+    </button>
+
+    {% if boleto.pdf %}
+    <a href="{{ boleto.pdf.url }}"
+       target="_blank"
+       class="btn btn-primary pdf-link">
+        📄 Ver / Descargar PDF
+    </a>
+    {% endif %}
+
+    <a href="{% url 'boletos:lista' %}" class="btn btn-outline-secondary">
+        Volver
+    </a>
 </div>
 
 {% endblock %}

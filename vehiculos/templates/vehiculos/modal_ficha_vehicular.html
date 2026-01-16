@@ -1,16 +1,40 @@
+<style>
+  /* 🔴 FIX DEFINITIVO ESPACIO BLANCO MODAL */
+  #modalFicha .modal-content {
+    display: block !important;
+  }
+
+  #modalFicha .modal-body {
+    flex: none !important;
+    height: auto !important;
+    min-height: unset !important;
+  }
+
+  #modalFicha hr {
+    margin-bottom: 0 !important;
+  }
+
+  #modalFicha .tab-pane {
+    padding-bottom: 0 !important;
+  }
+</style>
+
 <div class="modal fade" id="modalFicha" tabindex="-1">
-  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+  <div class="modal-dialog modal-xl">
     <div class="modal-content rounded-4 shadow-lg">
 
-      <!-- HEADER -->
+      <!-- ================= HEADER ================= -->
       <div class="modal-header" style="background:#002855;">
         <h5 class="modal-title text-white fw-bold">
-          {{ vehiculo.marca }} {{ vehiculo.modelo }} — {{ vehiculo.dominio|default:"Sin dominio" }}
+          {{ vehiculo.marca }} {{ vehiculo.modelo }} —
+          {{ vehiculo.dominio|default:"Sin dominio" }}
         </h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        <button type="button"
+                class="btn-close btn-close-white"
+                data-bs-dismiss="modal"></button>
       </div>
 
-      <!-- BODY -->
+      <!-- ================= BODY ================= -->
       <div class="modal-body">
 
         <form id="formFichaVehicular"
@@ -18,52 +42,61 @@
               action="{% url 'vehiculos:guardar_ficha_vehicular' vehiculo.id %}">
           {% csrf_token %}
 
-          <!-- TABS -->
+          <!-- ================= TABS ================= -->
           <ul class="nav nav-tabs mb-3 fw-semibold">
             <li class="nav-item">
-              <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-basicos" type="button">
+              <button class="nav-link active" data-bs-toggle="tab"
+                      data-bs-target="#tab-basicos" type="button">
                 Datos Básicos
               </button>
             </li>
             <li class="nav-item">
-              <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-titularidad" type="button">
+              <button class="nav-link" data-bs-toggle="tab"
+                      data-bs-target="#tab-titularidad" type="button">
                 Titularidad
               </button>
             </li>
             <li class="nav-item">
-              <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-documentacion" type="button">
+              <button class="nav-link" data-bs-toggle="tab"
+                      data-bs-target="#tab-documentacion" type="button">
                 Documentación
               </button>
             </li>
             <li class="nav-item">
-              <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-turnos" type="button">
+              <button class="nav-link" data-bs-toggle="tab"
+                      data-bs-target="#tab-turnos" type="button">
                 Turnos
               </button>
             </li>
             <li class="nav-item">
-              <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-gastos" type="button">
+              <button class="nav-link" data-bs-toggle="tab"
+                      data-bs-target="#tab-gastos" type="button">
                 Gastos de ingreso
               </button>
             </li>
             <li class="nav-item">
-              <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-pago-gastos" type="button">
+              <button class="nav-link" data-bs-toggle="tab"
+                      data-bs-target="#tab-pago-gastos" type="button">
                 Pago de gastos
               </button>
             </li>
             <li class="nav-item">
-              <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-observaciones" type="button">
+              <button class="nav-link" data-bs-toggle="tab"
+                      data-bs-target="#tab-observaciones" type="button">
                 Observaciones
               </button>
             </li>
           </ul>
 
+          <!-- ================= TAB CONTENT ================= -->
           <div class="tab-content">
 <!-- ================= TAB 1: DATOS BÁSICOS ================= -->
 <div class="tab-pane fade show active" id="tab-basicos">
-  <h4 class="fw-bold mb-3" style="color:#002855;">Datos Básicos del Vehículo</h4>
+  <h4 class="fw-bold mb-3" style="color:#002855;">
+    Datos Básicos del Vehículo
+  </h4>
 
   <div class="row g-3">
-
     <div class="col-md-4">
       <label class="fw-bold">Marca</label>
       {{ vehiculo_form.marca }}
@@ -135,30 +168,28 @@
       <label class="fw-bold">Transmisión</label>
       {{ ficha_form.transmision }}
     </div>
-
   </div>
 </div>
-<!-- ================= TAB 2: TITULARIDAD ================= -->
-<div class="tab-pane fade" id="tab-titularidad">
-  <h4 class="fw-bold mb-3" style="color:#002855;">Titularidad / Ingreso</h4>
+
+  <!-- ================= TAB 2: TITULARIDAD ================= -->
+   <div class="tab-pane fade" id="tab-titularidad">
+  <h4 class="fw-bold mb-3" style="color:#002855;">
+    Titularidad / Ingreso
+  </h4>
 
   <div class="row g-3">
-
     <div class="col-md-6">
       <label class="fw-bold">Vendedor</label>
       {{ ficha_form.vendedor }}
     </div>
-
     <div class="col-md-6">
       <label class="fw-bold">Contacto</label>
       {{ ficha_form.contacto }}
     </div>
-
     <div class="col-md-6">
       <label class="fw-bold">Email contacto</label>
       {{ ficha_form.email_contacto }}
     </div>
-
     <div class="col-md-6">
       <label class="fw-bold">Titular</label>
       {{ ficha_form.titular }}
@@ -168,12 +199,10 @@
       <label class="fw-bold">Domicilio titular</label>
       {{ ficha_form.domicilio_titular }}
     </div>
-
     <div class="col-md-4">
       <label class="fw-bold">DNI titular</label>
       {{ ficha_form.dni_titular }}
     </div>
-
     <div class="col-md-4">
       <label class="fw-bold">Estado civil</label>
       {{ ficha_form.estado_civil }}
@@ -183,22 +212,21 @@
       <label class="fw-bold">CUIT / CUIL / DNI</label>
       {{ ficha_form.cuit_cuil_dni }}
     </div>
-
     <div class="col-md-4">
       <label class="fw-bold">Tipo ingreso</label>
       {{ ficha_form.tipo_ingreso }}
     </div>
-
     <div class="col-md-4">
       <label class="fw-bold">N° consignación / factura</label>
       {{ ficha_form.numero_consignacion_factura }}
     </div>
-
   </div>
 </div>
-<!-- ================= TAB 3: DOCUMENTACIÓN ================= -->
+ <!-- ================= TAB 3: DOCUMENTACIÓN ================= -->
 <div class="tab-pane fade" id="tab-documentacion">
-  <h4 class="fw-bold mb-3" style="color:#002855;">Documentación</h4>
+  <h4 class="fw-bold mb-3" style="color:#002855;">
+    Documentación
+  </h4>
 
   <div class="row g-3">
     <div class="col-md-3">
@@ -290,7 +318,9 @@
 </div>
 <!-- ================= TAB 4: TURNOS ================= -->
 <div class="tab-pane fade" id="tab-turnos">
-  <h4 class="fw-bold mb-3" style="color:#002855;">Turnos</h4>
+  <h4 class="fw-bold mb-3" style="color:#002855;">
+    Turnos
+  </h4>
 
   <div class="row g-3">
     <div class="col-md-6">
@@ -305,72 +335,260 @@
   </div>
 </div>
 
-<!-- ================= TAB 5: GASTOS ================= -->
+<!-- ================= TAB 6: GASTOS DE INGRESO ================= -->
 <div class="tab-pane fade" id="tab-gastos">
-  <h4 class="fw-bold mb-3" style="color:#002855;">Gastos de ingreso</h4>
+  <h4 class="fw-bold mb-3" style="color:#002855;">
+    Gastos de ingreso
+  </h4>
 
   <div class="row g-3">
-    <div class="col-md-4">{{ ficha_form.gasto_f08 }}</div>
-    <div class="col-md-4">{{ ficha_form.gasto_informes }}</div>
-    <div class="col-md-4">{{ ficha_form.gasto_patentes }}</div>
-    <div class="col-md-4">{{ ficha_form.gasto_verificacion }}</div>
-    <div class="col-md-4">{{ ficha_form.gasto_autopartes }}</div>
-    <div class="col-md-4">{{ ficha_form.gasto_vtv }}</div>
-    <div class="col-md-4">{{ ficha_form.gasto_r541 }}</div>
-    <div class="col-md-4">{{ ficha_form.gasto_firmas }}</div>
     <div class="col-md-4">
-      <input type="text" class="form-control"
-             value="{{ ficha_form.instance.total_gastos }}" readonly>
+      <label class="fw-bold">Formulario 08</label>
+      {{ ficha_form.gasto_f08 }}
+    </div>
+
+    <div class="col-md-4">
+      <label class="fw-bold">Informes</label>
+      {{ ficha_form.gasto_informes }}
+    </div>
+
+    <div class="col-md-4">
+      <label class="fw-bold">Patentes</label>
+      {{ ficha_form.gasto_patentes }}
+    </div>
+
+    <div class="col-md-4">
+      <label class="fw-bold">Verificación policial</label>
+      {{ ficha_form.gasto_verificacion }}
+    </div>
+
+    <div class="col-md-4">
+      <label class="fw-bold">Grabado de autopartes</label>
+      {{ ficha_form.gasto_autopartes }}
+    </div>
+
+    <div class="col-md-4">
+      <label class="fw-bold">VTV</label>
+      {{ ficha_form.gasto_vtv }}
+    </div>
+
+    <div class="col-md-4">
+      <label class="fw-bold">R-541</label>
+      {{ ficha_form.gasto_r541 }}
+    </div>
+
+    <div class="col-md-4">
+      <label class="fw-bold">Firmas</label>
+      {{ ficha_form.gasto_firmas }}
+    </div>
+
+    <div class="col-md-4">
+      <label class="fw-bold">Total gastos</label>
+      <input type="text"
+             class="form-control"
+             value="{{ ficha_form.instance.total_gastos }}"
+             readonly>
     </div>
   </div>
 </div>
 
-<!-- ================= TAB 6: OBSERVACIONES ================= -->
-<div class="tab-pane fade" id="tab-observaciones">
-  <h4 class="fw-bold mb-3" style="color:#002855;">Observaciones</h4>
-  {{ ficha_form.observaciones }}
-</div>
+<!-- 🔴 CIERRO ACÁ EL FORM PRINCIPAL DE LA FICHA -->
+</form>
 
+<!-- ================= TAB 6B: PAGO DE GASTOS ================= -->
+<div class="tab-pane fade" id="tab-pago-gastos">
+
+  <h4 class="fw-bold mb-3" style="color:#002855;">
+    Pago de gastos de ingreso
+  </h4>
+
+  {% for gasto in gastos_ingreso %}
+    <div class="border rounded-3 p-3 mb-3">
+
+      <div class="fw-bold mb-2">
+        {{ gasto.concepto }} — ${{ gasto.monto }}
+      </div>
+
+      <div class="row g-3 mb-3">
+        <div class="col-md-4">
+          <label class="fw-bold">Total pagado</label>
+          <div>${{ gasto.total_pagado }}</div>
+        </div>
+
+        <div class="col-md-4">
+          <label class="fw-bold">Saldo</label>
+          <div class="{% if gasto.saldo > 0 %}text-danger{% else %}text-success{% endif %}">
+            ${{ gasto.saldo }}
           </div>
-        </form>
+        </div>
       </div>
 
-      <!-- FOOTER -->
-      <div class="modal-footer">
-        <a href="/vehiculos/ficha-completa/{{ vehiculo.id }}/" class="btn btn-outline-primary">
-          Ver página completa
-        </a>
-        <a href="/vehiculos/pdf/{{ vehiculo.id }}/" class="btn btn-outline-warning">
-          Descargar PDF
-        </a>
+      <form method="post" action="{% url 'vehiculos:registrar_pago_gasto' %}">
+        {% csrf_token %}
 
-        <button type="submit"
-                form="formFichaVehicular"
-                class="btn fw-bold"
-                style="background:#FF6C1A; color:white;">
-          Guardar cambios
-        </button>
-      </div>
+        <input type="hidden" name="vehiculo_id" value="{{ vehiculo.id }}">
+        <input type="hidden" name="gasto_id" value="{{ gasto.key }}">
+
+        <div class="row g-3">
+          <div class="col-md-3">
+            <label class="fw-bold">Fecha de pago</label>
+            <input type="date" name="fecha_pago" class="form-control" required>
+          </div>
+
+          <div class="col-md-3">
+            <label class="fw-bold">Monto</label>
+            <input type="number" step="0.01" name="monto" class="form-control" required>
+          </div>
+
+          <div class="col-md-4">
+            <label class="fw-bold">Observaciones</label>
+            <input type="text" name="observaciones" class="form-control">
+          </div>
+
+          <div class="col-md-2 d-flex align-items-end">
+            <button type="submit" class="btn btn-primary w-100">
+              Registrar pago
+            </button>
+          </div>
+        </div>
+      </form>
 
     </div>
+  {% empty %}
+    <p class="text-muted">No hay gastos de ingreso cargados.</p>
+  {% endfor %}
+
+</div>
+
+
+<!-- ================= TAB 7: OBSERVACIONES ================= -->
+<div class="tab-pane fade" id="tab-observaciones">
+  <div class="row g-3">
+
+    <div class="col-12">
+      <label class="fw-bold">Observaciones generales</label>
+      {{ ficha_form.observaciones }}
+    </div>
+
+    <hr class="my-3">
+
+    <!-- SEGUNDA LLAVE -->
+    <div class="col-md-3 fw-bold">Segunda llave</div>
+    <div class="col-md-2">
+      {{ ficha_form.duplicado_llave_estado }}
+    </div>
+    <div class="col-md-7">
+      {{ ficha_form.duplicado_llave_obs }}
+    </div>
+
+    <!-- CÓDIGO DE LLAVE -->
+    <div class="col-md-3 fw-bold">Código de llave</div>
+    <div class="col-md-2">
+      {{ ficha_form.codigo_llave_estado }}
+    </div>
+    <div class="col-md-7">
+      {{ ficha_form.codigo_llave_obs }}
+    </div>
+
+    <!-- OBLEA GNC -->
+    <div class="col-md-3 fw-bold">Oblea GNC</div>
+    <div class="col-md-2">
+      {{ ficha_form.oblea_gnc_estado }}
+    </div>
+    <div class="col-md-7">
+      {{ ficha_form.oblea_gnc_obs }}
+    </div>
+
+    <!-- CÓDIGO DE RADIO -->
+    <div class="col-md-3 fw-bold">Código de radio</div>
+    <div class="col-md-2">
+      {{ ficha_form.codigo_radio_estado }}
+    </div>
+    <div class="col-md-7">
+      {{ ficha_form.codigo_radio_obs }}
+    </div>
+
+    <!-- MANUALES -->
+    <div class="col-md-3 fw-bold">Manuales</div>
+    <div class="col-md-2">
+      {{ ficha_form.manuales_estado }}
+    </div>
+    <div class="col-md-7">
+      {{ ficha_form.manuales_obs }}
+    </div>
+
   </div>
 </div>
+
+          </div> <!-- /tab-content -->
+<!-- ================= FOOTER ACCIONES ================= -->
+<div class="modal-footer px-4 py-3">
+  <button type="button"
+          class="btn btn-outline-secondary"
+          data-bs-dismiss="modal">
+    Cancelar
+  </button>
+
+  <!-- 🔴 ENVÍA EL FORM PRINCIPAL DE LA FICHA -->
+  <button type="button"
+          class="btn btn-primary fw-semibold"
+          onclick="document.getElementById('formFichaVehicular').submit();">
+    Guardar ficha
+  </button>
+</div>
+
+</div> <!-- /modal-body -->
+</div> <!-- /modal-content -->
+</div> <!-- /modal-dialog -->
+</div> <!-- /modal -->
+
 <script>
-document.addEventListener("DOMContentLoaded", function () {
-  const modal = document.getElementById("modalFicha");
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== "") {
+    const cookies = document.cookie.split(";");
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim();
+      if (cookie.substring(0, name.length + 1) === (name + "=")) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
 
-  if (!modal) return;
+document.addEventListener("click", function (e) {
+  const btn = e.target.closest(".btn-pagar-gasto");
+  if (!btn) return;
 
-  modal.addEventListener("show.bs.modal", function () {
-    const vehiculoId = "{{ vehiculo.id }}";
+  const card = btn.closest(".border");
 
-    fetch(`/vehiculos/ficha-vehicular-ajax/${vehiculoId}/`)
-      .then(response => response.json())
-      .then(data => {
-        // Reemplaza SOLO el contenido del modal
-        modal.innerHTML = data.html;
-      })
-      .catch(err => console.error("Error recargando ficha:", err));
-  });
+  const vehiculo_id = btn.dataset.vehiculo;
+  const gasto_id = btn.dataset.gasto;
+  const fecha_pago = card.querySelector(".fecha-pago").value;
+  const monto = card.querySelector(".monto-pago").value;
+  const observaciones = card.querySelector(".obs-pago").value;
+
+  if (!fecha_pago || !monto) {
+    alert("Completá fecha y monto");
+    return;
+  }
+
+  const data = new FormData();
+  data.append("vehiculo_id", vehiculo_id);
+  data.append("gasto_id", gasto_id);
+  data.append("fecha_pago", fecha_pago);
+  data.append("monto", monto);
+  data.append("observaciones", observaciones);
+
+  fetch("{% url 'vehiculos:registrar_pago_gasto' %}", {
+    method: "POST",
+    headers: {
+      "X-CSRFToken": getCookie("csrftoken"),
+    },
+    body: data,
+  })
+  .then(() => location.reload());
 });
 </script>

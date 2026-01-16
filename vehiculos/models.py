@@ -268,6 +268,9 @@ class FichaVehicular(models.Model):
     # ======================================================
     # ⚙️ AUTOMATIZACIÓN CONTABLE – PERMUTA
     # ======================================================
+    # ======================================================
+    # ⚙️ AUTOMATIZACIÓN CONTABLE – PERMUTA
+    # ======================================================
     def imputar_gastos_permuta_en_cuenta(self, cuenta):
         MovimientoCuenta = apps.get_model("cuentas", "MovimientoCuenta")
 
@@ -310,7 +313,6 @@ class FichaVehicular(models.Model):
 
         cuenta.recalcular_saldo()
 
-
 # ============================================================
 # PAGO DE GASTOS DE INGRESO
 # ============================================================
@@ -333,3 +335,23 @@ class PagoGastoIngreso(models.Model):
 
     def __str__(self):
         return f"{self.vehiculo} - {self.concepto} - ${self.monto}"
+# ============================================================
+# CONFIGURACIÓN GLOBAL DE GASTOS DE INGRESO (PLANTILLA)
+# ============================================================
+class ConfiguracionGastosIngreso(models.Model):
+    gasto_f08 = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    gasto_informes = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    gasto_patentes = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    gasto_verificacion = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    gasto_autopartes = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    gasto_vtv = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    gasto_r541 = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    gasto_firmas = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+
+    def save(self, *args, **kwargs):
+        # 🔒 FORZAMOS SIEMPRE PK = 1
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return "Configuración global de gastos de ingreso"

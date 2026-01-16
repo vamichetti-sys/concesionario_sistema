@@ -64,15 +64,24 @@
                             {% endif %}
                         </td>
                         <td class="text-end">
+
                             <a href="{% url 'boletos:ver_pagare' p.id %}"
                                class="btn btn-sm btn-outline-primary">
                                 Ver
                             </a>
-                            <a href="{% url 'boletos:pagare_pdf' p.id %}"
-                               target="_blank"
-                               class="btn btn-sm btn-outline-success">
-                                PDF
-                            </a>
+
+                            {% if p.pdf %}
+                                <a href="{{ p.pdf.url }}"
+                                   target="_blank"
+                                   class="btn btn-sm btn-outline-success">
+                                    🖨️ PDF (Lote)
+                                </a>
+                            {% else %}
+                                <span class="text-muted small">
+                                    Sin PDF
+                                </span>
+                            {% endif %}
+
                         </td>
                     </tr>
                     {% endfor %}

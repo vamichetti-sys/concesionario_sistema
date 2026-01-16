@@ -36,10 +36,13 @@ class CrearBoletoForm(forms.Form):
         )
     )
 
+    # ===============================
+    # DATOS DEL VEHÍCULO (SOLO LECTURA)
+    # ===============================
     marca = forms.CharField(
         label="Marca",
         max_length=80,
-        required=True,
+        required=False,  # 🔧 CAMBIO CLAVE
         widget=forms.TextInput(
             attrs={
                 "class": "form-control",
@@ -52,7 +55,7 @@ class CrearBoletoForm(forms.Form):
     modelo = forms.CharField(
         label="Modelo",
         max_length=80,
-        required=True,
+        required=False,  # 🔧 CAMBIO CLAVE
         widget=forms.TextInput(
             attrs={
                 "class": "form-control",
@@ -65,7 +68,7 @@ class CrearBoletoForm(forms.Form):
     anio = forms.CharField(
         label="Año",
         max_length=10,
-        required=True,
+        required=False,  # 🔧 CAMBIO CLAVE
         widget=forms.TextInput(
             attrs={
                 "class": "form-control",
@@ -104,7 +107,7 @@ class CrearBoletoForm(forms.Form):
     patente = forms.CharField(
         label="Dominio / Patente",
         max_length=20,
-        required=True,
+        required=False,  # 🔧 CAMBIO CLAVE
         widget=forms.TextInput(
             attrs={
                 "class": "form-control",
@@ -114,15 +117,21 @@ class CrearBoletoForm(forms.Form):
         )
     )
 
+    # ===============================
+    # DATOS ECONÓMICOS
+    # ===============================
     precio_total_unidad = forms.CharField(
         label="Precio total de la unidad",
         max_length=100,
-        required=True,
+        required=False,  # 🔧 CAMBIO CLAVE
         widget=forms.TextInput(
             attrs={"class": "form-control"}
         )
     )
 
+    # ===============================
+    # DATOS DEL COMPRADOR
+    # ===============================
     comprador_texto = forms.CharField(
         label="Comprador (texto completo)",
         max_length=255,
@@ -156,6 +165,9 @@ class CrearBoletoForm(forms.Form):
         )
     )
 
+    # ===============================
+    # DATOS LEGALES
+    # ===============================
     compania_seguro = forms.CharField(
         label="Compañía de seguro",
         max_length=100,
@@ -175,6 +187,9 @@ class CrearBoletoForm(forms.Form):
         )
     )
 
+    # ===============================
+    # CONDICIONES DE PAGO
+    # ===============================
     precio_letras = forms.CharField(
         label="Precio en letras",
         max_length=255,
@@ -201,6 +216,9 @@ class CrearBoletoForm(forms.Form):
         )
     )
 
+    # ===============================
+    # NOTA
+    # ===============================
     nota = forms.CharField(
         label="Nota",
         required=False,
@@ -212,6 +230,9 @@ class CrearBoletoForm(forms.Form):
         )
     )
 
+    # ===============================
+    # FIRMA
+    # ===============================
     apellido_comprador = forms.CharField(
         label="Apellido comprador",
         max_length=100,
@@ -236,6 +257,9 @@ class CrearBoletoForm(forms.Form):
         )
     )
 
+    # ===============================
+    # VALIDACIONES
+    # ===============================
     def clean_cliente(self):
         cliente = self.cleaned_data.get("cliente")
         if not cliente:

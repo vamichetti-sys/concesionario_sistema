@@ -31,11 +31,18 @@
         </p>
 
         <div class="mt-4">
-            <a href="{% url 'boletos:pagare_pdf' pagare.id %}"
-               target="_blank"
-               class="btn btn-outline-success rounded-pill fw-bold px-4">
-                📄 Imprimir PDF
-            </a>
+
+            {% if pagare.pdf %}
+                <a href="{{ pagare.pdf.url }}"
+                   target="_blank"
+                   class="btn btn-outline-success rounded-pill fw-bold px-4">
+                    📄 Ver PDF (Lote)
+                </a>
+            {% else %}
+                <span class="text-muted">
+                    PDF no disponible
+                </span>
+            {% endif %}
 
             <a href="{% url 'boletos:lista_pagares' %}"
                class="btn btn-outline-secondary rounded-pill fw-bold px-4">

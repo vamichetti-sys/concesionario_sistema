@@ -23,6 +23,24 @@
     <form method="post">
         {% csrf_token %}
 
+        <!-- ===============================
+             ERRORES DEL FORMULARIO
+        =============================== -->
+        {% if form.errors %}
+        <div class="alert alert-danger rounded-3 mb-4">
+            <strong>Errores en el formulario:</strong>
+            <ul class="mb-0 mt-2">
+                {% for field, errors in form.errors.items %}
+                    {% for error in errors %}
+                        <li>
+                            <strong>{{ field|capfirst }}:</strong> {{ error }}
+                        </li>
+                    {% endfor %}
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
         <div class="card shadow-sm border-0 rounded-4">
             <div class="card-body p-4">
 
@@ -41,7 +59,7 @@
 
                 <hr class="my-4" style="opacity:.1;">
 
-                <!-- ===============================
+                                <!-- ===============================
                      DATOS DEL VEHÍCULO VENDIDO
                 ================================ -->
                 <h6 class="fw-semibold text-uppercase mb-3"
@@ -140,8 +158,6 @@
                         {{ form.domicilio_legal }}
                     </div>
                 </div>
-
-                <hr class="my-4" style="opacity:.1;">
 
                 <!-- ===============================
                      PRECIO TOTAL DE LA UNIDAD
