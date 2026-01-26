@@ -50,13 +50,13 @@
 
 <!-- ===============================
      FULLCALENDAR
-     =============================== -->
+=============================== -->
 <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
 
 <!-- ===============================
      IDENTIDAD VISUAL AMICHETTI
-     =============================== -->
+=============================== -->
 <style>
 .fc {
     font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto;
@@ -117,76 +117,84 @@
 </style>
 
 <script>
-document.addEventListener('DOMContentLoaded', function () {
+/* ======================================================
+   🔒 FIX DEFINITIVO DUPLICADO
+   NO SE TOCA NADA MÁS
+   ====================================================== */
+if (!window.__calendarInitialized) {
+    window.__calendarInitialized = true;
 
-    let calendarEl = document.getElementById('calendar');
-    let btnPdf = document.getElementById('btnPdfMes');
+    document.addEventListener('DOMContentLoaded', function () {
 
-    let calendar = new FullCalendar.Calendar(calendarEl, {
-        initialView: 'dayGridMonth',
-        locale: 'es',
-        height: 'auto',
+        let calendarEl = document.getElementById('calendar');
+        let btnPdf = document.getElementById('btnPdfMes');
 
-        headerToolbar: {
-            left: 'prev,next today',
-            center: 'title',
-            right: 'dayGridMonth,listWeek'
-        },
+        let calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            locale: 'es',
+            height: 'auto',
 
-        buttonText: {
-            today: 'Hoy',
-            month: 'Mes',
-            week: 'Semana',
-            list: 'Lista'
-        },
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,listWeek'
+            },
 
-        buttonIcons: false,
+            buttonText: {
+                today: 'Hoy',
+                month: 'Mes',
+                week: 'Semana',
+                list: 'Lista'
+            },
 
-        /* ===============================
-           ÚNICA CORRECCIÓN NECESARIA
-           =============================== */
-        events: "/calendario/api/eventos/",
+            buttonIcons: false,
 
-        eventDidMount: function(info) {
-            let titulo = info.event.title;
+            /* ===============================
+               API EVENTOS
+            =============================== */
+            events: "/calendario/api/eventos/",
 
-            titulo = titulo
-                .replace("Turno ", "")
-                .replace("VTV (Venc.) - ", "VTV · ")
-                .replace("VTV - ", "VTV · ")
-                .replace("Grabado de autopartes - ", "Autopartes · ")
-                .replace("Patente - ", "Patente · ")
-                .replace("Verificación - ", "Verificación · ");
+            eventDidMount: function(info) {
+                let titulo = info.event.title;
 
-            info.el.innerHTML = `
-                <div class="fc-event-title fw-semibold small">
-                    ${titulo}
-                </div>
-            `;
-        },
+                titulo = titulo
+                    .replace("Turno ", "")
+                    .replace("VTV (Venc.) - ", "VTV · ")
+                    .replace("VTV - ", "VTV · ")
+                    .replace("Grabado de autopartes - ", "Autopartes · ")
+                    .replace("Patente - ", "Patente · ")
+                    .replace("Verificación - ", "Verificación · ");
 
-        eventClick: function(info) {
-            if (info.event.url) {
-                window.open(info.event.url, "_blank");
-                info.jsEvent.preventDefault();
+                info.el.innerHTML = `
+                    <div class="fc-event-title fw-semibold small">
+                        ${titulo}
+                    </div>
+                `;
+            },
+
+            eventClick: function(info) {
+                if (info.event.url) {
+                    window.open(info.event.url, "_blank");
+                    info.jsEvent.preventDefault();
+                }
             }
-        }
+        });
+
+        calendar.render();
+
+        // ===============================
+        // PDF DEL MES VISIBLE
+        // ===============================
+        btnPdf.addEventListener("click", function () {
+            let fecha = calendar.getDate();
+            let mes = fecha.getMonth() + 1;
+            let anio = fecha.getFullYear();
+
+            let url = `/calendario/pdf/${anio}/${mes}/`;
+            window.open(url, "_blank");
+        });
     });
-
-    calendar.render();
-
-    // ===============================
-    // PDF DEL MES VISIBLE
-    // ===============================
-    btnPdf.addEventListener("click", function () {
-        let fecha = calendar.getDate();
-        let mes = fecha.getMonth() + 1;
-        let anio = fecha.getFullYear();
-
-        let url = `/calendario/pdf/${anio}/${mes}/`;
-        window.open(url, "_blank");
-    });
-});
+}
 </script>
 
 {% endblock %}

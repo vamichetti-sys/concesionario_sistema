@@ -323,13 +323,19 @@ def registrar_movimiento(request, cuenta_id):
         observaciones = f"{observaciones} | {extra}" if observaciones else extra
 
     # ===============================
+    # CAPTURAR SALDO ANTES DEL PAGO
+    # ===============================
+    saldo_anterior = cuenta.saldo
+
+    # ===============================
     # Crear PAGO
     # ===============================
     pago = Pago.objects.create(
         cuenta=cuenta,
         forma_pago=forma_pago,
         monto_total=monto,
-        observaciones=observaciones
+        observaciones=observaciones,
+        saldo_anterior=saldo_anterior
     )
 
     # ===============================
@@ -338,10 +344,12 @@ def registrar_movimiento(request, cuenta_id):
     if tipo == "cuota":
         descripcion_mov = observaciones or "Pago cuotas"
         origen_mov = "manual"
+
     elif tipo == "unico":
         descripcion_mov = observaciones or "Pago único"
         origen_mov = "manual"
-    else:
+
+    else:  # cheque
         descripcion_mov = observaciones or f"Cheque N° {numero_cheque} ({banco})"
         origen_mov = "cheque"
 
@@ -373,9 +381,9 @@ def registrar_movimiento(request, cuenta_id):
             return redirect("cuentas:cuenta_corriente_detalle", cuenta_id=cuenta.id)
 
         cuota_inicio = plan.cuotas.get(id=cuota_id)
-        cuotas = plan.cuotas.filter(numero__gte=cuota_inicio.numero)
+        cuotas_plan = plan.cuotas.filter(numero__gte=cuota_inicio.numero)
 
-        for cuota in cuotas:
+        for cuota in cuotas_plan:
             if monto_restante <= 0:
                 break
 
@@ -404,12 +412,15 @@ def registrar_movimiento(request, cuenta_id):
             pass
 
     # ===============================
-    # Recalcular saldo y salir
+    # Recalcular saldo y guardar saldo posterior
     # ===============================
-        try:
-          cuenta.recalcular_saldo()
-        except Exception:
-           pass
+    try:
+        cuenta.recalcular_saldo()
+    except Exception:
+        pass
+
+    pago.saldo_posterior = cuenta.saldo
+    pago.save(update_fields=["saldo_posterior"])
 
     return redirect("cuentas:recibo_pago_pdf", pago_id=pago.id)
 @login_required
@@ -448,15 +459,19 @@ def registrar_pago_gestoria(request, cuenta_id):
             observaciones="Pago gestoría"
         )
 
+        # 👇 ESTE ES EL FIX CLAVE (DEBE RESTAR)
         MovimientoCuenta.objects.create(
             cuenta=cuenta,
             tipo="pago",
             monto=monto,
             descripcion="Pago de gestoría",
-            origen="gestoria"
+            origen="manual"   # ← NO "gestoria"
         )
 
-        cuenta.recalcular_saldo()
+        try:
+            cuenta.recalcular_saldo()
+        except Exception:
+            pass
 
         return redirect(
             "cuentas:recibo_pago_pdf",
@@ -470,7 +485,7 @@ def registrar_pago_gestoria(request, cuenta_id):
     )
 
 # ==========================================================
-# RECIBO DE PAGO PDF 
+# RECIBO DE PAGO PDF
 # ==========================================================
 from django.utils import timezone
 from reportlab.platypus import (
@@ -481,9 +496,10 @@ from reportlab.platypus import (
     TableStyle
 )
 from reportlab.lib.pagesizes import A4
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib import colors
 from reportlab.lib.units import cm
+from decimal import Decimal
 
 @login_required
 def recibo_pago_pdf(request, pago_id):
@@ -491,7 +507,6 @@ def recibo_pago_pdf(request, pago_id):
     cuenta = pago.cuenta
     cliente = cuenta.cliente
 
-    # ✅ DEFINIR FECHA ANTES DE USARLA
     fecha_str = timezone.now().strftime("%d/%m/%Y %H:%M")
 
     response = HttpResponse(content_type="application/pdf")
@@ -522,39 +537,37 @@ def recibo_pago_pdf(request, pago_id):
     # ENCABEZADO
     # ==================================================
     header = Table(
-    [[
-        Paragraph(
-            "<b>AMICHETTI AUTOMOTORES</b><br/>"
-            "Titular: Amichetti Hugo Alberto<br/>"
-            "CUIT: 20-13814200-1 – Tel: 2474660154",
-            styles["Normal"]
-        ),
-        Paragraph(
-            f"<b>RECIBO N° {pago.id:08d}</b><br/>{fecha_str}",
-            styles["Normal"]
-        )
-    ]],
-    colWidths=[11*cm, 5*cm]
-)
+        [[
+            Paragraph(
+                "<b>AMICHETTI AUTOMOTORES</b><br/>"
+                "Titular: Amichetti Hugo Alberto<br/>"
+                "CUIT: 20-13814200-1 – Tel: 2474660154",
+                styles["Normal"]
+            ),
+            Paragraph(
+                f"<b>RECIBO N° {pago.id:08d}</b><br/>{fecha_str}",
+                styles["Normal"]
+            )
+        ]],
+        colWidths=[11 * cm, 5 * cm]
+    )
 
     header.setStyle(TableStyle([
-    ("BOX", (0,0), (-1,-1), 1, colors.black),
-    ("BACKGROUND", (0,0), (-1,-1), COLOR_GRIS),
-    ("VALIGN", (0,0), (-1,-1), "TOP"),
-    ("LEFTPADDING", (0,0), (-1,-1), 8),
-    ("RIGHTPADDING", (0,0), (-1,-1), 8),
-    ("TOPPADDING", (0,0), (-1,-1), 6),
-    ("BOTTOMPADDING", (0,0), (-1,-1), 6),
-]))
+        ("BOX", (0, 0), (-1, -1), 1, colors.black),
+        ("BACKGROUND", (0, 0), (-1, -1), GRIS),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 8),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 8),
+        ("TOPPADDING", (0, 0), (-1, -1), 6),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+    ]))
 
     elements.append(header)
     elements.append(Spacer(1, 20))
 
     # ==================================================
-    # TÍTULO + FECHA
+    # TÍTULO
     # ==================================================
-    fecha_str = timezone.now().strftime("%d/%m/%Y %H:%M")
-
     titulo_table = Table(
         [[
             Paragraph("<b>Comprobante de pago</b>", styles["Heading2"]),
@@ -571,35 +584,24 @@ def recibo_pago_pdf(request, pago_id):
     elements.append(Spacer(1, 18))
 
     # ==================================================
-    # DATOS DEL CLIENTE (SEGUROS)
+    # DATOS DEL CLIENTE
     # ==================================================
     documento = (
         getattr(cliente, "cuit", None)
         or getattr(cliente, "dni", None)
-        or getattr(cliente, "documento", None)
         or "-"
     )
 
-    telefono = getattr(cliente, "telefono", "-")
-    email = getattr(cliente, "email", "-")
-
-    elements.append(
-        Paragraph("<b><font color='#002855'>Datos del cliente</font></b>", styles["Heading3"])
-    )
+    elements.append(Paragraph("<b>Datos del cliente</b>", styles["Heading3"]))
     elements.append(Spacer(1, 6))
     elements.append(Paragraph(f"Nombre: {cliente.nombre_completo}", styles["Normal"]))
     elements.append(Paragraph(f"CUIT/DNI: {documento}", styles["Normal"]))
-    elements.append(Paragraph(f"Teléfono: {telefono}", styles["Normal"]))
-    elements.append(Paragraph(f"Email: {email}", styles["Normal"]))
-
     elements.append(Spacer(1, 16))
 
     # ==================================================
     # DETALLE DEL PAGO
     # ==================================================
-    elements.append(
-        Paragraph("<b><font color='#FF6C1A'>Detalle del pago</font></b>", styles["Heading3"])
-    )
+    elements.append(Paragraph("<b>Detalle del pago</b>", styles["Heading3"]))
     elements.append(Spacer(1, 6))
 
     elements.append(Paragraph(
@@ -615,15 +617,41 @@ def recibo_pago_pdf(request, pago_id):
         styles["Normal"]
     ))
 
-    elements.append(Spacer(1, 18))
+    elements.append(Spacer(1, 12))
 
     # ==================================================
-    # SALDO
+    # CONCEPTO DEL PAGO (CUOTA / ÚNICO / CHEQUE)
     # ==================================================
+    ultimo_mov = (
+        cuenta.movimientos
+        .filter(tipo="pago")
+        .order_by("-fecha")
+        .first()
+    )
+
+    if ultimo_mov:
+        elements.append(Paragraph(
+            f"Concepto del pago: {ultimo_mov.descripcion}",
+            styles["Normal"]
+        ))
+        elements.append(Spacer(1, 12))
+
+    # ==================================================
+    # SALDO REAL PENDIENTE (PLAN / CUOTAS)
+    # ==================================================
+    plan = getattr(cuenta, "plan_pago", None)
+    saldo_plan = Decimal("0")
+
+    if plan:
+        saldo_plan = sum(
+            (cuota.saldo_pendiente for cuota in plan.cuotas.all()),
+            Decimal("0")
+        )
+
     elements.append(
         Paragraph(
-            f"<b>Saldo pendiente del cliente:</b> "
-            f"<font color='red'><b>Debe pagar $ {cuenta.saldo:,.2f}</b></font>",
+            f"<b>Saldo pendiente del plan de pago:</b> "
+            f"<font color='red'><b>$ {saldo_plan:,.2f}</b></font>",
             styles["Normal"]
         )
     )
@@ -646,6 +674,7 @@ def recibo_pago_pdf(request, pago_id):
 
     doc.build(elements)
     return response
+
 # ==========================================================
 # EDITAR CUOTA
 # ==========================================================
@@ -753,4 +782,11 @@ def historial_financiacion(request, cuenta_id):
             "plan": plan,
             "cuotas": cuotas,
         }
+    )
+@login_required
+def pagar_cuota(request, cuota_id):
+    cuota = get_object_or_404(CuotaPlan, id=cuota_id)
+    return redirect(
+        "cuentas:cuenta_corriente_detalle",
+        cuenta_id=cuota.plan.cuenta.id
     )

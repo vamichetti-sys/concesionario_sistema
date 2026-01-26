@@ -192,26 +192,6 @@
 </div>
 
 <!-- ========================================================= -->
-<!-- DOCUMENTACION -->
-<!-- ========================================================= -->
-<div class="card shadow-sm rounded-4 p-4 mb-4">
-
-  <h4 class="fw-bold mb-3" style="color:#002855;">Documentación</h4>
-
-  <div class="row g-3">
-
-      <div class="col-md-3">
-        <label class="fw-bold">VTV</label>
-        <div>
-          {% if ficha.vtv_estado == "tiene" %}Si{% else %}No{% endif %}
-        </div>
-      </div>
-
-      <div class="col-md-3">
-        <label class="fw-bold">Vencimiento</label>
-        <div>
-          {
-<!-- ========================================================= -->
 <!-- GASTOS DE INGRESO -->
 <!-- ========================================================= -->
 <div class="card shadow-sm rounded-4 p-4 mb-4">
@@ -220,19 +200,68 @@
 
   <div class="row g-3">
 
-      <div class="col-md-3">
-        <label class="fw-bold">Total gastos</label>
-        <div>
-          {% if ficha.total_gastos %}
-            ${{ ficha.total_gastos }}
-          {% else %}
-            No informado
-          {% endif %}
-        </div>
+    <!-- TOTAL -->
+    <div class="col-12 mb-2">
+      <label class="fw-bold">Total gastos</label>
+      <div>
+        {% if ficha.total_gastos %}
+          ${{ ficha.total_gastos }}
+        {% else %}
+          No informado
+        {% endif %}
       </div>
+    </div>
+
+    <!-- DETALLE DE GASTOS -->
+    <div class="col-md-3">
+      <label class="fw-bold">Formulario 08</label>
+      <div>${{ ficha.gasto_f08|default:0 }}</div>
+    </div>
+
+    <div class="col-md-3">
+      <label class="fw-bold">Informes</label>
+      <div>${{ ficha.gasto_informes|default:0 }}</div>
+    </div>
+
+    <div class="col-md-3">
+      <label class="fw-bold">Patentes</label>
+      <div>${{ ficha.gasto_patentes|default:0 }}</div>
+    </div>
+
+    <div class="col-md-3">
+      <label class="fw-bold">Infracciones</label>
+      <div>${{ ficha.gasto_infracciones|default:0 }}</div>
+    </div>
+
+    <div class="col-md-3">
+      <label class="fw-bold">Verificación</label>
+      <div>${{ ficha.gasto_verificacion|default:0 }}</div>
+    </div>
+
+    <div class="col-md-3">
+      <label class="fw-bold">Autopartes</label>
+      <div>${{ ficha.gasto_autopartes|default:0 }}</div>
+    </div>
+
+    <div class="col-md-3">
+      <label class="fw-bold">VTV</label>
+      <div>${{ ficha.gasto_vtv|default:0 }}</div>
+    </div>
+
+    <div class="col-md-3">
+      <label class="fw-bold">R-541</label>
+      <div>${{ ficha.gasto_r541|default:0 }}</div>
+    </div>
+
+    <div class="col-md-3">
+      <label class="fw-bold">Firmas</label>
+      <div>${{ ficha.gasto_firmas|default:0 }}</div>
+    </div>
 
   </div>
+
 </div>
+
 
 <!-- ========================================================= -->
 <!-- PAGO DE GASTOS -->

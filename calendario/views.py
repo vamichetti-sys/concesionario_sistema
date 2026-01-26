@@ -10,7 +10,6 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 
-
 # ==========================================================
 # 📅 VISTA CALENDARIO
 # ==========================================================
@@ -24,7 +23,9 @@ def calendario_vencimientos(request):
 # 👉 Turnos: Modelo Evento
 # ==========================================================
 def api_calendario_vencimientos(request):
-    eventos = []
+
+    # 🔒 MISMO CONTENEDOR, MISMO USO, SIN DUPLICADOS
+    eventos = {}
 
     # ==================================================
     # 🔹 VENCIMIENTOS (DESDE FICHA VEHICULAR)
@@ -42,74 +43,101 @@ def api_calendario_vencimientos(request):
 
         base = f"{vehiculo.marca} {vehiculo.modelo} ({vehiculo.dominio})"
 
+        # --------------------------
         # VTV
+        # --------------------------
         if ficha.vtv_vencimiento:
-            eventos.append({
+            event_id = f"vtv-{vehiculo.id}-{ficha.vtv_vencimiento}"
+            eventos[event_id] = {
+                "id": event_id,
                 "start": ficha.vtv_vencimiento,
                 "title": f"Vencimiento VTV – {base}",
                 "allDay": True,
-            })
+            }
 
+        # --------------------------
         # VERIFICACIÓN
+        # --------------------------
         if ficha.verificacion_vencimiento:
-            eventos.append({
+            event_id = f"verificacion-{vehiculo.id}-{ficha.verificacion_vencimiento}"
+            eventos[event_id] = {
+                "id": event_id,
                 "start": ficha.verificacion_vencimiento,
                 "title": f"Vencimiento Verificación – {base}",
                 "allDay": True,
-            })
+            }
 
+        # --------------------------
         # PATENTES
+        # --------------------------
         if ficha.patentes_vto1:
-            eventos.append({
+            event_id = f"patente1-{vehiculo.id}-{ficha.patentes_vto1}"
+            eventos[event_id] = {
+                "id": event_id,
                 "start": ficha.patentes_vto1,
                 "title": f"Vencimiento Patente – {base}",
                 "allDay": True,
-            })
+            }
 
         if ficha.patentes_vto2:
-            eventos.append({
+            event_id = f"patente2-{vehiculo.id}-{ficha.patentes_vto2}"
+            eventos[event_id] = {
+                "id": event_id,
                 "start": ficha.patentes_vto2,
                 "title": f"Vencimiento Patente – {base}",
                 "allDay": True,
-            })
+            }
 
         if ficha.patentes_vto3:
-            eventos.append({
+            event_id = f"patente3-{vehiculo.id}-{ficha.patentes_vto3}"
+            eventos[event_id] = {
+                "id": event_id,
                 "start": ficha.patentes_vto3,
                 "title": f"Vencimiento Patente – {base}",
                 "allDay": True,
-            })
+            }
 
         if ficha.patentes_vto4:
-            eventos.append({
+            event_id = f"patente4-{vehiculo.id}-{ficha.patentes_vto4}"
+            eventos[event_id] = {
+                "id": event_id,
                 "start": ficha.patentes_vto4,
                 "title": f"Vencimiento Patente – {base}",
                 "allDay": True,
-            })
+            }
 
         if ficha.patentes_vto5:
-            eventos.append({
+            event_id = f"patente5-{vehiculo.id}-{ficha.patentes_vto5}"
+            eventos[event_id] = {
+                "id": event_id,
                 "start": ficha.patentes_vto5,
                 "title": f"Vencimiento Patente – {base}",
                 "allDay": True,
-            })
+            }
 
     # ==================================================
     # 🔹 TURNOS (MODELO EVENTO)
+    # 👉 NO SE FILTRAN
+    # 👉 NO SE OCULTAN
+    # 👉 NO SE COMPARAN
     # ==================================================
-    turnos = Evento.objects.select_related("vehiculo")
+    turnos = Evento.objects.exclude(
+        titulo__icontains="Vencimiento"
+    ).select_related("vehiculo")
 
     for evento in turnos:
         if not evento.fecha:
             continue
 
-        eventos.append({
+        event_id = f"turno-{evento.id}"
+        eventos[event_id] = {
+            "id": event_id,
             "start": evento.fecha,
             "title": evento.titulo,
             "allDay": True,
-        })
+        }
 
-    return JsonResponse(eventos, safe=False)
+    return JsonResponse(list(eventos.values()), safe=False)
 
 
 # ==========================================================
@@ -152,17 +180,26 @@ def calendario_pdf_mensual(request, anio, mes):
 
     # ==================================================
     # 🔹 TURNOS (EVENTOS)
+    # 👉 Se excluyen vencimientos para evitar duplicados
     # ==================================================
-    turnos = Evento.objects.all()
+    turnos = (
+        Evento.objects
+        .exclude(titulo__icontains="Vencimiento")
+    )
 
     for evento in turnos:
-        if evento.fecha and evento.fecha.year == anio and evento.fecha.month == mes:
+        if (
+            evento.fecha
+            and evento.fecha.year == anio
+            and evento.fecha.month == mes
+        ):
             eventos_pdf.append({
                 "fecha": evento.fecha,
                 "tipo": "Turno",
                 "detalle": evento.titulo
             })
 
+    # Orden cronológico final
     eventos_pdf.sort(key=lambda x: x["fecha"])
 
     # ==================================================

@@ -334,9 +334,8 @@
     </div>
   </div>
 </div>
-
-<!-- ================= TAB 6: GASTOS DE INGRESO ================= -->
-<div class="tab-pane fade" id="tab-gastos">
+<!-- ================= TAB 6: GASTOS ================= -->
+ <div class="tab-pane fade" id="tab-gastos">
   <h4 class="fw-bold mb-3" style="color:#002855;">
     Gastos de ingreso
   </h4>
@@ -355,6 +354,11 @@
     <div class="col-md-4">
       <label class="fw-bold">Patentes</label>
       {{ ficha_form.gasto_patentes }}
+    </div>
+
+    <div class="col-md-4">
+      <label class="fw-bold">Infracciones</label>
+      {{ ficha_form.gasto_infracciones }}
     </div>
 
     <div class="col-md-4">
@@ -459,7 +463,6 @@
   {% endfor %}
 
 </div>
-
 
 <!-- ================= TAB 7: OBSERVACIONES ================= -->
 <div class="tab-pane fade" id="tab-observaciones">

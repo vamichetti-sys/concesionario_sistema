@@ -83,7 +83,7 @@
         }
 
         .saldo {
-            margin-top: 15px;
+            margin-top: 12px;
             font-size: 14pt;
             font-weight: bold;
             color: red;
@@ -129,6 +129,7 @@
         <span>Fecha y hora: {{ recibo.fecha|date:"d/m/Y H:i" }}</span>
     </div>
 
+    <!-- DATOS CLIENTE -->
     <div class="section">
         <h3>Datos del cliente</h3>
         <p><strong>Nombre:</strong> {{ cliente.nombre }}</p>
@@ -139,17 +140,43 @@
 
     <hr>
 
+    <!-- DETALLE DEL PAGO -->
     <div class="section">
         <h3>Detalle del pago</h3>
         <p><strong>Método de pago:</strong> {{ recibo.metodo_pago }}</p>
-        <p><strong>Monto abonado:</strong> ${{ recibo.monto }}</p>
+        <p><strong>Importe abonado:</strong> ${{ recibo.monto }}</p>
         <p><strong>Observación:</strong> {{ recibo.observacion }}</p>
     </div>
 
-    <p class="saldo">
-        Debe pagar ${{ saldo_pendiente }}
-    </p>
+    <hr>
 
+    <!-- ESTADO CUENTA CORRIENTE -->
+    <div class="section">
+        <h3>Estado de la cuenta corriente</h3>
+
+        <p>
+            <strong>Deuda total anterior:</strong>
+            ${{ saldo_anterior }}
+        </p>
+
+        <p>
+            <strong>Importe abonado:</strong>
+            ${{ recibo.monto }}
+        </p>
+
+        <p class="saldo">
+            Saldo pendiente luego del pago:
+            ${{ saldo_actual }}
+        </p>
+
+        <!-- Compatibilidad con lógica anterior -->
+        <p>
+            <strong>Saldo pendiente informado:</strong>
+            ${{ saldo_pendiente }}
+        </p>
+    </div>
+
+    <!-- FIRMA -->
     <div class="firma">
         <div class="firma-linea">
             Firma y aclaración

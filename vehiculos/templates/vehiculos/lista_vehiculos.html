@@ -62,21 +62,22 @@
                                     onclick="abrirFicha('{{ v.id }}')">
                                 Más info
                             </button>
-
-                            <!-- ELIMINAR VEHICULO -->
-                            <form method="POST"
-                                  action="{% url 'vehiculos:eliminar_vehiculo' v.id %}"
-                                  onsubmit="return confirm('¿Seguro que querés eliminar este vehículo? Esta acción no se puede deshacer.');">
-                                {% csrf_token %}
-                                <button type="submit"
-                                        class="btn btn-sm"
-                                        style="border:1px solid #dc3545; color:#dc3545;">
-                                    Eliminar
-                                </button>
-                            </form>
-
-                        </div>
-                    </td>
+{% if not v.venta %}
+<form method="POST"
+      action="{% url 'vehiculos:eliminar_vehiculo' v.id %}"
+      onsubmit="return confirm('¿Seguro que querés eliminar este vehículo? Esta acción no se puede deshacer.');">
+    {% csrf_token %}
+    <button type="submit"
+            class="btn btn-sm"
+            style="border:1px solid #dc3545; color:#dc3545;">
+        Eliminar
+    </button>
+</form>
+{% else %}
+<span class="badge bg-secondary">
+    No eliminable
+</span>
+{% endif %}
 
                     <!-- NUMERO DE CARPETA -->
                     <td>

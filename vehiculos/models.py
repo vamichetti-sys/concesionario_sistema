@@ -134,6 +134,7 @@ class FichaVehicular(models.Model):
     gasto_f08 = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
     gasto_informes = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
     gasto_patentes = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
+    gasto_infracciones = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
     gasto_verificacion = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
     gasto_autopartes = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
     gasto_vtv = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
@@ -212,16 +213,18 @@ class FichaVehicular(models.Model):
     # HELPERS EXISTENTES (NO SE TOCAN)
     # ======================================================
     def mapa_gastos_ingreso(self):
-        return {
-            "Formulario 08": self.gasto_f08,
-            "Informes": self.gasto_informes,
-            "Patentes": self.gasto_patentes,
-            "Verificación": self.gasto_verificacion,
-            "Autopartes": self.gasto_autopartes,
-            "VTV": self.gasto_vtv,
-            "R541": self.gasto_r541,
-            "Firmas": self.gasto_firmas,
-        }
+       return {
+        "Formulario 08": self.gasto_f08,
+        "Informes": self.gasto_informes,
+        "Patentes": self.gasto_patentes,
+        "Infracciones": self.gasto_infracciones,  # ← ESTA LÍNEA
+        "Verificación": self.gasto_verificacion,
+        "Autopartes": self.gasto_autopartes,
+        "VTV": self.gasto_vtv,
+        "R541": self.gasto_r541,
+        "Firmas": self.gasto_firmas,
+    }
+
 
     def total_pagado_por_concepto(self, concepto):
         PagoGasto = apps.get_model("vehiculos", "PagoGastoIngreso")
@@ -265,9 +268,7 @@ class FichaVehicular(models.Model):
     def numero_consignacion(self):
         return self.numero_consignacion_factura
 
-    # ======================================================
-    # ⚙️ AUTOMATIZACIÓN CONTABLE – PERMUTA
-    # ======================================================
+   
     # ======================================================
     # ⚙️ AUTOMATIZACIÓN CONTABLE – PERMUTA
     # ======================================================
@@ -342,6 +343,10 @@ class ConfiguracionGastosIngreso(models.Model):
     gasto_f08 = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     gasto_informes = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     gasto_patentes = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+
+    # ✅ AGREGADO (CLAVE)
+    gasto_infracciones = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+
     gasto_verificacion = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     gasto_autopartes = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     gasto_vtv = models.DecimalField(max_digits=12, decimal_places=2, default=0)

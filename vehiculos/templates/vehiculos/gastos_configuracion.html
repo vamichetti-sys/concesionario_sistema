@@ -11,27 +11,33 @@
   {% csrf_token %}
 
   <div class="row g-3">
+<div class="col-md-3">
+  <label class="fw-bold">Formulario 08</label>
+  <input type="text" name="gasto_f08"
+         class="form-control"
+         value="{{ config.gasto_f08|default_if_none:'0.00' }}">
+</div>
 
-    <div class="col-md-3">
-      <label class="fw-bold">Formulario 08</label>
-      <input type="text" name="gasto_f08"
-             class="form-control"
-             value="{{ config.gasto_f08|default_if_none:'0.00' }}">
-    </div>
+<div class="col-md-3">
+  <label class="fw-bold">Informes</label>
+  <input type="text" name="gasto_informes"
+         class="form-control"
+         value="{{ config.gasto_informes|default_if_none:'0.00' }}">
+</div>
 
-    <div class="col-md-3">
-      <label class="fw-bold">Informes</label>
-      <input type="text" name="gasto_informes"
-             class="form-control"
-             value="{{ config.gasto_informes|default_if_none:'0.00' }}">
-    </div>
+<div class="col-md-3">
+  <label class="fw-bold">Patentes</label>
+  <input type="text" name="gasto_patentes"
+         class="form-control"
+         value="{{ config.gasto_patentes|default_if_none:'0.00' }}">
+</div>
 
-    <div class="col-md-3">
-      <label class="fw-bold">Patentes</label>
-      <input type="text" name="gasto_patentes"
-             class="form-control"
-             value="{{ config.gasto_patentes|default_if_none:'0.00' }}">
-    </div>
+<div class="col-md-3">
+  <label class="fw-bold">Infracciones</label>
+  <input type="text" name="gasto_infracciones"
+         class="form-control"
+         value="{{ config.gasto_infracciones|default_if_none:'0.00' }}">
+</div>
 
     <div class="col-md-3">
       <label class="fw-bold">Verificación</label>

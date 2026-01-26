@@ -19,11 +19,21 @@ from .models import (
 
 from .forms import VehiculoBasicoForm, VehiculoForm, FichaVehicularForm
 
+# ===============================
+# REPORTLAB – PDF (SIN DEPENDENCIAS NATIVAS)
+# ===============================
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.pagesizes import A4
+
+
 # ==========================================================
 # ACCESO ÚNICO A CONFIGURACIÓN GLOBAL DE GASTOS (ÚNICO VÁLIDO)
 # ==========================================================
 def get_configuracion_gastos():
     return ConfiguracionGastosIngreso.objects.get(pk=1)
+
+
 def lista_vehiculos(request):
     query = request.GET.get("q", "")
     vehiculos = Vehiculo.objects.exclude(estado="vendido").order_by("-id")
@@ -68,6 +78,7 @@ def agregar_vehiculo(request):
                     "gasto_f08": config.gasto_f08,
                     "gasto_informes": config.gasto_informes,
                     "gasto_patentes": config.gasto_patentes,
+                    "gasto_infracciones": config.gasto_infracciones,
                     "gasto_verificacion": config.gasto_verificacion,
                     "gasto_autopartes": config.gasto_autopartes,
                     "gasto_vtv": config.gasto_vtv,
@@ -79,6 +90,7 @@ def agregar_vehiculo(request):
             messages.success(request, "Vehículo agregado correctamente.")
             return redirect("vehiculos:lista_vehiculos")
 
+        # ❌ formulario inválido
         messages.error(
             request,
             "No se pudo guardar el vehículo. Revisá los datos ingresados."
@@ -92,6 +104,8 @@ def agregar_vehiculo(request):
         "vehiculos/agregar_vehiculo.html",
         {"form": form},
     )
+
+
 @transaction.atomic
 def cambiar_estado_vehiculo(request, vehiculo_id):
     vehiculo = get_object_or_404(Vehiculo, id=vehiculo_id)
@@ -151,6 +165,7 @@ def cambiar_estado_vehiculo(request, vehiculo_id):
         )
 
     return redirect("vehiculos:lista_vehiculos")
+
 # ==========================================================
 # MODAL FICHA VEHICULAR (AJAX) – DEFINITIVA
 # ==========================================================
@@ -162,20 +177,23 @@ def ficha_vehicular_ajax(request, vehiculo_id):
     ficha_form = FichaVehicularForm(instance=ficha)
 
     CONCEPTOS = {
-        "f08": "Formulario 08",
-        "informes": "Informes",
-        "patentes": "Patentes",
-        "verificacion": "Verificación",
-        "autopartes": "Autopartes",
-        "vtv": "VTV",
-        "r541": "R541",
-        "firmas": "Firmas",
-    }
+    "f08": "Formulario 08",
+    "informes": "Informes",
+    "patentes": "Patentes",
+    "infracciones": "Infracciones",  # ← ESTA LÍNEA
+    "verificacion": "Verificación",
+    "autopartes": "Autopartes",
+    "vtv": "VTV",
+    "r541": "R541",
+    "firmas": "Firmas",
+}
+
 
     mapa_gastos = {
         "f08": ficha.gasto_f08,
         "informes": ficha.gasto_informes,
         "patentes": ficha.gasto_patentes,
+        "infracciones": ficha.gasto_infracciones,
         "verificacion": ficha.gasto_verificacion,
         "autopartes": ficha.gasto_autopartes,
         "vtv": ficha.gasto_vtv,
@@ -305,10 +323,15 @@ def ficha_completa(request, vehiculo_id):
     vehiculo = get_object_or_404(Vehiculo, id=vehiculo_id)
     ficha, _ = FichaVehicular.objects.get_or_create(vehiculo=vehiculo)
 
+    # 🔴 AGREGADO MÍNIMO PARA QUE SE RENDERICEN LAS FECHAS
+    ficha_form = FichaVehicularForm(instance=ficha)
+    vehiculo_form = VehiculoForm(instance=vehiculo)
+
     CONCEPTOS = {
         "f08": "Formulario 08",
         "informes": "Informes",
         "patentes": "Patentes",
+        "infracciones": "Infracciones",
         "verificacion": "Verificación",
         "autopartes": "Autopartes",
         "vtv": "VTV",
@@ -320,6 +343,7 @@ def ficha_completa(request, vehiculo_id):
         "f08": ficha.gasto_f08,
         "informes": ficha.gasto_informes,
         "patentes": ficha.gasto_patentes,
+        "infracciones": ficha.gasto_infracciones,
         "verificacion": ficha.gasto_verificacion,
         "autopartes": ficha.gasto_autopartes,
         "vtv": ficha.gasto_vtv,
@@ -372,7 +396,9 @@ def ficha_completa(request, vehiculo_id):
         "vehiculos/ficha_completa.html",
         {
             "vehiculo": vehiculo,
+            "vehiculo_form": vehiculo_form,   # 🔴 agregado
             "ficha": ficha,
+            "ficha_form": ficha_form,         # 🔴 agregado
             "gastos_ingreso": gastos_ingreso,
             "total_pendiente": total_pendiente,
         },
@@ -470,15 +496,17 @@ def registrar_pago_gasto(request):
     # CONCEPTOS CANÓNICOS
     # ===============================
     CONCEPTOS = {
-        "f08": "Formulario 08",
-        "informes": "Informes",
-        "patentes": "Patentes",
-        "verificacion": "Verificación",
-        "autopartes": "Autopartes",
-        "vtv": "VTV",
-        "r541": "R541",
-        "firmas": "Firmas",
-    }
+    "f08": "Formulario 08",
+    "informes": "Informes",
+    "patentes": "Patentes",
+    "infracciones": "Infracciones",  # ← ESTA LÍNEA
+    "verificacion": "Verificación",
+    "autopartes": "Autopartes",
+    "vtv": "VTV",
+    "r541": "R541",
+    "firmas": "Firmas",
+}
+
 
     if concepto_key not in CONCEPTOS:
         messages.error(request, "Concepto de gasto inválido.")
@@ -535,34 +563,31 @@ def registrar_pago_gasto(request):
     return redirect("vehiculos:ficha_completa", vehiculo_id=vehiculo.id)
 
 # ==========================================================
-# ELIMINAR VEHÍCULO (SIN DELETE FÍSICO)
+# ELIMINAR VEHÍCULO (DELETE REAL, SOLO SI NO TIENE VENTAS)
 # ==========================================================
+@login_required
 def eliminar_vehiculo(request, vehiculo_id):
     vehiculo = get_object_or_404(Vehiculo, id=vehiculo_id)
 
     from ventas.models import Venta
 
-    # Si el vehículo tiene historial de ventas, no se permite eliminar
-    if Venta.objects.filter(
-        vehiculo=vehiculo,
-        estado__in=["pendiente", "confirmada", "revertida"]
-    ).exists():
+    # 🔒 Bloqueo si tiene ventas
+    if Venta.objects.filter(vehiculo=vehiculo).exists():
         messages.error(
             request,
-            "No se puede eliminar el vehículo porque tiene historial de ventas asociado."
+            "No se puede eliminar el vehículo porque tiene ventas asociadas."
         )
         return redirect("vehiculos:lista_vehiculos")
 
     if request.method == "POST":
-        vehiculo.estado = "anulado"
-        vehiculo.save(update_fields=["estado"])
-
+        vehiculo.delete()
         messages.success(
             request,
-            "Vehículo marcado como ANULADO correctamente."
+            "Vehículo eliminado definitivamente."
         )
 
     return redirect("vehiculos:lista_vehiculos")
+
 # ==========================================================
 # AJAX – DATOS DE VEHÍCULO (RESTAURADO)
 # ==========================================================
@@ -639,6 +664,7 @@ def gastos_configuracion(request):
         "gasto_f08",
         "gasto_informes",
         "gasto_patentes",
+        "gasto_infracciones",
         "gasto_verificacion",
         "gasto_autopartes",
         "gasto_vtv",
@@ -689,6 +715,7 @@ def calcular_total_gastos(ficha):
         ficha.gasto_f08,
         ficha.gasto_informes,
         ficha.gasto_patentes,
+        ficha.gasto_infracciones,
         ficha.gasto_verificacion,
         ficha.gasto_autopartes,
         ficha.gasto_vtv,
@@ -730,33 +757,168 @@ def sincronizar_turnos_calendario(vehiculo, ficha):
                 fecha=fecha,
                 titulo=titulo,
             )
+from reportlab.platypus import (
+    SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+)
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors
 from django.http import HttpResponse
-from django.template.loader import render_to_string
 from django.shortcuts import get_object_or_404
+from decimal import Decimal
+
+from .models import Vehiculo
+
 
 def ficha_vehicular_pdf(request, vehiculo_id):
-    """
-    Genera PDF de la ficha vehicular.
-    ⚠️ Requiere WeasyPrint + dependencias del sistema.
-    """
-    from weasyprint import HTML  # import local
-
     vehiculo = get_object_or_404(Vehiculo, id=vehiculo_id)
     ficha = vehiculo.ficha
 
-    html_string = render_to_string(
-        "vehiculos/ficha_vehicular_pdf.html",
-        {
-            "vehiculo": vehiculo,
-            "ficha": ficha,
-        }
-    )
-
-    pdf = HTML(string=html_string).write_pdf()
-
-    response = HttpResponse(pdf, content_type="application/pdf")
+    response = HttpResponse(content_type="application/pdf")
     response["Content-Disposition"] = (
-        f'inline; filename="ficha_vehiculo_{vehiculo.id}.pdf"'
+        f'inline; filename="ficha_vehicular_{vehiculo.id}.pdf"'
     )
 
+    doc = SimpleDocTemplate(
+        response,
+        pagesize=A4,
+        rightMargin=30,
+        leftMargin=30,
+        topMargin=30,
+        bottomMargin=30
+    )
+
+    styles = getSampleStyleSheet()
+    elements = []
+
+    # ==================================================
+    # ESTILOS – IDENTIDAD AMICHETTI
+    # ==================================================
+    title_style = ParagraphStyle(
+        "title",
+        fontSize=18,
+        textColor=colors.HexColor("#002855"),
+        alignment=1,
+        fontName="Helvetica-Bold",
+        spaceAfter=6
+    )
+
+    subtitle_style = ParagraphStyle(
+        "subtitle",
+        fontSize=11,
+        alignment=1,
+        spaceAfter=16
+    )
+
+    section_title_style = ParagraphStyle(
+        "section",
+        fontSize=11,
+        textColor=colors.white,
+        backColor=colors.HexColor("#002855"),
+        fontName="Helvetica-Bold",
+        leftIndent=6,
+        spaceBefore=12,
+        spaceAfter=6
+    )
+
+    # ==================================================
+    # HEADER
+    # ==================================================
+    elements.append(Paragraph("AMICHETTI AUTOMOTORES", title_style))
+    elements.append(Paragraph("Ficha Vehicular", subtitle_style))
+
+    # ==================================================
+    # FUNCIÓN PARA SECCIONES
+    # ==================================================
+    def seccion(titulo, filas):
+        elements.append(Paragraph(titulo, section_title_style))
+
+        table = Table(
+            filas,
+            colWidths=[doc.width * 0.35, doc.width * 0.65]
+        )
+
+        table.setStyle(TableStyle([
+            ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+            ("FONT", (0, 0), (0, -1), "Helvetica-Bold"),
+            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ("LEFTPADDING", (0, 0), (-1, -1), 6),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+        ]))
+
+        elements.append(table)
+
+    # ==================================================
+    # DATOS DEL VEHÍCULO
+    # ==================================================
+    seccion("Datos del vehículo", [
+        ["Marca", vehiculo.marca],
+        ["Modelo", vehiculo.modelo],
+        ["Dominio", vehiculo.dominio or "-"],
+        ["Año", vehiculo.anio],
+        ["Kilometraje", vehiculo.kilometros or "-"],
+        ["Precio", f"$ {vehiculo.precio}"],
+        ["Número de carpeta", vehiculo.numero_carpeta or "-"],
+    ])
+
+    # ==================================================
+    # IDENTIFICACIÓN
+    # ==================================================
+    seccion("Identificación", [
+        ["Número de motor", ficha.numero_motor or "-"],
+        ["Número de chasis", ficha.numero_chasis or "-"],
+        ["Fecha inscripción inicial", ficha.fecha_inscripcion_inicial or "-"],
+        ["Color", ficha.color or "-"],
+        ["Combustible", ficha.combustible or "-"],
+        ["Transmisión", ficha.transmision or "-"],
+    ])
+
+    # ==================================================
+    # DOCUMENTACIÓN
+    # ==================================================
+    seccion("Documentación", [
+        [
+            "Patentes",
+            f"{ficha.patentes_estado or '-'}"
+            + (f" – $ {ficha.patentes_monto}" if ficha.patentes_monto else "")
+        ],
+        ["Formulario 08", ficha.f08_estado or "-"],
+        ["Cédula", ficha.cedula_estado or "-"],
+        [
+            "Verificación policial",
+            f"{ficha.verificacion_estado or '-'}"
+            + (f" – {ficha.verificacion_vencimiento}" if ficha.verificacion_vencimiento else "")
+        ],
+        ["Grabado autopartes", ficha.autopartes_estado or "-"],
+        [
+            "VTV",
+            f"{ficha.vtv_estado or '-'}"
+            + (f" – {ficha.vtv_vencimiento}" if ficha.vtv_vencimiento else "")
+        ],
+    ])
+
+    # ==================================================
+    # GASTOS DE INGRESO
+    # ==================================================
+    seccion("Gastos de ingreso", [
+        ["Formulario 08", f"$ {ficha.gasto_f08 or 0}"],
+        ["Informes", f"$ {ficha.gasto_informes or 0}"],
+        ["Patentes", f"$ {ficha.gasto_patentes or 0}"],
+        ["Infracciones", f"$ {ficha.gasto_infracciones or 0}"],
+        ["Verificación", f"$ {ficha.gasto_verificacion or 0}"],
+        ["Autopartes", f"$ {ficha.gasto_autopartes or 0}"],
+        ["VTV", f"$ {ficha.gasto_vtv or 0}"],
+        ["R-541", f"$ {ficha.gasto_r541 or 0}"],
+        ["Firmas", f"$ {ficha.gasto_firmas or 0}"],
+        ["TOTAL", f"$ {ficha.total_gastos or 0}"],
+    ])
+
+    # ==================================================
+    # OBSERVACIONES
+    # ==================================================
+    seccion("Observaciones", [
+        ["", ficha.observaciones or "Sin observaciones"]
+    ])
+
+    doc.build(elements)
     return response

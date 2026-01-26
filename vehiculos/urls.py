@@ -81,6 +81,14 @@ urlpatterns = [
         views.ficha_completa,
         name="ficha_completa"
     ),
+    # ==================================================
+    # PDF – FICHA VEHICULAR
+    # ==================================================
+    path(
+        "pdf/<int:vehiculo_id>/",
+        views.ficha_vehicular_pdf,
+        name="ficha_vehicular_pdf"
+    ),
 
     # ==================================================
     # GASTOS – OPERATIVOS EXISTENTES

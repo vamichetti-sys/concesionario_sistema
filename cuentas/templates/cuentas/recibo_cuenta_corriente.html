@@ -14,7 +14,42 @@
             <p><strong>Cliente:</strong> {{ cliente.nombre }}</p>
             <p><strong>CUIT/DNI:</strong> {{ cliente.cuit_dni }}</p>
             <p><strong>Fecha:</strong> {{ recibo.fecha|date:"d/m/Y H:i" }}</p>
+
+            <hr>
+
+            <h5 class="mt-3">Detalle del pago</h5>
             <p><strong>Monto abonado:</strong> ${{ recibo.monto }}</p>
+
+            {% if recibo.observacion %}
+                <p><strong>Observación:</strong> {{ recibo.observacion }}</p>
+            {% endif %}
+
+            <hr>
+
+            <!-- ===============================
+                 ESTADO DE CUENTA CORRIENTE
+            =============================== -->
+            <h5 class="mt-3">Estado de la cuenta corriente</h5>
+
+            <p>
+                <strong>Deuda total anterior:</strong>
+                ${{ saldo_anterior }}
+            </p>
+
+            <p>
+                <strong>Importe abonado:</strong>
+                ${{ recibo.monto }}
+            </p>
+
+            <p class="fw-bold text-danger">
+                Saldo pendiente luego del pago:
+                ${{ saldo_actual }}
+            </p>
+
+            <!-- COMPATIBILIDAD CON LÓGICA ANTERIOR -->
+            <p class="fw-bold">
+                Debe pagar: ${{ saldo_pendiente }}
+            </p>
 
             <hr>
 

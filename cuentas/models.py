@@ -345,8 +345,24 @@ class Pago(models.Model):
     forma_pago = models.CharField(max_length=20, choices=FORMAS_PAGO)
     banco = models.CharField(max_length=100, blank=True)
     numero_cheque = models.CharField(max_length=100, blank=True)
+
     monto_total = models.DecimalField(max_digits=14, decimal_places=2)
     observaciones = models.TextField(blank=True)
+
+    # 🔴 CAMPOS CLAVE PARA EL RECIBO (NO EXISTÍAN)
+    saldo_anterior = models.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        null=True,
+        blank=True
+    )
+
+    saldo_posterior = models.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        null=True,
+        blank=True
+    )
 
     def __str__(self):
         return f"Recibo {self.numero_recibo or self.id} - ${self.monto_total}"
@@ -365,6 +381,7 @@ class Pago(models.Model):
             self.numero_recibo = f"RC-{year}-{str(siguiente).zfill(6)}"
 
         super().save(*args, **kwargs)
+
 # ==========================================================
 # APLICACIÓN DEL PAGO A CUOTAS
 # ==========================================================
