@@ -22,5 +22,6 @@ webencodings==0.5.1
 whitenoise==6.11.0
 zopfli==0.4.0
 dj-database-url
-psycopg2-binary
+pg8000
+
 
