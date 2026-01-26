@@ -31,7 +31,8 @@ from reportlab.lib.pagesizes import A4
 # ACCESO ÚNICO A CONFIGURACIÓN GLOBAL DE GASTOS (ÚNICO VÁLIDO)
 # ==========================================================
 def get_configuracion_gastos():
-    return ConfiguracionGastosIngreso.objects.get(pk=1)
+    config, _ = ConfiguracionGastosIngreso.objects.get_or_create(pk=1)
+    return config
 
 
 def lista_vehiculos(request):
