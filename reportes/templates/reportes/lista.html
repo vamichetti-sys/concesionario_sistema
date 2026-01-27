@@ -25,7 +25,7 @@
         </div>
     </div>
 
-    {% if request.user.is_staff %}
+    {% if perms.reportes.view_fichareporteinterno %}
     <div class="col-md-6">
         <div class="card-clean h-100 d-flex flex-column justify-content-between">
             <div>

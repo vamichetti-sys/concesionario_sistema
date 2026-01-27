@@ -181,10 +181,17 @@
     </style>
 </head>
 <body>
+<div style="color:white; padding:10px; font-size:12px;">
+    DEBUG →
+    {{ user.username }} |
+    permiso reporte interno:
+    {{ perms.reportes.view_fichareporteinterno }}
+</div>
 
 <!-- SIDEBAR -->
 <div class="sidebar">
     <h4 class="text-center fw-bold mb-4">AMICHETTI</h4>
+
     <a href="/inicio/">Inicio</a>
     <a href="/vehiculos/">Vehículos</a>
     <a href="/clientes/">Clientes</a>
@@ -195,7 +202,11 @@
     <a href="/deudas/">Deuda</a>
     <a href="/calendario/">Calendario</a>
     <a href="/facturacion/">Facturación</a>
+
+    {% if perms.reportes.view_fichareporteinterno %}
     <a href="/reportes/">Reportes</a>
+    {% endif %}
+
     <a href="/asistencia/">Asistencia</a>
 </div>
 
