@@ -1,4 +1,4 @@
-from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.decorators import login_required, permission_required
 from django.shortcuts import render, redirect, get_object_or_404
 from django.db.models import Sum
 from datetime import date
@@ -20,7 +20,6 @@ from .forms import (
     FichaReporteInternoForm,
     GastoReporteInternoForm,
 )
-
 
 # ==========================================================
 # HELPERS
@@ -130,10 +129,12 @@ def reporte_web(request):
     )
 
 
+from django.contrib.auth.decorators import login_required
+
 # ==========================================================
-# REPORTE INTERNO
+# REPORTE INTERNO (TEST)
 # ==========================================================
-@user_passes_test(es_staff)
+@login_required
 def reporte_interno(request):
     return render(
         request,
@@ -144,10 +145,16 @@ def reporte_interno(request):
     )
 
 
+
+
 # ==========================================================
 # CONTROL DE STOCK
 # ==========================================================
-@user_passes_test(es_staff)
+@login_required
+@permission_required(
+    'reportes.view_fichareporteinterno',
+    raise_exception=True
+)
 def control_stock(request):
     vehiculos = Vehiculo.objects.select_related(
         "ficha_reporte"
@@ -163,10 +170,15 @@ def control_stock(request):
     )
 
 
+
 # ==========================================================
 # EDITAR FICHA INTERNA + GASTOS
 # ==========================================================
-@user_passes_test(es_staff)
+@login_required
+@permission_required(
+    'reportes.view_fichareporteinterno',
+    raise_exception=True
+)
 def editar_ficha_reporte(request, vehiculo_id):
     vehiculo = get_object_or_404(Vehiculo, id=vehiculo_id)
 
@@ -199,11 +211,14 @@ def editar_ficha_reporte(request, vehiculo_id):
         }
     )
 
-
 # ==========================================================
 # AGREGAR GASTO
 # ==========================================================
-@user_passes_test(es_staff)
+@login_required
+@permission_required(
+    'reportes.view_fichareporteinterno',
+    raise_exception=True
+)
 def agregar_gasto_reporte(request, ficha_id):
     ficha = get_object_or_404(FichaReporteInterno, id=ficha_id)
 
@@ -219,11 +234,14 @@ def agregar_gasto_reporte(request, ficha_id):
         vehiculo_id=ficha.vehiculo.id
     )
 
-
 # ==========================================================
 # ELIMINAR GASTO
 # ==========================================================
-@user_passes_test(es_staff)
+@login_required
+@permission_required(
+    'reportes.view_fichareporteinterno',
+    raise_exception=True
+)
 def eliminar_gasto_reporte(request, gasto_id):
     gasto = get_object_or_404(GastoReporteInterno, id=gasto_id)
     vehiculo_id = gasto.ficha.vehiculo.id
@@ -235,10 +253,15 @@ def eliminar_gasto_reporte(request, gasto_id):
     )
 
 
+
 # ==========================================================
 # REPORTE DE GANANCIAS (DINÁMICO)
 # ==========================================================
-@user_passes_test(es_staff)
+@login_required
+@permission_required(
+    'reportes.view_fichareporteinterno',
+    raise_exception=True
+)
 def reporte_ganancias(request):
 
     fichas = FichaReporteInterno.objects.exclude(
@@ -284,7 +307,6 @@ def reporte_ganancias(request):
             "data_anual": data_anual,
         }
     )
-
 
 # ==========================================================
 # CIERRE DE MES (CORREGIDO)

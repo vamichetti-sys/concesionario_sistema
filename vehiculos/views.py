@@ -275,10 +275,12 @@ def guardar_ficha_vehicular(request, vehiculo_id):
         if vehiculo_form.is_valid() and ficha_form.is_valid():
 
             # ===============================
-            # GUARDAR VEHÍCULO
+            # GUARDAR VEHÍCULO (SIN PISAR ESTADO)
             # ===============================
-            vehiculo_form.save()
-
+            vehiculo_guardado = vehiculo_form.save(commit=False)
+            vehiculo_guardado.estado = vehiculo.estado  # 🔒 PRESERVAR ESTADO REAL
+            vehiculo_guardado.save()
+  
             # ===============================
             # GUARDAR FICHA (EL FORM ES LA FUENTE)
             # ===============================
