@@ -83,9 +83,9 @@ def crear_cliente(request):
     if request.method == 'POST':
         form = ClienteForm(request.POST)
         if form.is_valid():
-            form.save()
+            cliente = form.save()
             messages.success(request, "Cliente creado correctamente.")
-            return redirect('clientes:lista_clientes')
+            return redirect('clientes:detalle_cliente', cliente_id=cliente.id)
     else:
         form = ClienteForm()
 
@@ -104,21 +104,18 @@ def crear_cliente(request):
 # ==========================================================
 @login_required(login_url='ingreso')
 def detalle_cliente(request, cliente_id):
-    cliente = get_object_or_404(Cliente, id=cliente_id)
+    cliente = get_object_or_404(Cliente, id=cliente_id, activo=True)
 
-    # ===============================
     # CUENTA ACTIVA (al_dia / deuda)
-    # ===============================
     cuenta_activa = (
         CuentaCorriente.objects
         .filter(cliente=cliente)
         .exclude(estado='cerrada')
+        .select_related('venta', 'venta__vehiculo', 'plan_pago')
         .first()
     )
 
-    # ===============================
     # HISTORIAL (cuentas cerradas)
-    # ===============================
     cuentas_historial = (
         CuentaCorriente.objects
         .filter(cliente=cliente, estado='cerrada')
@@ -126,9 +123,7 @@ def detalle_cliente(request, cliente_id):
         .order_by('-creada')
     )
 
-    # ===============================
     # BOLETOS DEL CLIENTE (PDF)
-    # ===============================
     boletos = (
         BoletoCompraventa.objects
         .filter(cliente=cliente)
@@ -152,6 +147,8 @@ def detalle_cliente(request, cliente_id):
             'tiene_venta_0km': tiene_venta_0km,
         }
     )
+
+
 # ==========================================================
 # EDITAR CLIENTE
 # ==========================================================
@@ -191,6 +188,14 @@ def editar_cliente(request, cliente_id):
 def desactivar_cliente(request, cliente_id):
     cliente = get_object_or_404(Cliente, id=cliente_id)
 
+    # VALIDACIÓN: No desactivar si tiene cuenta activa
+    if CuentaCorriente.objects.filter(cliente=cliente).exclude(estado='cerrada').exists():
+        messages.error(
+            request,
+            f"No se puede desactivar a {cliente.nombre_completo} porque tiene una cuenta corriente activa."
+        )
+        return redirect('clientes:detalle_cliente', cliente_id=cliente.id)
+
     cliente.activo = False
     cliente.save()
 
@@ -207,7 +212,8 @@ def desactivar_cliente(request, cliente_id):
 # ==========================================================
 @login_required(login_url='ingreso')
 def cliente_json(request, cliente_id):
-    cliente = get_object_or_404(Cliente, id=cliente_id)
+    # Verificar que esté activo
+    cliente = get_object_or_404(Cliente, id=cliente_id, activo=True)
 
     return JsonResponse({
         "nombre_completo": cliente.nombre_completo,
@@ -222,6 +228,10 @@ def cliente_json(request, cliente_id):
 @login_required(login_url='ingreso')
 def cliente_datos_ajax(request):
     cliente_id = request.GET.get("cliente_id")
+    
+    # VALIDACIÓN
+    if not cliente_id:
+        return JsonResponse({"error": "cliente_id requerido"}, status=400)
 
     try:
         cliente = Cliente.objects.get(id=cliente_id, activo=True)
@@ -238,7 +248,7 @@ def cliente_datos_ajax(request):
 # ==========================================================
 # HISTORIAL DE FINANCIACIÓN (CUENTA CERRADA)
 # ==========================================================
-@login_required
+@login_required(login_url='ingreso')
 def historial_financiacion(request, cuenta_id):
     cuenta = get_object_or_404(
         CuentaCorriente.objects.select_related(

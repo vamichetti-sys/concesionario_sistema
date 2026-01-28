@@ -2,6 +2,8 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.db.models import Max, Q
 from django.contrib import messages
 from django.db import transaction
+from django.http import HttpResponse
+from django.conf import settings
 import re
 from decimal import Decimal
 from datetime import date
@@ -15,7 +17,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import cm
 from reportlab.lib import colors
 
-from .models import BoletoCompraventa, Pagare
+from .models import BoletoCompraventa, Pagare, PagareLote
 from .forms import CrearBoletoForm, CrearPagareLoteForm
 from clientes.models import Cliente
 from cuentas.models import CuentaCorriente
@@ -43,14 +45,13 @@ def lista_boletos(request):
         "boletos/lista.html",
         {"boletos": boletos, "query": q}
     )
+
+
 # ====================================
 # GENERAR PDF BOLETO DESDE HTML
 # ====================================
 def generar_boleto_pdf_desde_html(request, boleto):
-    # 👇 IMPORT LOCAL (FIX DEFINITIVO)
     from weasyprint import HTML
-    from io import BytesIO
-    from django.core.files.base import ContentFile
 
     cliente = boleto.cliente
     nombre_completo = cliente.nombre_completo or ""
@@ -89,6 +90,7 @@ def generar_boleto_pdf_desde_html(request, boleto):
     buffer.seek(0)
     return ContentFile(buffer.read())
 
+
 # ====================================
 # CREAR BOLETO
 # ====================================
@@ -101,12 +103,31 @@ def crear_boleto_manual(request):
 
     if request.method == "POST":
         form = CrearBoletoForm(request.POST)
-        print("📩 POST DATA:", request.POST)
 
         if form.is_valid():
             f = form.cleaned_data
             cliente = f["cliente"]
             vehiculo = f.get("vehiculo")
+            
+            # 🆕 VALIDACIÓN DE VEHÍCULO
+            if not vehiculo:
+                messages.error(request, "❌ Debe seleccionar un vehículo.")
+                return render(
+                    request,
+                    "boletos/crear.html",
+                    {"form": form, "numero": numero}
+                )
+
+            # DATOS COMERCIALES DEL VEHÍCULO
+            marca = vehiculo.marca
+            modelo = vehiculo.modelo
+            anio = vehiculo.anio
+            dominio = vehiculo.dominio
+
+            # DATOS REGISTRALES (DESDE LA FICHA VEHICULAR)
+            ficha = getattr(vehiculo, "ficha", None)
+            motor = getattr(ficha, "numero_motor", "") if ficha else ""
+            chasis = getattr(ficha, "numero_chasis", "") if ficha else ""
 
             if not cliente or not cliente.activo:
                 messages.error(request, "❌ Cliente inválido.")
@@ -129,24 +150,22 @@ def crear_boleto_manual(request):
                 else None
             )
 
-            # ======================================================
-            # ARMAR TEXTO LEGAL DEL BOLETO (NO SE TOCA)
-            # ======================================================
+            # ARMAR TEXTO LEGAL DEL BOLETO
             texto_final = f"""
 Entre el/los Señor/es {cliente.nombre_completo} por una parte como comprador
 y el/los Señor/es AMICHETTI HUGO ALBERTO por la otra parte como vendedor,
 convienen celebrar el presente boleto de acuerdo a las cláusulas siguientes:
 
-1° - El vendedor vende a {cliente.nombre_completo}un vehículo Marca {f.get("marca", "")}
-Modelo {f.get("modelo", "")} Año {f.get("anio", "")} Motor {f.get("motor", "")}
-Chasis {f.get("chasis", "")} Dominio {f.get("patente", "")}
-en el estado que se encuentra, y que el comprador ha revisado y controlado las
-numeraciones de motor, chasis y dominio, aceptando el mismo de conformidad.
+1° - El vendedor vende a {cliente.nombre_completo} un vehículo Marca {marca}
+Modelo {modelo} Año {anio} Motor {motor}
+Chasis {chasis} Dominio {dominio} en el estado que se encuentra, y que el comprador 
+ha revisado y controlado las numeraciones de motor, chasis y dominio, aceptando el
+mismo de conformidad.
 2° - El vendedor entrega en este acto toda la documentación referente al vehículo
 y el comprador se obliga a realizar la respectiva transferencia dentro de los
 treinta (30) días a partir de la fecha.
 3° - Los gastos que demande la transferencia del vehículo en el orden nacional, provincial, 
-municipal, o de cualquier otro orden serán abonados por el comprado, y lo correspondiente 
+municipal, o de cualquier otro orden serán abonados por el comprador, y lo correspondiente 
 a la Ley 21.432/976.-
 4° - El comprador deberá asegurar el automotor contra todo riesgo dentro de los dos dias de 
 la fecha presente en el boleto, siendo el endoso a favor del vendedor.-
@@ -154,10 +173,10 @@ la fecha presente en el boleto, siendo el endoso a favor del vendedor.-
 hasta no haber abonado la totalidad de la deuda.-
 6° - La falta de cumplimiento de cualquiera de las cláusulas del contrato autoriza al 
 vendedor a solicitar el inmediato secuestro del vehículo, renunciando el comprador a toda 
-defenda en juicio
+defensa en juicio
 7° - El vendedor podra optar para el caso en el que el comprador se constituya en mora 
 de alguna de las cuotas, por pedir el secuestro judicial de la unidad vendida constituyendo 
-el comprador pare el caso de promover accion judicial, domicilio legal en {cliente.direccion or "LARREA 255"}
+el comprador para el caso de promover accion judicial, domicilio legal en {cliente.direccion or "LARREA 255"}
 Que asimismo y tambien para el caso de promover acción judicial, queda facultado el vendedor 
 a nombrar martillero, comprometiendose el comprador a no poner otra excepcion que la de pago
 y renunciando expresamente a la facultad de apelar la resolucion dictada.
@@ -180,7 +199,6 @@ vehiculo a partir de la fecha. En fe de cual se firman dos ejemplares de un mism
 En la ciudad de ROJAS, a los {date.today().strftime("%d/%m/%Y")}.
 
 LA UNIDAD HA SIDO REVISADA Y ACEPTADA EN CONFORMIDAD.
-
 """
 
             boleto = BoletoCompraventa.objects.create(
@@ -226,107 +244,207 @@ def ver_boleto(request, boleto_id):
         r"\n\s*\n+", "\n", (boleto.texto_final or "").strip()
     )
 
+    vendedor = {
+        "apellido": "AMICHETTI",
+        "nombre": "HUGO ALBERTO",
+        "direccion": "LARREA 155",
+        "dni": "13814200",
+    }
+
+    cliente = boleto.cliente
+    nombre_completo = (cliente.nombre_completo or "").strip()
+    partes = nombre_completo.split(" ", 1)
+
+    comprador = {
+        "apellido": partes[0] if partes else "",
+        "nombre": partes[1] if len(partes) > 1 else "",
+        "direccion": cliente.direccion or "",
+        "dni": cliente.dni_cuit or "",
+    }
+
     return render(
         request,
         "boletos/ver.html",
         {
             "boleto": boleto,
-            "texto_boleto": texto_boleto
+            "texto_boleto": texto_boleto,
+            "vendedor": vendedor,
+            "comprador": comprador,
         }
     )
+
 
 # ==========================================================
 # =======================  PAGARÉ  =========================
 # ==========================================================
 
-# ====================================
-# LISTA + BUSCADOR DE PAGARÉS
-# ====================================
 def lista_pagares(request):
     q = request.GET.get("q", "").strip()
-    pagares = Pagare.objects.select_related("cliente")
+
+    lotes = (
+        PagareLote.objects
+        .select_related("cliente")
+        .order_by("-fecha_emision")
+    )
 
     if q:
-        pagares = pagares.filter(
+        lotes = lotes.filter(
             Q(cliente__nombre_completo__icontains=q) |
             Q(cliente__dni_cuit__icontains=q) |
-            Q(numero__icontains=q)
+            Q(beneficiario__icontains=q)
         )
+
+    # 🆕 ARMAR URL DEL PDF
+    lotes_con_url = []
+    for lote in lotes:
+        lote_dict = {
+            'id': lote.id,
+            'cliente': lote.cliente,
+            'beneficiario': lote.beneficiario,
+            'fecha_emision': lote.fecha_emision,
+            'cantidad': lote.cantidad,
+            'monto_total': lote.monto_total,
+            'pdf_url': lote.pdf.url if lote.pdf else None
+        }
+        lotes_con_url.append(lote_dict)
 
     return render(
         request,
         "boletos/pagare/lista.html",
-        {"pagares": pagares, "query": q}
+        {
+            "lotes": lotes_con_url,
+            "query": q,
+        }
     )
 
 
-# ====================================
-# 🔑 PDF LOTE PAGARÉS (UNO DEBAJO DEL OTRO)
-# ====================================
+def monto_en_letras_simple(monto) -> str:
+    """
+    Devuelve el monto en letras en formato simple y seguro para el pagaré.
+    """
+    try:
+        if monto is None:
+            return ""
+        if not isinstance(monto, Decimal):
+            monto = Decimal(str(monto))
+        return f"{monto:,.0f}".replace(",", ".")
+    except Exception:
+        return str(monto)
+
+
 def _generar_pdf_lote_pagares_3_por_hoja(pagares):
     buffer = BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
 
     ancho, alto = A4
     margen_x = 2 * cm
-    y = alto - 2.5 * cm
+    y = alto - 2 * cm
 
-    c.setFont("Helvetica-Bold", 14)
-    c.drawString(margen_x, y, "PAGARÉS")
-    y -= 1.2 * cm
-
-    c.setFont("Helvetica", 10)
+    def fecha_en_letras(fecha):
+        meses = [
+            "enero", "febrero", "marzo", "abril", "mayo", "junio",
+            "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
+        ]
+        return f"{fecha.day} de {meses[fecha.month - 1]} de {fecha.year}"
 
     for idx, pagare in enumerate(pagares, start=1):
+        if y < 9 * cm:
+            c.showPage()
+            y = alto - 2 * cm
 
         cliente = pagare.cliente
-        venc = (
-            pagare.fecha_vencimiento.strftime("%d/%m/%Y")
-            if pagare.fecha_vencimiento
-            else "Pagadero a la vista"
+
+        # TÍTULO
+        c.setFont("Helvetica-Bold", 18)
+        c.drawString(margen_x, y, "PAGARÉ")
+        y -= 0.8 * cm
+
+        c.setFont("Helvetica-Bold", 11)
+        c.drawString(
+            margen_x,
+            y,
+            f"Nº {pagare.numero} — Fecha de emisión: {fecha_en_letras(pagare.fecha_emision)}"
         )
+        y -= 1 * cm
 
-        lineas = [
-            f"PAGARÉ Nº {pagare.numero}",
-            f"Beneficiario: {pagare.beneficiario}",
-            f"Monto: $ {pagare.monto:,.2f}",
-            f"Lugar y fecha de emisión: {pagare.lugar_emision}, {pagare.fecha_emision.strftime('%d/%m/%Y')}",
-            f"Fecha de vencimiento: {venc}",
-            f"Deudor: {cliente.nombre_completo}",
-            f"DNI/CUIT: {cliente.dni_cuit or ''}",
-        ]
+        # TEXTO LEGAL
+        c.setFont("Helvetica", 11)
 
-        for linea in lineas:
-            if y < 3 * cm:
-                c.showPage()
-                y = alto - 2.5 * cm
-                c.setFont("Helvetica", 10)
+        if pagare.fecha_vencimiento:
+            texto_legal = (
+                f"PAGARÉ SIN PROTESTO (Art. 50 D. Ley 5965/63), "
+                f"al Sr./a {pagare.beneficiario}, "
+                f"la cantidad de PESOS {monto_en_letras_simple(pagare.monto)}, "
+                f"el día {fecha_en_letras(pagare.fecha_vencimiento)}."
+            )
+        else:
+            texto_legal = (
+                f"PAGARÉ SIN PROTESTO (Art. 50 D. Ley 5965/63), "
+                f"al Sr./a {pagare.beneficiario}, "
+                f"la cantidad de PESOS {monto_en_letras_simple(pagare.monto)}, "
+                f"pagadero a la vista."
+            )
 
-            c.drawString(margen_x, y, linea)
-            y -= 0.6 * cm
+        textobject = c.beginText(margen_x, y)
+        textobject.setLeading(16)
 
-        # SEPARADOR ENTRE PAGARÉS
+        max_width = ancho - (2 * margen_x)
+        linea_actual = ""
+
+        for palabra in texto_legal.split(" "):
+            prueba = linea_actual + palabra + " "
+            if c.stringWidth(prueba, "Helvetica", 11) > max_width:
+                textobject.textLine(linea_actual.rstrip())
+                linea_actual = palabra + " "
+            else:
+                linea_actual = prueba
+
+        if linea_actual:
+            textobject.textLine(linea_actual.rstrip())
+
+        c.drawText(textobject)
+        y = textobject.getY() - 0.8 * cm
+
+        # DATOS DEL DEUDOR
+        c.setFont("Helvetica-Bold", 11)
+        c.drawString(margen_x, y, "Datos del Deudor:")
+        y -= 0.6 * cm
+
+        c.setFont("Helvetica", 11)
+        c.drawString(margen_x, y, f"Nombre: {cliente.nombre_completo}")
+        y -= 0.6 * cm
+        c.drawString(margen_x, y, f"DNI/CUIT: {cliente.dni_cuit or ''}")
+        y -= 0.6 * cm
+        c.drawString(margen_x, y, f"Domicilio: {cliente.direccion or ''}")
+        y -= 1.2 * cm
+
+        # FIRMA
+        c.drawString(margen_x, y, "Firma: _________________________________")
+        y -= 0.8 * cm
+        c.drawString(margen_x, y, "Aclaración:")
+        y -= 1 * cm
+
+        # LÍNEA DE CORTE
         if idx < len(pagares):
-            y -= 0.3 * cm
-            c.setFont("Helvetica", 9)
-            c.drawString(margen_x, y, "-" * 90)
-            y -= 0.6 * cm
-            c.setFont("Helvetica", 10)
+            c.setDash(3, 3)
+            c.line(margen_x, y, ancho - margen_x, y)
+            c.setDash()
+            y -= 1.2 * cm
 
     c.showPage()
     c.save()
+
     buffer.seek(0)
     return buffer.getvalue()
 
 
 # ====================================
-# CREAR PAGARÉS + PDF (ANTI DOBLE)
+# CREAR PAGARÉS + PDF
 # ====================================
 @transaction.atomic
 def crear_pagares(request):
-
     if request.method == "POST":
-
+        # ANTI DOBLE ENVÍO
         if request.session.get("generando_pagares"):
             messages.warning(
                 request,
@@ -337,13 +455,21 @@ def crear_pagares(request):
         request.session["generando_pagares"] = True
 
         try:
+            # DATOS GENERALES
             cliente = get_object_or_404(
                 Cliente,
                 id=request.POST.get("cliente")
             )
 
-            beneficiario = request.POST.get("beneficiario") or "AMICHETTI HUGO ALBERTO"
-            lugar_emision = request.POST.get("lugar_emision") or "Rojas"
+            beneficiario = (
+                request.POST.get("beneficiario")
+                or "AMICHETTI HUGO ALBERTO"
+            )
+
+            lugar_emision = (
+                request.POST.get("lugar_emision")
+                or "Rojas"
+            )
 
             fecha_emision = (
                 date.fromisoformat(request.POST.get("fecha_emision"))
@@ -352,16 +478,44 @@ def crear_pagares(request):
             )
 
             cantidad = int(request.POST.get("cantidad", 1))
-            ultimo = Pagare.objects.aggregate(max_num=Max("numero")).get("max_num") or 0
 
+            # CREAR LOTE
+            lote = PagareLote.objects.create(
+                cliente=cliente,
+                beneficiario=beneficiario,
+                lugar_emision=lugar_emision,
+                fecha_emision=fecha_emision,
+                cantidad=cantidad,
+                monto_total=Decimal("0.00"),
+            )
+
+            # NUMERACIÓN
+            ultimo = (
+                Pagare.objects
+                .aggregate(max_num=Max("numero"))
+                .get("max_num")
+                or 0
+            )
+
+            # CREAR PAGARÉS
             pagares = []
+            monto_total = Decimal("0.00")
 
             for i in range(1, cantidad + 1):
-                monto = Decimal(request.POST.get(f"monto_{i}", "0"))
-                fecha_v = request.POST.get(f"fecha_vencimiento_{i}")
-                fecha_v = date.fromisoformat(fecha_v) if fecha_v else None
+                monto = Decimal(
+                    request.POST.get(f"monto_{i}", "0")
+                )
+
+                fecha_v = request.POST.get(
+                    f"fecha_vencimiento_{i}"
+                )
+                fecha_v = (
+                    date.fromisoformat(fecha_v)
+                    if fecha_v else None
+                )
 
                 pagare = Pagare.objects.create(
+                    lote=lote,
                     cliente=cliente,
                     numero=ultimo + i,
                     beneficiario=beneficiario,
@@ -370,29 +524,50 @@ def crear_pagares(request):
                     fecha_emision=fecha_emision,
                     fecha_vencimiento=fecha_v
                 )
-                pagares.append(pagare)
 
+                pagares.append(pagare)
+                monto_total += monto
+
+            # GENERAR PDF DEL LOTE
             pdf_bytes = _generar_pdf_lote_pagares_3_por_hoja(pagares)
 
-            nombre_cliente = cliente.nombre_completo.strip().replace(" ", "_")
-            filename = f"pagares_{nombre_cliente}_{fecha_emision.isoformat()}.pdf"
+            if not pdf_bytes:
+                raise ValueError("No se pudo generar el PDF del pagaré.")
 
-            pagares[0].pdf.save(filename, ContentFile(pdf_bytes), save=True)
+            filename = (
+                f"pagares_lote_{lote.id}_"
+                f"{fecha_emision.isoformat()}.pdf"
+            )
 
-            for p in pagares[1:]:
-                p.pdf.name = pagares[0].pdf.name
-                p.save(update_fields=["pdf"])
+            lote.pdf.save(
+                filename,
+                ContentFile(pdf_bytes),
+                save=True
+            )
+
+            # ACTUALIZAR TOTALES DEL LOTE
+            lote.monto_total = monto_total
+            lote.cantidad = len(pagares)
+            lote.save(update_fields=["monto_total", "cantidad"])
 
             messages.success(
                 request,
-                f"✅ Se generaron {cantidad} pagarés en UN solo PDF."
+                f"✅ Se creó el lote con {len(pagares)} pagarés en UN solo PDF."
             )
 
             return redirect("boletos:lista_pagares")
 
+        except Exception as e:
+            messages.error(
+                request,
+                f"❌ Error al crear pagarés: {str(e)}"
+            )
+            return redirect("boletos:crear_pagares")
+
         finally:
             request.session.pop("generando_pagares", None)
 
+    # GET
     return render(
         request,
         "boletos/pagare/crear.html",
@@ -413,7 +588,7 @@ def ver_pagare(request, pagare_id):
 
 
 # ====================================
-# PDF PAGARÉ (INDIVIDUAL – NO SE TOCA)
+# PDF PAGARÉ INDIVIDUAL
 # ====================================
 def pagare_pdf(request, pagare_id):
     pagare = get_object_or_404(Pagare, id=pagare_id)
@@ -459,5 +634,4 @@ def pagare_pdf(request, pagare_id):
     c.save()
 
     buffer.seek(0)
-    from django.http import HttpResponse
     return HttpResponse(buffer.getvalue(), content_type="application/pdf")

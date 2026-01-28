@@ -85,12 +85,23 @@ def _parse_monto_argentino(raw: str) -> Decimal:
 # ==========================================================
 @login_required
 def lista_cuentas_corrientes(request):
+
+    mostrar_cerradas = request.GET.get("mostrar_cerradas") == "1"
+
     cuentas_qs = (
         CuentaCorriente.objects
         .select_related("cliente", "venta")
-        .exclude(estado="cerrada")
         .order_by("-creada")
     )
+
+    # 🔒 Comportamiento original:
+    # ocultar cuentas cerradas,
+    # PERO mostrar las cerradas que aún NO tienen plan de pago
+    if not mostrar_cerradas:
+        cuentas_qs = cuentas_qs.exclude(
+            estado="cerrada",
+            plan_pago__isnull=False
+        )
 
     hoy = timezone.now().date()
 
@@ -118,26 +129,22 @@ def lista_cuentas_corrientes(request):
         {
             "cuentas": cuentas_qs,
             "alertas_cuotas": alertas_cuotas,
+            "mostrar_cerradas": mostrar_cerradas,
         }
     )
 
 
 # ==========================================================
 # CREAR CUENTA CORRIENTE
+# (DESHABILITADO: SE CREA AUTOMÁTICAMENTE AL ADJUDICAR VENTA)
 # ==========================================================
 @login_required
 def crear_cuenta_corriente(request, cliente_id):
-    cliente = get_object_or_404(Cliente, id=cliente_id)
-
-    cuenta, creada = CuentaCorriente.objects.get_or_create(
-        cliente=cliente,
-        venta=None
+    messages.error(
+        request,
+        "La cuenta corriente se crea automáticamente al adjudicar una venta."
     )
-
-    if creada:
-        messages.success(request, "Cuenta corriente creada correctamente.")
-
-    return redirect("cuentas:cuenta_corriente_detalle", cuenta_id=cuenta.id)
+    return redirect("clientes:detalle", cliente_id=cliente_id)
 
 
 # ==========================================================
@@ -194,6 +201,8 @@ def cuenta_corriente_detalle(request, cuenta_id):
             "vehiculo_gastos": vehiculo_gastos,
         }
     )
+
+
 # ==========================================================
 # CREAR / EDITAR PLAN DE PAGO
 # ==========================================================
@@ -423,6 +432,11 @@ def registrar_movimiento(request, cuenta_id):
     pago.save(update_fields=["saldo_posterior"])
 
     return redirect("cuentas:recibo_pago_pdf", pago_id=pago.id)
+
+
+# ==========================================================
+# REGISTRAR PAGO GESTORÍA
+# ==========================================================
 @login_required
 @transaction.atomic
 def registrar_pago_gestoria(request, cuenta_id):
@@ -484,23 +498,10 @@ def registrar_pago_gestoria(request, cuenta_id):
         {"cuenta": cuenta}
     )
 
+
 # ==========================================================
 # RECIBO DE PAGO PDF
 # ==========================================================
-from django.utils import timezone
-from reportlab.platypus import (
-    SimpleDocTemplate,
-    Paragraph,
-    Spacer,
-    Table,
-    TableStyle
-)
-from reportlab.lib.pagesizes import A4
-from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.lib import colors
-from reportlab.lib.units import cm
-from decimal import Decimal
-
 @login_required
 def recibo_pago_pdf(request, pago_id):
     pago = get_object_or_404(Pago, id=pago_id)
@@ -675,6 +676,7 @@ def recibo_pago_pdf(request, pago_id):
     doc.build(elements)
     return response
 
+
 # ==========================================================
 # EDITAR CUOTA
 # ==========================================================
@@ -696,6 +698,8 @@ def editar_cuota(request, cuota_id):
         "cuentas:cuenta_corriente_detalle",
         cuenta_id=cuota.plan.cuenta.id
     )
+
+
 # ==========================================================
 # CONECTAR VEHÍCULO COMO PERMUTA
 # ==========================================================
@@ -714,6 +718,7 @@ def conectar_vehiculo_permuta(request, cuenta_id, vehiculo_id):
         "cuentas:cuenta_corriente_detalle",
         cuenta_id=cuenta.id
     )
+
 
 # ==========================================================
 # ELIMINAR PLAN DE PAGO
@@ -782,11 +787,4 @@ def historial_financiacion(request, cuenta_id):
             "plan": plan,
             "cuotas": cuotas,
         }
-    )
-@login_required
-def pagar_cuota(request, cuota_id):
-    cuota = get_object_or_404(CuotaPlan, id=cuota_id)
-    return redirect(
-        "cuentas:cuenta_corriente_detalle",
-        cuenta_id=cuota.plan.cuenta.id
     )

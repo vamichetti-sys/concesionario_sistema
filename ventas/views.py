@@ -136,29 +136,10 @@ def asignar_cliente_venta(request, vehiculo_id):
     if request.method == "POST":
         cliente = get_object_or_404(Cliente, id=request.POST.get("cliente"))
 
-        # 1️⃣ Asignar cliente
-        venta.cliente = cliente
-        venta.save(update_fields=["cliente"])
-
-        # 2️⃣ Confirmar venta si corresponde
-        if venta.estado != "confirmada":
-            venta.confirmar()
-
-        # 3️⃣ 🔑 CREAR Y VINCULAR CUENTA CORRIENTE (RESTAURADO)
-        cuenta = _get_venta_cuenta(venta)
-        if not cuenta:
-            cuenta = CuentaCorriente.objects.create(
-                cliente=cliente,
-                venta=venta
-            )
-            _set_venta_cuenta(venta, cuenta)
-
-        # 4️⃣ Gestoría
-        Gestoria.crear_o_actualizar_desde_venta(
-            venta=venta,
-            vehiculo=vehiculo,
-            cliente=cliente
-        )
+        # ==================================================
+        # 🔑 ASIGNACIÓN CORRECTA (CENTRALIZADA)
+        # ==================================================
+        venta.adjudicar_cliente(cliente)
 
         messages.success(
             request,
@@ -174,6 +155,8 @@ def asignar_cliente_venta(request, vehiculo_id):
             "clientes": clientes
         },
     )
+
+
 # ==========================================================
 # CAMBIO DE ESTADO DEL VEHÍCULO
 # ==========================================================
@@ -188,15 +171,22 @@ def cambiar_estado_vehiculo(request, vehiculo_id):
 
     if nuevo_estado == "vendido":
 
+        # 1️⃣ Crear o recuperar la venta
         venta, _ = Venta.objects.get_or_create(
             vehiculo=vehiculo,
             defaults={"estado": "pendiente"}
         )
 
+        # 2️⃣ Marcar vehículo como vendido
         vehiculo.estado = "vendido"
         vehiculo.save(update_fields=["estado"])
 
+        # 3️⃣ Si ya hay cliente, usar el circuito centralizado
         if venta.cliente:
+            # 🔑 Esto ahora garantiza:
+            # - cuenta corriente
+            # - deuda inicial
+            # - estado confirmado
             venta.confirmar()
 
             Gestoria.crear_o_actualizar_desde_venta(
@@ -217,6 +207,9 @@ def cambiar_estado_vehiculo(request, vehiculo_id):
 
         return redirect("ventas:lista_unidades_vendidas")
 
+    # ===============================
+    # OTROS ESTADOS
+    # ===============================
     vehiculo.estado = nuevo_estado
     vehiculo.save(update_fields=["estado"])
 

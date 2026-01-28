@@ -1,6 +1,5 @@
 from django.shortcuts import render
 from django.db.models import Q, Sum
-
 from cuentas.models import CuentaCorriente
 from vehiculos.models import Vehiculo, FichaVehicular, PagoGastoIngreso
 
@@ -11,7 +10,6 @@ def listado_deudas(request):
     La lógica de cuentas corrientes se conserva,
     pero NO se ejecuta en esta pantalla.
     """
-
     q = request.GET.get("q", "").strip()
     deudas = []
 

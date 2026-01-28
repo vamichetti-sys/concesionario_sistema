@@ -136,6 +136,14 @@ def calendario_empleado(request, empleado_id):
 def marcar_asistencia(request):
     if request.method == "POST":
         empleado_id = request.POST.get("empleado_id")
+        
+        # 🆕 VALIDACIÓN
+        if not empleado_id:
+            return JsonResponse(
+                {"ok": False, "error": "ID de empleado requerido"},
+                status=400
+            )
+        
         fecha_str = request.POST.get("fecha")
         estado = request.POST.get("estado")
         observaciones = request.POST.get("observaciones", "")
@@ -175,24 +183,19 @@ def marcar_asistencia(request):
 
 
 # ==========================================================
-# REPORTE ANUAL POR EMPLEADO (RESUMEN)
-# ==========================================================
-def reporte_anual_empleado(empleado, anio):
-    return (
-        AsistenciaDiaria.objects
-        .filter(empleado=empleado, fecha__year=anio)
-        .values("estado")
-        .annotate(total=models.Count("id"))
-        .order_by("estado")
-    )
-
-
-# ==========================================================
 # PDF – FALTAS ANUALES POR EMPLEADO
 # ==========================================================
 @login_required
 def pdf_faltas_anuales(request, empleado_id, anio):
     empleado = get_object_or_404(Empleado, id=empleado_id)
+    
+    # 🆕 VALIDACIÓN DEL AÑO
+    try:
+        anio = int(anio)
+        if anio < 2000 or anio > date.today().year + 1:
+            return HttpResponse("Año inválido", status=400)
+    except (ValueError, TypeError):
+        return HttpResponse("Año inválido", status=400)
 
     faltas = AsistenciaDiaria.objects.filter(
         empleado=empleado,

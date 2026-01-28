@@ -23,8 +23,6 @@ def calendario_vencimientos(request):
 # 👉 Turnos: Modelo Evento
 # ==========================================================
 def api_calendario_vencimientos(request):
-
-    # 🔒 MISMO CONTENEDOR, MISMO USO, SIN DUPLICADOS
     eventos = {}
 
     # ==================================================
@@ -43,9 +41,14 @@ def api_calendario_vencimientos(request):
 
         base = f"{vehiculo.marca} {vehiculo.modelo} ({vehiculo.dominio})"
 
-        # --------------------------
+        # 🆕 DATOS COMUNES DEL VEHÍCULO
+        vehiculo_data = {
+            "vehiculo_id": vehiculo.id,
+            "vehiculo_info": base,
+            "url": f"/vehiculos/ficha-completa/{vehiculo.id}/"  # 🔗 Link a la ficha
+        }
+
         # VTV
-        # --------------------------
         if ficha.vtv_vencimiento:
             event_id = f"vtv-{vehiculo.id}-{ficha.vtv_vencimiento}"
             eventos[event_id] = {
@@ -53,11 +56,11 @@ def api_calendario_vencimientos(request):
                 "start": ficha.vtv_vencimiento,
                 "title": f"Vencimiento VTV – {base}",
                 "allDay": True,
+                "color": "#dc3545",  # 🆕 Color rojo para vencimientos
+                **vehiculo_data  # 🆕 Datos del vehículo
             }
 
-        # --------------------------
         # VERIFICACIÓN
-        # --------------------------
         if ficha.verificacion_vencimiento:
             event_id = f"verificacion-{vehiculo.id}-{ficha.verificacion_vencimiento}"
             eventos[event_id] = {
@@ -65,61 +68,33 @@ def api_calendario_vencimientos(request):
                 "start": ficha.verificacion_vencimiento,
                 "title": f"Vencimiento Verificación – {base}",
                 "allDay": True,
+                "color": "#fd7e14",  # 🆕 Color naranja
+                **vehiculo_data
             }
 
-        # --------------------------
-        # PATENTES
-        # --------------------------
-        if ficha.patentes_vto1:
-            event_id = f"patente1-{vehiculo.id}-{ficha.patentes_vto1}"
-            eventos[event_id] = {
-                "id": event_id,
-                "start": ficha.patentes_vto1,
-                "title": f"Vencimiento Patente – {base}",
-                "allDay": True,
-            }
+        # PATENTES (simplificado con loop)
+        patentes_vtos = [
+            (ficha.patentes_vto1, 1),
+            (ficha.patentes_vto2, 2),
+            (ficha.patentes_vto3, 3),
+            (ficha.patentes_vto4, 4),
+            (ficha.patentes_vto5, 5),
+        ]
 
-        if ficha.patentes_vto2:
-            event_id = f"patente2-{vehiculo.id}-{ficha.patentes_vto2}"
-            eventos[event_id] = {
-                "id": event_id,
-                "start": ficha.patentes_vto2,
-                "title": f"Vencimiento Patente – {base}",
-                "allDay": True,
-            }
-
-        if ficha.patentes_vto3:
-            event_id = f"patente3-{vehiculo.id}-{ficha.patentes_vto3}"
-            eventos[event_id] = {
-                "id": event_id,
-                "start": ficha.patentes_vto3,
-                "title": f"Vencimiento Patente – {base}",
-                "allDay": True,
-            }
-
-        if ficha.patentes_vto4:
-            event_id = f"patente4-{vehiculo.id}-{ficha.patentes_vto4}"
-            eventos[event_id] = {
-                "id": event_id,
-                "start": ficha.patentes_vto4,
-                "title": f"Vencimiento Patente – {base}",
-                "allDay": True,
-            }
-
-        if ficha.patentes_vto5:
-            event_id = f"patente5-{vehiculo.id}-{ficha.patentes_vto5}"
-            eventos[event_id] = {
-                "id": event_id,
-                "start": ficha.patentes_vto5,
-                "title": f"Vencimiento Patente – {base}",
-                "allDay": True,
-            }
+        for patente_vto, num in patentes_vtos:
+            if patente_vto:
+                event_id = f"patente{num}-{vehiculo.id}-{patente_vto}"
+                eventos[event_id] = {
+                    "id": event_id,
+                    "start": patente_vto,
+                    "title": f"Vencimiento Patente – {base}",
+                    "allDay": True,
+                    "color": "#ffc107",  # 🆕 Color amarillo
+                    **vehiculo_data
+                }
 
     # ==================================================
     # 🔹 TURNOS (MODELO EVENTO)
-    # 👉 NO SE FILTRAN
-    # 👉 NO SE OCULTAN
-    # 👉 NO SE COMPARAN
     # ==================================================
     turnos = Evento.objects.exclude(
         titulo__icontains="Vencimiento"
@@ -130,12 +105,24 @@ def api_calendario_vencimientos(request):
             continue
 
         event_id = f"turno-{evento.id}"
-        eventos[event_id] = {
+        
+        # 🆕 AGREGAR DATOS DEL VEHÍCULO SI EXISTE
+        evento_data = {
             "id": event_id,
             "start": evento.fecha,
             "title": evento.titulo,
             "allDay": True,
+            "color": "#0dcaf0",  # 🆕 Color cyan para turnos
         }
+        
+        if evento.vehiculo:
+            evento_data.update({
+                "vehiculo_id": evento.vehiculo.id,
+                "vehiculo_info": f"{evento.vehiculo.marca} {evento.vehiculo.modelo} ({evento.vehiculo.dominio})",
+                "url": f"/vehiculos/ficha-completa/{evento.vehiculo.id}/"
+            })
+        
+        eventos[event_id] = evento_data
 
     return JsonResponse(list(eventos.values()), safe=False)
 
@@ -144,6 +131,15 @@ def api_calendario_vencimientos(request):
 # 📄 PDF MENSUAL DEL CALENDARIO
 # ==========================================================
 def calendario_pdf_mensual(request, anio, mes):
+    # 🆕 VALIDACIÓN DEL AÑO Y MES
+    try:
+        anio = int(anio)
+        mes = int(mes)
+        if not (2000 <= anio <= 2100 and 1 <= mes <= 12):
+            return HttpResponse("Año o mes inválido", status=400)
+    except (ValueError, TypeError):
+        return HttpResponse("Año o mes inválido", status=400)
+
     eventos_pdf = []
 
     # ==================================================
@@ -180,11 +176,11 @@ def calendario_pdf_mensual(request, anio, mes):
 
     # ==================================================
     # 🔹 TURNOS (EVENTOS)
-    # 👉 Se excluyen vencimientos para evitar duplicados
     # ==================================================
     turnos = (
         Evento.objects
         .exclude(titulo__icontains="Vencimiento")
+        .select_related("vehiculo")  # 🆕 Para optimizar
     )
 
     for evento in turnos:
@@ -225,10 +221,17 @@ def calendario_pdf_mensual(request, anio, mes):
     AZUL = colors.HexColor("#002855")
     GRIS = colors.HexColor("#F4F6F8")
 
+    # 🆕 NOMBRE DEL MES
+    nombres_meses = [
+        "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+        "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+    ]
+    nombre_mes = nombres_meses[mes - 1]
+
     elements.append(
         Paragraph(
             f"<b>AMICHETTI AUTOMOTORES</b><br/>"
-            f"Calendario – {mes}/{anio}",
+            f"Calendario – {nombre_mes} {anio}",
             ParagraphStyle(
                 "h",
                 fontSize=14,

@@ -37,7 +37,7 @@ def get_configuracion_gastos():
 
 def lista_vehiculos(request):
     query = request.GET.get("q", "")
-    vehiculos = Vehiculo.objects.exclude(estado="vendido").order_by("-id")
+    vehiculos = Vehiculo.objects.filter(estado="stock").order_by("-id")
 
     if query:
         vehiculos = vehiculos.filter(
@@ -51,6 +51,7 @@ def lista_vehiculos(request):
         "vehiculos/lista_vehiculos.html",
         {"vehiculos": vehiculos, "query": query},
     )
+
 
 
 def lista_vehiculos_vendidos(request):
@@ -114,6 +115,9 @@ def cambiar_estado_vehiculo(request, vehiculo_id):
     if request.method == "POST":
         nuevo_estado = request.POST.get("estado")
 
+        # ===============================
+        # MARCAR COMO VENDIDO
+        # ===============================
         if nuevo_estado == "vendido":
             from ventas.models import Venta
             from gestoria.models import Gestoria
@@ -154,15 +158,22 @@ def cambiar_estado_vehiculo(request, vehiculo_id):
 
             return redirect("ventas:lista_unidades_vendidas")
 
+        # ===============================
+        # REVERTIR VENTA / VOLVER A STOCK
+        # ===============================
         vehiculo.estado = nuevo_estado
         vehiculo.save(update_fields=["estado"])
+
+        # 🔑 CLAVE: ELIMINAR LA VENTA SI EXISTE
+        if hasattr(vehiculo, "venta"):
+            vehiculo.venta.delete()
 
         from gestoria.models import Gestoria
         Gestoria.objects.filter(vehiculo=vehiculo).delete()
 
         messages.success(
             request,
-            "Estado actualizado. La unidad fue retirada de Gestoría."
+            "Estado actualizado. La unidad volvió a stock y la venta fue eliminada."
         )
 
     return redirect("vehiculos:lista_vehiculos")
@@ -378,12 +389,19 @@ def ficha_completa(request, vehiculo_id):
         if saldo <= 0:
             continue
 
+        # 🆕 OBTENER HISTORIAL DE PAGOS DE ESTE CONCEPTO
+        pagos = PagoGastoIngreso.objects.filter(
+            vehiculo=vehiculo,
+            concepto=key
+        ).order_by('-fecha_pago')
+
         gastos_ingreso.append({
             "key": key,
             "concepto": CONCEPTOS[key],
             "monto": monto,
             "total_pagado": total_pagado,
             "saldo": saldo,
+            "pagos": pagos,  # 🆕 HISTORIAL DE PAGOS
         })
 
     total_pendiente = sum(
@@ -391,23 +409,22 @@ def ficha_completa(request, vehiculo_id):
         Decimal("0")
     )
 
-    ficha.total_gastos = total_pendiente
-    ficha.save(update_fields=["total_gastos"])
+    # ❌ COMENTADO: Esto estaba sobrescribiendo los gastos originales
+    # ficha.total_gastos = total_pendiente
+    # ficha.save(update_fields=["total_gastos"])
 
     return render(
         request,
         "vehiculos/ficha_completa.html",
         {
             "vehiculo": vehiculo,
-            "vehiculo_form": vehiculo_form,   # 🔴 agregado
+            "vehiculo_form": vehiculo_form,
             "ficha": ficha,
-            "ficha_form": ficha_form,         # 🔴 agregado
+            "ficha_form": ficha_form,
             "gastos_ingreso": gastos_ingreso,
             "total_pendiente": total_pendiente,
         },
     )
-
-
 # ==========================================================
 # AGREGAR GASTO INGRESO (CUENTA CORRIENTE)
 # ==========================================================
@@ -565,29 +582,33 @@ def registrar_pago_gasto(request):
 
     return redirect("vehiculos:ficha_completa", vehiculo_id=vehiculo.id)
 
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import get_object_or_404, redirect
+from django.contrib import messages
+from .models import Vehiculo
+from ventas.models import Venta
+
 # ==========================================================
-# ELIMINAR VEHÍCULO (DELETE REAL, SOLO SI NO TIENE VENTAS)
+# QUITAR VEHÍCULO DEL STOCK (NO DELETE)
 # ==========================================================
 @login_required
 def eliminar_vehiculo(request, vehiculo_id):
     vehiculo = get_object_or_404(Vehiculo, id=vehiculo_id)
 
-    from ventas.models import Venta
-
-    # 🔒 Bloqueo si tiene ventas
-    if Venta.objects.filter(vehiculo=vehiculo).exists():
-        messages.error(
-            request,
-            "No se puede eliminar el vehículo porque tiene ventas asociadas."
-        )
-        return redirect("vehiculos:lista_vehiculos")
-
     if request.method == "POST":
-        vehiculo.delete()
-        messages.success(
-            request,
-            "Vehículo eliminado definitivamente."
-        )
+
+        # 🔒 Si tuvo ventas alguna vez → vendido
+        if Venta.objects.filter(vehiculo=vehiculo).exists():
+            vehiculo.estado = "vendido"
+            mensaje = "El vehículo tuvo ventas y fue marcado como VENDIDO."
+        else:
+            vehiculo.estado = "temporal"
+            mensaje = "Vehículo quitado del stock."
+
+        vehiculo.save()
+
+        messages.success(request, mensaje)
+        return redirect("vehiculos:lista_vehiculos")
 
     return redirect("vehiculos:lista_vehiculos")
 
@@ -611,13 +632,22 @@ def vehiculo_datos_ajax(request):
 
     vehiculo = get_object_or_404(Vehiculo, id=vehiculo_id)
 
+    ficha = getattr(vehiculo, "ficha", None)
+
     return JsonResponse({
-        "id": vehiculo.id,
-        "marca": vehiculo.marca,
-        "modelo": vehiculo.modelo,
-        "dominio": vehiculo.dominio,
-        "precio": str(vehiculo.precio),
-    })
+    "id": vehiculo.id,
+    "marca": vehiculo.marca,
+    "modelo": vehiculo.modelo,
+    "anio": vehiculo.anio,
+    "dominio": vehiculo.dominio,
+    "precio": str(vehiculo.precio),
+
+    # DATOS DESDE LA FICHA
+    "motor": getattr(ficha, "numero_motor", "") if ficha else "",
+    "chasis": getattr(ficha, "numero_chasis", "") if ficha else "",
+})
+
+
 # ==========================================================
 # UTIL – CONVERTIR STRING A DECIMAL SEGURO
 # ==========================================================
@@ -915,13 +945,20 @@ def ficha_vehicular_pdf(request, vehiculo_id):
         ["Firmas", f"$ {ficha.gasto_firmas or 0}"],
         ["TOTAL", f"$ {ficha.total_gastos or 0}"],
     ])
-
     # ==================================================
-    # OBSERVACIONES
+    # OBSERVACIONES Y DATOS ADICIONALES
     # ==================================================
     seccion("Observaciones", [
-        ["", ficha.observaciones or "Sin observaciones"]
+        ["Observaciones", ficha.observaciones or "Sin observaciones"],
+        ["Segunda llave", getattr(ficha, "segunda_llave", None) or "-"],
+        ["Código de llave", getattr(ficha, "codigo_llave", None) or "-"],
+        ["Oblea GNC", getattr(ficha, "oblea_gnc", None) or "-"],
+        ["Código de radio", getattr(ficha, "codigo_radio", None) or "-"],
+        ["Manuales", getattr(ficha, "manuales", None) or "-"],
     ])
 
+    # ==================================================
+    # GENERAR PDF
+    # ==================================================
     doc.build(elements)
     return response
