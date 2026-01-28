@@ -81,6 +81,17 @@ urlpatterns = [
         views.ficha_completa,
         name="ficha_completa"
     ),
+
+    # ==================================================
+    # 👉 ALIAS AGREGADO (NO SE ELIMINA NADA)
+    # 👉 SOLO PARA COMPATIBILIDAD CON UNIDADES
+    # ==================================================
+    path(
+        "ficha/<int:vehiculo_id>/",
+        views.ficha_completa,
+        name="ficha_vehicular"
+    ),
+
     # ==================================================
     # PDF – FICHA VEHICULAR
     # ==================================================

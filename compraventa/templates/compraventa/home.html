@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h3 class="fw-bold mb-3" style="color:#002855;">Compra-Venta</h3>
+
+<div class="d-flex gap-2 mb-4">
+  <a class="btn btn-primary" href="{% url 'compraventa:proveedor_crear' %}">
+    Registrar proveedor
+  </a>
+  <a class="btn btn-outline-primary" href="{% url 'compraventa:compra_registrar' %}">
+    Registrar compra
+  </a>
+</div>
+
+<div class="card-clean p-3">
+  <h5 class="fw-bold mb-3">Proveedores</h5>
+
+  {% if proveedores %}
+    <div class="d-flex flex-column gap-2">
+      {% for p in proveedores %}
+        <a
+          class="btn btn-outline-secondary text-start"
+          href="{% url 'compraventa:proveedor_detalle' p.id %}">
+          {{ p.nombre_empresa }}
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="text-muted mb-0">
+      Todavía no hay proveedores registrados.
+    </p>
+  {% endif %}
+</div>
+
+{% endblock %}

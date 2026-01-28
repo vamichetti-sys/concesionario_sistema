@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Unidades del proveedor{% endblock %}
+{% block content %}
+<h3 class="fw-bold mb-4">
+  Unidades — {{ proveedor.nombre_empresa }}
+</h3>
+<a href="{% url 'compraventa:proveedor_detalle' proveedor.id %}"
+   class="btn btn-secondary mb-3">
+  Volver al proveedor
+</a>
+<div class="card shadow-sm rounded-4 p-4">
+  <table class="table table-striped align-middle">
+    <thead>
+      <tr>
+        <th>Vehículo</th>
+        <th class="text-end">Deuda gastos</th>
+        <th class="text-end">Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for op in operaciones %}
+        {% with ficha=op.vehiculo.ficha|default_if_none:None %}
+          <tr>
+            <!-- VEHÍCULO -->
+            <td>
+              {{ op.vehiculo.marca }} {{ op.vehiculo.modelo }}
+              <br>
+              <small class="text-muted">
+                {{ op.vehiculo.dominio|default:"Sin dominio" }}
+              </small>
+            </td>
+
+            <!-- DEUDA GASTOS -->
+            <td class="text-end fw-bold
+              {% if ficha and ficha.saldo_gastos > 0 %}
+                text-danger
+              {% else %}
+                text-success
+              {% endif %}
+            ">
+              {% if ficha %}
+                ${{ ficha.saldo_gastos|floatformat:2|default:"0" }}
+              {% else %}
+                $0
+              {% endif %}
+            </td>
+
+            <!-- ACCIONES -->
+            <td class="text-end">
+              <a href="{% url 'vehiculos:ficha_completa' op.vehiculo.id %}"
+                 class="btn btn-outline-secondary btn-sm">
+                Ver ficha
+              </a>
+            </td>
+          </tr>
+        {% endwith %}
+      {% empty %}
+        <tr>
+          <td colspan="3" class="text-muted">
+            No hay unidades vinculadas a este proveedor.
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

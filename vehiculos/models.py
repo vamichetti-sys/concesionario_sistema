@@ -13,6 +13,18 @@ class Vehiculo(models.Model):
         ('vendido', 'Vendido'),
     ]
 
+    UNIDAD_CHOICES = [
+        ("HA", "Hamichetti"),
+        ("VA", "Vamichetti"),
+    ]
+
+    unidad = models.CharField(
+        max_length=2,
+        choices=UNIDAD_CHOICES,
+        default="HA",
+        verbose_name="Unidad"
+    )
+
     marca = models.CharField(max_length=100)
     modelo = models.CharField(max_length=100)
     dominio = models.CharField(max_length=10, unique=True)
@@ -40,20 +52,32 @@ class Vehiculo(models.Model):
         verbose_name="Número de carpeta"
     )
 
+    # ======================================================
+    # REPRESENTACIÓN
+    # ======================================================
     def __str__(self):
         return f"{self.marca} {self.modelo} ({self.dominio})"
 
+    # ======================================================
+    # PROPIEDADES DE VENTA (SE CONSERVAN TODAS)
+    # ======================================================
     @property
     def tiene_venta(self):
         return hasattr(self, "venta")
 
     @property
+    def tiene_venta_activa(self):
+        return self.tiene_venta and self.venta.estado == "confirmada"
+
+    @property
     def esta_vendido_correctamente(self):
-        return self.estado == "vendido" and self.tiene_venta
+        return self.estado == "vendido" and self.tiene_venta_activa
 
+    # ======================================================
+    # REGLA DE ELIMINACIÓN
+    # ======================================================
     def puede_eliminarse(self):
-        return not self.tiene_venta
-
+        return not self.tiene_venta_activa
 
 # ============================================================
 # FICHA VEHICULAR COMPLETA
@@ -66,43 +90,64 @@ class FichaVehicular(models.Model):
         related_name="ficha"
     )
 
-    numero_motor = models.CharField(max_length=100, blank=True, null=True)
-    numero_chasis = models.CharField(max_length=100, blank=True, null=True)
-
-    fecha_inscripcion_inicial = models.DateField(blank=True, null=True)
-
-    motor = models.CharField(max_length=100, blank=True, null=True)
-    chasis = models.CharField(max_length=100, blank=True, null=True)
-
-    color = models.CharField(max_length=50, blank=True, null=True)
-    combustible = models.CharField(max_length=50, blank=True, null=True)
-    transmision = models.CharField(max_length=50, blank=True, null=True)
-
-    vendedor = models.CharField(max_length=200, blank=True, null=True)
-    contacto = models.CharField(max_length=200, blank=True, null=True)
-    email_contacto = models.CharField(max_length=200, blank=True, null=True)
-
-    titular = models.CharField(max_length=200, blank=True, null=True)
-    domicilio_titular = models.CharField(max_length=200, blank=True, null=True)
-    dni_titular = models.CharField(max_length=20, blank=True, null=True)
-    estado_civil = models.CharField(max_length=50, blank=True, null=True)
-    cuit_cuil_dni = models.CharField(max_length=50, blank=True, null=True)
-
-    tipo_ingreso = models.CharField(
-        max_length=50,
-        choices=[
-            ("compra", "Compra"),
-            ("consignacion", "Consignación"),
-        ],
-        blank=True,
-        null=True
-    )
-
     numero_consignacion_factura = models.CharField(
         max_length=200,
         blank=True,
         null=True
     )
+
+    color = models.CharField(
+        max_length=50,
+        blank=True,
+        null=True
+    )
+
+    numero_motor = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True
+    )
+    fecha_inscripcion_inicial = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name="Fecha de inscripción inicial"
+    )
+
+
+    # =========================
+    # DATOS DEL TITULAR
+    # =========================
+    titular = models.CharField(max_length=150, blank=True, null=True)
+    dni_titular = models.CharField(max_length=20, blank=True, null=True)
+    cuit_cuil_dni = models.CharField(max_length=20, blank=True, null=True)
+    estado_civil = models.CharField(max_length=50, blank=True, null=True)
+    domicilio_titular = models.CharField(max_length=200, blank=True, null=True)
+    email_contacto = models.EmailField(blank=True, null=True)
+    contacto = models.CharField(max_length=100, blank=True, null=True)
+    tipo_ingreso = models.CharField(max_length=50, blank=True, null=True)
+    from compraventa.models import Proveedor
+
+    vendedor = models.ForeignKey(
+    Proveedor,
+    on_delete=models.SET_NULL,
+    null=True,
+    blank=True,
+    related_name="vehiculos",
+    verbose_name="Agencia / Vendedor"
+)
+
+
+    # =========================
+    # DATOS DEL VEHÍCULO
+    # =========================
+    color = models.CharField(max_length=50, blank=True, null=True)
+    combustible = models.CharField(max_length=50, blank=True, null=True)
+    transmision = models.CharField(max_length=50, blank=True, null=True)
+    numero_motor = models.CharField(max_length=100, blank=True, null=True)
+    numero_chasis = models.CharField(max_length=100, blank=True, null=True)
+
+    # (todo lo demás tuyo sigue igual)
+
 
     ESTADO_DOC = [
         ("tiene", "Tiene"),
@@ -144,7 +189,7 @@ class FichaVehicular(models.Model):
     total_gastos = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
 
     observaciones = models.TextField(blank=True, null=True)
-
+    
     # ======================================================
     # ACCESORIOS / CHECKLIST
     # ======================================================
@@ -252,6 +297,16 @@ class FichaVehicular(models.Model):
             if monto and Decimal(monto) > 0 and self.saldo_por_concepto(concepto) > 0:
                 return True
         return False
+    
+    # ======================================================
+    # PROPERTY PARA SALDO DE GASTOS
+    # ======================================================
+    @property
+    def saldo_gastos(self):
+        """
+        Saldo pendiente de gastos de ingreso.
+        """
+        return self.saldo_total_gastos()
 
     # ======================================================
     # COMPATIBILIDAD PARA PDF / TEMPLATES

@@ -3,11 +3,29 @@
 {% block content %}
 
 <h4 class="fw-bold mb-2" style="color:#002855;">
-    Reporte Interno
+    Reporte Interno – {{ unidad }}
 </h4>
-<p class="text-muted mb-4">
+
+<p class="text-muted mb-3">
     Análisis y control interno del sistema.
 </p>
+
+<!-- ===============================
+     BOTÓN CAMBIO DE UNIDAD
+=============================== -->
+<div class="mb-4">
+    {% if unidad == "Hamichetti" %}
+        <a href="{% url 'reportes:reporte_interno_vamichetti' %}"
+           class="btn btn-outline-primary btn-sm">
+            Ir a Reporte Vamichetti
+        </a>
+    {% elif unidad == "Vamichetti" %}
+        <a href="{% url 'reportes:reporte_interno' %}"
+           class="btn btn-outline-secondary btn-sm">
+            Ir a Reporte Hamichetti
+        </a>
+    {% endif %}
+</div>
 
 <div class="row">
 

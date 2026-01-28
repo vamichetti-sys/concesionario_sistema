@@ -15,8 +15,10 @@ class Venta(models.Model):
 
     vehiculo = models.OneToOneField(
         Vehiculo,
-        on_delete=models.PROTECT,
-        related_name="venta"
+        on_delete=models.SET_NULL,   # 🔑 CAMBIO CLAVE
+        related_name="venta",
+        null=True,
+        blank=True
     )
 
     cliente = models.ForeignKey(
@@ -52,10 +54,10 @@ class Venta(models.Model):
     )
 
     def __str__(self):
-        return f"Venta {self.id} - {self.vehiculo} - {self.cliente or 'Sin cliente'}"
+        return f"Venta {self.id} - {self.vehiculo or 'Sin vehículo'} - {self.cliente or 'Sin cliente'}"
 
     # ======================================================
-    # 🔒 CONFIRMACIÓN CENTRALIZADA (NUEVO – NO ROMPE NADA)
+    # 🔒 CONFIRMACIÓN CENTRALIZADA (SE MANTIENE)
     # ======================================================
     def confirmar(self):
         """
@@ -68,40 +70,54 @@ class Venta(models.Model):
 
         from cuentas.models import CuentaCorriente, MovimientoCuenta
 
-        # 🔒 Evitar doble ejecución
-        if self.estado == "confirmada":
-            return self
-
-        # 1️⃣ Precio de la venta
-        if self.precio_venta is None:
-            self.precio_venta = self.vehiculo.precio
-
-        self.estado = "confirmada"
-        self.save(update_fields=["estado", "precio_venta"])
-
-        # 2️⃣ Cuenta corriente
-        cuenta, _ = CuentaCorriente.objects.get_or_create(
-            venta=self,
-            defaults={"cliente": self.cliente}
-        )
-
-        # 3️⃣ Deuda inicial (solo una vez)
-        existe_deuda = cuenta.movimientos.filter(
-            origen="venta",
-            tipo="debe"
-        ).exists()
-
-        if not existe_deuda:
-            MovimientoCuenta.objects.create(
-                cuenta=cuenta,
-                vehiculo=self.vehiculo,
-                descripcion=f"Venta vehículo {self.vehiculo}",
-                tipo="debe",
-                monto=self.precio_venta,
-                origen="venta"
+        # ==================================================
+        # 1️⃣ ASEGURAR CUENTA CORRIENTE (SIEMPRE)
+        # ⚠️ SOLO SI HAY CLIENTE VÁLIDO
+        # ==================================================
+        cuenta = None
+        if self.cliente:
+            cuenta, _ = CuentaCorriente.objects.get_or_create(
+                venta=self,
+                cliente=self.cliente
             )
 
-            cuenta.recalcular_saldo()
+        # ==================================================
+        # 2️⃣ IMPUTAR DEUDA INICIAL (BLOQUE CONSERVADO)
+        # ⚠️ DESHABILITADO: la deuda la genera el Plan de Pago
+        # ==================================================
+        if False and cuenta:
+            existe_deuda = cuenta.movimientos.filter(
+                origen="venta",
+                tipo="debe"
+            ).exists()
+
+            if not existe_deuda:
+                monto = self.precio_venta
+                if monto is None and self.vehiculo:
+                    monto = self.vehiculo.precio or 0
+
+                MovimientoCuenta.objects.create(
+                    cuenta=cuenta,
+                    vehiculo=self.vehiculo,
+                    descripcion=f"Venta vehículo {self.vehiculo}",
+                    tipo="debe",
+                    monto=monto or 0,
+                    origen="venta"
+                )
+
+                cuenta.recalcular_saldo()
+
+        # ==================================================
+        # 3️⃣ CONFIRMAR VENTA (SIN BLOQUEAR LÓGICA)
+        # ==================================================
+        if self.precio_venta is None and self.vehiculo:
+            self.precio_venta = self.vehiculo.precio
+
+        if self.estado != "confirmada":
+            self.estado = "confirmada"
+            self.save(update_fields=["estado", "precio_venta"])
+        else:
+            self.save(update_fields=["precio_venta"])
 
         return self
 
@@ -121,14 +137,35 @@ class Venta(models.Model):
         from cuentas.models import CuentaCorriente
         from gestoria.models import Gestoria
 
-        # 1️⃣ Asignar cliente
+        # ==================================================
+        # 1️⃣ ASIGNAR CLIENTE A LA VENTA
+        # ==================================================
         self.cliente = cliente
         self.save(update_fields=["cliente"])
 
-        # 2️⃣ Confirmar venta (centralizado)
+        # ==================================================
+        # 2️⃣ CREAR CUENTA CORRIENTE (OBLIGATORIO)
+        # ==================================================
+        cuenta, _ = CuentaCorriente.objects.get_or_create(
+            venta=self,
+            cliente=cliente
+        )
+
+        # ==================================================
+        # 3️⃣ CONFIRMAR VENTA (NO CREA DEUDA)
+        # ==================================================
         self.confirmar()
 
-        # 3️⃣ Crear / vincular Gestoría
+        # ==================================================
+        # 4️⃣ SINCRONIZAR CLIENTE EN CUENTA CORRIENTE (SI EXISTÍA)
+        # ==================================================
+        if cuenta.cliente != cliente:
+            cuenta.cliente = cliente
+            cuenta.save(update_fields=["cliente"])
+
+        # ==================================================
+        # 5️⃣ CREAR / ACTUALIZAR GESTORÍA
+        # ==================================================
         gestoria = Gestoria.crear_o_actualizar_desde_venta(
             venta=self,
             vehiculo=self.vehiculo,

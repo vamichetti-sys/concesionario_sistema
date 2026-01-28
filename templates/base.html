@@ -35,6 +35,7 @@
             color:white;
             padding-top:24px;
             z-index:1000;
+            overflow-y:auto;
         }
 
         .sidebar a {
@@ -194,12 +195,14 @@
 
     <a href="/inicio/">Inicio</a>
     <a href="/vehiculos/">Vehículos</a>
+    <a href="{% url 'compraventa:home' %}">Compra-Venta</a>
     <a href="/clientes/">Clientes</a>
     <a href="/cuentas/">Cuentas Corrientes</a>
     <a href="/ventas/">Ventas</a>
     <a href="/boletos/">Boletos</a>
     <a href="/gestoria/">Gestoría</a>
     <a href="/deudas/">Deuda</a>
+    <a href="{% url 'documentacion:home' %}">Documentación</a>
     <a href="/calendario/">Calendario</a>
     <a href="/facturacion/">Facturación</a>
 

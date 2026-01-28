@@ -6,6 +6,20 @@
 {% block content %}
 <style>
 /* ===============================
+AJUSTES FINALES PARA IMPRESIÓN
+=============================== */
+@media print {
+    .boleto-scale {
+        transform: none !important;
+    }
+}
+
+@page {
+    size: A4;
+    margin: 15mm;
+}
+
+/* ===============================
    CONFIGURACIÓN A4 – FORZADA
 =============================== */
 @page {
@@ -29,8 +43,8 @@ html, body {
 =============================== */
 .boleto-page {
     width: 210mm;
-    height: 297mm;
-    overflow: hidden;
+    min-height: 297mm;
+    margin: 0 auto;
     position: relative;
 }
 
@@ -81,52 +95,61 @@ html, body {
 }
 
 /* ===============================
-   TÍTULO
+   TÍTULO (OPCIONAL)
+   Actualmente NO se usa
 =============================== */
+
 .header-title {
     text-align: center;
     margin-bottom: 6mm;
 }
 
 .header-title h3 {
-    font-size: 12pt;
+    font-size: 10pt;
     font-weight: bold;
-    border-bottom: 2px solid #000;
+    border-bottom: 1px solid #000;
     display: inline-block;
-    padding-bottom: 1mm;
+    padding-bottom: 0.5mm;
+    margin-bottom: 2mm;
 }
 
+
 /* ===============================
-   DATOS VEHÍCULO
+   DATOS DEL VEHÍCULO (OPCIONAL)
+   Actualmente NO se usa
 =============================== */
+
 .boleto-datos {
-    width: 72%;
-    margin: 0 auto 6mm auto;
-    font-size: 10pt;
+    width: 90%;
+    margin: 0 auto 2mm auto;
+    font-family: "Times New Roman", Times, serif;
+    font-size: 8.5pt;
     text-align: center;
+    color: #000;
 }
 
 /* ===============================
    TEXTO LEGAL
 =============================== */
 .boleto-body {
-    width: 72%;
+    width: 90%;
     margin: 0 auto;
+    font-family: "Times New Roman", Times, serif;
+    font-size: 11pt;
+    line-height: 1.35;
     text-align: justify;
-    white-space: pre-line;
-    text-indent: 18px;
-    hyphens: auto;
+    white-space: normal;
 }
 
 /* ===============================
    FIRMAS (SIEMPRE DENTRO DE A4)
 =============================== */
 .boleto-firmas {
-    width: 100%;
-    margin-top: 22mm;
+    width: 90%;
+    margin: 30mm auto 0 auto;
     display: flex;
     justify-content: space-between;
-    font-size: 9.5pt;
+    font-size: 8.5pt;
 }
 
 .firma-col {
@@ -181,21 +204,6 @@ html, body {
             <div class="direccion">LARREA 255, ROJAS BS AS (2705)</div>
         </div>
 
-        <!-- TÍTULO -->
-        <div class="header-title">
-            <h3>BOLETO DE COMPRA VENTA</h3>
-        </div>
-
-        <!-- DATOS VEHÍCULO -->
-        <div class="boleto-datos">
-            {% if boleto.vehiculo %}
-                {{ boleto.vehiculo.marca }} {{ boleto.vehiculo.modelo }}
-                {% if boleto.vehiculo.dominio %}
-                    – {{ boleto.vehiculo.dominio }}
-                {% endif %}
-            {% endif %}
-        </div>
-
         <!-- TEXTO LEGAL -->
         <div class="boleto-body">
 {{ texto_boleto }}
@@ -224,6 +232,7 @@ html, body {
 
     </div>
 </div>
+
 
 <!-- ===============================
      ACCIONES (NO IMPRIME)

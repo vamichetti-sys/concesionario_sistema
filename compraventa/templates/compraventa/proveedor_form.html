@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+  /* ===== IDENTIDAD AMICHETTI ===== */
+  .am-card {
+    background: #ffffff;
+    border-radius: 12px;
+    border: 1px solid #e6e9ef;
+    max-width: 640px;
+  }
+
+  .am-title {
+    color: #002855;
+    font-weight: 700;
+    font-size: 26px;
+  }
+
+  .am-label {
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 6px;
+  }
+
+  .am-input {
+    height: 44px;
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+  }
+
+  .am-input:focus {
+    border-color: #002855;
+    box-shadow: 0 0 0 0.1rem rgba(0, 40, 85, 0.15);
+  }
+
+  .am-switch {
+    transform: scale(1.05);
+  }
+
+  .btn-am-primary {
+    background-color: #002855;
+    border-color: #002855;
+    padding: 10px 28px;
+    font-weight: 600;
+    border-radius: 8px;
+  }
+
+  .btn-am-primary:hover {
+    background-color: #001e44;
+    border-color: #001e44;
+  }
+</style>
+
+<div class="container-fluid">
+
+  <div class="mb-4">
+    <div class="am-title">
+      Registrar proveedor / agencia
+    </div>
+  </div>
+
+  <div class="am-card p-4">
+
+    <form method="post">
+      {% csrf_token %}
+
+      <div class="mb-3">
+        <label class="am-label">Nombre de la empresa</label>
+        {{ form.nombre_empresa }}
+      </div>
+
+      <div class="mb-4">
+        <label class="am-label">CUIT</label>
+        {{ form.cuit }}
+      </div>
+
+      <div class="form-check form-switch mb-4">
+        {{ form.activo }}
+        <label class="form-check-label fw-semibold ms-2">
+          Proveedor activo
+        </label>
+      </div>
+
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-am-primary">
+          Guardar
+        </button>
+        <a href="{% url 'compraventa:home' %}" class="btn btn-outline-secondary">
+          Volver
+        </a>
+      </div>
+
+    </form>
+
+  </div>
+
+</div>
+
+{% endblock %}

@@ -10,6 +10,7 @@ class VehiculoBasicoForm(forms.ModelForm):
     class Meta:
         model = Vehiculo
         fields = [
+            'unidad', 
             'marca',
             'modelo',
             'dominio',
@@ -21,6 +22,7 @@ class VehiculoBasicoForm(forms.ModelForm):
         ]
 
         labels = {
+            'unidad': 'Unidad',
             'marca': 'Marca',
             'modelo': 'Modelo',
             'dominio': 'Dominio',
@@ -32,6 +34,7 @@ class VehiculoBasicoForm(forms.ModelForm):
         }
 
         widgets = {
+            'unidad': forms.Select(attrs={'class': 'form-control'}),
             'marca': forms.TextInput(attrs={'class': 'form-control'}),
             'modelo': forms.TextInput(attrs={'class': 'form-control'}),
             'dominio': forms.TextInput(attrs={'class': 'form-control'}),
@@ -337,3 +340,4 @@ class FichaVehicularForm(forms.ModelForm):
     # ======================================================
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+

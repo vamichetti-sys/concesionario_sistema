@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h4 class="fw-bold mb-3">Registrar compra / ingreso</h4>
+
+<form method="post" class="card-clean p-3">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <div class="d-flex gap-2">
+    <button class="btn btn-primary" type="submit">Guardar</button>
+    <a class="btn btn-outline-secondary" href="{% url 'compraventa:home' %}">Volver</a>
+  </div>
+</form>
+
+<p class="text-muted mt-3">
+  Nota: si elegís Origen = Proveedor y seleccionás proveedor, el sistema crea/actualiza la deuda del vehículo automáticamente (precio + gastos).
+</p>
+
+{% endblock %}

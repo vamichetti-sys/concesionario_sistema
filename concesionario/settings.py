@@ -43,9 +43,12 @@ ALLOWED_HOSTS.append(".onrender.com")
 # CSRF (RENDER / PRODUCCIÓN)
 # ==========================================================
 CSRF_TRUSTED_ORIGINS = [
+    "http://127.0.0.1:8000",
+    "http://localhost:8000",
     "https://concesionario-k516.onrender.com",
     "https://*.onrender.com",
 ]
+
 
 # ==========================================================
 # APPLICATIONS
@@ -72,6 +75,9 @@ INSTALLED_APPS = [
     "asistencia",
     "deudas",
     "boletos",
+    "compraventa",
+    "documentacion",
+    "reventa",
 ]
 
 # ==========================================================

@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block title %}Cuenta corriente proveedor{% endblock %}
+
+{% block content %}
+
+<h3 class="fw-bold mb-4">
+  Cuenta Corriente — {{ proveedor.nombre_empresa }}
+</h3>
+
+<a href="{% url 'compraventa:proveedor_detalle' proveedor.id %}"
+   class="btn btn-secondary mb-3">
+  Volver al proveedor
+</a>
+
+<!-- ===============================
+     RESUMEN GENERAL
+================================ -->
+<div class="row mb-4">
+
+  <div class="col-md-4">
+    <div class="card shadow-sm rounded-4 p-3 text-center">
+      <div class="text-muted">Total comprado</div>
+      <div class="fs-4 fw-bold">
+        ${{ total_deuda|default:"0" }}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card shadow-sm rounded-4 p-3 text-center">
+      <div class="text-muted">Total pagado</div>
+      <div class="fs-4 fw-bold text-success">
+        ${{ total_pagado|default:"0" }}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card shadow-sm rounded-4 p-3 text-center">
+      <div class="text-muted">Saldo adeudado</div>
+      <div class="fs-4 fw-bold
+        {% if saldo_total > 0 %}
+          text-danger
+        {% else %}
+          text-success
+        {% endif %}
+      ">
+        ${{ saldo_total|default:"0" }}
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===============================
+     DETALLE DE DEUDAS POR UNIDAD
+================================ -->
+<div class="card shadow-sm rounded-4 p-4 mb-4">
+
+  <h5 class="fw-bold mb-3">Detalle por unidad</h5>
+
+  <table class="table table-striped align-middle">
+    <thead>
+      <tr>
+        <th>Vehículo</th>
+        <th>Precio compra</th>
+        <th>Total pagado</th>
+        <th>Saldo</th>
+        <th></th>
+      </tr>
+    </thead>
+
+    <tbody>
+      {% for deuda in deudas %}
+      <tr>
+        <td>
+          {{ deuda.vehiculo.marca }} {{ deuda.vehiculo.modelo }}
+          <br>
+          <small class="text-muted">
+            {{ deuda.vehiculo.dominio|default:"Sin dominio" }}
+          </small>
+        </td>
+
+        <td>
+          ${{ deuda.monto_total|default:"0" }}
+        </td>
+
+        <td class="text-success">
+          ${{ deuda.monto_pagado|default:"0" }}
+        </td>
+
+        <td class="
+          {% if deuda.saldo > 0 %}
+            text-danger
+          {% else %}
+            text-success
+          {% endif %}
+        ">
+          ${{ deuda.saldo|default:"0" }}
+        </td>
+
+        <td class="text-end">
+          {% if deuda.saldo > 0 %}
+          <a href="{% url 'compraventa:deuda_pago' deuda.id %}"
+             class="btn btn-sm btn-primary">
+            Registrar pago
+          </a>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="5" class="text-muted">
+          No hay deudas registradas.
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+</div>
+
+<!-- ===============================
+     HISTORIAL DE PAGOS
+================================ -->
+<div class="card shadow-sm rounded-4 p-4">
+
+  <h5 class="fw-bold mb-3">Pagos registrados</h5>
+
+  <table class="table table-sm table-bordered align-middle">
+    <thead>
+      <tr>
+        <th>Fecha</th>
+        <th>Vehículo</th>
+        <th>Monto</th>
+        <th>Observación</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      {% for pago in pagos %}
+      <tr>
+        <td>{{ pago.fecha|date:"d/m/Y" }}</td>
+        <td>
+          {{ pago.deuda.vehiculo.marca }} {{ pago.deuda.vehiculo.modelo }}
+        </td>
+        <td class="text-success fw-bold">
+          ${{ pago.monto|default:"0" }}
+        </td>
+        <td>{{ pago.nota|default:"—" }}</td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="4" class="text-muted">
+          No hay pagos registrados.
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+</div>
+
+{% endblock %}

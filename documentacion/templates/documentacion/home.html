@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block title %}Documentación Pendiente{% endblock %}
+{% block content %}
+
+<h3 class="fw-bold mb-4">Documentación Pendiente</h3>
+
+<!-- BOTONES DE FILTRO -->
+<div class="btn-group mb-4" role="group">
+  <a href="?tipo=vtv" 
+     class="btn {% if tipo_actual == 'vtv' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+    VTV
+  </a>
+  <a href="?tipo=autopartes" 
+     class="btn {% if tipo_actual == 'autopartes' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+    Grabado de Autopartes
+  </a>
+  <a href="?tipo=verificacion" 
+     class="btn {% if tipo_actual == 'verificacion' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+    Verificación Policial
+  </a>
+</div>
+
+<!-- TABLA DE VEHÍCULOS PENDIENTES -->
+<div class="card shadow-sm rounded-4 p-4 mb-4">
+  <h5 class="fw-bold mb-3">{{ titulo }}</h5>
+  
+  <table class="table table-striped align-middle">
+    <thead>
+      <tr>
+        <th>Vehículo</th>
+        <th>Dominio</th>
+        <th>Año</th>
+        <th>Estado</th>
+        <th class="text-end">Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for vehiculo in vehiculos %}
+        <tr>
+          <td>
+            <strong>{{ vehiculo.marca }} {{ vehiculo.modelo }}</strong>
+          </td>
+          <td>{{ vehiculo.dominio|default:"Sin dominio" }}</td>
+          <td>{{ vehiculo.anio }}</td>
+          <td>
+            {% if tipo_actual == 'vtv' %}
+              <span class="badge bg-danger">{{ vehiculo.ficha.vtv_estado|default:"No informado" }}</span>
+            {% elif tipo_actual == 'autopartes' %}
+              <span class="badge bg-danger">{{ vehiculo.ficha.autopartes_estado|default:"No informado" }}</span>
+            {% elif tipo_actual == 'verificacion' %}
+              <span class="badge bg-danger">{{ vehiculo.ficha.verificacion_estado|default:"No informado" }}</span>
+            {% endif %}
+          </td>
+          <td class="text-end">
+            <a href="{% url 'vehiculos:ficha_completa' vehiculo.id %}" 
+               class="btn btn-sm btn-primary">
+              Ver ficha
+            </a>
+          </td>
+        </tr>
+      {% empty %}
+        <tr>
+          <td colspan="5" class="text-muted text-center py-4">
+            ✅ No hay vehículos pendientes de {{ titulo|lower }}
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  
+  {% if vehiculos %}
+    <div class="mt-3">
+      <strong>Total:</strong> {{ vehiculos|length }} vehículo{{ vehiculos|length|pluralize }} con documentación pendiente
+    </div>
+  {% endif %}
+</div>
+
+<!-- 🆕 DOCUMENTACIÓN VENCIDA -->
+<div class="card shadow-sm rounded-4 p-4 border-danger">
+  <h5 class="fw-bold mb-3 text-danger">
+    ⚠️ Documentación Vencida
+  </h5>
+  
+  {% if vehiculos_vencidos %}
+    <table class="table table-striped align-middle">
+      <thead>
+        <tr>
+          <th>Vehículo</th>
+          <th>Dominio</th>
+          <th>Documentación Vencida</th>
+          <th class="text-end">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in vehiculos_vencidos %}
+          <tr>
+            <td>
+              <strong>{{ item.vehiculo.marca }} {{ item.vehiculo.modelo }}</strong>
+            </td>
+            <td>{{ item.vehiculo.dominio|default:"Sin dominio" }}</td>
+            <td>
+              {% for venc in item.vencimientos %}
+                <span class="badge bg-danger me-1">
+                  {{ venc.tipo }}: {{ venc.fecha|date:"d/m/Y" }}
+                </span>
+              {% endfor %}
+            </td>
+            <td class="text-end">
+              <a href="{% url 'vehiculos:ficha_completa' item.vehiculo.id %}" 
+                 class="btn btn-sm btn-danger">
+                Ver ficha
+              </a>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    
+    <div class="mt-3 text-danger">
+      <strong>Total:</strong> {{ vehiculos_vencidos|length }} vehículo{{ vehiculos_vencidos|length|pluralize }} con documentación vencida
+    </div>
+  {% else %}
+    <p class="text-muted text-center py-3">
+      ✅ No hay vehículos con documentación vencida
+    </p>
+  {% endif %}
+</div>
+
+{% endblock %}

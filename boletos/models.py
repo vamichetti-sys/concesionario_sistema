@@ -61,9 +61,10 @@ class BoletoCompraventa(models.Model):
         return f"Boleto #{self.numero} - {self.cliente}"
 
 
-# ==========================================================
-# PAGARÉ – LOTE
-# ==========================================================
+from django.db import models
+from django.utils.timezone import now
+from decimal import Decimal
+
 class PagareLote(models.Model):
 
     cliente = models.ForeignKey(
@@ -91,6 +92,12 @@ class PagareLote(models.Model):
     )
 
     cantidad = models.PositiveIntegerField(default=1)
+
+    pdf = models.FileField(
+        upload_to="pagares/lotes/",
+        null=True,
+        blank=True
+    )
 
     creado = models.DateTimeField(auto_now_add=True)
 

@@ -262,6 +262,9 @@
 <script>
 $(function () {
 
+    // =========================
+    // VEHÍCULOS
+    // =========================
     $('#id_vehiculo').select2({
         placeholder: 'Seleccionar vehículo...',
         width: '100%'
@@ -282,6 +285,10 @@ $(function () {
         .then(response => response.json())
         .then(data => {
 
+            // DEBUG
+            alert(JSON.stringify(data, null, 2));
+            console.log('DATOS VEHICULO:', data);
+
             if (data.error) {
                 limpiarCamposVehiculo();
                 return;
@@ -289,10 +296,23 @@ $(function () {
 
             $('#id_marca').val(data.marca || '');
             $('#id_modelo').val(data.modelo || '');
-            $('#id_anio').val(data.anio || '');
-            $('#id_patente').val(data.patente || '');
-            $('#id_motor').val(data.motor || '');
-            $('#id_chasis').val(data.chasis || '');
+
+            $('#id_anio')
+                .prop('disabled', false)
+                .prop('readonly', false)
+                .val(data.anio || '');
+
+            $('#id_patente').val(data.dominio || data.patente || '');
+
+            $('#id_motor')
+                .prop('disabled', false)
+                .prop('readonly', false)
+                .val(data.motor || '');
+
+            $('#id_chasis')
+                .prop('disabled', false)
+                .prop('readonly', false)
+                .val(data.chasis || '');
         })
         .catch(() => limpiarCamposVehiculo());
     });
@@ -306,6 +326,9 @@ $(function () {
         $('#id_chasis').val('');
     }
 
+    // =========================
+    // CLIENTES
+    // =========================
     $('#id_cliente').select2({
         placeholder: 'Seleccionar cliente...',
         width: '100%'

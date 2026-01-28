@@ -21,27 +21,23 @@
         </button>
     </div>
 
-    <!-- LEYENDA -->
+    <!-- 🆕 LEYENDA ACTUALIZADA -->
     <div class="d-flex flex-wrap gap-3 mb-3 small">
         <div class="d-flex align-items-center gap-2">
             <span style="width:14px; height:14px; background:#dc3545; display:inline-block; border-radius:3px;"></span>
-            VTV (Vencimiento)
-        </div>
-        <div class="d-flex align-items-center gap-2">
-            <span style="width:14px; height:14px; background:#0d6efd; display:inline-block; border-radius:3px;"></span>
-            Verificación policial
+            Vencimiento VTV
         </div>
         <div class="d-flex align-items-center gap-2">
             <span style="width:14px; height:14px; background:#fd7e14; display:inline-block; border-radius:3px;"></span>
-            Patentes
+            Vencimiento Verificación
         </div>
         <div class="d-flex align-items-center gap-2">
-            <span style="width:14px; height:14px; background:#20c997; display:inline-block; border-radius:3px;"></span>
-            Turno VTV
+            <span style="width:14px; height:14px; background:#ffc107; display:inline-block; border-radius:3px;"></span>
+            Vencimiento Patentes
         </div>
         <div class="d-flex align-items-center gap-2">
-            <span style="width:14px; height:14px; background:#6f42c1; display:inline-block; border-radius:3px;"></span>
-            Turno grabado de autopartes
+            <span style="width:14px; height:14px; background:#0dcaf0; display:inline-block; border-radius:3px;"></span>
+            Turnos
         </div>
     </div>
 
@@ -93,16 +89,23 @@
     text-shadow: 0 1px 2px rgba(0,0,0,.35);
 }
 
-.fc-event[style*="#20c997"] {
-    background-color: #7fdcc2 !important;
-}
-
-.fc-event[style*="#6f42c1"] {
-    background-color: #b79ae3 !important;
+/* 🆕 COLORES POR TIPO */
+.fc-event[style*="#dc3545"] {
+    background-color: #dc3545 !important;
 }
 
 .fc-event[style*="#fd7e14"] {
-    background-color: #f5b77a !important;
+    background-color: #fd7e14 !important;
+}
+
+.fc-event[style*="#ffc107"] {
+    background-color: #ffc107 !important;
+    color: #2b2b2b !important;
+    text-shadow: none;
+}
+
+.fc-event[style*="#0dcaf0"] {
+    background-color: #0dcaf0 !important;
     color: #2b2b2b !important;
     text-shadow: none;
 }
@@ -113,6 +116,13 @@
 
 .fc-daygrid-event {
     margin-top: 4px;
+}
+
+/* 🆕 HOVER */
+.fc-event:hover {
+    opacity: 0.85;
+    transform: scale(1.02);
+    transition: all 0.2s ease;
 }
 </style>
 
@@ -154,27 +164,35 @@ if (!window.__calendarInitialized) {
             =============================== */
             events: "/calendario/api/eventos/",
 
+            /* 🆕 RENDERIZADO MEJORADO */
             eventDidMount: function(info) {
                 let titulo = info.event.title;
 
+                // Limpiar prefijos para mostrar solo lo importante
                 titulo = titulo
-                    .replace("Turno ", "")
-                    .replace("VTV (Venc.) - ", "VTV · ")
-                    .replace("VTV - ", "VTV · ")
-                    .replace("Grabado de autopartes - ", "Autopartes · ")
-                    .replace("Patente - ", "Patente · ")
-                    .replace("Verificación - ", "Verificación · ");
+                    .replace("Vencimiento VTV – ", "VTV · ")
+                    .replace("Vencimiento Verificación – ", "Verificación · ")
+                    .replace("Vencimiento Patente – ", "Patente · ")
+                    .replace("Turno VTV – ", "Turno VTV · ")
+                    .replace("Turno grabado autopartes – ", "Autopartes · ");
 
                 info.el.innerHTML = `
                     <div class="fc-event-title fw-semibold small">
                         ${titulo}
                     </div>
                 `;
+                
+                // 🆕 AGREGAR TOOLTIP CON INFO DEL VEHÍCULO
+                if (info.event.extendedProps.vehiculo_info) {
+                    info.el.title = info.event.extendedProps.vehiculo_info;
+                }
             },
 
+            /* 🆕 CLICK EN EVENTO - IR A LA FICHA */
             eventClick: function(info) {
-                if (info.event.url) {
-                    window.open(info.event.url, "_blank");
+                // Si tiene URL, ir a la ficha del vehículo
+                if (info.event.extendedProps.url) {
+                    window.location.href = info.event.extendedProps.url;
                     info.jsEvent.preventDefault();
                 }
             }

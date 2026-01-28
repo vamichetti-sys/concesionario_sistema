@@ -128,6 +128,25 @@ def reporte_web(request):
         }
     )
 
+@login_required
+def _reporte_interno_base(request, unidad):
+    # 🔑 Guardar unidad activa en sesión
+    if unidad == "Hamichetti":
+        request.session["unidad_activa"] = "HA"
+    elif unidad == "Vamichetti":
+        request.session["unidad_activa"] = "VA"
+
+    return render(
+        request,
+        "reportes/interno/index.html",
+        {
+            "page_title": f"Reporte Interno – {unidad}",
+            "unidad": unidad,
+        }
+    )
+
+
+
 
 from django.contrib.auth.decorators import login_required
 
@@ -136,13 +155,14 @@ from django.contrib.auth.decorators import login_required
 # ==========================================================
 @login_required
 def reporte_interno(request):
-    return render(
-        request,
-        "reportes/interno/index.html",
-        {
-            "page_title": "Reporte Interno",
-        }
-    )
+    # ESTE ES HAMICHETTI (el que ya existe)
+    return _reporte_interno_base(request, "Hamichetti")
+
+@login_required
+def reporte_interno_vamichetti(request):
+    return _reporte_interno_base(request, "Vamichetti")
+
+
 
 
 
@@ -156,7 +176,12 @@ def reporte_interno(request):
     raise_exception=True
 )
 def control_stock(request):
-    vehiculos = Vehiculo.objects.select_related(
+    # 🔑 tomar la unidad activa desde sesión
+    unidad = request.session.get("unidad_activa", "HA")
+
+    vehiculos = Vehiculo.objects.filter(
+        unidad=unidad
+    ).select_related(
         "ficha_reporte"
     ).order_by("-id")
 
@@ -264,7 +289,12 @@ def eliminar_gasto_reporte(request, gasto_id):
 )
 def reporte_ganancias(request):
 
-    fichas = FichaReporteInterno.objects.exclude(
+    # 🔑 tomar la unidad activa desde sesión
+    unidad = request.session.get("unidad_activa", "HA")
+
+    fichas = FichaReporteInterno.objects.filter(
+        vehiculo__unidad=unidad
+    ).exclude(
         fecha_venta__isnull=True
     ).exclude(
         precio_compra__isnull=True,

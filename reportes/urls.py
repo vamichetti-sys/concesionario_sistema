@@ -20,6 +20,12 @@ urlpatterns = [
     path("interno/", views.reporte_interno, name="reporte_interno"),
     path("interno/stock/", views.control_stock, name="control_stock"),
     path("interno/reporte/", views.reporte_ganancias, name="reporte_ganancias"),
+    path(
+    "interno/vamichetti/",
+    views.reporte_interno_vamichetti,
+    name="reporte_interno_vamichetti"
+),
+
 
     # ==========================
     # EDITAR FICHA INTERNA
