@@ -535,16 +535,29 @@ def registrar_pago_gasto(request):
     # ===============================
     # CALCULAR SALDO REAL
     # ===============================
-    saldo_actual = ficha.saldo_por_concepto(CONCEPTOS[concepto_key])
+    mapa_gastos = {
+        "f08": ficha.gasto_f08,
+        "informes": ficha.gasto_informes,
+        "patentes": ficha.gasto_patentes,
+        "infracciones": ficha.gasto_infracciones,
+        "verificacion": ficha.gasto_verificacion,
+        "autopartes": ficha.gasto_autopartes,
+        "vtv": ficha.gasto_vtv,
+        "r541": ficha.gasto_r541,
+        "firmas": ficha.gasto_firmas,
+    }
+
+    monto_gasto = mapa_gastos.get(concepto_key) or Decimal("0")
+
+    total_pagado = (
+        PagoGastoIngreso.objects.filter(
+            vehiculo=vehiculo,
+            concepto=concepto_key
+        ).aggregate(total=Sum("monto"))["total"]
+        or Decimal("0")
+    )
+    saldo_actual = Decimal(monto_gasto) - Decimal(total_pagado)
     monto = Decimal(monto_raw)
-
-    if monto > saldo_actual:
-        monto = saldo_actual
-
-    if monto <= 0:
-        messages.warning(request, "El gasto ya está totalmente pagado.")
-        return redirect("vehiculos:ficha_completa", vehiculo_id=vehiculo.id)
-
     # ===============================
     # REGISTRAR PAGO DE GASTO
     # ===============================
