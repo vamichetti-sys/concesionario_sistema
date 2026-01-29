@@ -532,7 +532,7 @@ def registrar_pago_gasto(request):
         messages.error(request, "Concepto de gasto inválido.")
         return redirect(request.META.get("HTTP_REFERER"))
 
-    # ===============================
+   # ===============================
     # CALCULAR SALDO REAL
     # ===============================
     mapa_gastos = {
@@ -556,6 +556,7 @@ def registrar_pago_gasto(request):
         ).aggregate(total=Sum("monto"))["total"]
         or Decimal("0")
     )
+
     saldo_actual = Decimal(monto_gasto) - Decimal(total_pagado)
     monto = Decimal(monto_raw)
     # ===============================
