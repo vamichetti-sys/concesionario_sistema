@@ -271,14 +271,15 @@
 <!-- PAGO DE GASTOS -->
 <!-- ========================================================= -->
 <div class="card shadow-sm rounded-4 p-4 mb-4">
-
   <h4 class="fw-bold mb-3" style="color:#002855;">Pago de gastos de ingreso</h4>
 
   {% for gasto in gastos_ingreso %}
-  <div class="border rounded-3 p-3 mb-3">
-
-    <div class="fw-bold mb-2">
-      {{ gasto.concepto }} — ${{ gasto.monto }}
+  <div class="border rounded-3 p-3 mb-3 {% if gasto.esta_pagado %}bg-light{% endif %}">
+    <div class="fw-bold mb-2 d-flex justify-content-between align-items-center">
+      <span>{{ gasto.concepto }} — ${{ gasto.monto }}</span>
+      {% if gasto.esta_pagado %}
+      <span class="badge bg-success">PAGADO</span>
+      {% endif %}
     </div>
 
     <div class="row g-3 mb-3">
@@ -286,7 +287,6 @@
         <label class="fw-bold">Total pagado</label>
         <div>${{ gasto.total_pagado }}</div>
       </div>
-
       <div class="col-md-4">
         <label class="fw-bold">Saldo</label>
         <div class="{% if gasto.saldo > 0 %}text-danger{% else %}text-success{% endif %}">
@@ -322,29 +322,25 @@
     </div>
     {% endif %}
 
-    <!-- FORMULARIO PARA NUEVO PAGO -->
+    <!-- FORMULARIO PARA NUEVO PAGO (solo si no está pagado) -->
+    {% if not gasto.esta_pagado %}
     <form method="post" action="{% url 'vehiculos:registrar_pago_gasto' %}">
       {% csrf_token %}
-
       <input type="hidden" name="vehiculo_id" value="{{ vehiculo.id }}">
       <input type="hidden" name="gasto_id" value="{{ gasto.key }}">
-
       <div class="row g-3">
         <div class="col-md-3">
           <label class="fw-bold">Fecha de pago</label>
           <input type="date" name="fecha_pago" class="form-control" required>
         </div>
-
         <div class="col-md-3">
           <label class="fw-bold">Monto</label>
           <input type="number" step="0.01" name="monto" class="form-control" required>
         </div>
-
         <div class="col-md-4">
           <label class="fw-bold">Observaciones</label>
           <input type="text" name="observaciones" class="form-control">
         </div>
-
         <div class="col-md-2 d-flex align-items-end">
           <button type="submit" class="btn btn-primary w-100">
             Registrar pago
@@ -352,20 +348,19 @@
         </div>
       </div>
     </form>
+    {% endif %}
 
   </div>
   {% empty %}
-    <p class="text-muted">No hay gastos de ingreso cargados.</p>
+  <p class="text-muted">No hay gastos de ingreso cargados.</p>
   {% endfor %}
 
   <hr class="my-4">
-
   <div class="d-flex justify-content-end">
     <div class="text-end">
       <div class="fw-bold text-muted">
         Total pendiente de gastos
       </div>
-
       <div class="fs-4 fw-bold
         {% if total_pendiente > 0 %}
           text-danger
@@ -377,7 +372,6 @@
       </div>
     </div>
   </div>
-
 </div>
 
 <!-- ========================================================= -->
