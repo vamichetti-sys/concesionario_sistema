@@ -955,16 +955,16 @@ def ficha_vehicular_pdf(request, vehiculo_id):
         ["Firmas", f"$ {ficha.gasto_firmas or 0}"],
         ["TOTAL", f"$ {ficha.total_gastos or 0}"],
     ])
-    # ==================================================
-    # OBSERVACIONES Y DATOS ADICIONALES
-    # ==================================================
+   # ==================================================
+   # OBSERVACIONES Y DATOS ADICIONALES
+   # ==================================================
     seccion("Observaciones", [
         ["Observaciones", ficha.observaciones or "Sin observaciones"],
-        ["Segunda llave", getattr(ficha, "segunda_llave", None) or "-"],
-        ["Código de llave", getattr(ficha, "codigo_llave", None) or "-"],
-        ["Oblea GNC", getattr(ficha, "oblea_gnc", None) or "-"],
-        ["Código de radio", getattr(ficha, "codigo_radio", None) or "-"],
-        ["Manuales", getattr(ficha, "manuales", None) or "-"],
+        ["Segunda llave", f"{ficha.duplicado_llave_estado or '-'} - {ficha.duplicado_llave_obs or '-'}"],
+        ["Código de llave", f"{ficha.codigo_llave_estado or '-'} - {ficha.codigo_llave_obs or '-'}"],
+        ["Oblea GNC", f"{ficha.oblea_gnc_estado or '-'} - {ficha.oblea_gnc_obs or '-'}"],
+        ["Código de radio", f"{ficha.codigo_radio_estado or '-'} - {ficha.codigo_radio_obs or '-'}"],
+        ["Manuales", f"{ficha.manuales_estado or '-'} - {ficha.manuales_obs or '-'}"],
     ])
 
     # ==================================================
