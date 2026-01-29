@@ -75,6 +75,8 @@ class VehiculoForm(forms.ModelForm):
             'estado': forms.Select(attrs={'class': 'form-control'}),
             'numero_carpeta': forms.TextInput(attrs={'class': 'form-control'}),
         }
+
+
 # ==========================================================
 # FORMULARIO COMPLETO PARA FICHA VEHICULAR
 # ==========================================================
@@ -169,6 +171,27 @@ class FichaVehicularForm(forms.ModelForm):
         )
     )
 
+    # =========================
+    # TURNOS ADICIONALES
+    # =========================
+    verificacion_turno = forms.DateField(
+        required=False,
+        input_formats=['%Y-%m-%d'],
+        widget=forms.DateInput(
+            format='%Y-%m-%d',
+            attrs={'type': 'date', 'class': 'form-control'}
+        )
+    )
+
+    gnc_turno = forms.DateField(
+        required=False,
+        input_formats=['%Y-%m-%d'],
+        widget=forms.DateInput(
+            format='%Y-%m-%d',
+            attrs={'type': 'date', 'class': 'form-control'}
+        )
+    )
+    
     class Meta:
         model = FichaVehicular
         fields = [
@@ -206,6 +229,7 @@ class FichaVehicularForm(forms.ModelForm):
 
             'verificacion_estado',
             'verificacion_vencimiento',
+            'verificacion_turno',
 
             'autopartes_estado',
             'autopartes_turno',
@@ -213,6 +237,8 @@ class FichaVehicularForm(forms.ModelForm):
             'vtv_estado',
             'vtv_turno',
             'vtv_vencimiento',
+
+            'gnc_turno',
 
             'duplicado_llave_estado',
             'duplicado_llave_obs',
@@ -266,11 +292,13 @@ class FichaVehicularForm(forms.ModelForm):
             'cedula_estado': 'Cédula',
             'verificacion_estado': 'Verificación policial',
             'verificacion_vencimiento': 'Vencimiento verificación',
+            'verificacion_turno': 'Turno verificación policial',
             'autopartes_estado': 'Grabado autopartes',
             'autopartes_turno': 'Turno grabado autopartes',
             'vtv_estado': 'VTV',
             'vtv_turno': 'Turno VTV',
             'vtv_vencimiento': 'Vencimiento VTV',
+            'gnc_turno': 'Turno GNC',
             'duplicado_llave_estado': 'Duplicado de llave',
             'duplicado_llave_obs': 'Observación',
             'codigo_llave_estado': 'Código de llave',
@@ -340,4 +368,3 @@ class FichaVehicularForm(forms.ModelForm):
     # ======================================================
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
