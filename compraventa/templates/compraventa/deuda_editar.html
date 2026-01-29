@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Editar precio de compra{% endblock %}
+{% block content %}
+<h3 class="fw-bold mb-4">Editar precio de compra</h3>
+
+<div class="card shadow-sm rounded-4 p-4 mb-4">
+  <div class="mb-3">
+    <strong>Vehículo:</strong> 
+    {{ deuda.vehiculo.marca }} {{ deuda.vehiculo.modelo }} — {{ deuda.vehiculo.dominio|default:"Sin dominio" }}
+  </div>
+  <div class="mb-3">
+    <strong>Proveedor:</strong> {{ deuda.proveedor.nombre_empresa }}
+  </div>
+  <div class="mb-3">
+    <strong>Total pagado:</strong> 
+    <span class="text-success">${{ deuda.monto_pagado }}</span>
+  </div>
+
+  <hr>
+
+  <form method="post">
+    {% csrf_token %}
+    <div class="mb-3">
+      <label class="form-label fw-bold">Precio de compra</label>
+      <input type="number" 
+             name="monto_total" 
+             class="form-control" 
+             value="{{ deuda.monto_total }}" 
+             step="0.01"
+             required>
+    </div>
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-primary">Guardar</button>
+      <a href="{% url 'compraventa:proveedor_cuenta_corriente' deuda.proveedor.id %}" 
+         class="btn btn-secondary">
+        Cancelar
+      </a>
+    </div>
+  </form>
+</div>
+{% endblock %}

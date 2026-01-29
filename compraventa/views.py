@@ -312,3 +312,35 @@ def proveedor_eliminar(request, proveedor_id):
         f"Proveedor {nombre} eliminado correctamente."
     )
     return redirect("compraventa:home")
+# ==========================================================
+# ✏️ EDITAR DEUDA (PRECIO DE COMPRA)
+# ==========================================================
+@login_required
+@transaction.atomic
+def deuda_editar(request, deuda_id):
+    deuda = get_object_or_404(
+        DeudaProveedor.objects.select_related("proveedor", "vehiculo"),
+        id=deuda_id
+    )
+    
+    if request.method == "POST":
+        monto_total = request.POST.get("monto_total", "").replace(".", "").replace(",", ".")
+        
+        try:
+            from decimal import Decimal
+            deuda.monto_total = Decimal(monto_total)
+            deuda.save()
+            messages.success(request, "Precio de compra actualizado correctamente.")
+        except:
+            messages.error(request, "El monto ingresado no es válido.")
+        
+        return redirect(
+            "compraventa:proveedor_cuenta_corriente",
+            proveedor_id=deuda.proveedor.id
+        )
+    
+    return render(
+        request,
+        "compraventa/deuda_editar.html",
+        {"deuda": deuda}
+    )

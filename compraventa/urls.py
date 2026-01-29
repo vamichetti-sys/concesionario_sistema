@@ -44,6 +44,15 @@ urlpatterns = [
         views.deuda_registrar_pago,
         name="deuda_pago"
     ),
+    
+    # =========================
+    # EDITAR DEUDA
+    # =========================
+    path(
+        "deuda/<int:deuda_id>/editar/",
+        views.deuda_editar,
+        name="deuda_editar"
+    ),
 
     # =========================
     # UNIDADES

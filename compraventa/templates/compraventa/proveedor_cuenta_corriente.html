@@ -87,9 +87,9 @@
           ${{ deuda.saldo|default:"0" }}
         </td>
         <td class="text-end">
-          <a href="{% url 'vehiculos:ficha_completa' deuda.vehiculo.id %}"
+          <a href="{% url 'compraventa:deuda_editar' deuda.id %}"
              class="btn btn-sm btn-outline-secondary me-1">
-            Editar gastos
+            Editar
           </a>
           {% if deuda.saldo > 0 %}
             <a href="{% url 'compraventa:deuda_pago' deuda.id %}"
