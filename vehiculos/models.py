@@ -124,21 +124,30 @@ class FichaVehicular(models.Model):
     domicilio_titular = models.CharField(max_length=200, blank=True, null=True)
     email_contacto = models.EmailField(blank=True, null=True)
     contacto = models.CharField(max_length=100, blank=True, null=True)
-    tipo_ingreso = models.CharField(max_length=50, blank=True, null=True)
-    from compraventa.models import Proveedor
+
+    TIPO_INGRESO_CHOICES = [
+        ('compra', 'Compra'),
+        ('consignacion', 'Consignación'),
+    ]
+
+    tipo_ingreso = models.CharField(
+        max_length=50,
+        choices=TIPO_INGRESO_CHOICES,
+        blank=True,
+        null=True
+    )
 
     vendedor = models.ForeignKey(
-    "compraventa.Proveedor",
-    on_delete=models.SET_NULL,
-    null=True,
-    blank=True,
-    related_name="vehiculos",
-    verbose_name="Agencia / Vendedor",
-)
+        "compraventa.Proveedor",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="vehiculos",
+        verbose_name="Agencia / Vendedor",
+    )
 
 
-
-    # =========================
+   # =========================
     # DATOS DEL VEHÍCULO
     # =========================
     color = models.CharField(max_length=50, blank=True, null=True)
@@ -148,7 +157,6 @@ class FichaVehicular(models.Model):
     numero_chasis = models.CharField(max_length=100, blank=True, null=True)
 
     # (todo lo demás tuyo sigue igual)
-
 
     ESTADO_DOC = [
         ("tiene", "Tiene"),
@@ -177,6 +185,12 @@ class FichaVehicular(models.Model):
     vtv_turno = models.DateField(blank=True, null=True)
     vtv_vencimiento = models.DateField(blank=True, null=True)
 
+    # =========================
+    # TURNOS ADICIONALES
+    # =========================
+    verificacion_turno = models.DateField(blank=True, null=True, verbose_name="Turno verificación policial")
+    gnc_turno = models.DateField(blank=True, null=True, verbose_name="Turno GNC")
+
     gasto_f08 = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
     gasto_informes = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
     gasto_patentes = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
@@ -189,8 +203,7 @@ class FichaVehicular(models.Model):
 
     total_gastos = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
 
-    observaciones = models.TextField(blank=True, null=True)
-    
+    observaciones = models.TextField(blank=True, null=True)    
     # ======================================================
     # ACCESORIOS / CHECKLIST
     # ======================================================
