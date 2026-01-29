@@ -19,6 +19,7 @@ class VehiculoBasicoForm(forms.ModelForm):
             'precio',
             'estado',
             'numero_carpeta',
+            'unidad',
         ]
 
         labels = {
@@ -55,6 +56,7 @@ class VehiculoForm(forms.ModelForm):
     class Meta:
         model = Vehiculo
         fields = [
+            'unidad',
             'marca',
             'modelo',
             'anio',
@@ -66,6 +68,7 @@ class VehiculoForm(forms.ModelForm):
         ]
 
         widgets = {
+            'unidad': forms.Select(attrs={'class': 'form-control'}),
             'marca': forms.TextInput(attrs={'class': 'form-control'}),
             'modelo': forms.TextInput(attrs={'class': 'form-control'}),
             'anio': forms.NumberInput(attrs={'class': 'form-control'}),
@@ -191,7 +194,7 @@ class FichaVehicularForm(forms.ModelForm):
             attrs={'type': 'date', 'class': 'form-control'}
         )
     )
-    
+
     class Meta:
         model = FichaVehicular
         fields = [
