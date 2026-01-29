@@ -15,14 +15,13 @@
     <thead>
       <tr>
         <th>Vehículo</th>
-        <th class="text-end">Precio compra</th>
-        <th class="text-end">Total pagado</th>
-        <th class="text-end">Saldo</th>
+        <th class="text-end">Deuda gastos</th>
         <th class="text-end">Acciones</th>
       </tr>
     </thead>
     <tbody>
       {% for op in operaciones %}
+        {% with ficha=op.vehiculo.ficha|default_if_none:None %}
       <tr>
         <!-- VEHÍCULO -->
         <td>
@@ -33,50 +32,33 @@
           </small>
         </td>
 
-        <!-- PRECIO COMPRA -->
-        <td class="text-end">
-          ${{ op.precio_compra|floatformat:2|default:"0" }}
-        </td>
-
-        <!-- TOTAL PAGADO -->
-        <td class="text-end text-success">
-          ${{ op.total_pagado_vehiculo|floatformat:2|default:"0" }}
-        </td>
-
-        <!-- SALDO -->
+        <!-- DEUDA GASTOS -->
         <td class="text-end fw-bold
-          {% if op.deuda_vehiculo > 0 %}
+          {% if ficha and ficha.saldo_gastos > 0 %}
             text-danger
           {% else %}
             text-success
           {% endif %}
         ">
-          ${{ op.deuda_vehiculo|floatformat:2|default:"0" }}
+          {% if ficha %}
+            ${{ ficha.saldo_gastos|floatformat:2|default:"0" }}
+          {% else %}
+            $0
+          {% endif %}
         </td>
 
         <!-- ACCIONES -->
         <td class="text-end">
           <a href="{% url 'vehiculos:ficha_completa' op.vehiculo.id %}"
-             class="btn btn-outline-secondary btn-sm me-1">
+             class="btn btn-outline-secondary btn-sm">
             Ver ficha
           </a>
-          {% if op.vehiculo.deuda_proveedor %}
-            <a href="{% url 'compraventa:deuda_editar' op.vehiculo.deuda_proveedor.id %}"
-               class="btn btn-outline-secondary btn-sm me-1">
-              Editar
-            </a>
-            {% if op.deuda_vehiculo > 0 %}
-              <a href="{% url 'compraventa:deuda_pago' op.vehiculo.deuda_proveedor.id %}"
-                 class="btn btn-primary btn-sm">
-                Registrar pago
-              </a>
-            {% endif %}
-          {% endif %}
         </td>
       </tr>
+        {% endwith %}
       {% empty %}
       <tr>
-        <td colspan="5" class="text-muted">
+        <td colspan="3" class="text-muted">
           No hay unidades vinculadas a este proveedor.
         </td>
       </tr>
