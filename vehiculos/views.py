@@ -574,9 +574,9 @@ def registrar_pago_gasto(request):
     # IMPACTAR CUENTA CORRIENTE (HABER – PERMUTA)
     # ===============================
     cuenta = None
-    if vehiculo.venta and hasattr(vehiculo.venta, "cuenta_corriente"):
-        cuenta = vehiculo.venta.cuenta_corriente
-
+    if hasattr(vehiculo, "venta") and vehiculo.venta:
+        if hasattr(vehiculo.venta, "cuenta_corriente"):
+            cuenta = vehiculo.venta.cuenta_corriente
     if cuenta:
         MovimientoCuenta.objects.create(
             cuenta=cuenta,
