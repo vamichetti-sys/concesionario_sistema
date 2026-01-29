@@ -128,13 +128,14 @@ class FichaVehicular(models.Model):
     from compraventa.models import Proveedor
 
     vendedor = models.ForeignKey(
-    Proveedor,
+    "compraventa.Proveedor",
     on_delete=models.SET_NULL,
     null=True,
     blank=True,
     related_name="vehiculos",
-    verbose_name="Agencia / Vendedor"
+    verbose_name="Agencia / Vendedor",
 )
+
 
 
     # =========================

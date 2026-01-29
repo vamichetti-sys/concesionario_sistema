@@ -1,40 +1,26 @@
-Django==5.2.10
-
-gunicorn
-whitenoise==6.11.0
-
-# PostgreSQL (OBLIGATORIO)
-psycopg[binary]
-dj-database-url
-
-# Utilidades base
 asgiref==3.11.0
-sqlparse==0.5.5
+brotli==1.2.0
+cffi==2.0.0
 charset-normalizer==3.4.4
-six==1.17.0
-packaging==26.0
-
-# Imágenes / archivos
-pillow==12.1.0
-openpyxl==3.1.5
+cssselect2==0.8.0
+dj-database-url==3.1.0
+Django==5.2.10
 et_xmlfile==2.0.0
-
-# PDF / reportes
-reportlab==4.4.7
-weasyprint==67.0
 fonttools==4.61.1
+gunicorn==23.0.0
+openpyxl==3.1.5
+packaging==25.0
+pillow==12.1.0
+psycopg==3.3.2
+psycopg-binary==3.3.2
+pycparser==2.23
+pydyf==0.12.1
+pyphen==0.17.2
+reportlab==4.4.7
+sqlparse==0.5.5
 tinycss2==1.5.1
 tinyhtml5==2.0.0
-cssselect2==0.8.0
-pyphen==0.17.2
-pydyf==0.12.1
-brotli==1.2.0
-zopfli==0.4.0
+weasyprint==68.0
 webencodings==0.5.1
-
-# Dependencias internas
-cffi==2.0.0
-pycparser==2.23
-python-dateutil==2.9.0.post0
-asn1crypto==1.5.1
-scramp==1.4.8
+whitenoise==6.11.0
+zopfli==0.4.0
