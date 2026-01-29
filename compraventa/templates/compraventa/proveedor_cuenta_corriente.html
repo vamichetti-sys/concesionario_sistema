@@ -1,9 +1,6 @@
 {% extends "base.html" %}
-
 {% block title %}Cuenta corriente proveedor{% endblock %}
-
 {% block content %}
-
 <h3 class="fw-bold mb-4">
   Cuenta Corriente — {{ proveedor.nombre_empresa }}
 </h3>
@@ -17,7 +14,6 @@
      RESUMEN GENERAL
 ================================ -->
 <div class="row mb-4">
-
   <div class="col-md-4">
     <div class="card shadow-sm rounded-4 p-3 text-center">
       <div class="text-muted">Total comprado</div>
@@ -26,7 +22,6 @@
       </div>
     </div>
   </div>
-
   <div class="col-md-4">
     <div class="card shadow-sm rounded-4 p-3 text-center">
       <div class="text-muted">Total pagado</div>
@@ -35,7 +30,6 @@
       </div>
     </div>
   </div>
-
   <div class="col-md-4">
     <div class="card shadow-sm rounded-4 p-3 text-center">
       <div class="text-muted">Saldo adeudado</div>
@@ -50,16 +44,13 @@
       </div>
     </div>
   </div>
-
 </div>
 
 <!-- ===============================
      DETALLE DE DEUDAS POR UNIDAD
 ================================ -->
 <div class="card shadow-sm rounded-4 p-4 mb-4">
-
   <h5 class="fw-bold mb-3">Detalle por unidad</h5>
-
   <table class="table table-striped align-middle">
     <thead>
       <tr>
@@ -70,7 +61,6 @@
         <th></th>
       </tr>
     </thead>
-
     <tbody>
       {% for deuda in deudas %}
       <tr>
@@ -81,15 +71,12 @@
             {{ deuda.vehiculo.dominio|default:"Sin dominio" }}
           </small>
         </td>
-
         <td>
           ${{ deuda.monto_total|default:"0" }}
         </td>
-
         <td class="text-success">
           ${{ deuda.monto_pagado|default:"0" }}
         </td>
-
         <td class="
           {% if deuda.saldo > 0 %}
             text-danger
@@ -99,13 +86,16 @@
         ">
           ${{ deuda.saldo|default:"0" }}
         </td>
-
         <td class="text-end">
-          {% if deuda.saldo > 0 %}
-          <a href="{% url 'compraventa:deuda_pago' deuda.id %}"
-             class="btn btn-sm btn-primary">
-            Registrar pago
+          <a href="{% url 'vehiculos:ficha_completa' deuda.vehiculo.id %}"
+             class="btn btn-sm btn-outline-secondary me-1">
+            Editar gastos
           </a>
+          {% if deuda.saldo > 0 %}
+            <a href="{% url 'compraventa:deuda_pago' deuda.id %}"
+               class="btn btn-sm btn-primary">
+              Registrar pago
+            </a>
           {% endif %}
         </td>
       </tr>
@@ -118,16 +108,13 @@
       {% endfor %}
     </tbody>
   </table>
-
 </div>
 
 <!-- ===============================
      HISTORIAL DE PAGOS
 ================================ -->
 <div class="card shadow-sm rounded-4 p-4">
-
   <h5 class="fw-bold mb-3">Pagos registrados</h5>
-
   <table class="table table-sm table-bordered align-middle">
     <thead>
       <tr>
@@ -137,7 +124,6 @@
         <th>Observación</th>
       </tr>
     </thead>
-
     <tbody>
       {% for pago in pagos %}
       <tr>
@@ -159,7 +145,5 @@
       {% endfor %}
     </tbody>
   </table>
-
 </div>
-
 {% endblock %}
