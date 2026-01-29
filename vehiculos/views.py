@@ -385,15 +385,14 @@ def ficha_completa(request, vehiculo_id):
 
         saldo = monto - Decimal(total_pagado)
 
-        # 🔴 FILTRO CLAVE: SI EL SALDO ES 0, NO SE MUESTRA
-        if saldo <= 0:
-            continue
-
         # 🆕 OBTENER HISTORIAL DE PAGOS DE ESTE CONCEPTO
         pagos = PagoGastoIngreso.objects.filter(
             vehiculo=vehiculo,
             concepto=key
         ).order_by('-fecha_pago')
+
+        # 🔴 SI EL SALDO ES 0, MARCAMOS COMO PAGADO PERO LO MOSTRAMOS
+        esta_pagado = saldo <= 0
 
         gastos_ingreso.append({
             "key": key,
@@ -401,17 +400,14 @@ def ficha_completa(request, vehiculo_id):
             "monto": monto,
             "total_pagado": total_pagado,
             "saldo": saldo,
-            "pagos": pagos,  # 🆕 HISTORIAL DE PAGOS
+            "pagos": pagos,
+            "esta_pagado": esta_pagado,
         })
 
     total_pendiente = sum(
         (g["saldo"] for g in gastos_ingreso if g["saldo"] > 0),
         Decimal("0")
     )
-
-    # ❌ COMENTADO: Esto estaba sobrescribiendo los gastos originales
-    # ficha.total_gastos = total_pendiente
-    # ficha.save(update_fields=["total_gastos"])
 
     return render(
         request,
