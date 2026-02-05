@@ -755,7 +755,32 @@ def eliminar_plan_pago(request, cuenta_id):
 @transaction.atomic
 def eliminar_cuenta_corriente(request, cuenta_id):
     cuenta = get_object_or_404(CuentaCorriente, id=cuenta_id)
+
+    # 🔒 No permitir si hubo pagos
+    if cuenta.pagos.exists():
+        messages.error(
+            request,
+            "No se puede eliminar la cuenta porque tiene pagos registrados."
+        )
+        return redirect(
+            "cuentas:cuenta_corriente_detalle",
+            cuenta_id=cuenta.id
+        )
+
+    # 🔒 No permitir si la venta sigue activa
+    if cuenta.venta and cuenta.venta.estado != "revertida":
+        messages.error(
+            request,
+            "Solo se puede eliminar la cuenta si la venta fue revertida."
+        )
+        return redirect(
+            "cuentas:cuenta_corriente_detalle",
+            cuenta_id=cuenta.id
+        )
+
     cuenta.delete()
+    messages.success(request, "Cuenta corriente eliminada correctamente.")
+
     return redirect("cuentas:lista_cuentas_corrientes")
 
 
@@ -799,4 +824,35 @@ def historial_financiacion(request, cuenta_id):
             "plan": plan,
             "cuotas": cuotas,
         }
+    )
+@login_required
+@transaction.atomic
+def cerrar_cuenta_corriente(request, cuenta_id):
+    cuenta = get_object_or_404(CuentaCorriente, id=cuenta_id)
+
+    # 🔒 Solo permitir si la venta está revertida
+    if not cuenta.venta or cuenta.venta.estado != "revertida":
+        messages.error(
+            request,
+            "Solo se puede cerrar la cuenta si la venta fue revertida."
+        )
+        return redirect(
+            "cuentas:cuenta_corriente_detalle",
+            cuenta_id=cuenta.id
+        )
+
+    try:
+        cuenta.cerrar()
+    except ValueError as e:
+        messages.error(request, str(e))
+        return redirect(
+            "cuentas:cuenta_corriente_detalle",
+            cuenta_id=cuenta.id
+        )
+
+    messages.success(request, "Cuenta corriente cerrada correctamente.")
+
+    return redirect(
+        "cuentas:cuenta_corriente_detalle",
+        cuenta_id=cuenta.id
     )

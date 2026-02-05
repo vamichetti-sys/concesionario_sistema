@@ -33,7 +33,7 @@ urlpatterns = [
     ),
 
     # ===============================
-    # REGISTRAR PAGO DE GESTORÍA  ✅ NUEVO (NO SACA NADA)
+    # REGISTRAR PAGO DE GESTORÍA
     # ===============================
     path(
         "gestoria/<int:cuenta_id>/pago/",
@@ -70,6 +70,15 @@ urlpatterns = [
     ),
 
     # ===============================
+    # 🔒 CERRAR CUENTA CORRIENTE (NUEVO)
+    # ===============================
+    path(
+        "<int:cuenta_id>/cerrar/",
+        views.cerrar_cuenta_corriente,
+        name="cerrar_cuenta_corriente"
+    ),
+
+    # ===============================
     # AGREGAR / VINCULAR GASTOS
     # ===============================
     path(
@@ -92,9 +101,9 @@ urlpatterns = [
         name="recibo_pago_pdf"
     ),
 
-    # ==================================================
-    # HISTORIAL DE FINANCIACIÓN (CUENTA CERRADA)
-    # ==================================================
+    # ===============================
+    # HISTORIAL DE FINANCIACIÓN
+    # ===============================
     path(
         "historial/<int:cuenta_id>/",
         views.historial_financiacion,

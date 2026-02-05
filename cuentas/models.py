@@ -77,15 +77,12 @@ class CuentaCorriente(models.Model):
         if saldo <= 0:
             self.saldo = Decimal('0')
 
-            if not plan or plan.estado == 'finalizado':
-                self.estado = 'cerrada'
+            if saldo > 0:
+                self.saldo = saldo
+                self.estado = 'deuda'
             else:
+                self.saldo = Decimal('0')
                 self.estado = 'al_dia'
-        else:
-            self.saldo = saldo
-            self.estado = 'deuda'
-
-        self.save(update_fields=['saldo', 'estado'])
 
     # ======================================================
     # MÉTODOS DE NEGOCIO
@@ -111,6 +108,11 @@ class CuentaCorriente(models.Model):
         self.recalcular_saldo()
 
     def cerrar(self):
+        if self.saldo > 0:
+             raise ValueError(
+                 "No se puede cerrar una cuenta con deuda."
+             )
+
         self.estado = 'cerrada'
         self.save(update_fields=['estado'])
 
