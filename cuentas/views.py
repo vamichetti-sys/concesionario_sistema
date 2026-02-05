@@ -720,16 +720,28 @@ def conectar_vehiculo_permuta(request, cuenta_id, vehiculo_id):
     )
 
 
-# ==========================================================
-# ELIMINAR PLAN DE PAGO
-# ==========================================================
 @login_required
 @transaction.atomic
 def eliminar_plan_pago(request, cuenta_id):
     cuenta = get_object_or_404(CuentaCorriente, id=cuenta_id)
-    if hasattr(cuenta, "plan_pago"):
-        cuenta.plan_pago.delete()
-        cuenta.recalcular_saldo()
+
+    plan = getattr(cuenta, "plan_pago", None)
+    if not plan:
+        messages.error(request, "La cuenta no tiene plan de pago.")
+        return redirect("cuentas:cuenta_corriente_detalle", cuenta_id=cuenta.id)
+
+    # 🔒 Anular plan
+    plan.estado = "anulado"
+    plan.save(update_fields=["estado"])
+
+    # 🔒 Marcar cuotas como anuladas
+    plan.cuotas.update(estado="anulada")
+
+    # 🔄 Recalcular saldo (queda la deuda real)
+    cuenta.recalcular_saldo()
+
+    messages.success(request, "Plan de pago anulado correctamente.")
+
     return redirect(
         "cuentas:cuenta_corriente_detalle",
         cuenta_id=cuenta.id

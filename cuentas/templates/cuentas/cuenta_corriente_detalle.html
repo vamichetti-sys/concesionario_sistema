@@ -102,14 +102,14 @@
             Crear plan de pago
         </a>
 
-        {% if plan %}
-            <a href="{% url 'cuentas:eliminar_plan_pago' cuenta.id %}"
-               class="btn btn-outline-danger rounded-pill px-4 fw-bold"
-               onclick="return confirm('¿Eliminar el plan de pago?');">
-                Eliminar plan
-            </a>
-        {% endif %}
-    </div>
+        {% if plan and plan.estado == "activo" %}
+<a href="{% url 'cuentas:eliminar_plan_pago' cuenta.id %}"
+   class="btn btn-outline-danger rounded-pill px-4 fw-bold"
+   onclick="return confirm('¿Anular el plan de pago?');">
+    Anular plan
+</a>
+{% endif %}
+
 
     <!-- ===============================
          PLAN DE PAGO
