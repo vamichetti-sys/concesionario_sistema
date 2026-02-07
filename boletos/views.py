@@ -338,6 +338,8 @@ def _generar_pdf_lote_pagares_3_por_hoja(pagares):
 
     ancho, alto = A4
     margen_x = 2 * cm
+    POR_HOJA = 3
+    contador = 0
     y = alto - 2 * cm
 
     def fecha_en_letras(fecha):
@@ -347,14 +349,19 @@ def _generar_pdf_lote_pagares_3_por_hoja(pagares):
         ]
         return f"{fecha.day} de {meses[fecha.month - 1]} de {fecha.year}"
 
-    for idx, pagare in enumerate(pagares, start=1):
-        if y < 9 * cm:
+    for pagare in pagares:
+
+        # 👉 nueva hoja cada 3 pagarés
+        if contador == POR_HOJA:
             c.showPage()
             y = alto - 2 * cm
+            contador = 0
 
         cliente = pagare.cliente
 
+        # =========================
         # TÍTULO
+        # =========================
         c.setFont("Helvetica-Bold", 18)
         c.drawString(margen_x, y, "PAGARÉ")
         y -= 0.8 * cm
@@ -367,7 +374,9 @@ def _generar_pdf_lote_pagares_3_por_hoja(pagares):
         )
         y -= 1 * cm
 
+        # =========================
         # TEXTO LEGAL
+        # =========================
         c.setFont("Helvetica", 11)
 
         if pagare.fecha_vencimiento:
@@ -387,7 +396,6 @@ def _generar_pdf_lote_pagares_3_por_hoja(pagares):
 
         textobject = c.beginText(margen_x, y)
         textobject.setLeading(16)
-
         max_width = ancho - (2 * margen_x)
         linea_actual = ""
 
@@ -405,7 +413,9 @@ def _generar_pdf_lote_pagares_3_por_hoja(pagares):
         c.drawText(textobject)
         y = textobject.getY() - 0.8 * cm
 
+        # =========================
         # DATOS DEL DEUDOR
+        # =========================
         c.setFont("Helvetica-Bold", 11)
         c.drawString(margen_x, y, "Datos del Deudor:")
         y -= 0.6 * cm
@@ -418,22 +428,24 @@ def _generar_pdf_lote_pagares_3_por_hoja(pagares):
         c.drawString(margen_x, y, f"Domicilio: {cliente.direccion or ''}")
         y -= 1.2 * cm
 
+        # =========================
         # FIRMA
+        # =========================
         c.drawString(margen_x, y, "Firma: _________________________________")
-        y -= 0.8 * cm
-        c.drawString(margen_x, y, "Aclaración:")
-        y -= 1 * cm
+        y -= 1.5 * cm
 
+        # =========================
         # LÍNEA DE CORTE
-        if idx < len(pagares):
+        # =========================
+        if contador < POR_HOJA - 1:
             c.setDash(3, 3)
             c.line(margen_x, y, ancho - margen_x, y)
             c.setDash()
             y -= 1.2 * cm
 
-    c.showPage()
-    c.save()
+        contador += 1
 
+    c.save()
     buffer.seek(0)
     return buffer.getvalue()
 

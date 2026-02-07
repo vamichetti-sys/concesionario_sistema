@@ -11,11 +11,12 @@ class Venta(models.Model):
     ESTADOS = [
         ("pendiente", "Pendiente"),
         ("confirmada", "Confirmada"),
+        ("revertida", "Revertida"),
     ]
 
     vehiculo = models.OneToOneField(
         Vehiculo,
-        on_delete=models.SET_NULL,   # 🔑 CAMBIO CLAVE
+        on_delete=models.SET_NULL,
         related_name="venta",
         null=True,
         blank=True
@@ -35,12 +36,10 @@ class Venta(models.Model):
         default="pendiente"
     )
 
-    # 📅 Campo CLAVE para reportes mensuales/anuales
     fecha_venta = models.DateField(
         auto_now_add=True
     )
 
-    # 💰 Campo CLAVE para totales de reportes
     precio_venta = models.DecimalField(
         max_digits=12,
         decimal_places=2,
@@ -57,7 +56,7 @@ class Venta(models.Model):
         return f"Venta {self.id} - {self.vehiculo or 'Sin vehículo'} - {self.cliente or 'Sin cliente'}"
 
     # ======================================================
-    # 🔒 CONFIRMACIÓN CENTRALIZADA (SE MANTIENE)
+    # CONFIRMACIÓN CENTRALIZADA
     # ======================================================
     def confirmar(self):
         """
@@ -65,51 +64,23 @@ class Venta(models.Model):
         - Copia el precio del vehículo si no estaba cargado
         - Marca la venta como confirmada
         - Crea la cuenta corriente si no existe
-        - Imputa la deuda inicial UNA sola vez
         """
 
         from cuentas.models import CuentaCorriente, MovimientoCuenta
 
-        # ==================================================
-        # 1️⃣ ASEGURAR CUENTA CORRIENTE (SIEMPRE)
-        # ⚠️ SOLO SI HAY CLIENTE VÁLIDO
-        # ==================================================
         cuenta = None
         if self.cliente:
             cuenta, _ = CuentaCorriente.objects.get_or_create(
                 venta=self,
-                cliente=self.cliente
+                defaults={"cliente": self.cliente}
             )
 
-        # ==================================================
-        # 2️⃣ IMPUTAR DEUDA INICIAL (BLOQUE CONSERVADO)
-        # ⚠️ DESHABILITADO: la deuda la genera el Plan de Pago
-        # ==================================================
-        if False and cuenta:
-            existe_deuda = cuenta.movimientos.filter(
-                origen="venta",
-                tipo="debe"
-            ).exists()
+            # ✅ FIX: Si la cuenta existía y estaba cerrada, reabrir
+            if cuenta.estado == "cerrada":
+                cuenta.estado = "al_dia"
+                cuenta.cliente = self.cliente
+                cuenta.save(update_fields=["estado", "cliente"])
 
-            if not existe_deuda:
-                monto = self.precio_venta
-                if monto is None and self.vehiculo:
-                    monto = self.vehiculo.precio or 0
-
-                MovimientoCuenta.objects.create(
-                    cuenta=cuenta,
-                    vehiculo=self.vehiculo,
-                    descripcion=f"Venta vehículo {self.vehiculo}",
-                    tipo="debe",
-                    monto=monto or 0,
-                    origen="venta"
-                )
-
-                cuenta.recalcular_saldo()
-
-        # ==================================================
-        # 3️⃣ CONFIRMAR VENTA (SIN BLOQUEAR LÓGICA)
-        # ==================================================
         if self.precio_venta is None and self.vehiculo:
             self.precio_venta = self.vehiculo.precio
 
@@ -122,7 +93,7 @@ class Venta(models.Model):
         return self
 
     # ======================================================
-    # 🔧 MÉTODO DE ADJUDICACIÓN COMPLETA (SE MANTIENE)
+    # ADJUDICACIÓN COMPLETA
     # ======================================================
     def adjudicar_cliente(self, cliente):
         """
@@ -131,7 +102,6 @@ class Venta(models.Model):
         - la venta quede confirmada
         - exista Cuenta Corriente
         - exista Gestoría
-        - el gasto de Gestoría se impute en la Cuenta Corriente
         """
 
         from cuentas.models import CuentaCorriente
@@ -144,20 +114,31 @@ class Venta(models.Model):
         self.save(update_fields=["cliente"])
 
         # ==================================================
-        # 2️⃣ CREAR CUENTA CORRIENTE (OBLIGATORIO)
+        # 2️⃣ CREAR O RECUPERAR CUENTA CORRIENTE
         # ==================================================
-        cuenta, _ = CuentaCorriente.objects.get_or_create(
+        cuenta, creada = CuentaCorriente.objects.get_or_create(
             venta=self,
-            cliente=cliente
+            defaults={"cliente": cliente}
         )
 
+        # ✅ FIX: Si la cuenta ya existía (cerrada por reversión),
+        # reabrirla y limpiar movimientos viejos
+        if not creada and cuenta.estado == "cerrada":
+            cuenta.estado = "al_dia"
+            cuenta.saldo = 0
+            cuenta.cliente = cliente
+            cuenta.save(update_fields=["estado", "saldo", "cliente"])
+
+            # Limpiar movimientos huérfanos del plan anterior
+            cuenta.movimientos.all().delete()
+
         # ==================================================
-        # 3️⃣ CONFIRMAR VENTA (NO CREA DEUDA)
+        # 3️⃣ CONFIRMAR VENTA
         # ==================================================
         self.confirmar()
 
         # ==================================================
-        # 4️⃣ SINCRONIZAR CLIENTE EN CUENTA CORRIENTE (SI EXISTÍA)
+        # 4️⃣ SINCRONIZAR CLIENTE EN CUENTA CORRIENTE
         # ==================================================
         if cuenta.cliente != cliente:
             cuenta.cliente = cliente
@@ -172,7 +153,7 @@ class Venta(models.Model):
             cliente=cliente
         )
 
-        # 🔑 Automatización contable de gestoría
         gestoria.save()
 
         return self
+

@@ -94,9 +94,6 @@ def lista_cuentas_corrientes(request):
         .order_by("-creada")
     )
 
-    # 🔒 Comportamiento original:
-    # ocultar cuentas cerradas,
-    # PERO mostrar las cerradas que aún NO tienen plan de pago
     if not mostrar_cerradas:
         cuentas_qs = cuentas_qs.exclude(
             estado="cerrada",
@@ -224,8 +221,32 @@ def crear_plan_pago(request, cuenta_id):
             plan = form.save(commit=False)
             plan.cuenta = cuenta
             plan.estado = "activo"
+
+            # ✅ FIX: Si es edición de un plan existente, hay que actualizar
+            # el movimiento de deuda viejo antes de guardar
+            es_edicion = plan_existente is not None
+
+            if es_edicion:
+                # Borrar el movimiento de deuda del plan anterior
+                cuenta.movimientos.filter(
+                    tipo='debe',
+                    descripcion__icontains='Plan de pago'
+                ).delete()
+
             plan.save()
 
+            # Si es edición, el save() del modelo no crea el movimiento
+            # porque self.pk ya no es None. Lo creamos manualmente.
+            if es_edicion:
+                MovimientoCuenta.objects.create(
+                    cuenta=cuenta,
+                    descripcion=f'Plan de pago #{plan.pk} - {plan.descripcion}',
+                    tipo='debe',
+                    monto=plan.monto_financiado,
+                    origen='venta'
+                )
+
+            # Recrear cuotas
             plan.cuotas.all().delete()
             fecha = plan.fecha_inicio
 
@@ -254,10 +275,7 @@ def crear_plan_pago(request, cuenta_id):
 
 
 # ==========================================================
-# REGISTRAR MOVIMIENTO / PAGO  ✅ FIX DEFINITIVO (3 TIPOS)
-# - cuota   -> elige cuota e imputa desde esa cuota
-# - unico   -> NO elige cuotas, resta un monto único
-# - cheque  -> pide banco + nro cheque + monto (NO elige cuotas)
+# REGISTRAR MOVIMIENTO / PAGO  ✅ FIX DEFINITIVO
 # ==========================================================
 @login_required
 @transaction.atomic
@@ -280,7 +298,7 @@ def registrar_movimiento(request, cuenta_id):
                     saldo = Decimal("0")
 
                 if saldo > 0:
-                    cuota.saldo_actual = saldo  # atributo temporal
+                    cuota.saldo_actual = saldo
                     cuotas.append(cuota)
 
         return render(
@@ -348,30 +366,10 @@ def registrar_movimiento(request, cuenta_id):
     )
 
     # ===============================
-    # Movimiento base
-    # ===============================
-    if tipo == "cuota":
-        descripcion_mov = observaciones or "Pago cuotas"
-        origen_mov = "manual"
-
-    elif tipo == "unico":
-        descripcion_mov = observaciones or "Pago único"
-        origen_mov = "manual"
-
-    else:  # cheque
-        descripcion_mov = observaciones or f"Cheque N° {numero_cheque} ({banco})"
-        origen_mov = "cheque"
-
-    MovimientoCuenta.objects.create(
-        cuenta=cuenta,
-        tipo="pago",
-        monto=monto,
-        descripcion=descripcion_mov,
-        origen=origen_mov
-    )
-
-    # ===============================
     # IMPUTAR PAGO A CUOTAS
+    # ✅ FIX: Para tipo "cuota", el movimiento de haber lo crea
+    # PagoCuota.save() automáticamente. NO crear uno acá también
+    # porque genera DOBLE descuento.
     # ===============================
     if tipo == "cuota":
         if not plan:
@@ -402,6 +400,8 @@ def registrar_movimiento(request, cuenta_id):
             if aplicar <= 0:
                 continue
 
+            # PagoCuota.save() crea el MovimientoCuenta de tipo "haber"
+            # y llama a cuenta.recalcular_saldo() automáticamente
             PagoCuota.objects.create(
                 pago=pago,
                 cuota=cuota,
@@ -419,6 +419,24 @@ def registrar_movimiento(request, cuenta_id):
             plan.verificar_finalizacion()
         except Exception:
             pass
+
+    else:
+        # ===============================
+        # Para "unico" y "cheque": crear movimiento de haber acá
+        # porque NO pasan por PagoCuota
+        # ===============================
+        if tipo == "unico":
+            descripcion_mov = observaciones or "Pago único"
+        else:  # cheque
+            descripcion_mov = observaciones or f"Cheque N° {numero_cheque} ({banco})"
+
+        MovimientoCuenta.objects.create(
+            cuenta=cuenta,
+            tipo="haber",
+            monto=monto,
+            descripcion=descripcion_mov,
+            origen="manual"
+        )
 
     # ===============================
     # Recalcular saldo y guardar saldo posterior
@@ -473,13 +491,12 @@ def registrar_pago_gestoria(request, cuenta_id):
             observaciones="Pago gestoría"
         )
 
-        # 👇 ESTE ES EL FIX CLAVE (DEBE RESTAR)
         MovimientoCuenta.objects.create(
             cuenta=cuenta,
-            tipo="pago",
+            tipo="haber",
             monto=monto,
             descripcion="Pago de gestoría",
-            origen="manual"   # ← NO "gestoria"
+            origen="manual"
         )
 
         try:
@@ -527,9 +544,6 @@ def recibo_pago_pdf(request, pago_id):
     styles = getSampleStyleSheet()
     elements = []
 
-    # ==================================================
-    # COLORES CORPORATIVOS
-    # ==================================================
     AZUL = colors.HexColor("#002855")
     NARANJA = colors.HexColor("#FF6C1A")
     GRIS = colors.HexColor("#666666")
@@ -621,11 +635,11 @@ def recibo_pago_pdf(request, pago_id):
     elements.append(Spacer(1, 12))
 
     # ==================================================
-    # CONCEPTO DEL PAGO (CUOTA / ÚNICO / CHEQUE)
+    # CONCEPTO DEL PAGO
     # ==================================================
     ultimo_mov = (
         cuenta.movimientos
-        .filter(tipo="pago")
+        .filter(tipo__in=["haber", "pago"])
         .order_by("-fecha")
         .first()
     )
@@ -638,7 +652,7 @@ def recibo_pago_pdf(request, pago_id):
         elements.append(Spacer(1, 12))
 
     # ==================================================
-    # SALDO REAL PENDIENTE (PLAN / CUOTAS)
+    # SALDO REAL PENDIENTE
     # ==================================================
     plan = getattr(cuenta, "plan_pago", None)
     saldo_plan = Decimal("0")
@@ -730,14 +744,11 @@ def eliminar_plan_pago(request, cuenta_id):
         messages.error(request, "La cuenta no tiene plan de pago.")
         return redirect("cuentas:cuenta_corriente_detalle", cuenta_id=cuenta.id)
 
-    # 🔒 Anular plan
     plan.estado = "anulado"
     plan.save(update_fields=["estado"])
 
-    # 🔒 Marcar cuotas como anuladas
     plan.cuotas.update(estado="anulada")
 
-    # 🔄 Recalcular saldo (queda la deuda real)
     cuenta.recalcular_saldo()
 
     messages.success(request, "Plan de pago anulado correctamente.")
@@ -756,7 +767,6 @@ def eliminar_plan_pago(request, cuenta_id):
 def eliminar_cuenta_corriente(request, cuenta_id):
     cuenta = get_object_or_404(CuentaCorriente, id=cuenta_id)
 
-    # 🔒 No permitir si hubo pagos
     if cuenta.pagos.exists():
         messages.error(
             request,
@@ -767,7 +777,6 @@ def eliminar_cuenta_corriente(request, cuenta_id):
             cuenta_id=cuenta.id
         )
 
-    # 🔒 No permitir si la venta sigue activa
     if cuenta.venta and cuenta.venta.estado != "revertida":
         messages.error(
             request,
@@ -825,12 +834,13 @@ def historial_financiacion(request, cuenta_id):
             "cuotas": cuotas,
         }
     )
+
+
 @login_required
 @transaction.atomic
 def cerrar_cuenta_corriente(request, cuenta_id):
     cuenta = get_object_or_404(CuentaCorriente, id=cuenta_id)
 
-    # 🔒 Solo permitir si la venta está revertida
     if not cuenta.venta or cuenta.venta.estado != "revertida":
         messages.error(
             request,
@@ -856,3 +866,4 @@ def cerrar_cuenta_corriente(request, cuenta_id):
         "cuentas:cuenta_corriente_detalle",
         cuenta_id=cuenta.id
     )
+
