@@ -35,8 +35,7 @@ def ingreso(request):
         else:
             messages.error(request, "Usuario o contraseña incorrectos.")
 
-    return render(request, "inicio/ingreso.html")
-
+    return render(request, "inicio/inicio.html", context)
 
 # ==========================================================
 # 🏠 INICIO / DASHBOARD
