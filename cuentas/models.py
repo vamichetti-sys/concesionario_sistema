@@ -48,17 +48,16 @@ class CuentaCorriente(models.Model):
         return f"{self.cliente} | Venta #{self.venta.id}"
 
     # ======================================================
-    # CÁLCULO AUTOMÁTICO DE SALDO (CORREGIDO)
+    # CÁLCULO AUTOMÁTICO DE SALDO
     # ======================================================
     def recalcular_saldo(self):
         """
-        Reglas:
+        Reglas reales del negocio:
+        - Crear plan de pago → genera deuda
+        - Registrar pago → reduce deuda
         - saldo > 0  → deuda
-        - saldo = 0 + plan activo → al_dia
-        - saldo = 0 + plan finalizado → cerrada
-        - saldo = 0 + sin plan → cerrada
+        - saldo = 0  → al_dia
         """
-
         total_debe = self.movimientos.filter(
             tipo__in=['debe', 'deuda']
         ).aggregate(
@@ -72,17 +71,15 @@ class CuentaCorriente(models.Model):
         )['total'] or Decimal('0')
 
         saldo = total_debe - total_haber
-        plan = getattr(self, 'plan_pago', None)
 
-        if saldo <= 0:
+        if saldo > 0:
+            self.saldo = saldo
+            self.estado = 'deuda'
+        else:
             self.saldo = Decimal('0')
+            self.estado = 'al_dia'
 
-            if saldo > 0:
-                self.saldo = saldo
-                self.estado = 'deuda'
-            else:
-                self.saldo = Decimal('0')
-                self.estado = 'al_dia'
+        self.save(update_fields=['saldo', 'estado'])
 
     # ======================================================
     # MÉTODOS DE NEGOCIO
@@ -109,10 +106,9 @@ class CuentaCorriente(models.Model):
 
     def cerrar(self):
         if self.saldo > 0:
-             raise ValueError(
-                 "No se puede cerrar una cuenta con deuda."
-             )
-
+            raise ValueError(
+                "No se puede cerrar una cuenta con deuda."
+            )
         self.estado = 'cerrada'
         self.save(update_fields=['estado'])
 
@@ -132,6 +128,8 @@ class CuentaCorriente(models.Model):
             estado='pendiente',
             vencimiento__lt=date.today()
         ).exists()
+
+
 # ==========================================================
 # MOVIMIENTOS CONTABLES
 # ==========================================================
@@ -250,26 +248,25 @@ class PlanPago(models.Model):
 
         if es_nuevo:
             cuenta = self.cuenta
-            existe = cuenta.movimientos.filter(
-                tipo='debe',
-                descripcion__icontains='Plan de pago'
-            ).exists()
 
-            if not existe:
-                MovimientoCuenta.objects.create(
-                    cuenta=cuenta,
-                    descripcion='Plan de pago',
-                    tipo='debe',
-                    monto=self.monto_financiado,
-                    origen='venta'
-                )
-                cuenta.recalcular_saldo()
+            # ✅ FIX: Siempre crear el movimiento de deuda para cada plan nuevo
+            # Antes se usaba icontains='Plan de pago' y si ya existía uno viejo
+            # (por ejemplo de un plan anulado), no se creaba la deuda nueva.
+            MovimientoCuenta.objects.create(
+                cuenta=cuenta,
+                descripcion=f'Plan de pago #{self.pk} - {self.descripcion}',
+                tipo='debe',
+                monto=self.monto_financiado,
+                origen='venta'
+            )
+            cuenta.recalcular_saldo()
 
     def verificar_finalizacion(self):
         if not self.cuotas.filter(estado='pendiente').exists():
             self.estado = 'finalizado'
             self.save(update_fields=['estado'])
             self.cuenta.recalcular_saldo()
+
 
 # ==========================================================
 # CUOTAS DEL PLAN
@@ -351,7 +348,6 @@ class Pago(models.Model):
     monto_total = models.DecimalField(max_digits=14, decimal_places=2)
     observaciones = models.TextField(blank=True)
 
-    # 🔴 CAMPOS CLAVE PARA EL RECIBO (NO EXISTÍAN)
     saldo_anterior = models.DecimalField(
         max_digits=14,
         decimal_places=2,
@@ -384,15 +380,10 @@ class Pago(models.Model):
 
         super().save(*args, **kwargs)
 
+
 # ==========================================================
 # APLICACIÓN DEL PAGO A CUOTAS
 # ==========================================================
-from django.db import models
-from decimal import Decimal
-
-from .models import MovimientoCuenta, Pago, CuotaPlan
-
-
 class PagoCuota(models.Model):
     pago = models.ForeignKey(
         Pago,
@@ -418,28 +409,21 @@ class PagoCuota(models.Model):
         es_nuevo = self.pk is None
         super().save(*args, **kwargs)
 
-        # ⚠️ Solo crear movimiento la primera vez
         if not es_nuevo:
             return
 
         cuenta = self.cuota.plan.cuenta
 
-        # ==================================================
-        # DESCRIPCIÓN INTELIGENTE DEL MOVIMIENTO
-        # ==================================================
-        # Pago único vs pago en cuotas
         if self.cuota.plan.cantidad_cuotas == 1:
             base = "Pago único"
         else:
             base = f"Pago cuota {self.cuota.numero}"
 
-        # Forma de pago (efectivo / cheque / transferencia)
         try:
             forma = self.pago.get_forma_pago_display()
         except Exception:
             forma = "Pago"
 
-        # Observaciones opcionales
         obs = (
             f" – {self.pago.observaciones}"
             if getattr(self.pago, "observaciones", None)
@@ -448,9 +432,6 @@ class PagoCuota(models.Model):
 
         descripcion = f"{base} ({forma}){obs}"
 
-        # ==================================================
-        # CREAR MOVIMIENTO DE CUENTA
-        # ==================================================
         MovimientoCuenta.objects.create(
             cuenta=cuenta,
             descripcion=descripcion,
@@ -459,10 +440,8 @@ class PagoCuota(models.Model):
             origen="venta"
         )
 
-        # ==================================================
-        # RECALCULAR SALDO
-        # ==================================================
         cuenta.recalcular_saldo()
+
 
 # ==========================================================
 # BITÁCORA DE ACCIONES
@@ -480,3 +459,4 @@ class BitacoraCuenta(models.Model):
 
     def __str__(self):
         return f"{self.fecha} - {self.accion}"
+
