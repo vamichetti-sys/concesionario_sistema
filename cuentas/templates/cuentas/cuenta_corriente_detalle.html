@@ -109,18 +109,17 @@
     Anular plan
 </a>
 {% endif %}
-{% if cuenta.venta and cuenta.venta.estado == "revertida" and not cuenta.pagos.exists %}
 <div class="mt-3">
     <a href="{% url 'cuentas:eliminar_cuenta_corriente' cuenta.id %}"
        class="btn btn-danger rounded-pill px-4 fw-bold"
        onclick="return confirm(
          '¿Eliminar la cuenta corriente?\n\n' +
+         'Se eliminarán todos los movimientos, pagos y planes asociados.\n' +
          'Esta acción no se puede deshacer.'
        );">
         Eliminar cuenta corriente
     </a>
 </div>
-{% endif %}
 
     <!-- ===============================
          PLAN DE PAGO
