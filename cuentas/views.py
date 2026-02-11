@@ -767,11 +767,14 @@ def eliminar_plan_pago(request, cuenta_id):
 def eliminar_cuenta_corriente(request, cuenta_id):
     cuenta = get_object_or_404(CuentaCorriente, id=cuenta_id)
 
+    # Desvincular boletos que referencian esta cuenta
+    from boletos.models import BoletoCompraventa
+    BoletoCompraventa.objects.filter(cuenta_corriente=cuenta).update(cuenta_corriente=None)
+
     cuenta.delete()
     messages.success(request, "Cuenta corriente eliminada correctamente.")
 
     return redirect("cuentas:lista_cuentas_corrientes")
-
     if cuenta.venta and cuenta.venta.estado != "revertida":
         messages.error(
             request,
