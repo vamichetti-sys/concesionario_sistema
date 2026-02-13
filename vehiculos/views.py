@@ -37,7 +37,7 @@ def get_configuracion_gastos():
 
 def lista_vehiculos(request):
     query = request.GET.get("q", "")
-    vehiculos = Vehiculo.objects.filter(estado="stock").order_by("-id")
+    vehiculos = Vehiculo.objects.all().order_by("-id")
 
     if query:
         vehiculos = vehiculos.filter(
@@ -286,16 +286,20 @@ def guardar_ficha_vehicular(request, vehiculo_id):
         if vehiculo_form.is_valid() and ficha_form.is_valid():
 
             # ===============================
-            # GUARDAR VEHÍCULO (SIN PISAR ESTADO)
+            # GUARDAR VEHÍCULO
             # ===============================
             vehiculo_guardado = vehiculo_form.save(commit=False)
-            vehiculo_guardado.estado = vehiculo.estado  # 🔒 PRESERVAR ESTADO REAL
+
+            if vehiculo.estado == "vendido":
+                vehiculo_guardado.estado = "vendido"
+
             vehiculo_guardado.save()
-  
+
             # ===============================
-            # GUARDAR FICHA (EL FORM ES LA FUENTE)
+            # GUARDAR FICHA
             # ===============================
             ficha = ficha_form.save(commit=False)
+
 
             # ===============================
             # CAMPOS MANUALES (NO ESTÁN EN EL FORM)
@@ -972,3 +976,20 @@ def ficha_vehicular_pdf(request, vehiculo_id):
     # ==================================================
     doc.build(elements)
     return response
+
+@transaction.atomic
+def guardar_ficha_parcial(request, vehiculo_id):
+    vehiculo = get_object_or_404(Vehiculo, id=vehiculo_id)
+    ficha, _ = FichaVehicular.objects.get_or_create(vehiculo=vehiculo)
+
+    if request.method == "POST":
+        ficha_form = FichaVehicularForm(request.POST, instance=ficha)
+
+        if ficha_form.is_valid():
+            ficha_form.save()
+            sincronizar_turnos_calendario(vehiculo, ficha)
+            messages.success(request, "Cambios guardados correctamente.")
+        else:
+            messages.error(request, "Error al guardar los cambios.")
+
+    return redirect("vehiculos:ficha_completa", vehiculo_id=vehiculo.id)

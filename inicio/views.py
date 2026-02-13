@@ -20,7 +20,7 @@ def ingreso(request):
 
     if request.method == 'POST':
         # ✅ FIX: limpiar espacios invisibles
-        usuario = request.POST.get('usuario', '').strip()
+        usuario = request.POST.get('username', '').strip()
         password = request.POST.get('password', '').strip()
 
         user = authenticate(
@@ -35,7 +35,7 @@ def ingreso(request):
         else:
             messages.error(request, "Usuario o contraseña incorrectos.")
 
-    return render(request, "inicio/inicio.html")
+    return render(request, "inicio/login.html")
 
 
 # ==========================================================

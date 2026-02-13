@@ -193,9 +193,9 @@ TEMPLATES = [
 # ==========================================================
 # AUTH / LOGIN
 # ==========================================================
-LOGIN_URL = "/login/"
-LOGIN_REDIRECT_URL = "/inicio/"
-LOGOUT_REDIRECT_URL = "/"
+LOGIN_URL = "ingreso"
+LOGIN_REDIRECT_URL = "inicio"
+LOGOUT_REDIRECT_URL = "ingreso"
 
 # ==========================================================
 # DEFAULT FIELD
@@ -212,3 +212,6 @@ SESSION_COOKIE_SECURE = not DEBUG
 
 CSRF_COOKIE_SAMESITE = "Lax"
 SESSION_COOKIE_SAMESITE = "Lax"
+
+print("LOGIN_URL ACTUAL:", LOGIN_URL)
+
