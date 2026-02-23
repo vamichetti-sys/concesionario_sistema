@@ -19,7 +19,6 @@ class VehiculoBasicoForm(forms.ModelForm):
             'precio',
             'estado',
             'numero_carpeta',
-            'unidad',
         ]
 
         labels = {
@@ -330,7 +329,7 @@ class FichaVehicularForm(forms.ModelForm):
             'color': forms.TextInput(attrs={'class': 'form-control'}),
             'combustible': forms.TextInput(attrs={'class': 'form-control'}),
             'transmision': forms.TextInput(attrs={'class': 'form-control'}),
-            'vendedor': forms.TextInput(attrs={'class': 'form-control'}),
+            'vendedor': forms.Select(attrs={'class': 'form-control'}),
             'contacto': forms.TextInput(attrs={'class': 'form-control'}),
             'email_contacto': forms.EmailInput(attrs={'class': 'form-control'}),
             'titular': forms.TextInput(attrs={'class': 'form-control'}),
