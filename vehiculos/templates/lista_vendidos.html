@@ -5,100 +5,100 @@
 
 {% block content %}
 
-<h2 class="fw-bold" style="color:#002855;">Vehículos Vendidos</h2>
+<!-- ===============================
+     ENCABEZADO
+=============================== -->
+<div class="mb-4">
+    <a href="/vehiculos/" class="text-muted text-decoration-none d-inline-flex align-items-center mb-2" style="font-size:14px;">
+        <i data-lucide="arrow-left" style="width:16px;height:16px;margin-right:6px;"></i>
+        Volver a vehículos
+    </a>
+    <h3 class="fw-bold mb-1">Vehículos Vendidos</h3>
+    <p class="text-muted mb-0">Historial de vehículos vendidos del concesionario</p>
+</div>
 
-<div class="card shadow-sm rounded-4">
-    <div class="card-body p-0">
-
-        <table class="table table-striped mb-0 align-middle">
-            <thead style="background:#002855; color: white;">
+<!-- ===============================
+     TABLA
+=============================== -->
+<div class="card p-0">
+    {% if vehiculos %}
+    <div class="table-responsive">
+        <table class="table align-middle mb-0">
+            <thead>
                 <tr>
-                    <th style="width:200px;">Acción</th>
-                    <th>Marca</th>
-                    <th>Modelo</th>
+                    <th>Vehículo</th>
                     <th>Dominio</th>
                     <th>Año</th>
                     <th>Kilómetros</th>
-                    <th>Precio</th>
+                    <th class="text-end">Precio</th>
                     <th>Estado</th>
+                    <th class="text-end">Acciones</th>
                 </tr>
             </thead>
-
             <tbody>
-
                 {% for v in vehiculos %}
                 <tr>
-
-                    <!-- ACCIONES -->
-                    <td class="d-flex flex-column" style="gap:6px;">
-
-                        <!-- MODAL FICHA (EXISTENTE, NO SE TOCA) -->
-                        <button type="button"
-                                class="btn btn-warning fw-bold"
-                                onclick="abrirFicha('{{ v.id }}')">
-                            Mas info
-                        </button>
-
-                        <!-- FICHA COMPLETA -->
-                        <a href="{% url 'vehiculos:detalle_vehiculo' v.id %}"
-                           class="btn btn-sm"
-                           style="
-                             background:#f8f9fa;
-                             border:1px solid #002855;
-                             color:#002855;
-                             font-weight:500;
-                           ">
-                            Ver ficha del vehículo
-                        </a>
-
-                        <!-- CUENTA CORRIENTE DEL COMPRADOR -->
-                        {% if v.venta and v.venta.cliente and v.venta.cliente.cuenta_corriente %}
-                            <a href="{% url 'cuentas:cuenta_detalle' v.venta.cliente.cuenta_corriente.id %}"
-                               class="btn btn-sm"
-                               style="
-                                 background:#f8f9fa;
-                                 border:1px solid #198754;
-                                 color:#198754;
-                                 font-weight:500;
-                               ">
-                                Cuenta corriente del cliente
-                            </a>
-                        {% else %}
-                            <span class="fw-semibold" style="color:#dc3545;">
-                                Sin cliente asignado
-                            </span>
-                        {% endif %}
-
+                    <!-- VEHÍCULO -->
+                    <td>
+                        <div class="d-flex align-items-center gap-3">
+                            <div style="width:44px;height:44px;background:rgba(16,185,129,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                                <i data-lucide="check" style="width:20px;height:20px;color:#10b981;"></i>
+                            </div>
+                            <div>
+                                <div class="fw-semibold">{{ v.marca }} {{ v.modelo }}</div>
+                            </div>
+                        </div>
                     </td>
 
-                    <!-- DATOS VEHÍCULO -->
-                    <td>{{ v.marca }}</td>
-                    <td>{{ v.modelo }}</td>
-                    <td>{{ v.dominio }}</td>
+                    <!-- DOMINIO -->
+                    <td><span class="badge bg-secondary">{{ v.dominio }}</span></td>
+
+                    <!-- AÑO -->
                     <td>{{ v.anio }}</td>
+
+                    <!-- KILÓMETROS -->
                     <td>{{ v.kilometros|default:"No informado" }}</td>
-                    <td>${{ v.precio }}</td>
+
+                    <!-- PRECIO -->
+                    <td class="text-end">
+                        <span class="fw-bold text-success">${{ v.precio }}</span>
+                    </td>
 
                     <!-- ESTADO -->
-                    <td>
-                        <span class="badge bg-success">
-                            Vendido
-                        </span>
-                    </td>
+                    <td><span class="badge bg-success">Vendido</span></td>
 
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="8" class="text-center py-4">
-                        No hay vehículos vendidos.
+                    <!-- ACCIONES -->
+                    <td class="text-end">
+                        <div class="d-flex gap-2 justify-content-end">
+                            <button type="button" class="btn btn-primary btn-sm" onclick="abrirFicha('{{ v.id }}')">
+                                <i data-lucide="info" style="width:14px;height:14px;margin-right:4px;"></i>
+                                Info
+                            </button>
+
+                            <a href="{% url 'vehiculos:detalle_vehiculo' v.id %}" class="btn btn-secondary btn-sm">
+                                <i data-lucide="car" style="width:14px;height:14px;margin-right:4px;"></i>
+                                Ficha
+                            </a>
+
+                            {% if v.venta and v.venta.cliente and v.venta.cliente.cuenta_corriente %}
+                            <a href="{% url 'cuentas:cuenta_detalle' v.venta.cliente.cuenta_corriente.id %}" class="btn btn-success btn-sm">
+                                <i data-lucide="credit-card" style="width:14px;height:14px;margin-right:4px;"></i>
+                                Cuenta
+                            </a>
+                            {% endif %}
+                        </div>
                     </td>
                 </tr>
                 {% endfor %}
-
             </tbody>
         </table>
-
     </div>
+    {% else %}
+    <div class="p-5 text-center">
+        <i data-lucide="car" style="width:48px;height:48px;color:#9ca3af;margin-bottom:12px;"></i>
+        <p class="text-muted mb-0">No hay vehículos vendidos</p>
+    </div>
+    {% endif %}
 </div>
 
 <!-- CONTENEDOR MODAL -->
@@ -138,6 +138,10 @@ function abrirFicha(id) {
             alert("Error al cargar la ficha del vehículo.");
         });
 }
+
+if (typeof lucide !== 'undefined') {
+    lucide.createIcons();
+}
 </script>
 
-{% endblock %}
+{% endblock %}s

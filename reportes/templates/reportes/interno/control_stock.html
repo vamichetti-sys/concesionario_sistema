@@ -2,19 +2,26 @@
 
 {% block content %}
 
-<h4 class="fw-bold mb-2" style="color:#002855;">
-    Control de Stock
-</h4>
-<p class="text-muted mb-4">
-    Gestión interna de vehículos y control económico.
-</p>
+<!-- ===============================
+     ENCABEZADO
+=============================== -->
+<div class="mb-4">
+    <a href="{% url 'reportes:reporte_interno' %}" class="text-muted text-decoration-none d-inline-flex align-items-center mb-2" style="font-size:14px;">
+        <i data-lucide="arrow-left" style="width:16px;height:16px;margin-right:6px;"></i>
+        Volver a reportes
+    </a>
+    <h3 class="fw-bold mb-1">Control de Stock</h3>
+    <p class="text-muted mb-0">Gestión interna de vehículos y control económico</p>
+</div>
 
-<div class="card-clean">
-
+<!-- ===============================
+     TABLA
+=============================== -->
+<div class="card p-0">
     {% if vehiculos %}
     <div class="table-responsive">
-        <table class="table table-sm align-middle">
-            <thead class="table-light">
+        <table class="table align-middle mb-0">
+            <thead>
                 <tr>
                     <th>Vehículo</th>
                     <th>Dominio</th>
@@ -23,95 +30,99 @@
                     <th>Venta</th>
                     <th class="text-end">Gastos</th>
                     <th class="text-end">Ganancia</th>
-                    <th></th>
+                    <th class="text-end">Acciones</th>
                 </tr>
             </thead>
             <tbody>
-
                 {% for v in vehiculos %}
                 {% with ficha=v.ficha_reporte %}
                 <tr>
-
                     <!-- VEHÍCULO -->
                     <td>
-                        {{ v.marca }} {{ v.modelo }}<br>
-                        <small class="text-muted">{{ v.anio }}</small>
+                        <div class="d-flex align-items-center gap-3">
+                            <div style="width:40px;height:40px;background:rgba(59,130,246,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                                <i data-lucide="car" style="width:18px;height:18px;color:#3b82f6;"></i>
+                            </div>
+                            <div>
+                                <div class="fw-semibold">{{ v.marca }} {{ v.modelo }}</div>
+                                <small class="text-muted">{{ v.anio }}</small>
+                            </div>
+                        </div>
                     </td>
 
                     <!-- DOMINIO -->
-                    <td>{{ v.dominio }}</td>
+                    <td><span class="badge bg-secondary">{{ v.dominio }}</span></td>
 
                     <!-- ESTADO -->
                     <td>
                         {% if v.estado == "stock" %}
-                            En stock
+                        <span class="badge bg-info">En stock</span>
                         {% elif v.estado == "vendido" %}
-                            Vendido
+                        <span class="badge bg-success">Vendido</span>
                         {% else %}
-                            Temporal
+                        <span class="badge bg-warning">Temporal</span>
                         {% endif %}
                     </td>
 
                     <!-- COMPRA -->
                     <td>
                         {% if ficha.fecha_compra %}
-                            {{ ficha.fecha_compra }}<br>
-                            <strong>${{ ficha.precio_compra }}</strong>
+                        <small class="text-muted">{{ ficha.fecha_compra }}</small><br>
+                        <span class="fw-semibold">${{ ficha.precio_compra }}</span>
                         {% else %}
-                            <span class="text-muted">Sin datos</span>
+                        <span class="text-muted">Sin datos</span>
                         {% endif %}
                     </td>
 
                     <!-- VENTA -->
                     <td>
                         {% if ficha.fecha_venta %}
-                            {{ ficha.fecha_venta }}<br>
-                            <strong>${{ ficha.precio_venta }}</strong>
+                        <small class="text-muted">{{ ficha.fecha_venta }}</small><br>
+                        <span class="fw-semibold text-success">${{ ficha.precio_venta }}</span>
                         {% else %}
-                            <span class="text-muted">Sin vender</span>
+                        <span class="text-muted">Sin vender</span>
                         {% endif %}
                     </td>
 
-                    <!-- GASTOS (SUMA AUTOMÁTICA) -->
+                    <!-- GASTOS -->
                     <td class="text-end">
-                        ${% if ficha.total_gastos_calculado %}
-                            {{ ficha.total_gastos_calculado }}
-                        {% else %}
-                            0
-                        {% endif %}
+                        <span class="text-danger">${% if ficha.total_gastos_calculado %}{{ ficha.total_gastos_calculado }}{% else %}0{% endif %}</span>
                     </td>
 
-                    <!-- GANANCIA REAL -->
+                    <!-- GANANCIA -->
                     <td class="text-end">
                         {% if ficha.ganancia != None %}
-                            <strong>${{ ficha.ganancia }}</strong>
+                        <span class="fw-bold {% if ficha.ganancia >= 0 %}text-success{% else %}text-danger{% endif %}">
+                            ${{ ficha.ganancia }}
+                        </span>
                         {% else %}
-                            <span class="text-muted">—</span>
+                        <span class="text-muted">—</span>
                         {% endif %}
                     </td>
 
-                    <!-- EDITAR -->
+                    <!-- ACCIONES -->
                     <td class="text-end">
-                        <a href="{% url 'reportes:editar_ficha_reporte' v.id %}"
-                           class="btn btn-sm btn-outline-primary">
+                        <a href="{% url 'reportes:editar_ficha_reporte' v.id %}" class="btn btn-secondary btn-sm">
+                            <i data-lucide="pencil" style="width:14px;height:14px;margin-right:4px;"></i>
                             Editar
                         </a>
                     </td>
-
                 </tr>
                 {% endwith %}
                 {% endfor %}
-
             </tbody>
         </table>
     </div>
-
     {% else %}
-        <p class="text-muted mb-0">
-            No hay vehículos cargados en el sistema.
-        </p>
+    <div class="p-5 text-center">
+        <i data-lucide="car" style="width:48px;height:48px;color:#9ca3af;margin-bottom:12px;"></i>
+        <p class="text-muted mb-0">No hay vehículos cargados en el sistema</p>
+    </div>
     {% endif %}
-
 </div>
 
-{% endblock %}
+<script>
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+</script>
+
+{% endblock %}s
