@@ -1,28 +1,28 @@
 from django import forms
-from .models import CuentaInterna, MovimientoInterno
+from .models import Cheque
 
 
-class CuentaInternaForm(forms.ModelForm):
+class ChequeForm(forms.ModelForm):
     class Meta:
-        model = CuentaInterna
-        fields = ['nombre', 'cargo', 'telefono', 'observaciones', 'activa']
+        model = Cheque
+        fields = [
+            'fecha_ingreso', 'cliente', 'nro_factura',
+            'banco_emision', 'numero_cheque', 'titular_cheque', 'monto', 'fecha_deposito',
+            'estado', 'depositado_en', 'fecha_endoso', 'destinatario_endoso',
+            'observaciones'
+        ]
         widgets = {
-            'nombre': forms.TextInput(attrs={'class': 'form-control'}),
-            'cargo': forms.TextInput(attrs={'class': 'form-control'}),
-            'telefono': forms.TextInput(attrs={'class': 'form-control'}),
-            'observaciones': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'activa': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-        }
-
-
-class MovimientoInternoForm(forms.ModelForm):
-    class Meta:
-        model = MovimientoInterno
-        fields = ['tipo', 'monto', 'concepto', 'fecha', 'observaciones']
-        widgets = {
-            'tipo': forms.Select(attrs={'class': 'form-select'}),
-            'monto': forms.NumberInput(attrs={'class': 'form-control'}),
-            'concepto': forms.TextInput(attrs={'class': 'form-control'}),
-            'fecha': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'fecha_ingreso': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'cliente': forms.TextInput(attrs={'class': 'form-control'}),
+            'nro_factura': forms.TextInput(attrs={'class': 'form-control'}),
+            'banco_emision': forms.TextInput(attrs={'class': 'form-control'}),
+            'numero_cheque': forms.TextInput(attrs={'class': 'form-control'}),
+            'titular_cheque': forms.TextInput(attrs={'class': 'form-control'}),
+            'monto': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'fecha_deposito': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'estado': forms.Select(attrs={'class': 'form-select'}),
+            'depositado_en': forms.TextInput(attrs={'class': 'form-control'}),
+            'fecha_endoso': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'destinatario_endoso': forms.TextInput(attrs={'class': 'form-control'}),
             'observaciones': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
         }
