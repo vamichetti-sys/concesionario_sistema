@@ -38,7 +38,7 @@
     </div>
     <div class="col-md-4">
         <div class="card p-4 text-center">
-            <div style="width:50px;height:50px;background:{ % if saldo_total > 0 %}rgba(239,68,68,0.1){% else %}rgba(16,185,129,0.1){% endif %};border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;">
+            <div style="width:50px;height:50px;background:{% if saldo_total > 0 %}rgba(239,68,68,0.1){% else %}rgba(16,185,129,0.1){% endif %};border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;">
                 <i data-lucide="wallet" style="width:24px;height:24px;color:{% if saldo_total > 0 %}#ef4444{% else %}#10b981{% endif %};"></i>
             </div>
             <small class="text-muted">Saldo adeudado</small>
@@ -113,7 +113,7 @@
 =============================== -->
 <div class="card p-4">
     <div class="d-flex align-items-center gap-2 mb-4">
-        <i data-lucide="history" style="width:20px;height:20px;color:#3b82f6;"></i>
+        <i data-lucide="history" style="width:20px;height:20px;color:#10b981;"></i>
         <h5 class="fw-bold mb-0">Pagos registrados</h5>
     </div>
 
@@ -124,4 +124,34 @@
                 <tr>
                     <th>Fecha</th>
                     <th>Vehículo</th>
-                    <th class="text-e
+                    <th class="text-end">Monto</th>
+                    <th>Observaciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for pago in pagos %}
+                <tr>
+                    <td>{{ pago.fecha|date:"d/m/Y" }}</td>
+                    <td>
+                        <span class="fw-semibold">{{ pago.deuda.vehiculo.marca }} {{ pago.deuda.vehiculo.modelo }}</span>
+                    </td>
+                    <td class="text-end text-success fw-semibold">${{ pago.monto }}</td>
+                    <td><span class="text-muted">{{ pago.observaciones|default:"-" }}</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="p-4 text-center" style="background:#f8f9fa;border-radius:12px;">
+        <i data-lucide="credit-card" style="width:32px;height:32px;color:#9ca3af;margin-bottom:8px;"></i>
+        <p class="text-muted mb-0">No hay pagos registrados</p>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+</script>
+
+{% endblock %}
