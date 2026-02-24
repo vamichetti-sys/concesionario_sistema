@@ -1,35 +1,71 @@
 {% extends "base.html" %}
 {% block content %}
 
-<h3 class="fw-bold mb-3" style="color:#002855;">Compra-Venta</h3>
-
-<div class="d-flex gap-2 mb-4">
-  <a class="btn btn-primary" href="{% url 'compraventa:proveedor_crear' %}">
-    Registrar proveedor
-  </a>
-  <a class="btn btn-outline-primary" href="{% url 'compraventa:compra_registrar' %}">
-    Registrar compra
-  </a>
-</div>
-
-<div class="card-clean p-3">
-  <h5 class="fw-bold mb-3">Proveedores</h5>
-
-  {% if proveedores %}
-    <div class="d-flex flex-column gap-2">
-      {% for p in proveedores %}
-        <a
-          class="btn btn-outline-secondary text-start"
-          href="{% url 'compraventa:proveedor_detalle' p.id %}">
-          {{ p.nombre_empresa }}
-        </a>
-      {% endfor %}
+<!-- ===============================
+     ENCABEZADO
+=============================== -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-bold mb-1">Compra-Venta</h3>
+        <p class="text-muted mb-0">Gestión de proveedores y operaciones de compra</p>
     </div>
-  {% else %}
-    <p class="text-muted mb-0">
-      Todavía no hay proveedores registrados.
-    </p>
-  {% endif %}
+    <div class="d-flex gap-2">
+        <a href="{% url 'compraventa:compra_registrar' %}" class="btn btn-secondary">
+            <i data-lucide="shopping-cart" style="width:16px;height:16px;margin-right:6px;"></i>
+            Registrar compra
+        </a>
+        <a href="{% url 'compraventa:proveedor_crear' %}" class="btn btn-primary">
+            <i data-lucide="plus" style="width:16px;height:16px;margin-right:6px;"></i>
+            Nuevo proveedor
+        </a>
+    </div>
 </div>
+
+<!-- ===============================
+     LISTA DE PROVEEDORES
+=============================== -->
+<div class="card p-4">
+    <div class="d-flex align-items-center gap-2 mb-4">
+        <i data-lucide="building" style="width:20px;height:20px;color:#3b82f6;"></i>
+        <h5 class="fw-bold mb-0">Proveedores</h5>
+    </div>
+
+    {% if proveedores %}
+    <div class="row g-3">
+        {% for p in proveedores %}
+        <div class="col-md-6 col-lg-4">
+            <a href="{% url 'compraventa:proveedor_detalle' p.id %}" 
+               class="d-block p-3 text-decoration-none" 
+               style="background:#f8f9fa;border-radius:12px;transition:all 0.2s ease;">
+                <div class="d-flex align-items-center gap-3">
+                    <div style="width:44px;height:44px;background:linear-gradient(135deg,#3b82f6 0%,#2563eb 100%);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600;">
+                        {{ p.nombre_empresa|slice:":1"|upper }}
+                    </div>
+                    <div>
+                        <div class="fw-semibold text-dark">{{ p.nombre_empresa }}</div>
+                        <small class="text-muted">{{ p.cuit|default:"Sin CUIT" }}</small>
+                    </div>
+                </div>
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="p-5 text-center" style="background:#f8f9fa;border-radius:12px;">
+        <i data-lucide="building" style="width:48px;height:48px;color:#9ca3af;margin-bottom:12px;"></i>
+        <p class="text-muted mb-3">Todavía no hay proveedores registrados</p>
+        <a href="{% url 'compraventa:proveedor_crear' %}" class="btn btn-primary">
+            <i data-lucide="plus" style="width:16px;height:16px;margin-right:6px;"></i>
+            Registrar primer proveedor
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+</script>
 
 {% endblock %}

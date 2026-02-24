@@ -2,98 +2,135 @@
 
 {% block content %}
 
-<h4 class="fw-bold mb-2" style="color:#002855;">
-    Reporte Web
-</h4>
-<p class="text-muted mb-4">
-    Estado operativo general del negocio.
-</p>
+<!-- ===============================
+     ENCABEZADO
+=============================== -->
+<div class="mb-4">
+    <a href="{% url 'reportes:lista' %}" class="text-muted text-decoration-none d-inline-flex align-items-center mb-2" style="font-size:14px;">
+        <i data-lucide="arrow-left" style="width:16px;height:16px;margin-right:6px;"></i>
+        Volver a reportes
+    </a>
+    <h3 class="fw-bold mb-1">Reporte Web</h3>
+    <p class="text-muted mb-0">Estado operativo general del negocio</p>
+</div>
 
 <!-- ===============================
      INDICADORES PRINCIPALES
 =============================== -->
-<div class="row g-3 mb-4">
-
+<div class="row g-4 mb-4">
     <div class="col-md-3">
-        <div class="card-clean text-center">
-            <h6 class="text-muted mb-1">Ventas totales</h6>
-            <h4 class="fw-bold mb-0">
-                {{ total_ventas|default:"0" }}
-            </h4>
+        <div class="card p-4">
+            <div class="d-flex align-items-center gap-3">
+                <div style="width:50px;height:50px;background:rgba(59,130,246,0.1);border-radius:12px;display:flex;align-items:center;justify-content:center;">
+                    <i data-lucide="shopping-cart" style="width:24px;height:24px;color:#3b82f6;"></i>
+                </div>
+                <div>
+                    <small class="text-muted">Ventas totales</small>
+                    <div class="fw-bold" style="font-size:24px;">{{ total_ventas|default:"0" }}</div>
+                </div>
+            </div>
         </div>
     </div>
 
     <div class="col-md-3">
-        <div class="card-clean text-center">
-            <h6 class="text-muted mb-1">Ventas confirmadas</h6>
-            <h4 class="fw-bold mb-0">
-                {{ ventas_confirmadas|default:"0" }}
-            </h4>
+        <div class="card p-4">
+            <div class="d-flex align-items-center gap-3">
+                <div style="width:50px;height:50px;background:rgba(16,185,129,0.1);border-radius:12px;display:flex;align-items:center;justify-content:center;">
+                    <i data-lucide="check-circle" style="width:24px;height:24px;color:#10b981;"></i>
+                </div>
+                <div>
+                    <small class="text-muted">Ventas confirmadas</small>
+                    <div class="fw-bold text-success" style="font-size:24px;">{{ ventas_confirmadas|default:"0" }}</div>
+                </div>
+            </div>
         </div>
     </div>
 
     <div class="col-md-3">
-        <div class="card-clean text-center">
-            <h6 class="text-muted mb-1">Transferencias pendientes</h6>
-            <h4 class="fw-bold mb-0">
-                {{ transferencias_pendientes|default:"0" }}
-            </h4>
+        <div class="card p-4">
+            <div class="d-flex align-items-center gap-3">
+                <div style="width:50px;height:50px;background:rgba(245,158,11,0.1);border-radius:12px;display:flex;align-items:center;justify-content:center;">
+                    <i data-lucide="clock" style="width:24px;height:24px;color:#f59e0b;"></i>
+                </div>
+                <div>
+                    <small class="text-muted">Transferencias pendientes</small>
+                    <div class="fw-bold" style="font-size:24px;color:#f59e0b;">{{ transferencias_pendientes|default:"0" }}</div>
+                </div>
+            </div>
         </div>
     </div>
 
     <div class="col-md-3">
-        <div class="card-clean text-center">
-            <h6 class="text-muted mb-1">Deudas vencidas</h6>
-            <h4 class="fw-bold mb-0">
-                {{ deudas_vencidas|default:"0" }}
-            </h4>
+        <div class="card p-4">
+            <div class="d-flex align-items-center gap-3">
+                <div style="width:50px;height:50px;background:rgba(239,68,68,0.1);border-radius:12px;display:flex;align-items:center;justify-content:center;">
+                    <i data-lucide="alert-triangle" style="width:24px;height:24px;color:#ef4444;"></i>
+                </div>
+                <div>
+                    <small class="text-muted">Deudas vencidas</small>
+                    <div class="fw-bold text-danger" style="font-size:24px;">{{ deudas_vencidas|default:"0" }}</div>
+                </div>
+            </div>
         </div>
     </div>
-
 </div>
 
 <!-- ===============================
      INDICADORES DE EQUIPO
 =============================== -->
-<div class="row g-3 mb-4">
-
-    <div class="col-md-4">
-        <div class="card-clean text-center">
-            <h6 class="text-muted mb-1">Faltas del mes</h6>
-            <h4 class="fw-bold mb-0">
-                {{ faltas_mes|default:"0" }}
-            </h4>
-        </div>
+<div class="card p-4 mb-4">
+    <div class="d-flex align-items-center gap-2 mb-4">
+        <i data-lucide="users" style="width:20px;height:20px;color:#3b82f6;"></i>
+        <h5 class="fw-bold mb-0">Indicadores del equipo</h5>
     </div>
 
-    <div class="col-md-4">
-        <div class="card-clean text-center">
-            <h6 class="text-muted mb-1">Faltas injustificadas</h6>
-            <h4 class="fw-bold mb-0">
-                {{ faltas_injustificadas|default:"0" }}
-            </h4>
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="p-4 text-center" style="background:#f8f9fa;border-radius:12px;">
+                <div style="width:50px;height:50px;background:rgba(245,158,11,0.1);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;">
+                    <i data-lucide="calendar-x" style="width:24px;height:24px;color:#f59e0b;"></i>
+                </div>
+                <small class="text-muted">Faltas del mes</small>
+                <div class="fw-bold" style="font-size:28px;">{{ faltas_mes|default:"0" }}</div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="p-4 text-center" style="background:#f8f9fa;border-radius:12px;">
+                <div style="width:50px;height:50px;background:rgba(239,68,68,0.1);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;">
+                    <i data-lucide="x-circle" style="width:24px;height:24px;color:#ef4444;"></i>
+                </div>
+                <small class="text-muted">Faltas injustificadas</small>
+                <div class="fw-bold text-danger" style="font-size:28px;">{{ faltas_injustificadas|default:"0" }}</div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="p-4 text-center" style="background:#f8f9fa;border-radius:12px;">
+                <div style="width:50px;height:50px;background:rgba(16,185,129,0.1);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;">
+                    <i data-lucide="percent" style="width:24px;height:24px;color:#10b981;"></i>
+                </div>
+                <small class="text-muted">Cumplimiento transferencias</small>
+                <div class="fw-bold text-success" style="font-size:28px;">{{ cumplimiento_transferencias|default:"0" }}%</div>
+            </div>
         </div>
     </div>
-
-    <div class="col-md-4">
-        <div class="card-clean text-center">
-            <h6 class="text-muted mb-1">Cumplimiento transferencias</h6>
-            <h4 class="fw-bold mb-0">
-                {{ cumplimiento_transferencias|default:"0" }}%
-            </h4>
-        </div>
-    </div>
-
 </div>
 
 <!-- ===============================
-     MENSAJE INFORMATIVO
+     NOTA INFORMATIVA
 =============================== -->
-<div class="card-clean">
-    <p class="text-muted mb-0">
-        Este reporte muestra indicadores operativos generales.
-        No incluye información económica sensible.
-    </p>
+<div class="card p-4" style="background:#f0f9ff;border:1px solid #bfdbfe;">
+    <div class="d-flex align-items-center gap-3">
+        <i data-lucide="info" style="width:20px;height:20px;color:#3b82f6;"></i>
+        <p class="text-muted mb-0" style="font-size:14px;">
+            Este reporte muestra indicadores operativos generales. No incluye información económica sensible.
+        </p>
+    </div>
 </div>
+
+<script>
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+</script>
 
 {% endblock %}

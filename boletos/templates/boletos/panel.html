@@ -1,100 +1,102 @@
 {% extends "base.html" %}
-
 {% block title %}Boletos{% endblock %}
-
 {% block content %}
 
+<!-- ===============================
+     ENCABEZADO
+=============================== -->
 <div class="mb-4">
-    <h2 class="fw-bold mb-1" style="color:#002855;">
-        Boletos
-    </h2>
-    <p class="text-muted mb-0">
-        Documentación comercial y legal de las operaciones
-    </p>
+    <h3 class="fw-bold mb-1">Boletos</h3>
+    <p class="text-muted mb-0">Documentación comercial y legal de las operaciones</p>
 </div>
 
+<!-- ===============================
+     OPCIONES
+=============================== -->
 <div class="row g-4">
 
-    <!-- ===============================
-         BOLETO
-    =============================== -->
+    <!-- BOLETO -->
     <div class="col-md-6">
-        <div class="card shadow-sm border-0 rounded-4 h-100">
-            <div class="card-body">
-                <h4 class="fw-bold mb-2" style="color:#002855;">
-                    Boleto
-                </h4>
-                <p class="text-muted mb-3">
-                    Impresión de boleto de compraventa
-                </p>
-                <a href="{% url 'boletos:lista' %}"
-                   class="btn btn-primary rounded-pill px-4 fw-bold">
-                    Ingresar
-                </a>
+        <div class="card p-4 h-100">
+            <div class="d-flex align-items-start gap-3">
+                <div style="width:50px;height:50px;background:rgba(59,130,246,0.1);border-radius:12px;display:flex;align-items:center;justify-content:center;">
+                    <i data-lucide="file-signature" style="width:24px;height:24px;color:#3b82f6;"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <h5 class="fw-bold mb-1">Boleto</h5>
+                    <p class="text-muted mb-3" style="font-size:14px;">Impresión de boleto de compraventa</p>
+                    <a href="{% url 'boletos:lista' %}" class="btn btn-primary">
+                        Ingresar
+                        <i data-lucide="arrow-right" style="width:16px;height:16px;margin-left:6px;"></i>
+                    </a>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- ===============================
-         PAGARÉ
-    =============================== -->
+    <!-- PAGARÉ -->
     <div class="col-md-6">
-        <div class="card shadow-sm border-0 rounded-4 h-100">
-            <div class="card-body">
-                <h4 class="fw-bold mb-2" style="color:#002855;">
-                    Pagaré
-                </h4>
-                <p class="text-muted mb-3">
-                    Documentos de pagaré y compromisos de pago
-                </p>
-                <a href="{% url 'boletos:lista_pagares' %}"
-                   class="btn btn-primary rounded-pill px-4 fw-bold">
-                    Ingresar
-                </a>
+        <div class="card p-4 h-100">
+            <div class="d-flex align-items-start gap-3">
+                <div style="width:50px;height:50px;background:rgba(139,92,246,0.1);border-radius:12px;display:flex;align-items:center;justify-content:center;">
+                    <i data-lucide="banknote" style="width:24px;height:24px;color:#8b5cf6;"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <h5 class="fw-bold mb-1">Pagaré</h5>
+                    <p class="text-muted mb-3" style="font-size:14px;">Documentos de pagaré y compromisos de pago</p>
+                    <a href="{% url 'boletos:lista_pagares' %}" class="btn btn-primary">
+                        Ingresar
+                        <i data-lucide="arrow-right" style="width:16px;height:16px;margin-left:6px;"></i>
+                    </a>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- ===============================
-         RESERVA
-    =============================== -->
+    <!-- RESERVA -->
     <div class="col-md-6">
-        <div class="card shadow-sm border-0 rounded-4 h-100">
-            <div class="card-body">
-                <h4 class="fw-bold mb-2" style="color:#002855;">
-                    Reserva
-                </h4>
-                <p class="text-muted mb-3">
-                    Constancias de reserva de unidades
-                </p>
-                <a href="{% url 'boletos:lista' %}"
-                   class="btn btn-primary rounded-pill px-4 fw-bold">
-                    Ingresar
-                </a>
+        <div class="card p-4 h-100">
+            <div class="d-flex align-items-start gap-3">
+                <div style="width:50px;height:50px;background:rgba(16,185,129,0.1);border-radius:12px;display:flex;align-items:center;justify-content:center;">
+                    <i data-lucide="bookmark" style="width:24px;height:24px;color:#10b981;"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <h5 class="fw-bold mb-1">Reserva</h5>
+                    <p class="text-muted mb-3" style="font-size:14px;">Constancias de reserva de unidades</p>
+                    <a href="{% url 'boletos:lista' %}" class="btn btn-primary">
+                        Ingresar
+                        <i data-lucide="arrow-right" style="width:16px;height:16px;margin-left:6px;"></i>
+                    </a>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- ===============================
-         DOCUMENTACIÓN
-    =============================== -->
+    <!-- DOCUMENTACIÓN -->
     <div class="col-md-6">
-        <div class="card shadow-sm border-0 rounded-4 h-100">
-            <div class="card-body">
-                <h4 class="fw-bold mb-2" style="color:#002855;">
-                    Documentación
-                </h4>
-                <p class="text-muted mb-3">
-                    Control y entrega de documentación
-                </p>
-                <a href="{% url 'boletos:lista' %}"
-                   class="btn btn-primary rounded-pill px-4 fw-bold">
-                    Ingresar
-                </a>
+        <div class="card p-4 h-100">
+            <div class="d-flex align-items-start gap-3">
+                <div style="width:50px;height:50px;background:rgba(245,158,11,0.1);border-radius:12px;display:flex;align-items:center;justify-content:center;">
+                    <i data-lucide="folder-open" style="width:24px;height:24px;color:#f59e0b;"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <h5 class="fw-bold mb-1">Documentación</h5>
+                    <p class="text-muted mb-3" style="font-size:14px;">Control y entrega de documentación</p>
+                    <a href="{% url 'boletos:lista' %}" class="btn btn-primary">
+                        Ingresar
+                        <i data-lucide="arrow-right" style="width:16px;height:16px;margin-left:6px;"></i>
+                    </a>
+                </div>
             </div>
         </div>
     </div>
 
 </div>
+
+<script>
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+</script>
 
 {% endblock %}

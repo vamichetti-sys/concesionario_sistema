@@ -1,12 +1,10 @@
 {% extends "base.html" %}
 {% load static %}
-
 {% block title %}Boleto {{ boleto.numero }}{% endblock %}
-
 {% block content %}
 <style>
 /* ===============================
-AJUSTES FINALES PARA IMPRESIÓN
+   AJUSTES FINALES PARA IMPRESIÓN
 =============================== */
 @media print {
     .boleto-scale {
@@ -46,11 +44,13 @@ html, body {
     min-height: 297mm;
     margin: 0 auto;
     position: relative;
+    background: #fff;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    border-radius: 4px;
 }
 
 /* ===============================
    ESCALADO DEFINITIVO
-   (GARANTIZA 1 SOLA HOJA)
 =============================== */
 .boleto-scale {
     transform: scale(0.94);
@@ -95,40 +95,6 @@ html, body {
 }
 
 /* ===============================
-   TÍTULO (OPCIONAL)
-   Actualmente NO se usa
-=============================== */
-
-.header-title {
-    text-align: center;
-    margin-bottom: 6mm;
-}
-
-.header-title h3 {
-    font-size: 10pt;
-    font-weight: bold;
-    border-bottom: 1px solid #000;
-    display: inline-block;
-    padding-bottom: 0.5mm;
-    margin-bottom: 2mm;
-}
-
-
-/* ===============================
-   DATOS DEL VEHÍCULO (OPCIONAL)
-   Actualmente NO se usa
-=============================== */
-
-.boleto-datos {
-    width: 90%;
-    margin: 0 auto 2mm auto;
-    font-family: "Times New Roman", Times, serif;
-    font-size: 8.5pt;
-    text-align: center;
-    color: #000;
-}
-
-/* ===============================
    TEXTO LEGAL
 =============================== */
 .boleto-body {
@@ -142,7 +108,7 @@ html, body {
 }
 
 /* ===============================
-   FIRMAS (SIEMPRE DENTRO DE A4)
+   FIRMAS
 =============================== */
 .boleto-firmas {
     width: 90%;
@@ -165,11 +131,12 @@ html, body {
 /* ===============================
    BOTONES (NO IMPRIME)
 =============================== */
-.acciones {
-    width: 210mm;
-    margin: 25px auto;
+.acciones-boleto {
+    max-width: 210mm;
+    margin: 24px auto;
     display: flex;
-    justify-content: space-between;
+    gap: 12px;
+    justify-content: center;
 }
 
 /* ===============================
@@ -178,8 +145,7 @@ html, body {
 @media print {
     .sidebar,
     .topbar,
-    .acciones,
-    .pdf-link {
+    .acciones-boleto {
         display: none !important;
     }
 
@@ -187,8 +153,33 @@ html, body {
         margin: 0 !important;
         padding: 0 !important;
     }
+
+    .boleto-page {
+        box-shadow: none;
+        border-radius: 0;
+    }
 }
 </style>
+
+<!-- ===============================
+     ACCIONES (NO IMPRIME)
+=============================== -->
+<div class="acciones-boleto">
+    <button onclick="window.print()" class="btn btn-primary">
+        <i data-lucide="printer" style="width:16px;height:16px;margin-right:6px;"></i>
+        Imprimir en A4
+    </button>
+    {% if boleto.pdf %}
+    <a href="{{ boleto.pdf.url }}" target="_blank" class="btn btn-success">
+        <i data-lucide="file-down" style="width:16px;height:16px;margin-right:6px;"></i>
+        Descargar PDF
+    </a>
+    {% endif %}
+    <a href="{% url 'boletos:lista' %}" class="btn btn-secondary">
+        <i data-lucide="arrow-left" style="width:16px;height:16px;margin-right:6px;"></i>
+        Volver
+    </a>
+</div>
 
 <!-- ===============================
      HOJA A4
@@ -206,12 +197,11 @@ html, body {
 
         <!-- TEXTO LEGAL -->
         <div class="boleto-body">
-{{ texto_boleto }}
+            {{ texto_boleto }}
         </div>
 
         <!-- FIRMAS -->
         <div class="boleto-firmas">
-
             <div class="firma-col">
                 <div class="firma-linea"></div>
                 <strong>APELLIDO:</strong> {{ vendedor.apellido }}<br>
@@ -219,7 +209,6 @@ html, body {
                 <strong>DIRECCIÓN:</strong> {{ vendedor.direccion }}<br>
                 <strong>DNI:</strong> {{ vendedor.dni }}
             </div>
-
             <div class="firma-col">
                 <div class="firma-linea"></div>
                 <strong>APELLIDO:</strong> {{ comprador.apellido }}<br>
@@ -227,33 +216,15 @@ html, body {
                 <strong>DIRECCIÓN:</strong> {{ comprador.direccion }}<br>
                 <strong>DNI:</strong> {{ comprador.dni }}
             </div>
-
         </div>
 
     </div>
 </div>
 
-
-<!-- ===============================
-     ACCIONES (NO IMPRIME)
-=============================== -->
-<div class="acciones">
-
-    <button onclick="window.print()" class="btn btn-dark">
-        🖨️ Imprimir en A4
-    </button>
-
-    {% if boleto.pdf %}
-    <a href="{{ boleto.pdf.url }}"
-       target="_blank"
-       class="btn btn-primary pdf-link">
-        📄 Ver / Descargar PDF
-    </a>
-    {% endif %}
-
-    <a href="{% url 'boletos:lista' %}" class="btn btn-outline-secondary">
-        Volver
-    </a>
-</div>
+<script>
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+</script>
 
 {% endblock %}

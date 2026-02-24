@@ -3,352 +3,342 @@
 {% block title %}Cuenta Corriente{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
 
-    <!-- ===============================
-         ENCABEZADO
-    =============================== -->
-    <div class="mb-4">
-        <h2 class="fw-bold mb-1" style="color:#002855;">
-            Cuenta Corriente
-        </h2>
-        <p class="text-muted mb-0">
-            Cliente: <strong>{{ cuenta.cliente }}</strong> ·
-            Venta: <strong>#{{ cuenta.venta.id }}</strong>
-        </p>
+<!-- ===============================
+     ENCABEZADO
+=============================== -->
+<div class="mb-4">
+    <a href="{% url 'cuentas:lista_cuentas_corrientes' %}" class="text-muted text-decoration-none d-inline-flex align-items-center mb-2" style="font-size:14px;">
+        <i data-lucide="arrow-left" style="width:16px;height:16px;margin-right:6px;"></i>
+        Volver a cuentas corrientes
+    </a>
+    <h3 class="fw-bold mb-1">Cuenta Corriente</h3>
+    <p class="text-muted mb-0">Cliente: <strong>{{ cuenta.cliente }}</strong> · Venta: <strong>#{{ cuenta.venta.id }}</strong></p>
+</div>
+
+<!-- ===============================
+     NEGOCIO / VENTA
+=============================== -->
+<div class="card p-4 mb-4">
+    <div class="d-flex align-items-center gap-2 mb-4">
+        <i data-lucide="car" style="width:20px;height:20px;color:#3b82f6;"></i>
+        <h5 class="fw-bold mb-0">Negocio / Venta</h5>
     </div>
 
-    <!-- ===============================
-         NEGOCIO / VENTA
-    =============================== -->
-    <div class="card shadow-sm border-0 rounded-4 mb-4">
-        <div class="card-body">
-            <div class="d-flex justify-content-between align-items-start mb-3">
-                <h5 class="fw-bold" style="color:#002855;">Negocio / Venta</h5>
-            </div>
+    <div class="row g-3">
+        <div class="col-md-3">
+            <small class="text-muted">Vehículo</small>
+            <div class="fw-semibold">{{ cuenta.venta.vehiculo.marca }} {{ cuenta.venta.vehiculo.modelo }}</div>
+        </div>
+        <div class="col-md-3">
+            <small class="text-muted">Dominio</small>
+            <div class="fw-semibold">{{ cuenta.venta.vehiculo.dominio }}</div>
+        </div>
+        <div class="col-md-3">
+            <small class="text-muted">Año</small>
+            <div class="fw-semibold">{{ cuenta.venta.vehiculo.anio }}</div>
+        </div>
+        <div class="col-md-3">
+            <small class="text-muted">Precio</small>
+            <div class="fw-semibold">$ {{ cuenta.venta.precio_venta|floatformat:0 }}</div>
+        </div>
+    </div>
+</div>
 
-            <div class="row">
-                <div class="col-md-3">
-                    <small class="text-muted">Vehículo</small>
-                    <div class="fw-semibold">
-                        {{ cuenta.venta.vehiculo.marca }} {{ cuenta.venta.vehiculo.modelo }}
-                    </div>
+<!-- ===============================
+     RESUMEN
+=============================== -->
+<div class="row g-4 mb-4">
+    <div class="col-md-6">
+        <div class="card p-4 h-100">
+            <div class="d-flex align-items-center gap-3">
+                <div style="width:50px;height:50px;background:{% if cuenta.estado == 'al_dia' %}rgba(16,185,129,0.1){% elif cuenta.estado == 'deuda' %}rgba(245,158,11,0.1){% else %}rgba(107,114,128,0.1){% endif %};border-radius:12px;display:flex;align-items:center;justify-content:center;">
+                    <i data-lucide="{% if cuenta.estado == 'al_dia' %}check-circle{% elif cuenta.estado == 'deuda' %}alert-circle{% else %}lock{% endif %}" style="width:24px;height:24px;color:{% if cuenta.estado == 'al_dia' %}#10b981{% elif cuenta.estado == 'deuda' %}#f59e0b{% else %}#6b7280{% endif %};"></i>
                 </div>
-                <div class="col-md-3">
-                    <small class="text-muted">Dominio</small>
-                    <div class="fw-semibold">{{ cuenta.venta.vehiculo.dominio }}</div>
-                </div>
-                <div class="col-md-3">
-                    <small class="text-muted">Año</small>
-                    <div class="fw-semibold">{{ cuenta.venta.vehiculo.anio }}</div>
-                </div>
-                <div class="col-md-3">
-                    <small class="text-muted">Precio</small>
-                    <div class="fw-semibold">
-                        $ {{ cuenta.venta.precio_venta|floatformat:0 }}
+                <div>
+                    <small class="text-muted">Estado de la cuenta</small>
+                    <div>
+                        {% if cuenta.estado == 'al_dia' %}
+                        <span class="badge bg-success">Al día</span>
+                        {% elif cuenta.estado == 'deuda' %}
+                        <span class="badge bg-warning">Con deuda</span>
+                        {% elif cuenta.estado == 'cerrada' %}
+                        <span class="badge bg-secondary">Cerrada</span>
+                        {% endif %}
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- ===============================
-         RESUMEN
-    =============================== -->
-    <div class="row g-3 mb-4">
-        <div class="col-md-6">
-            <div class="card shadow-sm border-0 rounded-4 h-100">
-                <div class="card-body">
-                    <p class="mb-1 fw-semibold">Estado de la cuenta</p>
-                    {% if cuenta.estado == 'al_dia' %}
-                        <span class="badge rounded-pill px-3 py-2 bg-success">Al día</span>
-                    {% elif cuenta.estado == 'deuda' %}
-                        <span class="badge rounded-pill px-3 py-2 bg-warning text-dark">Con deuda</span>
-                    {% elif cuenta.estado == 'cerrada' %}
-                        <span class="badge rounded-pill px-3 py-2 bg-secondary">Cerrada</span>
-                    {% endif %}
+    <div class="col-md-6">
+        <div class="card p-4 h-100">
+            <div class="d-flex align-items-center gap-3">
+                <div style="width:50px;height:50px;background:{% if cuenta.saldo > 0 %}rgba(239,68,68,0.1){% else %}rgba(16,185,129,0.1){% endif %};border-radius:12px;display:flex;align-items:center;justify-content:center;">
+                    <i data-lucide="wallet" style="width:24px;height:24px;color:{% if cuenta.saldo > 0 %}#ef4444{% else %}#10b981{% endif %};"></i>
                 </div>
-            </div>
-        </div>
-
-        <div class="col-md-6">
-            <div class="card shadow-sm border-0 rounded-4 h-100">
-                <div class="card-body">
-                    <p class="mb-1 fw-semibold">Deuda total</p>
-                    <span class="fs-4 fw-bold {% if cuenta.saldo > 0 %}text-danger{% else %}text-success{% endif %}">
+                <div>
+                    <small class="text-muted">Deuda total</small>
+                    <div class="fw-bold {% if cuenta.saldo > 0 %}text-danger{% else %}text-success{% endif %}" style="font-size:24px;">
                         $ {{ cuenta.saldo|floatformat:0 }}
-                    </span>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+</div>
 
-    <!-- ===============================
-         ACCIÓN ÚNICA DE COBRO ✅ RESTAURADO (sin condicionar a saldo)
-    =============================== -->
-    <div class="d-flex justify-content-end mb-4">
-        <a href="{% url 'cuentas:registrar_movimiento' cuenta.id %}"
-           class="btn btn-primary rounded-pill px-4 fw-bold">
+<!-- ===============================
+     ACCIONES PRINCIPALES
+=============================== -->
+<div class="card p-4 mb-4">
+    <div class="d-flex flex-wrap gap-3">
+        <a href="{% url 'cuentas:registrar_movimiento' cuenta.id %}" class="btn btn-primary">
+            <i data-lucide="plus" style="width:16px;height:16px;margin-right:6px;"></i>
             Generar movimiento
         </a>
-    </div>
-
-    <!-- ===============================
-         ACCIONES PLAN DE PAGO
-    =============================== -->
-    <div class="mb-3">
-        <a href="{% url 'cuentas:crear_plan_pago' cuenta.id %}"
-           class="btn btn-primary rounded-pill px-4 fw-bold me-2">
+        <a href="{% url 'cuentas:crear_plan_pago' cuenta.id %}" class="btn btn-secondary">
+            <i data-lucide="calendar" style="width:16px;height:16px;margin-right:6px;"></i>
             Crear plan de pago
         </a>
-
         {% if plan and plan.estado == "activo" %}
-<a href="{% url 'cuentas:eliminar_plan_pago' cuenta.id %}"
-   class="btn btn-outline-danger rounded-pill px-4 fw-bold"
-   onclick="return confirm('¿Anular el plan de pago?');">
-    Anular plan
-</a>
+        <a href="{% url 'cuentas:eliminar_plan_pago' cuenta.id %}" class="btn btn-outline-danger" onclick="return confirm('¿Anular el plan de pago?');">
+            <i data-lucide="x" style="width:16px;height:16px;margin-right:6px;"></i>
+            Anular plan
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- ===============================
+     PLAN DE PAGO
+=============================== -->
+<div class="card p-4 mb-4">
+    <div class="d-flex align-items-center gap-2 mb-4">
+        <i data-lucide="list-ordered" style="width:20px;height:20px;color:#3b82f6;"></i>
+        <h5 class="fw-bold mb-0">Plan de pago</h5>
+    </div>
+
+    {% if cuenta.plan_pago %}
+    <div class="table-responsive">
+        <table class="table align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Cuota</th>
+                    <th>Vencimiento</th>
+                    <th class="text-end">Monto</th>
+                    <th class="text-end">Pagado</th>
+                    <th class="text-end">Saldo</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cuota in cuenta.plan_pago.cuotas.all %}
+                <tr>
+                    <td><span class="badge bg-info">{{ cuota.numero }}</span></td>
+                    <td><span class="text-muted">{{ cuota.vencimiento|date:"d/m/Y" }}</span></td>
+                    <td class="text-end">$ {{ cuota.monto|floatformat:0 }}</td>
+                    <td class="text-end text-success">$ {{ cuota.total_pagado|floatformat:0 }}</td>
+                    <td class="text-end fw-bold {% if cuota.saldo_pendiente > 0 %}text-danger{% else %}text-success{% endif %}">
+                        $ {{ cuota.saldo_pendiente|floatformat:0 }}
+                    </td>
+                    <td>
+                        {% if cuota.estado == 'pagada' %}
+                        <span class="badge bg-success">Pagada</span>
+                        {% elif cuota.estado == 'vencida' %}
+                        <span class="badge bg-danger">Vencida</span>
+                        {% else %}
+                        <span class="badge bg-secondary">{{ cuota.get_estado_display }}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="p-4 text-center" style="background:#f8f9fa;border-radius:12px;">
+        <i data-lucide="calendar-x" style="width:32px;height:32px;color:#9ca3af;margin-bottom:8px;"></i>
+        <p class="text-muted mb-0">No hay plan de pago creado</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- ===============================
+     PAGOS REGISTRADOS
+=============================== -->
+{% if cuenta.pagos.exists %}
+<div class="card p-4 mb-4">
+    <div class="d-flex align-items-center gap-2 mb-4">
+        <i data-lucide="receipt" style="width:20px;height:20px;color:#3b82f6;"></i>
+        <h5 class="fw-bold mb-0">Pagos registrados</h5>
+    </div>
+
+    {% for pago in cuenta.pagos.all %}
+    <div class="p-3 mb-3" style="background:#f8f9fa;border-radius:12px;">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+            <div>
+                <span class="fw-semibold">{{ pago.fecha|date:"d/m/Y H:i" }}</span>
+                <span class="text-muted ms-2">Recibo Nº {{ pago.numero_recibo }}</span>
+            </div>
+            <span class="badge {% if pago.forma_pago == 'efectivo' %}bg-success{% else %}bg-info{% endif %}">
+                {{ pago.get_forma_pago_display }}
+            </span>
+        </div>
+        <div class="d-flex justify-content-between align-items-center">
+            <span class="fw-bold text-success" style="font-size:18px;">$ {{ pago.monto_total|floatformat:0 }}</span>
+            <a href="{% url 'cuentas:recibo_pago_pdf' pago.id %}" target="_blank" class="btn btn-secondary btn-sm">
+                <i data-lucide="printer" style="width:14px;height:14px;margin-right:4px;"></i>
+                Reimprimir
+            </a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
 {% endif %}
-<div class="mt-3">
-    <a href="{% url 'cuentas:eliminar_cuenta_corriente' cuenta.id %}"
-       class="btn btn-danger rounded-pill px-4 fw-bold"
-       onclick="return confirm(
-         '¿Eliminar la cuenta corriente?\n\n' +
-         'Se eliminarán todos los movimientos, pagos y planes asociados.\n' +
-         'Esta acción no se puede deshacer.'
-       );">
+
+<!-- ===============================
+     GASTOS DE INGRESO
+=============================== -->
+<div class="card p-4 mb-4">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div class="d-flex align-items-center gap-2">
+            <i data-lucide="receipt" style="width:20px;height:20px;color:#f59e0b;"></i>
+            <h5 class="fw-bold mb-0">Gastos de ingreso</h5>
+        </div>
+        <div class="d-flex gap-2">
+            {% if vehiculo_gastos %}
+            <a href="{% url 'vehiculos:ficha_completa' vehiculo_gastos.id %}?from=cuenta" class="btn btn-secondary btn-sm">
+                <i data-lucide="eye" style="width:14px;height:14px;margin-right:4px;"></i>
+                Ver gastos
+            </a>
+            {% endif %}
+            <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalVincularVehiculo">
+                <i data-lucide="link" style="width:14px;height:14px;margin-right:4px;"></i>
+                Vincular vehículo
+            </button>
+        </div>
+    </div>
+
+    <div class="p-3" style="background:#f8f9fa;border-radius:12px;">
+        <div class="d-flex justify-content-between align-items-center">
+            <span class="fw-semibold">Total gastos de ingreso</span>
+            <span class="fw-bold text-danger" style="font-size:20px;">$ {{ total_gastos_ingreso|floatformat:0 }}</span>
+        </div>
+    </div>
+</div>
+
+<!-- ===============================
+     GESTORÍA
+=============================== -->
+<div class="card p-4 mb-4">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div class="d-flex align-items-center gap-2">
+            <i data-lucide="clipboard-list" style="width:20px;height:20px;color:#8b5cf6;"></i>
+            <h5 class="fw-bold mb-0">Gestoría</h5>
+        </div>
+        {% if cuenta.venta.gestoria %}
+        <div class="d-flex gap-2">
+            <a href="{% url 'gestoria:editar_gestoria' cuenta.venta.gestoria.id %}" class="btn btn-secondary btn-sm">
+                <i data-lucide="external-link" style="width:14px;height:14px;margin-right:4px;"></i>
+                Ir a Gestoría
+            </a>
+            <a href="{% url 'cuentas:registrar_pago_gestoria' cuenta.id %}" class="btn btn-success btn-sm">
+                <i data-lucide="plus" style="width:14px;height:14px;margin-right:4px;"></i>
+                Registrar pago
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if cuenta.venta.gestoria %}
+    <div class="p-3" style="background:#f8f9fa;border-radius:12px;">
+        <div class="d-flex justify-content-between align-items-center">
+            <span class="fw-semibold">Total gestoría</span>
+            <span class="fw-bold text-danger" style="font-size:20px;">$ {{ total_gestoria|floatformat:0 }}</span>
+        </div>
+    </div>
+    {% else %}
+    <p class="text-muted mb-0">No hay gestoría asociada.</p>
+    {% endif %}
+</div>
+
+<!-- ===============================
+     ZONA PELIGRO
+=============================== -->
+<div class="card p-4" style="border:1px solid #fecaca;">
+    <div class="d-flex align-items-center gap-2 mb-3">
+        <i data-lucide="alert-triangle" style="width:20px;height:20px;color:#ef4444;"></i>
+        <h6 class="fw-bold mb-0 text-danger">Zona de peligro</h6>
+    </div>
+    <a href="{% url 'cuentas:eliminar_cuenta_corriente' cuenta.id %}" class="btn btn-outline-danger" onclick="return confirm('¿Eliminar la cuenta corriente?\n\nSe eliminarán todos los movimientos, pagos y planes asociados.\nEsta acción no se puede deshacer.');">
+        <i data-lucide="trash-2" style="width:16px;height:16px;margin-right:6px;"></i>
         Eliminar cuenta corriente
     </a>
 </div>
 
-    <!-- ===============================
-         PLAN DE PAGO
-    =============================== -->
-    <div class="card shadow-sm border-0 rounded-4 mb-4">
-        <div class="card-body">
-            <h5 class="fw-bold mb-3" style="color:#002855;">Plan de pago</h5>
-
-            {% if cuenta.plan_pago %}
-                <ul class="list-group list-group-flush">
-                    {% for cuota in cuenta.plan_pago.cuotas.all %}
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                            <div>
-                                <div class="fw-semibold">
-                                    Cuota {{ cuota.numero }}
-                                    <small class="text-muted">
-                                        ({{ cuota.get_estado_display }})
-                                    </small>
-                                </div>
-                                <small class="text-muted">
-                                    Vencimiento: {{ cuota.vencimiento|date:"d/m/Y" }}
-                                </small>
-                            </div>
-
-                            <div class="text-end">
-                                {% if cuota.total_pagado > 0 %}
-                                    <div class="fw-semibold text-danger">
-                                        $ {{ cuota.saldo_pendiente|floatformat:0 }}
-                                    </div>
-                                    <small class="text-muted">
-                                        Pagado: $ {{ cuota.total_pagado|floatformat:0 }}
-                                    </small>
-                                {% else %}
-                                    <div class="fw-semibold">
-                                        $ {{ cuota.monto|floatformat:0 }}
-                                    </div>
-                                {% endif %}
-                            </div>
-                        </li>
-                    {% endfor %}
-                </ul>
-            {% else %}
-                <p class="text-muted mb-0">No hay plan de pago creado.</p>
-            {% endif %}
-        </div>
-    </div>
-
-    <!-- ===============================
-         HISTORIAL DE PAGOS
-    =============================== -->
-    {% if cuenta.pagos.exists %}
-    <div class="card shadow-sm border-0 rounded-4 mb-4">
-        <div class="card-body">
-            <h5 class="fw-bold mb-3" style="color:#002855;">Pagos registrados</h5>
-
-            {% for pago in cuenta.pagos.all %}
-                <div class="border rounded-3 p-3 mb-3">
-                    <div class="d-flex justify-content-between mb-2">
-                        <div class="fw-semibold">
-                            {{ pago.fecha|date:"d/m/Y H:i" }}
-                        </div>
-                        <span class="badge rounded-pill px-3 py-2
-                            {% if pago.forma_pago == 'efectivo' %}bg-success{% else %}bg-primary{% endif %}">
-                            {{ pago.get_forma_pago_display }}
-                        </span>
-                    </div>
-
-                    <div><strong>Recibo Nº:</strong> {{ pago.numero_recibo }}</div>
-                    <div class="fw-bold mb-2">
-                        Monto abonado: $ {{ pago.monto_total|floatformat:0 }}
-                    </div>
-
-                    <a href="{% url 'cuentas:recibo_pago_pdf' pago.id %}"
-                       target="_blank"
-                       class="btn btn-outline-primary btn-sm rounded-pill fw-bold">
-                        Reimprimir recibo
-                    </a>
-                </div>
-            {% endfor %}
-        </div>
-    </div>
-    {% endif %}
-    <!-- ===============================
-         GASTOS DE INGRESO
-    =============================== -->
-    <div class="card shadow-sm border-0 rounded-4 mb-4">
-        <div class="card-body">
-            <h5 class="fw-bold mb-3" style="color:#002855;">Gastos de ingreso</h5>
-
-            <div class="d-flex justify-content-end gap-2 mb-3">
-                {% if vehiculo_gastos %}
-                    <a href="{% url 'vehiculos:ficha_completa' vehiculo_gastos.id %}?from=cuenta"
-                       class="btn btn-outline-warning rounded-pill fw-bold">
-                        Ver gastos (vista)
-                    </a>
-                {% endif %}
-
-                <button type="button"
-                        class="btn btn-warning rounded-pill fw-bold"
-                        data-bs-toggle="modal"
-                        data-bs-target="#modalVincularVehiculo">
-                    Vincular vehículo
-                </button>
+<!-- ===============================
+     MODAL VINCULAR VEHÍCULO
+=============================== -->
+<div class="modal fade" id="modalVincularVehiculo" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold">Vincular vehículo en stock</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
 
-            <div class="border rounded-3 p-3 d-flex justify-content-between">
-                <div class="fw-semibold">Total gastos de ingreso</div>
-                <div class="fw-bold text-danger fs-5">
-                    $ {{ total_gastos_ingreso|floatformat:0 }}
+            <form method="post" data-url-base="{% url 'cuentas:conectar_vehiculo_permuta' cuenta.id 9999 %}" action="" id="formVincularVehiculo" onsubmit="return validarVinculacionVehiculo();">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <label class="form-label">Seleccioná el vehículo</label>
+                    <select class="form-select" id="selectVehiculoVincular" required onchange="setearVehiculoVincular(this.value)">
+                        <option value="">Elegir vehículo...</option>
+                        {% for v in vehiculos %}
+                        <option value="{{ v.id }}">{{ v.marca }} {{ v.modelo }}{% if v.dominio %} ({{ v.dominio }}){% endif %}</option>
+                        {% endfor %}
+                    </select>
+                    <small class="text-muted mt-2 d-block">Los gastos de ingreso se imputarán automáticamente a la cuenta corriente.</small>
                 </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ===============================
-         MODAL VINCULAR VEHÍCULO
-    =============================== -->
-    <div class="modal fade" id="modalVincularVehiculo" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content rounded-4">
-
-                <div class="modal-header">
-                    <h5 class="modal-title fw-bold">Vincular vehículo en stock</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="btnVincularVehiculo" disabled>
+                        <i data-lucide="link" style="width:16px;height:16px;margin-right:6px;"></i>
+                        Vincular y cargar gastos
+                    </button>
                 </div>
-
-                <form method="post"
-                      data-url-base="{% url 'cuentas:conectar_vehiculo_permuta' cuenta.id 9999 %}"
-                      action=""
-                      id="formVincularVehiculo"
-                      onsubmit="return validarVinculacionVehiculo();">
-                    {% csrf_token %}
-
-                    <div class="modal-body">
-                        <label class="form-label fw-semibold">Seleccioná el vehículo</label>
-                        <select class="form-select"
-                                id="selectVehiculoVincular"
-                                required
-                                onchange="setearVehiculoVincular(this.value)">
-                            <option value="">Elegir vehículo…</option>
-                            {% for v in vehiculos %}
-                                <option value="{{ v.id }}">
-                                    {{ v.marca }} {{ v.modelo }}{% if v.dominio %} ({{ v.dominio }}){% endif %}
-                                </option>
-                            {% endfor %}
-                        </select>
-
-                        <p class="text-muted small mt-2">
-                            Los gastos de ingreso se imputarán automáticamente a la cuenta corriente.
-                        </p>
-                    </div>
-
-                    <div class="modal-footer">
-                        <button type="button"
-                                class="btn btn-outline-secondary rounded-pill"
-                                data-bs-dismiss="modal">
-                            Cancelar
-                        </button>
-                        <button type="submit"
-                                class="btn btn-danger rounded-pill fw-bold"
-                                id="btnVincularVehiculo"
-                                disabled>
-                            Vincular y cargar gastos
-                        </button>
-                    </div>
-                </form>
-
-            </div>
-        </div>
-    </div>
-
-    <!-- ===============================
-         JS CONTROL VINCULACIÓN
-    =============================== -->
-    <script>
-        function setearVehiculoVincular(vehiculoId) {
-            const form = document.getElementById('formVincularVehiculo');
-            const btn = document.getElementById('btnVincularVehiculo');
-            const baseUrl = form.dataset.urlBase;
-
-            if (!vehiculoId) {
-                form.action = "";
-                btn.disabled = true;
-                return;
-            }
-
-            form.action = baseUrl.replace('9999', vehiculoId);
-            btn.disabled = false;
-        }
-
-        function validarVinculacionVehiculo() {
-            const form = document.getElementById('formVincularVehiculo');
-            if (!form.action) {
-                alert("Tenés que seleccionar un vehículo antes de continuar.");
-                return false;
-            }
-            return true;
-        }
-    </script>
-
-    <!-- ===============================
-     GESTORÍA
-     =============================== -->
-<div class="card shadow-sm border-0 rounded-4 mb-4">
-    <div class="card-body">
-        <h5 class="fw-bold mb-3" style="color:#002855;">Gestoría</h5>
-
-       <div class="d-flex justify-content-end gap-2 mb-3">
-    {% if cuenta.venta.gestoria %}
-        <a href="{% url 'gestoria:editar_gestoria' cuenta.venta.gestoria.id %}"
-           class="btn btn-outline-primary rounded-pill fw-bold">
-            Ir a Gestoría
-        </a>
-
-        <a href="{% url 'cuentas:registrar_pago_gestoria' cuenta.id %}"
-           class="btn btn-outline-success rounded-pill fw-bold">
-            Registrar pago
-        </a>
-    {% else %}
-        <span class="text-muted fst-italic">No hay gestoría asociada.</span>
-    {% endif %}
-</div>
-           <div class="border rounded-3 p-3 d-flex justify-content-between">
-        <div class="fw-semibold">Total gestoría</div>
-        <div class="fw-bold text-danger fs-5">
-            $ {{ total_gestoria|floatformat:0 }}
+            </form>
         </div>
     </div>
 </div>
-</div>
+
+<script>
+function setearVehiculoVincular(vehiculoId) {
+    const form = document.getElementById('formVincularVehiculo');
+    const btn = document.getElementById('btnVincularVehiculo');
+    const baseUrl = form.dataset.urlBase;
+
+    if (!vehiculoId) {
+        form.action = "";
+        btn.disabled = true;
+        return;
+    }
+    form.action = baseUrl.replace('9999', vehiculoId);
+    btn.disabled = false;
+}
+
+function validarVinculacionVehiculo() {
+    const form = document.getElementById('formVincularVehiculo');
+    if (!form.action) {
+        alert("Tenés que seleccionar un vehículo antes de continuar.");
+        return false;
+    }
+    return true;
+}
+
+if (typeof lucide !== 'undefined') {
+    lucide.createIcons();
+}
+</script>
 
 {% endblock %}

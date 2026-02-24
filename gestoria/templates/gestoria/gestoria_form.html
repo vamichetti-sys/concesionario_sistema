@@ -3,217 +3,167 @@
 {% block title %}Ficha de Gestoría{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
 
-    <!-- ===============================
-         HEADER OPERATIVO
-    =============================== -->
-    <div class="card shadow-sm border-0 rounded-4 mb-4">
-        <div class="card-body">
-
-            <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
-
-                <!-- DATOS -->
-                <div>
-                    <h2 class="fw-bold mb-1" style="color:#002855;">
-                        Ficha de Gestoría
-                    </h2>
-
-                    <div class="row mt-3 g-3">
-                        <div class="col-md-6">
-                            <div class="fw-semibold">Vehículo</div>
-                            <div class="text-muted">
-                                {{ gestoria.vehiculo }}
-                            </div>
-                        </div>
-
-                        <div class="col-md-6">
-                            <div class="fw-semibold">Cliente</div>
-                            <div class="text-muted">
-                                {{ gestoria.cliente_actual }}
-                                {% if gestoria.venta and gestoria.venta.cliente %}
-                                    · DNI {{ gestoria.venta.cliente.dni }}
-                                    {% if gestoria.venta.cliente.telefono %}
-                                        · 📞
-                                        <a href="tel:{{ gestoria.venta.cliente.telefono }}"
-                                           class="text-decoration-none fw-semibold">
-                                            {{ gestoria.venta.cliente.telefono }}
-                                        </a>
-                                    {% endif %}
-                                {% endif %}
-                            </div>
-                        </div>
+<!-- ===============================
+     ENCABEZADO
+=============================== -->
+<div class="card p-4 mb-4" style="background:linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+        <div class="text-white">
+            <h4 class="fw-bold mb-2">Ficha de Gestoría</h4>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <small style="color:rgba(255,255,255,0.6);">Vehículo</small>
+                    <div class="fw-semibold">{{ gestoria.vehiculo }}</div>
+                </div>
+                <div class="col-md-6">
+                    <small style="color:rgba(255,255,255,0.6);">Cliente</small>
+                    <div class="fw-semibold">
+                        {{ gestoria.cliente_actual }}
+                        {% if gestoria.venta and gestoria.venta.cliente %}
+                        · DNI {{ gestoria.venta.cliente.dni }}
+                        {% if gestoria.venta.cliente.telefono %}
+                        · <a href="tel:{{ gestoria.venta.cliente.telefono }}" class="text-white">{{ gestoria.venta.cliente.telefono }}</a>
+                        {% endif %}
+                        {% endif %}
                     </div>
                 </div>
-
-                <!-- ACCIÓN VEHÍCULO (URL REAL) -->
-                <div class="mt-1">
-                    <a href="{% url 'vehiculos:ficha_completa' gestoria.vehiculo.id %}"
-                       class="btn btn-outline-primary rounded-pill px-4">
-                         Ver ficha del vehículo
-                    </a>
-                </div>
-
             </div>
-
         </div>
+        <a href="{% url 'vehiculos:ficha_completa' gestoria.vehiculo.id %}" class="btn btn-light">
+            <i data-lucide="car" style="width:16px;height:16px;margin-right:6px;"></i>
+            Ver ficha del vehículo
+        </a>
     </div>
+</div>
 
-    <form method="post">
-        {% csrf_token %}
+<form method="post">
+    {% csrf_token %}
 
-        <div class="row g-4">
+    <div class="row g-4">
 
-            <!-- ===============================
-                 ESTADO DE TRANSFERENCIA
-            =============================== -->
-            <div class="col-12">
-                <div class="card shadow-sm border-0 rounded-4">
-                    <div class="card-body">
+        <!-- ===============================
+             ESTADO DE TRANSFERENCIA
+        =============================== -->
+        <div class="col-12">
+            <div class="card p-4">
+                <div class="d-flex align-items-center gap-2 mb-4">
+                    <i data-lucide="clipboard-check" style="width:20px;height:20px;color:#3b82f6;"></i>
+                    <h5 class="fw-bold mb-0">Estado de la transferencia</h5>
+                </div>
 
-                        <h5 class="fw-bold mb-3" style="color:#002855;">
-                            Estado de la transferencia
-                        </h5>
-
-                        <div class="row g-3 align-items-end">
-                            <div class="col-md-4">
-                                {{ form.estado.label_tag }}
-                                {{ form.estado }}
-                            </div>
-
-                            <div class="col-md-8">
-                                {{ form.observaciones.label_tag }}
-                                {{ form.observaciones }}
-                            </div>
-                        </div>
-
-                        {% if gestoria.estado == "finalizada" %}
-                            <div class="alert alert-success small mt-3 mb-0">
-                                Transferencia finalizada el
-                                {{ gestoria.fecha_finalizacion|date:"d/m/Y H:i" }}
-                            </div>
-                        {% endif %}
-
+                <div class="row g-4">
+                    <div class="col-md-4">
+                        <label class="form-label">Estado</label>
+                        {{ form.estado }}
+                    </div>
+                    <div class="col-md-8">
+                        <label class="form-label">Observaciones</label>
+                        {{ form.observaciones }}
                     </div>
                 </div>
-            </div>
 
-            <!-- ===============================
-                 ADMINISTRATIVO / CUENTA CORRIENTE
-            =============================== -->
-            <div class="col-lg-6">
-                <div class="card shadow-sm border-0 rounded-4 h-100">
-                    <div class="card-body">
-
-                        <h5 class="fw-bold mb-3" style="color:#002855;">
-                            Datos administrativos
-                        </h5>
-
-                        <div class="mb-3">
-                            <label class="fw-semibold">
-                                Monto de transferencia
-                            </label>
-                            {{ form.monto_transferencia }}
-                        </div>
-
-                        <div class="form-check mb-2">
-                            {{ form.pagado }}
-                            <label class="form-check-label fw-semibold">
-                                Pago recibido
-                            </label>
-                        </div>
-
-                        <div class="form-check mb-2">
-                            {{ form.transferido }}
-                            <label class="form-check-label fw-semibold">
-                                Transferencia realizada
-                            </label>
-                        </div>
-
-                        <!-- 🔒 VÍNCULO CON CUENTA CORRIENTE -->
-                        {% if gestoria.cuenta_corriente %}
-                        <div class="alert alert-info small mt-3 mb-0">
-                            Vinculado a Cuenta Corriente
-                            <strong>#{{ gestoria.cuenta_corriente.id }}</strong>
-                        </div>
-                        {% endif %}
-
-                    </div>
+                {% if gestoria.estado == "finalizada" %}
+                <div class="alert alert-success mt-3 mb-0">
+                    <i data-lucide="check-circle" style="width:16px;height:16px;margin-right:6px;"></i>
+                    Transferencia finalizada el {{ gestoria.fecha_finalizacion|date:"d/m/Y H:i" }}
                 </div>
+                {% endif %}
             </div>
-
-            <!-- ===============================
-                 DOCUMENTACIÓN
-            =============================== -->
-            <div class="col-lg-6">
-                <div class="card shadow-sm border-0 rounded-4 h-100">
-                    <div class="card-body">
-
-                        <h6 class="fw-bold mb-3 text-muted">
-                            Documentación (referencial)
-                        </h6>
-
-                        <div class="row g-3">
-
-                            <div class="col-md-6">
-                                <div class="form-check">
-                                    {{ form.formulario_08 }}
-                                    <label class="form-check-label">
-                                        Formulario 08
-                                    </label>
-                                </div>
-                            </div>
-
-                            <div class="col-md-6">
-                                <div class="form-check">
-                                    {{ form.titulo }}
-                                    <label class="form-check-label">
-                                        Título
-                                    </label>
-                                </div>
-                            </div>
-
-                            <div class="col-md-6">
-                                <div class="form-check">
-                                    {{ form.cedula }}
-                                    <label class="form-check-label">
-                                        Cédula
-                                    </label>
-                                </div>
-                            </div>
-
-                            <div class="col-md-6">
-                                <div class="form-check">
-                                    {{ form.informe_dominio }}
-                                    <label class="form-check-label">
-                                        Informe de dominio
-                                    </label>
-                                </div>
-                            </div>
-
-                        </div>
-
-                    </div>
-                </div>
-            </div>
-
         </div>
 
         <!-- ===============================
-             ACCIONES
+             DATOS ADMINISTRATIVOS
         =============================== -->
-        <div class="mt-4 d-flex gap-2">
-            <button type="submit" class="btn btn-primary px-4">
-                Guardar cambios
-            </button>
+        <div class="col-lg-6">
+            <div class="card p-4 h-100">
+                <div class="d-flex align-items-center gap-2 mb-4">
+                    <i data-lucide="dollar-sign" style="width:20px;height:20px;color:#10b981;"></i>
+                    <h5 class="fw-bold mb-0">Datos administrativos</h5>
+                </div>
 
-            <a href="{% url 'gestoria:vigentes' %}"
-               class="btn btn-secondary px-4">
-                Volver
-            </a>
+                <div class="mb-4">
+                    <label class="form-label">Monto de transferencia</label>
+                    {{ form.monto_transferencia }}
+                </div>
+
+                <div class="form-check mb-3">
+                    {{ form.pagado }}
+                    <label class="form-check-label">Pago recibido</label>
+                </div>
+
+                <div class="form-check mb-3">
+                    {{ form.transferido }}
+                    <label class="form-check-label">Transferencia realizada</label>
+                </div>
+
+                {% if gestoria.cuenta_corriente %}
+                <div class="p-3 mt-3" style="background:#f0f9ff;border-radius:12px;">
+                    <small class="text-muted">Vinculado a Cuenta Corriente</small>
+                    <div class="fw-semibold">#{{ gestoria.cuenta_corriente.id }}</div>
+                </div>
+                {% endif %}
+            </div>
         </div>
 
-    </form>
+        <!-- ===============================
+             DOCUMENTACIÓN
+        =============================== -->
+        <div class="col-lg-6">
+            <div class="card p-4 h-100">
+                <div class="d-flex align-items-center gap-2 mb-4">
+                    <i data-lucide="file-text" style="width:20px;height:20px;color:#8b5cf6;"></i>
+                    <h5 class="fw-bold mb-0">Documentación</h5>
+                </div>
 
-</div>
+                <div class="row g-3">
+                    <div class="col-6">
+                        <div class="form-check">
+                            {{ form.formulario_08 }}
+                            <label class="form-check-label">Formulario 08</label>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="form-check">
+                            {{ form.titulo }}
+                            <label class="form-check-label">Título</label>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="form-check">
+                            {{ form.cedula }}
+                            <label class="form-check-label">Cédula</label>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="form-check">
+                            {{ form.informe_dominio }}
+                            <label class="form-check-label">Informe de dominio</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ===============================
+         ACCIONES
+    =============================== -->
+    <div class="d-flex gap-3 mt-4">
+        <button type="submit" class="btn btn-primary">
+            <i data-lucide="save" style="width:16px;height:16px;margin-right:6px;"></i>
+            Guardar cambios
+        </button>
+        <a href="{% url 'gestoria:vigentes' %}" class="btn btn-secondary">
+            Volver
+        </a>
+    </div>
+
+</form>
+
+<script>
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+</script>
+
 {% endblock %}

@@ -9,12 +9,8 @@
      ENCABEZADO
 =============================== -->
 <div class="mb-4">
-    <h2 class="fw-bold" style="color:#002855;">
-        Panel general
-    </h2>
-    <p class="text-secondary mb-0">
-        Resumen operativo del negocio
-    </p>
+    <h2 class="fw-bold">Panel general</h2>
+    <p class="text-muted mb-0">Resumen operativo del negocio</p>
 </div>
 
 <!-- ===============================
@@ -24,78 +20,98 @@
 
     <!-- 🔴 CUENTAS CON DEUDA -->
     <div class="col-md-3">
-        <div class="card-clean shadow-sm border-start border-danger border-4">
-            <h6 class="text-muted mb-1">Cuentas con deuda</h6>
-            <h4 class="fw-bold mb-0">{{ cantidad_deudores }}</h4>
-            <small class="text-danger fw-semibold">
-                ${{ total_deuda }}
-            </small>
+        <div class="card p-4">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <span class="text-muted" style="font-size:13px;">Cuentas con deuda</span>
+                <div style="width:40px;height:40px;background:rgba(239,68,68,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                    <i data-lucide="alert-triangle" style="width:20px;height:20px;color:#ef4444;"></i>
+                </div>
+            </div>
+            <h3 class="fw-bold mb-1">{{ cantidad_deudores }}</h3>
+            <small class="text-danger fw-semibold">${{ total_deuda }}</small>
+            <div style="position:absolute;top:0;left:0;width:4px;height:100%;background:#ef4444;border-radius:14px 0 0 14px;"></div>
         </div>
     </div>
 
     <!-- 🟡 GESTORÍA VIGENTE -->
     <div class="col-md-3">
-        <div class="card-clean shadow-sm border-start border-warning border-4">
-            <h6 class="text-muted mb-1">Gestorías vigentes</h6>
-            <h4 class="fw-bold mb-0">{{ transferencias_vigentes }}</h4>
+        <div class="card p-4">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <span class="text-muted" style="font-size:13px;">Gestorías vigentes</span>
+                <div style="width:40px;height:40px;background:rgba(139,92,246,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                    <i data-lucide="clipboard-check" style="width:20px;height:20px;color:#8b5cf6;"></i>
+                </div>
+            </div>
+            <h3 class="fw-bold mb-1">{{ transferencias_vigentes }}</h3>
+            <small class="text-success fw-semibold">En proceso</small>
+            <div style="position:absolute;top:0;left:0;width:4px;height:100%;background:#8b5cf6;border-radius:14px 0 0 14px;"></div>
         </div>
     </div>
 
     <!-- 🔵 VENTAS ABIERTAS -->
     <div class="col-md-3">
-        <div class="card-clean shadow-sm border-start border-primary border-4">
-            <h6 class="text-muted mb-1">Ventas abiertas</h6>
-            <h4 class="fw-bold mb-0">{{ ventas_activas }}</h4>
+        <div class="card p-4">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <span class="text-muted" style="font-size:13px;">Ventas abiertas</span>
+                <div style="width:40px;height:40px;background:rgba(16,185,129,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                    <i data-lucide="trending-up" style="width:20px;height:20px;color:#10b981;"></i>
+                </div>
+            </div>
+            <h3 class="fw-bold mb-1">{{ ventas_activas }}</h3>
+            <small class="text-success fw-semibold">Activas</small>
+            <div style="position:absolute;top:0;left:0;width:4px;height:100%;background:#10b981;border-radius:14px 0 0 14px;"></div>
         </div>
     </div>
 
     <!-- 🟢 VEHÍCULOS EN STOCK -->
     <div class="col-md-3">
-        <div class="card-clean shadow-sm border-start border-success border-4">
-            <h6 class="text-muted mb-1">Vehículos en stock</h6>
-            <h4 class="fw-bold mb-0">{{ vehiculos_stock }}</h4>
+        <div class="card p-4">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <span class="text-muted" style="font-size:13px;">Vehículos en stock</span>
+                <div style="width:40px;height:40px;background:rgba(59,130,246,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                    <i data-lucide="car" style="width:20px;height:20px;color:#3b82f6;"></i>
+                </div>
+            </div>
+            <h3 class="fw-bold mb-1">{{ vehiculos_stock }}</h3>
+            <small class="text-success fw-semibold">Disponibles</small>
+            <div style="position:absolute;top:0;left:0;width:4px;height:100%;background:#3b82f6;border-radius:14px 0 0 14px;"></div>
         </div>
     </div>
 
 </div>
 
 <!-- ===============================
-     PANTALLAZO INFORME (EN EL MISMO TEMPLATE)
+     PANTALLAZO INFORME
 =============================== -->
-<div class="card-clean shadow-sm">
-    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
+<div class="card p-4">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
         <div>
-            <h5 class="fw-bold mb-1" style="color:#002855;">
-                Informe económico (pantallazo)
-            </h5>
-            <p class="text-muted mb-0">
+            <h5 class="fw-bold mb-1">Informe económico</h5>
+            <p class="text-muted mb-0" style="font-size:14px;">
                 Período: {{ reporte_desde }} → {{ reporte_hasta }}
             </p>
         </div>
-
-        <div class="d-flex gap-2">
-            <a href="/reportes/" class="btn btn-sm btn-outline-primary">
-                Ver informe completo
-            </a>
-        </div>
+        <a href="/reportes/" class="btn btn-secondary">
+            Ver informe completo
+            <i data-lucide="arrow-right" style="width:16px;height:16px;margin-left:6px;"></i>
+        </a>
     </div>
 
     <hr class="my-3">
 
-    <!-- Si todavía no conectamos el reporte real, mostramos placeholder prolijo -->
     {% if ganancia_total %}
         <div class="row g-3">
             <div class="col-md-4">
-                <div class="card-clean text-center">
-                    <h6 class="text-muted mb-1">Ganancia total</h6>
-                    <h4 class="fw-bold mb-0">${{ ganancia_total }}</h4>
+                <div class="card p-3 text-center" style="background:#f8f9fa;">
+                    <span class="text-muted" style="font-size:13px;">Ganancia total</span>
+                    <h4 class="fw-bold mb-0 mt-1">${{ ganancia_total }}</h4>
                 </div>
             </div>
         </div>
 
         {% if data_mensual %}
-            <div class="table-responsive mt-3">
-                <table class="table table-sm align-middle">
+            <div class="table-responsive mt-4">
+                <table class="table align-middle">
                     <thead>
                         <tr>
                             <th>Mes</th>
@@ -106,7 +122,7 @@
                         {% for row in data_mensual %}
                         <tr>
                             <td>{{ row.mes }}</td>
-                            <td class="text-end">${{ row.ganancia }}</td>
+                            <td class="text-end fw-semibold">${{ row.ganancia }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -115,13 +131,43 @@
         {% endif %}
 
     {% else %}
-        <div class="alert alert-light border rounded-4 mb-0">
-            <div class="fw-semibold mb-1" style="color:#002855;">Informe aún no conectado al inicio</div>
-            <div class="text-muted">
-                Pegame el template del informe web (el que hoy ves en <strong>Reportes</strong>) y te lo integro acá como “pantallazo” sin duplicar código.
-            </div>
+        <div class="p-4 text-center" style="background:#f8f9fa;border-radius:12px;">
+            <i data-lucide="bar-chart-3" style="width:48px;height:48px;color:#9ca3af;margin-bottom:12px;"></i>
+            <p class="text-muted mb-0">Los datos del informe se mostrarán aquí cuando estén disponibles.</p>
         </div>
     {% endif %}
 </div>
+
+<!-- ===============================
+     ACCIONES RÁPIDAS
+=============================== -->
+<div class="card p-4 mt-4">
+    <h5 class="fw-bold mb-3">Acciones rápidas</h5>
+    <div class="d-flex gap-3 flex-wrap">
+        <a href="/vehiculos/agregar/" class="btn btn-primary">
+            <i data-lucide="plus" style="width:16px;height:16px;margin-right:6px;"></i>
+            Nuevo vehículo
+        </a>
+        <a href="/ventas/nueva/" class="btn btn-primary">
+            <i data-lucide="plus" style="width:16px;height:16px;margin-right:6px;"></i>
+            Nueva venta
+        </a>
+        <a href="/cuentas/" class="btn btn-secondary">
+            <i data-lucide="dollar-sign" style="width:16px;height:16px;margin-right:6px;"></i>
+            Registrar pago
+        </a>
+        <a href="/calendario/" class="btn btn-secondary">
+            <i data-lucide="calendar" style="width:16px;height:16px;margin-right:6px;"></i>
+            Ver calendario
+        </a>
+    </div>
+</div>
+
+<script>
+    // Reinicializar íconos Lucide para este template
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+</script>
 
 {% endblock %}

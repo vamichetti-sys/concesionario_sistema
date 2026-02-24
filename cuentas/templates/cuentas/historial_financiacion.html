@@ -4,177 +4,134 @@
 {% block title %}Historial de Financiación{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
 
-    <!-- ===============================
-         ENCABEZADO
-    =============================== -->
-    <div class="mb-4">
-        <h2 class="fw-bold mb-1" style="color:#002855;">
-            Historial de financiación
-        </h2>
-        <p class="text-muted mb-0">
-            Cliente: <strong>{{ cuenta.cliente }}</strong> ·
-            Venta: <strong>#{{ cuenta.venta.id }}</strong>
-        </p>
-    </div>
-
-    <!-- ===============================
-         VEHÍCULO
-    =============================== -->
-    <div class="card shadow-sm border-0 rounded-4 mb-4">
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-4">
-                    <small class="text-muted">Vehículo</small>
-                    <div class="fw-semibold">
-                        {{ cuenta.venta.vehiculo.marca }}
-                        {{ cuenta.venta.vehiculo.modelo }}
-                    </div>
-                </div>
-
-                <div class="col-md-2">
-                    <small class="text-muted">Año</small>
-                    <div class="fw-semibold">
-                        {{ cuenta.venta.vehiculo.anio }}
-                    </div>
-                </div>
-
-                <div class="col-md-3">
-                    <small class="text-muted">Dominio</small>
-                    <div class="fw-semibold">
-                        {{ cuenta.venta.vehiculo.dominio|default:"—" }}
-                    </div>
-                </div>
-
-                <div class="col-md-3">
-                    <small class="text-muted">Precio de venta</small>
-                    <div class="fw-semibold">
-                        $ {{ cuenta.venta.precio_venta|floatformat:0 }}
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ===============================
-         ESTADO GENERAL
-    =============================== -->
-    <div class="card shadow-sm border-0 rounded-4 mb-4">
-        <div class="card-body">
-            <p class="mb-1 fw-semibold">Estado de la cuenta</p>
-            <span class="badge rounded-pill px-3 py-2 bg-secondary">
-                Cuenta cerrada
-            </span>
-        </div>
-    </div>
-
-    <!-- ===============================
-         PLAN DE PAGO
-    =============================== -->
-    <div class="card shadow-sm border-0 rounded-4 mb-4">
-        <div class="card-body">
-            <h5 class="fw-bold mb-3" style="color:#002855;">
-                Plan de pago
-            </h5>
-
-            {% if plan %}
-                <p class="mb-2">
-                    <strong>Descripción:</strong>
-                    {{ plan.descripcion }}
-                </p>
-
-                <p class="mb-2">
-                    <strong>Cantidad de cuotas:</strong>
-                    {{ plan.cantidad_cuotas }}
-                </p>
-
-                <p class="mb-2">
-                    <strong>Monto por cuota:</strong>
-                    $ {{ plan.monto_cuota|floatformat:0 }}
-                </p>
-
-                <p class="mb-2">
-                    <strong>Monto financiado:</strong>
-                    $ {{ plan.monto_financiado|floatformat:0 }}
-                </p>
-
-                <p class="mb-0">
-                    <strong>Estado del plan:</strong>
-                    <span class="badge rounded-pill px-3 py-2 bg-success">
-                        Finalizado
-                    </span>
-                </p>
-            {% else %}
-                <p class="text-muted mb-0">
-                    No hay plan de pago registrado.
-                </p>
-            {% endif %}
-        </div>
-    </div>
-
-    <!-- ===============================
-         CUOTAS
-    =============================== -->
-    <div class="card shadow-sm border-0 rounded-4 mb-4">
-        <div class="card-body">
-            <h5 class="fw-bold mb-3" style="color:#002855;">
-                Detalle de cuotas
-            </h5>
-
-            {% if cuotas %}
-                <div class="table-responsive">
-                    <table class="table table-sm align-middle">
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>Vencimiento</th>
-                                <th>Monto</th>
-                                <th>Total pagado</th>
-                                <th>Estado</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for cuota in cuotas %}
-                            <tr>
-                                <td>{{ cuota.numero }}</td>
-                                <td>{{ cuota.vencimiento|date:"d/m/Y" }}</td>
-                                <td>$ {{ cuota.monto|floatformat:0 }}</td>
-                                <td>$ {{ cuota.total_pagado|floatformat:0 }}</td>
-                                <td>
-                                    {% if cuota.estado == "pagada" %}
-                                        <span class="badge bg-success">
-                                            Pagada
-                                        </span>
-                                    {% else %}
-                                        <span class="badge bg-secondary">
-                                            {{ cuota.get_estado_display }}
-                                        </span>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            {% else %}
-                <p class="text-muted mb-0">
-                    No hay cuotas registradas.
-                </p>
-            {% endif %}
-        </div>
-    </div>
-
-    <!-- ===============================
-     ACCIONES
+<!-- ===============================
+     ENCABEZADO
 =============================== -->
-<div class="d-flex justify-content-start">
-    <a href="{% url 'clientes:detalle_cliente' cuenta.cliente.id %}"
-       class="btn btn-outline-secondary rounded-pill px-4 fw-bold">
-        ← Volver al cliente
+<div class="mb-4">
+    <a href="{% url 'clientes:detalle_cliente' cuenta.cliente.id %}" class="text-muted text-decoration-none d-inline-flex align-items-center mb-2" style="font-size:14px;">
+        <i data-lucide="arrow-left" style="width:16px;height:16px;margin-right:6px;"></i>
+        Volver al cliente
     </a>
+    <h3 class="fw-bold mb-1">Historial de financiación</h3>
+    <p class="text-muted mb-0">Cliente: <strong>{{ cuenta.cliente }}</strong> · Venta: <strong>#{{ cuenta.venta.id }}</strong></p>
 </div>
 
-
+<!-- ===============================
+     VEHÍCULO
+=============================== -->
+<div class="card p-4 mb-4">
+    <div class="row g-3">
+        <div class="col-md-4">
+            <small class="text-muted">Vehículo</small>
+            <div class="fw-semibold">{{ cuenta.venta.vehiculo.marca }} {{ cuenta.venta.vehiculo.modelo }}</div>
+        </div>
+        <div class="col-md-2">
+            <small class="text-muted">Año</small>
+            <div class="fw-semibold">{{ cuenta.venta.vehiculo.anio }}</div>
+        </div>
+        <div class="col-md-3">
+            <small class="text-muted">Dominio</small>
+            <div class="fw-semibold">{{ cuenta.venta.vehiculo.dominio|default:"—" }}</div>
+        </div>
+        <div class="col-md-3">
+            <small class="text-muted">Precio de venta</small>
+            <div class="fw-semibold">$ {{ cuenta.venta.precio_venta|floatformat:0 }}</div>
+        </div>
+    </div>
 </div>
+
+<!-- ===============================
+     ESTADO
+=============================== -->
+<div class="card p-4 mb-4">
+    <div class="d-flex align-items-center gap-3">
+        <span class="text-muted">Estado de la cuenta:</span>
+        <span class="badge bg-secondary">Cuenta cerrada</span>
+    </div>
+</div>
+
+<!-- ===============================
+     PLAN DE PAGO
+=============================== -->
+<div class="card p-4 mb-4">
+    <div class="d-flex align-items-center gap-2 mb-4">
+        <i data-lucide="calendar" style="width:20px;height:20px;color:#3b82f6;"></i>
+        <h5 class="fw-bold mb-0">Plan de pago</h5>
+    </div>
+
+    {% if plan %}
+    <div class="row g-3 mb-3">
+        <div class="col-md-3">
+            <small class="text-muted">Descripción</small>
+            <div class="fw-semibold">{{ plan.descripcion }}</div>
+        </div>
+        <div class="col-md-3">
+            <small class="text-muted">Cantidad de cuotas</small>
+            <div class="fw-semibold">{{ plan.cantidad_cuotas }}</div>
+        </div>
+        <div class="col-md-3">
+            <small class="text-muted">Monto por cuota</small>
+            <div class="fw-semibold">$ {{ plan.monto_cuota|floatformat:0 }}</div>
+        </div>
+        <div class="col-md-3">
+            <small class="text-muted">Monto financiado</small>
+            <div class="fw-semibold">$ {{ plan.monto_financiado|floatformat:0 }}</div>
+        </div>
+    </div>
+    <span class="badge bg-success">Finalizado</span>
+    {% else %}
+    <p class="text-muted mb-0">No hay plan de pago registrado.</p>
+    {% endif %}
+</div>
+
+<!-- ===============================
+     CUOTAS
+=============================== -->
+<div class="card p-4">
+    <div class="d-flex align-items-center gap-2 mb-4">
+        <i data-lucide="list" style="width:20px;height:20px;color:#3b82f6;"></i>
+        <h5 class="fw-bold mb-0">Detalle de cuotas</h5>
+    </div>
+
+    {% if cuotas %}
+    <div class="table-responsive">
+        <table class="table align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Vencimiento</th>
+                    <th class="text-end">Monto</th>
+                    <th class="text-end">Total pagado</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cuota in cuotas %}
+                <tr>
+                    <td><span class="badge bg-info">{{ cuota.numero }}</span></td>
+                    <td>{{ cuota.vencimiento|date:"d/m/Y" }}</td>
+                    <td class="text-end">$ {{ cuota.monto|floatformat:0 }}</td>
+                    <td class="text-end text-success">$ {{ cuota.total_pagado|floatformat:0 }}</td>
+                    <td>
+                        {% if cuota.estado == "pagada" %}
+                        <span class="badge bg-success">Pagada</span>
+                        {% else %}
+                        <span class="badge bg-secondary">{{ cuota.get_estado_display }}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="text-muted mb-0">No hay cuotas registradas.</p>
+    {% endif %}
+</div>
+
+<script>
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+</script>
+
 {% endblock %}

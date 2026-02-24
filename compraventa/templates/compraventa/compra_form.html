@@ -1,19 +1,49 @@
 {% extends "base.html" %}
 {% block content %}
 
-<h4 class="fw-bold mb-3">Registrar compra / ingreso</h4>
+<!-- ===============================
+     ENCABEZADO
+=============================== -->
+<div class="mb-4">
+    <a href="{% url 'compraventa:home' %}" class="text-muted text-decoration-none d-inline-flex align-items-center mb-2" style="font-size:14px;">
+        <i data-lucide="arrow-left" style="width:16px;height:16px;margin-right:6px;"></i>
+        Volver a compra-venta
+    </a>
+    <h3 class="fw-bold mb-1">Registrar compra / ingreso</h3>
+    <p class="text-muted mb-0">Registrá la compra de un vehículo a un proveedor</p>
+</div>
 
-<form method="post" class="card-clean p-3">
-  {% csrf_token %}
-  {{ form.as_p }}
-  <div class="d-flex gap-2">
-    <button class="btn btn-primary" type="submit">Guardar</button>
-    <a class="btn btn-outline-secondary" href="{% url 'compraventa:home' %}">Volver</a>
-  </div>
-</form>
+<!-- ===============================
+     FORMULARIO
+=============================== -->
+<div class="card p-4" style="max-width:700px;">
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
 
-<p class="text-muted mt-3">
-  Nota: si elegís Origen = Proveedor y seleccionás proveedor, el sistema crea/actualiza la deuda del vehículo automáticamente (precio + gastos).
-</p>
+        <hr class="my-4">
+
+        <div class="d-flex gap-3">
+            <button type="submit" class="btn btn-primary">
+                <i data-lucide="save" style="width:16px;height:16px;margin-right:6px;"></i>
+                Guardar
+            </button>
+            <a href="{% url 'compraventa:home' %}" class="btn btn-secondary">Volver</a>
+        </div>
+    </form>
+</div>
+
+<div class="alert alert-info mt-4" style="max-width:700px;">
+    <div class="d-flex align-items-center gap-2">
+        <i data-lucide="info" style="width:18px;height:18px;"></i>
+        <span>Si elegís Origen = Proveedor y seleccionás proveedor, el sistema crea/actualiza la deuda del vehículo automáticamente.</span>
+    </div>
+</div>
+
+<script>
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+</script>
 
 {% endblock %}

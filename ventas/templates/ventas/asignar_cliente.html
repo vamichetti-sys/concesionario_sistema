@@ -5,84 +5,79 @@
 
 {% block content %}
 
-<h2 class="fw-bold" style="color:#002855;">
-    Asignar cliente a unidad vendida
-</h2>
+<!-- ===============================
+     ENCABEZADO
+=============================== -->
+<div class="mb-4">
+    <a href="{% url 'ventas:lista_unidades_vendidas' %}" class="text-muted text-decoration-none d-inline-flex align-items-center mb-2" style="font-size:14px;">
+        <i data-lucide="arrow-left" style="width:16px;height:16px;margin-right:6px;"></i>
+        Volver a ventas
+    </a>
+    <h3 class="fw-bold mb-1">Asignar cliente a unidad vendida</h3>
+</div>
 
-<div class="card-clean mb-4">
-    <h5 class="fw-semibold mb-3">Datos del vehículo</h5>
+<!-- ===============================
+     DATOS DEL VEHÍCULO
+=============================== -->
+<div class="card p-4 mb-4">
+    <div class="d-flex align-items-center gap-2 mb-4">
+        <i data-lucide="car" style="width:20px;height:20px;color:#3b82f6;"></i>
+        <h5 class="fw-bold mb-0">Datos del vehículo</h5>
+    </div>
 
-    <div class="row">
+    <div class="row g-3">
         <div class="col-md-4">
-            <strong>Vehículo:</strong><br>
-            {{ vehiculo.marca }} {{ vehiculo.modelo }}
+            <small class="text-muted">Vehículo</small>
+            <div class="fw-semibold">{{ vehiculo.marca }} {{ vehiculo.modelo }}</div>
         </div>
         <div class="col-md-3">
-            <strong>Dominio:</strong><br>
-            {{ vehiculo.dominio }}
+            <small class="text-muted">Dominio</small>
+            <div class="fw-semibold">{{ vehiculo.dominio }}</div>
         </div>
         <div class="col-md-2">
-            <strong>Año:</strong><br>
-            {{ vehiculo.anio }}
+            <small class="text-muted">Año</small>
+            <div class="fw-semibold">{{ vehiculo.anio }}</div>
         </div>
         <div class="col-md-3">
-            <strong>Precio:</strong><br>
-            ${{ vehiculo.precio }}
+            <small class="text-muted">Precio</small>
+            <div class="fw-bold text-success">${{ vehiculo.precio }}</div>
         </div>
     </div>
 </div>
 
-<div class="card-clean">
-    <h5 class="fw-semibold mb-3">Seleccionar cliente</h5>
+<!-- ===============================
+     SELECCIONAR CLIENTE
+=============================== -->
+<div class="card p-4" style="max-width:600px;">
+    <div class="d-flex align-items-center gap-2 mb-4">
+        <i data-lucide="user-plus" style="width:20px;height:20px;color:#10b981;"></i>
+        <h5 class="fw-bold mb-0">Seleccionar cliente</h5>
+    </div>
 
     <form method="POST" id="formAsignarCliente">
         {% csrf_token %}
 
-        <!-- ===============================
-             BUSCADOR DE CLIENTE
-        =============================== -->
-        <div class="mb-3">
-            <label class="form-label fw-semibold">
-                Buscar cliente (Nombre o DNI)
-            </label>
-
-            <input
-                type="text"
-                id="buscadorCliente"
-                class="form-control"
-                placeholder="Escriba nombre o DNI…"
-                autocomplete="off"
-            >
-
-            <div
-                id="resultadosClientes"
-                class="list-group mt-2"
-                style="max-height: 240px; overflow-y: auto;"
-            ></div>
-
-            <!-- ID DEL CLIENTE SELECCIONADO -->
+        <div class="mb-4">
+            <label class="form-label">Buscar cliente (Nombre o DNI)</label>
+            <input type="text" id="buscadorCliente" class="form-control" placeholder="Escriba nombre o DNI..." autocomplete="off">
+            <div id="resultadosClientes" class="list-group mt-2" style="max-height:240px;overflow-y:auto;"></div>
             <input type="hidden" name="cliente" id="clienteSeleccionado">
         </div>
 
-        <div class="d-flex gap-2">
-            <button type="submit" class="btn btn-primary fw-bold">
+        <hr class="my-4">
+
+        <div class="d-flex gap-3">
+            <button type="submit" class="btn btn-success">
+                <i data-lucide="check" style="width:16px;height:16px;margin-right:6px;"></i>
                 Confirmar venta
             </button>
-
-            <a href="{% url 'ventas:lista_unidades_vendidas' %}"
-               class="btn btn-secondary">
-                Cancelar
-            </a>
+            <a href="{% url 'ventas:lista_unidades_vendidas' %}" class="btn btn-secondary">Cancelar</a>
         </div>
     </form>
 </div>
 
-<!-- ===============================
-     JS BUSCADOR CLIENTE (AJUSTADO)
-=============================== -->
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-
     const buscador = document.getElementById("buscadorCliente");
     const resultados = document.getElementById("resultadosClientes");
     const clienteInput = document.getElementById("clienteSeleccionado");
@@ -91,13 +86,9 @@ document.addEventListener("DOMContentLoaded", function () {
     buscador.addEventListener("input", function () {
         const query = this.value.trim();
         resultados.innerHTML = "";
-
-        // 🔴 si el usuario vuelve a escribir, limpiamos selección previa
         clienteInput.value = "";
 
-        if (query.length < 2) {
-            return;
-        }
+        if (query.length < 2) return;
 
         fetch("{% url 'ventas:buscar_cliente_venta' %}?q=" + encodeURIComponent(query))
             .then(response => response.json())
@@ -105,10 +96,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 resultados.innerHTML = "";
 
                 if (data.length === 0) {
-                    resultados.innerHTML = `
-                        <div class="list-group-item text-muted">
-                            No se encontraron clientes
-                        </div>`;
+                    resultados.innerHTML = `<div class="list-group-item text-muted">No se encontraron clientes</div>`;
                     return;
                 }
 
@@ -116,24 +104,17 @@ document.addEventListener("DOMContentLoaded", function () {
                     const item = document.createElement("button");
                     item.type = "button";
                     item.className = "list-group-item list-group-item-action";
-                    item.innerHTML = `
-                        <strong>${cliente.nombre}</strong><br>
-                        <small class="text-muted">DNI ${cliente.dni}</small>
-                    `;
-
+                    item.innerHTML = `<strong>${cliente.nombre}</strong><br><small class="text-muted">DNI ${cliente.dni}</small>`;
                     item.onclick = function () {
-                        // ✅ ACA SE GUARDA EL ID REAL
                         clienteInput.value = cliente.id;
                         buscador.value = cliente.nombre;
                         resultados.innerHTML = "";
                     };
-
                     resultados.appendChild(item);
                 });
             });
     });
 
-    // 🔒 BLOQUEAR SUBMIT SI NO HAY CLIENTE
     form.addEventListener("submit", function (e) {
         if (!clienteInput.value) {
             e.preventDefault();
@@ -141,6 +122,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
+    if (typeof lucide !== 'undefined') lucide.createIcons();
 });
 </script>
 

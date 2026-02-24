@@ -1,55 +1,89 @@
 {% extends "base.html" %}
 {% block content %}
 
+<!-- ===============================
+     ENCABEZADO
+=============================== -->
 <div class="d-flex justify-content-between align-items-start mb-4">
-
-  <!-- DATOS DEL PROVEEDOR -->
-  <div>
-    <h4 class="fw-bold mb-1">{{ proveedor.nombre }}</h4>
-    <div class="text-muted">
-      {% if proveedor.contacto %}Contacto: {{ proveedor.contacto }} · {% endif %}
-      {% if proveedor.telefono %}Tel: {{ proveedor.telefono }}{% endif %}
-    </div>
-  </div>
-
-  <!-- BOTONES -->
-  <div class="text-end">
-
-    <!-- Grupo principal -->
-    <div class="btn-group mb-2" role="group">
-      <a class="btn btn-outline-primary"
-         href="{% url 'compraventa:proveedor_unidades' proveedor.id %}">
-        Unidades
-      </a>
-
-      <a class="btn btn-outline-primary"
-         href="{% url 'compraventa:proveedor_cuenta_corriente' proveedor.id %}">
-        Cuenta corriente
-      </a>
-
-      {% if proveedor.activo %}
-        <a class="btn btn-primary"
-           href="{% url 'compraventa:compra_registrar_proveedor' proveedor.id %}">
-          Registrar compra
+    <div>
+        <a href="{% url 'compraventa:home' %}" class="text-muted text-decoration-none d-inline-flex align-items-center mb-2" style="font-size:14px;">
+            <i data-lucide="arrow-left" style="width:16px;height:16px;margin-right:6px;"></i>
+            Volver a compra-venta
         </a>
-      {% endif %}
+        <h3 class="fw-bold mb-1">{{ proveedor.nombre_empresa }}</h3>
+        <p class="text-muted mb-0">
+            {% if proveedor.contacto %}Contacto: {{ proveedor.contacto }} · {% endif %}
+            {% if proveedor.telefono %}Tel: {{ proveedor.telefono }}{% endif %}
+            {% if proveedor.cuit %}· CUIT: {{ proveedor.cuit }}{% endif %}
+        </p>
     </div>
-
-    <!-- Grupo secundario -->
-    <div class="btn-group btn-group-sm" role="group">
-      <a class="btn btn-outline-danger"
-         href="{% url 'compraventa:proveedor_eliminar' proveedor.id %}"
-         onclick="return confirm('¿Seguro que querés ELIMINAR este proveedor? Esta acción no se puede deshacer.')">
-        Eliminar
-      </a>
-
-      <a class="btn btn-outline-secondary"
-         href="{% url 'compraventa:home' %}">
-        Volver
-      </a>
-    </div>
-
-  </div>
 </div>
+
+<!-- ===============================
+     ACCIONES
+=============================== -->
+<div class="card p-4">
+    <div class="d-flex align-items-center gap-2 mb-4">
+        <i data-lucide="settings" style="width:20px;height:20px;color:#3b82f6;"></i>
+        <h5 class="fw-bold mb-0">Acciones</h5>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-md-4">
+            <a href="{% url 'compraventa:proveedor_unidades' proveedor.id %}" 
+               class="d-block p-4 text-decoration-none text-center" 
+               style="background:#f8f9fa;border-radius:12px;transition:all 0.2s ease;">
+                <div style="width:50px;height:50px;background:rgba(59,130,246,0.1);border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;">
+                    <i data-lucide="car" style="width:24px;height:24px;color:#3b82f6;"></i>
+                </div>
+                <div class="fw-semibold text-dark">Unidades</div>
+                <small class="text-muted">Ver vehículos del proveedor</small>
+            </a>
+        </div>
+
+        <div class="col-md-4">
+            <a href="{% url 'compraventa:proveedor_cuenta_corriente' proveedor.id %}" 
+               class="d-block p-4 text-decoration-none text-center" 
+               style="background:#f8f9fa;border-radius:12px;transition:all 0.2s ease;">
+                <div style="width:50px;height:50px;background:rgba(16,185,129,0.1);border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;">
+                    <i data-lucide="credit-card" style="width:24px;height:24px;color:#10b981;"></i>
+                </div>
+                <div class="fw-semibold text-dark">Cuenta corriente</div>
+                <small class="text-muted">Ver deudas y pagos</small>
+            </a>
+        </div>
+
+        {% if proveedor.activo %}
+        <div class="col-md-4">
+            <a href="{% url 'compraventa:compra_registrar_proveedor' proveedor.id %}" 
+               class="d-block p-4 text-decoration-none text-center" 
+               style="background:linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);border-radius:12px;transition:all 0.2s ease;">
+                <div style="width:50px;height:50px;background:rgba(255,255,255,0.2);border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;">
+                    <i data-lucide="plus" style="width:24px;height:24px;color:#fff;"></i>
+                </div>
+                <div class="fw-semibold text-white">Registrar compra</div>
+                <small style="color:rgba(255,255,255,0.7);">Nueva operación</small>
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    <hr class="my-4">
+
+    <div class="d-flex gap-2">
+        <a href="{% url 'compraventa:proveedor_eliminar' proveedor.id %}"
+           class="btn btn-outline-danger btn-sm"
+           onclick="return confirm('¿Seguro que querés ELIMINAR este proveedor? Esta acción no se puede deshacer.')">
+            <i data-lucide="trash-2" style="width:14px;height:14px;margin-right:4px;"></i>
+            Eliminar proveedor
+        </a>
+    </div>
+</div>
+
+<script>
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+</script>
 
 {% endblock %}

@@ -2,39 +2,75 @@
 {% block title %}Registrar pago{% endblock %}
 {% block content %}
 
-<h4 class="fw-bold mb-4">Registrar pago</h4>
-
-<p class="text-muted mb-3">
-  Proveedor: <strong>{{ deuda.proveedor.nombre_empresa }}</strong> · 
-  Vehículo: <strong>{{ deuda.vehiculo }}</strong>
-</p>
-
-<div class="card shadow-sm rounded-4 p-4">
-  <form method="post">
-    {% csrf_token %}
-    
-    <div class="row g-3">
-      <div class="col-md-6">
-        <label class="fw-bold">Fecha de pago</label>
-        {{ form.fecha }}
-      </div>
-
-      <div class="col-md-6">
-        <label class="fw-bold">Monto</label>
-        {{ form.monto }}
-      </div>
-
-      <div class="col-12">
-        <label class="fw-bold">Observaciones</label>
-        {{ form.nota }}
-      </div>
-    </div>
-
-    <div class="d-flex gap-2 mt-4">
-      <button class="btn btn-primary" type="submit">Guardar pago</button>
-      <a class="btn btn-outline-secondary" href="{% url 'compraventa:proveedor_cuenta_corriente' deuda.proveedor.id %}">Volver</a>
-    </div>
-  </form>
+<!-- ===============================
+     ENCABEZADO
+=============================== -->
+<div class="mb-4">
+    <a href="{% url 'compraventa:proveedor_cuenta_corriente' deuda.proveedor.id %}" class="text-muted text-decoration-none d-inline-flex align-items-center mb-2" style="font-size:14px;">
+        <i data-lucide="arrow-left" style="width:16px;height:16px;margin-right:6px;"></i>
+        Volver a cuenta corriente
+    </a>
+    <h3 class="fw-bold mb-1">Registrar pago</h3>
 </div>
+
+<!-- ===============================
+     INFO
+=============================== -->
+<div class="card p-4 mb-4" style="max-width:600px;background:linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);">
+    <div class="row text-white">
+        <div class="col-md-6">
+            <small style="color:rgba(255,255,255,0.6);">Proveedor</small>
+            <div class="fw-semibold">{{ deuda.proveedor.nombre_empresa }}</div>
+        </div>
+        <div class="col-md-6">
+            <small style="color:rgba(255,255,255,0.6);">Vehículo</small>
+            <div class="fw-semibold">{{ deuda.vehiculo }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- ===============================
+     FORMULARIO
+=============================== -->
+<div class="card p-4" style="max-width:600px;">
+    <form method="post">
+        {% csrf_token %}
+
+        <div class="row g-4">
+            <div class="col-md-6">
+                <label class="form-label">Fecha de pago</label>
+                {{ form.fecha }}
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label">Monto</label>
+                {{ form.monto }}
+            </div>
+
+            <div class="col-12">
+                <label class="form-label">Observaciones</label>
+                {{ form.nota }}
+            </div>
+        </div>
+
+        <hr class="my-4">
+
+        <div class="d-flex gap-3">
+            <button type="submit" class="btn btn-primary">
+                <i data-lucide="check" style="width:16px;height:16px;margin-right:6px;"></i>
+                Guardar pago
+            </button>
+            <a href="{% url 'compraventa:proveedor_cuenta_corriente' deuda.proveedor.id %}" class="btn btn-secondary">
+                Volver
+            </a>
+        </div>
+    </form>
+</div>
+
+<script>
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+</script>
 
 {% endblock %}

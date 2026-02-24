@@ -5,88 +5,91 @@
 
 {% block content %}
 
-<h2 class="fw-bold mb-4" style="color:#002855;">Agregar Vehículo al Stock</h2>
+<!-- ===============================
+     ENCABEZADO
+=============================== -->
+<div class="mb-4">
+    <a href="/vehiculos/" class="text-muted text-decoration-none d-inline-flex align-items-center mb-2" style="font-size:14px;">
+        <i data-lucide="arrow-left" style="width:16px;height:16px;margin-right:6px;"></i>
+        Volver al stock
+    </a>
+    <h3 class="fw-bold mb-1">Agregar Vehículo al Stock</h3>
+    <p class="text-muted mb-0">Completá los datos del vehículo</p>
+</div>
 
-<div class="card shadow-sm rounded-4 p-4" style="max-width: 700px;">
+<!-- ===============================
+     FORMULARIO
+=============================== -->
+<div class="card p-4" style="max-width:700px;">
 
-    {# 🔴 MOSTRAR ERRORES DEL FORM (NO ROMPE NADA) #}
     {% if form.errors %}
-        <div class="alert alert-danger rounded-3 mb-4">
-            <strong>No se pudo guardar el vehículo.</strong>
-            <ul class="mb-0">
-                {% for field, errors in form.errors.items %}
-                    {% for error in errors %}
-                        <li>
-                            <strong>{{ field|capfirst }}:</strong> {{ error }}
-                        </li>
-                    {% endfor %}
-                {% endfor %}
-            </ul>
+    <div class="alert alert-danger mb-4">
+        <div class="d-flex align-items-center gap-2 mb-2">
+            <i data-lucide="alert-circle" style="width:18px;height:18px;"></i>
+            <strong>No se pudo guardar el vehículo</strong>
         </div>
+        <ul class="mb-0 ps-3">
+            {% for field, errors in form.errors.items %}
+                {% for error in errors %}
+                <li><strong>{{ field|capfirst }}:</strong> {{ error }}</li>
+                {% endfor %}
+            {% endfor %}
+        </ul>
+    </div>
     {% endif %}
 
     <form method="POST">
         {% csrf_token %}
 
-        <div class="row g-3">
-
-            <!-- 👇 NUEVO CAMPO UNIDAD -->
+        <div class="row g-4">
             <div class="col-md-6">
-                <label class="fw-bold">Unidad</label>
+                <label class="form-label">Unidad</label>
                 {{ form.unidad }}
             </div>
-
             <div class="col-md-6">
-                <label class="fw-bold">Marca</label>
+                <label class="form-label">Marca</label>
                 {{ form.marca }}
             </div>
-
             <div class="col-md-6">
-                <label class="fw-bold">Modelo</label>
+                <label class="form-label">Modelo</label>
                 {{ form.modelo }}
             </div>
-
             <div class="col-md-6">
-                <label class="fw-bold">Dominio</label>
+                <label class="form-label">Dominio</label>
                 {{ form.dominio }}
             </div>
-
             <div class="col-md-6">
-                <label class="fw-bold">Año</label>
+                <label class="form-label">Año</label>
                 {{ form.anio }}
             </div>
-
             <div class="col-md-6">
-                <label class="fw-bold">Kilómetros</label>
+                <label class="form-label">Kilómetros</label>
                 {{ form.kilometros }}
             </div>
-
             <div class="col-md-6">
-                <label class="fw-bold">Precio</label>
+                <label class="form-label">Precio</label>
                 {{ form.precio }}
             </div>
-
             <div class="col-md-6">
-                <label class="fw-bold">Estado</label>
+                <label class="form-label">Estado</label>
                 {{ form.estado }}
             </div>
-
         </div>
 
-        <div class="mt-4 d-flex" style="gap: 10px;">
+        <hr class="my-4">
 
-            <button type="submit" class="btn btn-primary fw-bold">
+        <div class="d-flex gap-3">
+            <button type="submit" class="btn btn-primary">
+                <i data-lucide="save" style="width:16px;height:16px;margin-right:6px;"></i>
                 Guardar Vehículo
             </button>
-
-            <a href="/vehiculos/" class="btn btn-secondary">
-                Cancelar
-            </a>
-
+            <a href="/vehiculos/" class="btn btn-secondary">Cancelar</a>
         </div>
-
     </form>
-
 </div>
+
+<script>
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+</script>
 
 {% endblock %}

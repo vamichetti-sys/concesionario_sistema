@@ -2,90 +2,92 @@
 
 {% block content %}
 
-<h4 class="fw-bold mb-2" style="color:#002855;">
-    Reporte Interno – {{ unidad }}
-</h4>
-
-<p class="text-muted mb-3">
-    Análisis y control interno del sistema.
-</p>
-
 <!-- ===============================
-     BOTÓN CAMBIO DE UNIDAD
+     ENCABEZADO
 =============================== -->
 <div class="mb-4">
-    {% if unidad == "Hamichetti" %}
-        <a href="{% url 'reportes:reporte_interno_vamichetti' %}"
-           class="btn btn-outline-primary btn-sm">
+    <h3 class="fw-bold mb-1">Reporte Interno – {{ unidad }}</h3>
+    <p class="text-muted mb-0">Análisis y control interno del sistema</p>
+</div>
+
+<!-- ===============================
+     CAMBIO DE UNIDAD
+=============================== -->
+<div class="card p-3 mb-4">
+    <div class="d-flex gap-2">
+        {% if unidad == "Hamichetti" %}
+        <a href="{% url 'reportes:reporte_interno_vamichetti' %}" class="btn btn-secondary">
+            <i data-lucide="repeat" style="width:16px;height:16px;margin-right:6px;"></i>
             Ir a Reporte Vamichetti
         </a>
-    {% elif unidad == "Vamichetti" %}
-        <a href="{% url 'reportes:reporte_interno' %}"
-           class="btn btn-outline-secondary btn-sm">
+        {% elif unidad == "Vamichetti" %}
+        <a href="{% url 'reportes:reporte_interno' %}" class="btn btn-secondary">
+            <i data-lucide="repeat" style="width:16px;height:16px;margin-right:6px;"></i>
             Ir a Reporte Hamichetti
         </a>
-    {% endif %}
+        {% endif %}
+    </div>
 </div>
 
-<div class="row">
-
-    <!-- ===============================
-         REPORTE WEB (SIEMPRE VISIBLE)
-    ================================ -->
-    <div class="col-md-6 mb-4">
-        <div class="card-clean h-100 d-flex flex-column justify-content-between">
-            <div>
-                <h6 class="fw-bold mb-2">Reporte Web</h6>
-                <p class="text-muted mb-3">
-                    Información operativa del sistema: ventas y seguimiento general.
-                </p>
-            </div>
-            <a href="{% url 'reportes:reporte_web' %}" class="btn btn-primary">
-                Ingresar
-            </a>
-        </div>
-    </div>
-
-    <!-- ===============================
-         BLOQUE INTERNO (CONTROLADO POR PERMISOS)
-    ================================ -->
-    {% if perms.reportes.view_fichareporteinterno %}
-    <div class="col-md-6 mb-4">
-        <div class="card-clean h-100 d-flex flex-column justify-content-between">
-            <div>
-                <h6 class="fw-bold mb-2">Gestión Interna</h6>
-                <p class="text-muted mb-3">
-                    Control de stock, fichas internas, gastos y resultados.
-                </p>
-            </div>
-
-            <div class="d-flex flex-column gap-2">
-                <a href="{% url 'reportes:control_stock' %}" class="btn btn-outline-primary">
-                    📦 Control de stock
-                </a>
-
-                <a href="{% url 'reportes:reporte_ganancias' %}" class="btn btn-outline-secondary">
-                    📊 Reporte de ganancias
-                </a>
+<!-- ===============================
+     OPCIONES
+=============================== -->
+<div class="row g-4">
+    <!-- REPORTE WEB -->
+    <div class="col-md-6">
+        <div class="card p-4 h-100">
+            <div class="d-flex align-items-start gap-3">
+                <div style="width:50px;height:50px;background:rgba(59,130,246,0.1);border-radius:12px;display:flex;align-items:center;justify-content:center;">
+                    <i data-lucide="bar-chart-3" style="width:24px;height:24px;color:#3b82f6;"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <h5 class="fw-bold mb-1">Reporte Web</h5>
+                    <p class="text-muted mb-3" style="font-size:14px;">Información operativa del sistema: ventas y seguimiento general.</p>
+                    <a href="{% url 'reportes:reporte_web' %}" class="btn btn-primary">
+                        Ingresar
+                        <i data-lucide="arrow-right" style="width:16px;height:16px;margin-left:6px;"></i>
+                    </a>
+                </div>
             </div>
         </div>
     </div>
-    {% else %}
-    <div class="col-md-6 mb-4">
-        <div class="card-clean h-100 d-flex flex-column justify-content-between">
-            <div>
-                <h6 class="fw-bold mb-2">Gestión Interna</h6>
-                <p class="text-muted mb-3">
-                    Control interno del sistema.
-                </p>
-            </div>
-            <div class="alert alert-warning mb-0">
-                No tenés permisos para acceder a los reportes internos.
+
+    <!-- GESTIÓN INTERNA -->
+    <div class="col-md-6">
+        <div class="card p-4 h-100">
+            <div class="d-flex align-items-start gap-3">
+                <div style="width:50px;height:50px;background:rgba(139,92,246,0.1);border-radius:12px;display:flex;align-items:center;justify-content:center;">
+                    <i data-lucide="lock" style="width:24px;height:24px;color:#8b5cf6;"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <h5 class="fw-bold mb-1">Gestión Interna</h5>
+                    <p class="text-muted mb-3" style="font-size:14px;">Control de stock, fichas internas, gastos y resultados.</p>
+
+                    {% if perms.reportes.view_fichareporteinterno %}
+                    <div class="d-flex flex-wrap gap-2">
+                        <a href="{% url 'reportes:control_stock' %}" class="btn btn-secondary">
+                            <i data-lucide="package" style="width:16px;height:16px;margin-right:6px;"></i>
+                            Control de stock
+                        </a>
+                        <a href="{% url 'reportes:reporte_ganancias' %}" class="btn btn-secondary">
+                            <i data-lucide="trending-up" style="width:16px;height:16px;margin-right:6px;"></i>
+                            Reporte de ganancias
+                        </a>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-warning mb-0">
+                        <i data-lucide="lock" style="width:16px;height:16px;margin-right:6px;"></i>
+                        No tenés permisos para acceder a los reportes internos.
+                    </div>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>
-    {% endif %}
-
 </div>
+
+<script>
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+</script>
 
 {% endblock %}

@@ -1,56 +1,111 @@
 {% extends "base.html" %}
-
 {% block title %}Pagaré{% endblock %}
-
 {% block content %}
 
+<!-- ===============================
+     ENCABEZADO
+=============================== -->
 <div class="mb-4">
-    <h2 class="fw-bold mb-1" style="color:#002855;">
-        Pagaré Nº {{ pagare.numero }}
-    </h2>
-    <p class="text-muted mb-0">
-        {{ pagare.cliente }}
-    </p>
+    <a href="{% url 'boletos:lista_pagares' %}" class="text-muted text-decoration-none d-inline-flex align-items-center mb-2" style="font-size:14px;">
+        <i data-lucide="arrow-left" style="width:16px;height:16px;margin-right:6px;"></i>
+        Volver a pagarés
+    </a>
+    <h3 class="fw-bold mb-1">Pagaré Nº {{ pagare.numero }}</h3>
+    <p class="text-muted mb-0">{{ pagare.cliente }}</p>
 </div>
 
-<div class="card shadow-sm border-0 rounded-4">
-    <div class="card-body">
+<!-- ===============================
+     DETALLE DEL PAGARÉ
+=============================== -->
+<div class="card p-4">
+    <div class="row g-4">
+        
+        <!-- BENEFICIARIO -->
+        <div class="col-md-6">
+            <div class="d-flex align-items-center gap-3 mb-3">
+                <div style="width:44px;height:44px;background:rgba(59,130,246,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                    <i data-lucide="user" style="width:20px;height:20px;color:#3b82f6;"></i>
+                </div>
+                <div>
+                    <small class="text-muted">Beneficiario</small>
+                    <div class="fw-semibold">{{ pagare.beneficiario }}</div>
+                </div>
+            </div>
+        </div>
 
-        <p><strong>Beneficiario:</strong> {{ pagare.beneficiario }}</p>
-        <p><strong>Monto:</strong> $ {{ pagare.monto|floatformat:0 }}</p>
-        <p><strong>Fecha de emisión:</strong>
-            {{ pagare.lugar_emision }} · {{ pagare.fecha_emision|date:"d/m/Y" }}
-        </p>
+        <!-- MONTO -->
+        <div class="col-md-6">
+            <div class="d-flex align-items-center gap-3 mb-3">
+                <div style="width:44px;height:44px;background:rgba(16,185,129,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                    <i data-lucide="dollar-sign" style="width:20px;height:20px;color:#10b981;"></i>
+                </div>
+                <div>
+                    <small class="text-muted">Monto</small>
+                    <div class="fw-bold" style="font-size:20px;color:#10b981;">$ {{ pagare.monto|floatformat:0 }}</div>
+                </div>
+            </div>
+        </div>
 
-        <p><strong>Vencimiento:</strong>
-            {% if pagare.fecha_vencimiento %}
-                {{ pagare.lugar_vencimiento }} · {{ pagare.fecha_vencimiento|date:"d/m/Y" }}
-            {% else %}
-                Pagadero a la vista
-            {% endif %}
-        </p>
+        <!-- FECHA DE EMISIÓN -->
+        <div class="col-md-6">
+            <div class="d-flex align-items-center gap-3 mb-3">
+                <div style="width:44px;height:44px;background:rgba(139,92,246,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                    <i data-lucide="calendar" style="width:20px;height:20px;color:#8b5cf6;"></i>
+                </div>
+                <div>
+                    <small class="text-muted">Fecha de emisión</small>
+                    <div class="fw-semibold">{{ pagare.lugar_emision }} · {{ pagare.fecha_emision|date:"d/m/Y" }}</div>
+                </div>
+            </div>
+        </div>
 
-        <div class="mt-4">
-
-            {% if pagare.pdf %}
-                <a href="{{ pagare.pdf.url }}"
-                   target="_blank"
-                   class="btn btn-outline-success rounded-pill fw-bold px-4">
-                    📄 Ver PDF del lote completo
-                </a>
-            {% else %}
-                <span class="text-muted">
-                    PDF no disponible
-                </span>
-            {% endif %}
-
-            <a href="{% url 'boletos:lista_pagares' %}"
-               class="btn btn-outline-secondary rounded-pill fw-bold px-4">
-                Volver
-            </a>
+        <!-- VENCIMIENTO -->
+        <div class="col-md-6">
+            <div class="d-flex align-items-center gap-3 mb-3">
+                <div style="width:44px;height:44px;background:rgba(245,158,11,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                    <i data-lucide="clock" style="width:20px;height:20px;color:#f59e0b;"></i>
+                </div>
+                <div>
+                    <small class="text-muted">Vencimiento</small>
+                    <div class="fw-semibold">
+                        {% if pagare.fecha_vencimiento %}
+                            {{ pagare.lugar_vencimiento }} · {{ pagare.fecha_vencimiento|date:"d/m/Y" }}
+                        {% else %}
+                            <span class="badge bg-info">Pagadero a la vista</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
         </div>
 
     </div>
+
+    <hr class="my-4">
+
+    <!-- ACCIONES -->
+    <div class="d-flex gap-3">
+        {% if pagare.pdf %}
+        <a href="{{ pagare.pdf.url }}" target="_blank" class="btn btn-success">
+            <i data-lucide="file-down" style="width:16px;height:16px;margin-right:6px;"></i>
+            Ver PDF del lote completo
+        </a>
+        {% else %}
+        <span class="btn btn-secondary disabled">
+            <i data-lucide="file-x" style="width:16px;height:16px;margin-right:6px;"></i>
+            PDF no disponible
+        </span>
+        {% endif %}
+        <a href="{% url 'boletos:lista_pagares' %}" class="btn btn-secondary">
+            <i data-lucide="arrow-left" style="width:16px;height:16px;margin-right:6px;"></i>
+            Volver
+        </a>
+    </div>
 </div>
+
+<script>
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+</script>
 
 {% endblock %}

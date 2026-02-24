@@ -1,109 +1,131 @@
 {% extends "base.html" %}
-
 {% block title %}Nuevo pagaré{% endblock %}
-
 {% block content %}
 
+<!-- ===============================
+     ENCABEZADO
+=============================== -->
 <div class="mb-4">
-    <h2 class="fw-bold mb-1" style="color:#002855;">
-        Nuevo pagaré
-    </h2>
-    <p class="text-muted mb-0">
-        Definí cliente, monto total y cantidad de pagarés
-    </p>
+    <a href="{% url 'boletos:lista_pagares' %}" class="text-muted text-decoration-none d-inline-flex align-items-center mb-2" style="font-size:14px;">
+        <i data-lucide="arrow-left" style="width:16px;height:16px;margin-right:6px;"></i>
+        Volver a pagarés
+    </a>
+    <h3 class="fw-bold mb-1">Nuevo pagaré</h3>
+    <p class="text-muted mb-0">Definí cliente, monto total y cantidad de pagarés</p>
 </div>
 
+<!-- ===============================
+     ERRORES
+=============================== -->
 {% if form.errors %}
-    <div class="alert alert-danger">
+<div class="alert alert-danger mb-4">
+    <div class="d-flex align-items-center gap-2 mb-2">
+        <i data-lucide="alert-circle" style="width:20px;height:20px;"></i>
         <strong>Hay errores en el formulario:</strong>
-        <ul class="mb-0">
-            {% for field, errors in form.errors.items %}
-                {% for error in errors %}
-                    <li>{{ error }}</li>
-                {% endfor %}
-            {% endfor %}
-        </ul>
     </div>
+    <ul class="mb-0">
+        {% for field, errors in form.errors.items %}
+            {% for error in errors %}
+            <li>{{ error }}</li>
+            {% endfor %}
+        {% endfor %}
+    </ul>
+</div>
 {% endif %}
 
-<div class="card shadow-sm border-0 rounded-4">
-    <div class="card-body">
+<!-- ===============================
+     FORMULARIO
+=============================== -->
+<div class="card p-4">
+    <form method="post" novalidate onsubmit="bloquearSubmit(this)">
+        {% csrf_token %}
 
-        <!-- ✅ BLOQUEO ANTI DOBLE SUBMIT (NO SE TOCA) -->
-        <form method="post" novalidate onsubmit="bloquearSubmit(this)">
-            {% csrf_token %}
-
-            <div class="mb-3">
-                {{ form.cliente.label_tag }}
+        <div class="row g-4">
+            <!-- CLIENTE -->
+            <div class="col-md-6">
+                <label class="form-label">Cliente</label>
                 {{ form.cliente }}
             </div>
 
-            <div class="mb-3">
-                {{ form.beneficiario.label_tag }}
+            <!-- BENEFICIARIO -->
+            <div class="col-md-6">
+                <label class="form-label">Beneficiario</label>
                 {{ form.beneficiario }}
             </div>
 
-            <div class="mb-3">
-                {{ form.monto_total.label_tag }}
-                <input
-                    type="number"
-                    step="0.01"
-                    id="monto_total"
-                    name="monto_total"
-                    class="form-control"
-                    value="{{ form.monto_total.value|default:'' }}"
-                >
+            <!-- MONTO TOTAL -->
+            <div class="col-md-6">
+                <label class="form-label">Monto total</label>
+                <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input type="number"
+                           step="0.01"
+                           id="monto_total"
+                           name="monto_total"
+                           class="form-control"
+                           value="{{ form.monto_total.value|default:'' }}"
+                           placeholder="0.00">
+                </div>
             </div>
 
-            <div class="mb-3">
-                {{ form.cantidad.label_tag }}
-                <input
-                    type="number"
-                    id="cantidad"
-                    name="cantidad"
-                    class="form-control"
-                    min="1"
-                    value="{{ form.cantidad.value|default:'' }}"
-                >
+            <!-- CANTIDAD -->
+            <div class="col-md-6">
+                <label class="form-label">Cantidad de pagarés</label>
+                <input type="number"
+                       id="cantidad"
+                       name="cantidad"
+                       class="form-control"
+                       min="1"
+                       value="{{ form.cantidad.value|default:'' }}"
+                       placeholder="Ej: 6">
             </div>
 
-            <div class="mb-3">
-                {{ form.lugar_emision.label_tag }}
+            <!-- LUGAR EMISIÓN -->
+            <div class="col-md-6">
+                <label class="form-label">Lugar de emisión</label>
                 {{ form.lugar_emision }}
             </div>
 
-            <div class="mb-3">
-                {{ form.fecha_emision.label_tag }}
+            <!-- FECHA EMISIÓN -->
+            <div class="col-md-6">
+                <label class="form-label">Fecha de emisión</label>
                 {{ form.fecha_emision }}
             </div>
+        </div>
 
-            <!-- ===============================
-                 DESGLOSE DINÁMICO
-            =============================== -->
-            <div class="mt-4">
-                <p class="text-muted mb-2">
-                    Detalle de pagarés (podés editar montos y fechas):
-                </p>
-                <div id="desglose"></div>
+        <hr class="my-4">
+
+        <!-- ===============================
+             DESGLOSE DINÁMICO
+        =============================== -->
+        <div class="mb-4">
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <i data-lucide="list" style="width:20px;height:20px;color:#3b82f6;"></i>
+                <h6 class="fw-bold mb-0">Detalle de pagarés</h6>
             </div>
-
-            <div class="mt-4 d-flex gap-2">
-                <button
-                    type="submit"
-                    id="btn-submit"
-                    class="btn btn-primary rounded-pill fw-bold px-4">
-                    Continuar
-                </button>
-
-                <a href="{% url 'boletos:lista_pagares' %}"
-                   class="btn btn-outline-secondary rounded-pill fw-bold px-4">
-                    Cancelar
-                </a>
+            <p class="text-muted mb-3" style="font-size:14px;">
+                Podés editar montos y fechas de vencimiento individuales
+            </p>
+            <div id="desglose"></div>
+            <div id="desglose-vacio" class="p-4 text-center" style="background:#f8f9fa;border-radius:12px;">
+                <i data-lucide="file-text" style="width:32px;height:32px;color:#9ca3af;margin-bottom:8px;"></i>
+                <p class="text-muted mb-0" style="font-size:14px;">Completá monto, cantidad y fecha para ver el desglose</p>
             </div>
+        </div>
 
-        </form>
+        <hr class="my-4">
 
-    </div>
+        <!-- BOTONES -->
+        <div class="d-flex gap-3">
+            <button type="submit" id="btn-submit" class="btn btn-primary">
+                <i data-lucide="check" style="width:16px;height:16px;margin-right:6px;"></i>
+                Generar pagarés
+            </button>
+            <a href="{% url 'boletos:lista_pagares' %}" class="btn btn-secondary">
+                Cancelar
+            </a>
+        </div>
+    </form>
 </div>
 
 <script>
@@ -114,11 +136,9 @@ function bloquearSubmit(form) {
         return false;
     }
     enviando = true;
-
     const btn = document.getElementById("btn-submit");
     btn.disabled = true;
-    btn.innerText = "Generando…";
-
+    btn.innerHTML = '<i data-lucide="loader" style="width:16px;height:16px;margin-right:6px;animation:spin 1s linear infinite;"></i> Generando...';
     return true;
 }
 
@@ -133,32 +153,43 @@ function actualizarDesglose() {
     const montoTotal = parseFloat(document.getElementById("monto_total").value);
     const fechaEmision = document.getElementById("id_fecha_emision").value;
     const contenedor = document.getElementById("desglose");
+    const vacio = document.getElementById("desglose-vacio");
 
     contenedor.innerHTML = "";
 
-    if (!cantidad || !montoTotal || !fechaEmision) return;
+    if (!cantidad || !montoTotal || !fechaEmision) {
+        vacio.style.display = "block";
+        return;
+    }
 
+    vacio.style.display = "none";
     const base = (montoTotal / cantidad).toFixed(2);
 
     for (let i = 1; i <= cantidad; i++) {
         const fecha = sumarDias(fechaEmision, i * 30);
-
         contenedor.innerHTML += `
-            <div class="row g-2 align-items-end mb-2">
-                <div class="col-md-2"><strong>Pagaré ${i}</strong></div>
-                <div class="col-md-5">
-                    <label class="form-label">Monto</label>
-                    <input type="number" step="0.01"
-                           class="form-control"
-                           name="monto_${i}"
-                           value="${base}">
-                </div>
-                <div class="col-md-5">
-                    <label class="form-label">Fecha de vencimiento</label>
-                    <input type="date"
-                           class="form-control"
-                           name="fecha_vencimiento_${i}"
-                           value="${fecha}">
+            <div class="card p-3 mb-2" style="background:#f8f9fa;">
+                <div class="row g-3 align-items-center">
+                    <div class="col-md-2">
+                        <span class="badge bg-info">Pagaré ${i}</span>
+                    </div>
+                    <div class="col-md-5">
+                        <label class="form-label" style="font-size:12px;">Monto</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="number" step="0.01"
+                                   class="form-control"
+                                   name="monto_${i}"
+                                   value="${base}">
+                        </div>
+                    </div>
+                    <div class="col-md-5">
+                        <label class="form-label" style="font-size:12px;">Fecha de vencimiento</label>
+                        <input type="date"
+                               class="form-control"
+                               name="fecha_vencimiento_${i}"
+                               value="${fecha}">
+                    </div>
                 </div>
             </div>
         `;
@@ -168,6 +199,18 @@ function actualizarDesglose() {
 document.getElementById("cantidad").addEventListener("input", actualizarDesglose);
 document.getElementById("monto_total").addEventListener("input", actualizarDesglose);
 document.getElementById("id_fecha_emision").addEventListener("change", actualizarDesglose);
+
+// Inicializar íconos
+if (typeof lucide !== 'undefined') {
+    lucide.createIcons();
+}
 </script>
+
+<style>
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+</style>
 
 {% endblock %}

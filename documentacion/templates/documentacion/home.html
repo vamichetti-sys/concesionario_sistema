@@ -2,128 +2,121 @@
 {% block title %}Documentación Pendiente{% endblock %}
 {% block content %}
 
-<h3 class="fw-bold mb-4">Documentación Pendiente</h3>
-
-<!-- BOTONES DE FILTRO -->
-<div class="btn-group mb-4" role="group">
-  <a href="?tipo=vtv" 
-     class="btn {% if tipo_actual == 'vtv' %}btn-primary{% else %}btn-outline-primary{% endif %}">
-    VTV
-  </a>
-  <a href="?tipo=autopartes" 
-     class="btn {% if tipo_actual == 'autopartes' %}btn-primary{% else %}btn-outline-primary{% endif %}">
-    Grabado de Autopartes
-  </a>
-  <a href="?tipo=verificacion" 
-     class="btn {% if tipo_actual == 'verificacion' %}btn-primary{% else %}btn-outline-primary{% endif %}">
-    Verificación Policial
-  </a>
+<!-- ===============================
+     ENCABEZADO
+=============================== -->
+<div class="mb-4">
+    <h3 class="fw-bold mb-1">Documentación Pendiente</h3>
+    <p class="text-muted mb-0">Control de VTV, grabado de autopartes y verificación policial</p>
 </div>
 
-<!-- TABLA DE VEHÍCULOS PENDIENTES -->
-<div class="card shadow-sm rounded-4 p-4 mb-4">
-  <h5 class="fw-bold mb-3">{{ titulo }}</h5>
-  
-  <table class="table table-striped align-middle">
-    <thead>
-      <tr>
-        <th>Vehículo</th>
-        <th>Dominio</th>
-        <th>Año</th>
-        <th>Estado</th>
-        <th class="text-end">Acciones</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for vehiculo in vehiculos %}
-        <tr>
-          <td>
-            <strong>{{ vehiculo.marca }} {{ vehiculo.modelo }}</strong>
-          </td>
-          <td>{{ vehiculo.dominio|default:"Sin dominio" }}</td>
-          <td>{{ vehiculo.anio }}</td>
-          <td>
-            {% if tipo_actual == 'vtv' %}
-              <span class="badge bg-danger">{{ vehiculo.ficha.vtv_estado|default:"No informado" }}</span>
-            {% elif tipo_actual == 'autopartes' %}
-              <span class="badge bg-danger">{{ vehiculo.ficha.autopartes_estado|default:"No informado" }}</span>
-            {% elif tipo_actual == 'verificacion' %}
-              <span class="badge bg-danger">{{ vehiculo.ficha.verificacion_estado|default:"No informado" }}</span>
-            {% endif %}
-          </td>
-          <td class="text-end">
-            <a href="{% url 'vehiculos:ficha_completa' vehiculo.id %}" 
-               class="btn btn-sm btn-primary">
-              Ver ficha
-            </a>
-          </td>
-        </tr>
-      {% empty %}
-        <tr>
-          <td colspan="5" class="text-muted text-center py-4">
-            ✅ No hay vehículos pendientes de {{ titulo|lower }}
-          </td>
-        </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  
-  {% if vehiculos %}
-    <div class="mt-3">
-      <strong>Total:</strong> {{ vehiculos|length }} vehículo{{ vehiculos|length|pluralize }} con documentación pendiente
+<!-- ===============================
+     FILTROS
+=============================== -->
+<div class="card p-3 mb-4">
+    <div class="d-flex gap-2">
+        <a href="?tipo=vtv" class="btn {% if tipo_actual == 'vtv' %}btn-primary{% else %}btn-secondary{% endif %}">
+            <i data-lucide="shield-check" style="width:16px;height:16px;margin-right:6px;"></i>
+            VTV
+        </a>
+        <a href="?tipo=autopartes" class="btn {% if tipo_actual == 'autopartes' %}btn-primary{% else %}btn-secondary{% endif %}">
+            <i data-lucide="scan" style="width:16px;height:16px;margin-right:6px;"></i>
+            Grabado de Autopartes
+        </a>
+        <a href="?tipo=verificacion" class="btn {% if tipo_actual == 'verificacion' %}btn-primary{% else %}btn-secondary{% endif %}">
+            <i data-lucide="badge-check" style="width:16px;height:16px;margin-right:6px;"></i>
+            Verificación Policial
+        </a>
     </div>
-  {% endif %}
 </div>
 
-<!-- 🆕 DOCUMENTACIÓN VENCIDA -->
-<div class="card shadow-sm rounded-4 p-4 border-danger">
-  <h5 class="fw-bold mb-3 text-danger">
-    ⚠️ Documentación Vencida
-  </h5>
-  
-  {% if vehiculos_vencidos %}
-    <table class="table table-striped align-middle">
-      <thead>
-        <tr>
-          <th>Vehículo</th>
-          <th>Dominio</th>
-          <th>Documentación Vencida</th>
-          <th class="text-end">Acciones</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for item in vehiculos_vencidos %}
-          <tr>
-            <td>
-              <strong>{{ item.vehiculo.marca }} {{ item.vehiculo.modelo }}</strong>
-            </td>
-            <td>{{ item.vehiculo.dominio|default:"Sin dominio" }}</td>
-            <td>
-              {% for venc in item.vencimientos %}
-                <span class="badge bg-danger me-1">
-                  {{ venc.tipo }}: {{ venc.fecha|date:"d/m/Y" }}
-                </span>
-              {% endfor %}
-            </td>
-            <td class="text-end">
-              <a href="{% url 'vehiculos:ficha_completa' item.vehiculo.id %}" 
-                 class="btn btn-sm btn-danger">
-                Ver ficha
-              </a>
-            </td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-    
-    <div class="mt-3 text-danger">
-      <strong>Total:</strong> {{ vehiculos_vencidos|length }} vehículo{{ vehiculos_vencidos|length|pluralize }} con documentación vencida
+<!-- ===============================
+     VEHÍCULOS PENDIENTES
+=============================== -->
+<div class="card p-4 mb-4">
+    <div class="d-flex align-items-center gap-2 mb-4">
+        <i data-lucide="clock" style="width:20px;height:20px;color:#f59e0b;"></i>
+        <h5 class="fw-bold mb-0">{{ titulo }}</h5>
+        {% if vehiculos %}
+        <span class="badge bg-warning ms-2">{{ vehiculos|length }}</span>
+        {% endif %}
     </div>
-  {% else %}
-    <p class="text-muted text-center py-3">
-      ✅ No hay vehículos con documentación vencida
-    </p>
-  {% endif %}
+
+    {% if vehiculos %}
+    <div class="table-responsive">
+        <table class="table align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Vehículo</th>
+                    <th>Dominio</th>
+                    <th>Año</th>
+                    <th>Estado</th>
+                    <th class="text-end">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for vehiculo in vehiculos %}
+                <tr>
+                    <td>
+                        <div class="d-flex align-items-center gap-3">
+                            <div style="width:40px;height:40px;background:rgba(245,158,11,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                                <i data-lucide="car" style="width:18px;height:18px;color:#f59e0b;"></i>
+                            </div>
+                            <span class="fw-semibold">{{ vehiculo.marca }} {{ vehiculo.modelo }}</span>
+                        </div>
+                    </td>
+                    <td>
+                        {% if vehiculo.dominio %}
+                        <span class="badge bg-secondary">{{ vehiculo.dominio }}</span>
+                        {% else %}
+                        <span class="text-muted">Sin dominio</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ vehiculo.anio }}</td>
+                    <td>
+                        {% if tipo_actual == 'vtv' %}
+                        <span class="badge bg-warning">{{ vehiculo.ficha.vtv_estado|default:"No informado" }}</span>
+                        {% elif tipo_actual == 'autopartes' %}
+                        <span class="badge bg-warning">{{ vehiculo.ficha.autopartes_estado|default:"No informado" }}</span>
+                        {% elif tipo_actual == 'verificacion' %}
+                        <span class="badge bg-warning">{{ vehiculo.ficha.verificacion_estado|default:"No informado" }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end">
+                        <a href="{% url 'vehiculos:ficha_completa' vehiculo.id %}" class="btn btn-secondary btn-sm">
+                            <i data-lucide="eye" style="width:14px;height:14px;margin-right:4px;"></i>
+                            Ver ficha
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="p-4 text-center" style="background:#f0fdf4;border-radius:12px;">
+        <i data-lucide="check-circle" style="width:32px;height:32px;color:#10b981;margin-bottom:8px;"></i>
+        <p class="text-success fw-semibold mb-0">No hay vehículos pendientes de {{ titulo|lower }}</p>
+    </div>
+    {% endif %}
 </div>
 
-{% endblock %}
+<!-- ===============================
+     DOCUMENTACIÓN VENCIDA
+=============================== -->
+<div class="card p-4" style="border:1px solid #fecaca;">
+    <div class="d-flex align-items-center gap-2 mb-4">
+        <i data-lucide="alert-triangle" style="width:20px;height:20px;color:#ef4444;"></i>
+        <h5 class="fw-bold mb-0 text-danger">Documentación Vencida</h5>
+        {% if vehiculos_vencidos %}
+        <span class="badge bg-danger ms-2">{{ vehiculos_vencidos|length }}</span>
+        {% endif %}
+    </div>
+
+    {% if vehiculos_vencidos %}
+    <div class="table-responsive">
+        <table class="table align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Vehículo</th>
+                    <th>Dominio</th>

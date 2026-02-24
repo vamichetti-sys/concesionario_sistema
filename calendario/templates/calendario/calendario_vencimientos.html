@@ -1,46 +1,49 @@
 {% extends "base.html" %}
-
 {% block title %}Calendario{% endblock %}
-
 {% block content %}
 
-<div class="card-clean">
-    <h3 class="mb-2">Calendario de vencimientos y turnos</h3>
-    <p class="text-muted mb-3">
-        Vencimientos de documentación y turnos programados por vehículo.
-    </p>
-
-    <!-- ===============================
-         ACCIONES
-    =============================== -->
-    <div class="d-flex justify-content-end mb-3">
-        <button
-            id="btnPdfMes"
-            class="btn btn-outline-primary btn-sm">
-            📄 Exportar PDF del mes
-        </button>
+<!-- ===============================
+     ENCABEZADO
+=============================== -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-bold mb-1">Calendario de vencimientos y turnos</h3>
+        <p class="text-muted mb-0">Vencimientos de documentación y turnos programados por vehículo</p>
     </div>
+    <button id="btnPdfMes" class="btn btn-primary">
+        <i data-lucide="file-down" style="width:16px;height:16px;margin-right:6px;"></i>
+        Exportar PDF del mes
+    </button>
+</div>
 
-    <!-- 🆕 LEYENDA ACTUALIZADA -->
-    <div class="d-flex flex-wrap gap-3 mb-3 small">
+<!-- ===============================
+     LEYENDA
+=============================== -->
+<div class="card p-3 mb-4">
+    <div class="d-flex flex-wrap gap-4">
         <div class="d-flex align-items-center gap-2">
-            <span style="width:14px; height:14px; background:#dc3545; display:inline-block; border-radius:3px;"></span>
-            Vencimiento VTV
+            <span style="width:16px;height:16px;background:#ef4444;display:inline-block;border-radius:4px;"></span>
+            <span style="font-size:13px;">Vencimiento VTV</span>
         </div>
         <div class="d-flex align-items-center gap-2">
-            <span style="width:14px; height:14px; background:#fd7e14; display:inline-block; border-radius:3px;"></span>
-            Vencimiento Verificación
+            <span style="width:16px;height:16px;background:#f97316;display:inline-block;border-radius:4px;"></span>
+            <span style="font-size:13px;">Vencimiento Verificación</span>
         </div>
         <div class="d-flex align-items-center gap-2">
-            <span style="width:14px; height:14px; background:#ffc107; display:inline-block; border-radius:3px;"></span>
-            Vencimiento Patentes
+            <span style="width:16px;height:16px;background:#eab308;display:inline-block;border-radius:4px;"></span>
+            <span style="font-size:13px;">Vencimiento Patentes</span>
         </div>
         <div class="d-flex align-items-center gap-2">
-            <span style="width:14px; height:14px; background:#0dcaf0; display:inline-block; border-radius:3px;"></span>
-            Turnos
+            <span style="width:16px;height:16px;background:#3b82f6;display:inline-block;border-radius:4px;"></span>
+            <span style="font-size:13px;">Turnos</span>
         </div>
     </div>
+</div>
 
+<!-- ===============================
+     CALENDARIO
+=============================== -->
+<div class="card p-4">
     <div id="calendar"></div>
 </div>
 
@@ -50,169 +53,19 @@
 <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
 
-<!-- ===============================
-     IDENTIDAD VISUAL AMICHETTI
-=============================== -->
 <style>
-.fc {
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto;
-}
+    .fc {
+        font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    }
 
-.fc-toolbar-title {
-    font-weight: 700;
-    color: #002855;
-}
+    .fc-toolbar-title {
+        font-family: 'Poppins', sans-serif;
+        font-weight: 600 !important;
+        color: #1a1a2e !important;
+        font-size: 1.25rem !important;
+    }
 
-.fc-button {
-    background: #002855 !important;
-    border: none !important;
-    box-shadow: none !important;
-}
-
-.fc-button:hover {
-    background: #001c3d !important;
-}
-
-.fc-button-primary:not(:disabled).fc-button-active {
-    background: #FF6C1A !important;
-}
-
-/* EVENTOS */
-.fc-event {
-    border: none !important;
-    border-radius: 6px !important;
-    padding: 3px 6px !important;
-    font-size: 0.75rem;
-    cursor: pointer;
-    color: #ffffff !important;
-    font-weight: 600;
-    text-shadow: 0 1px 2px rgba(0,0,0,.35);
-}
-
-/* 🆕 COLORES POR TIPO */
-.fc-event[style*="#dc3545"] {
-    background-color: #dc3545 !important;
-}
-
-.fc-event[style*="#fd7e14"] {
-    background-color: #fd7e14 !important;
-}
-
-.fc-event[style*="#ffc107"] {
-    background-color: #ffc107 !important;
-    color: #2b2b2b !important;
-    text-shadow: none;
-}
-
-.fc-event[style*="#0dcaf0"] {
-    background-color: #0dcaf0 !important;
-    color: #2b2b2b !important;
-    text-shadow: none;
-}
-
-.fc-day-today {
-    background: #fff7e6 !important;
-}
-
-.fc-daygrid-event {
-    margin-top: 4px;
-}
-
-/* 🆕 HOVER */
-.fc-event:hover {
-    opacity: 0.85;
-    transform: scale(1.02);
-    transition: all 0.2s ease;
-}
-</style>
-
-<script>
-/* ======================================================
-   🔒 FIX DEFINITIVO DUPLICADO
-   NO SE TOCA NADA MÁS
-   ====================================================== */
-if (!window.__calendarInitialized) {
-    window.__calendarInitialized = true;
-
-    document.addEventListener('DOMContentLoaded', function () {
-
-        let calendarEl = document.getElementById('calendar');
-        let btnPdf = document.getElementById('btnPdfMes');
-
-        let calendar = new FullCalendar.Calendar(calendarEl, {
-            initialView: 'dayGridMonth',
-            locale: 'es',
-            height: 'auto',
-
-            headerToolbar: {
-                left: 'prev,next today',
-                center: 'title',
-                right: 'dayGridMonth,listWeek'
-            },
-
-            buttonText: {
-                today: 'Hoy',
-                month: 'Mes',
-                week: 'Semana',
-                list: 'Lista'
-            },
-
-            buttonIcons: false,
-
-            /* ===============================
-               API EVENTOS
-            =============================== */
-            events: "/calendario/api/eventos/",
-
-            /* 🆕 RENDERIZADO MEJORADO */
-            eventDidMount: function(info) {
-                let titulo = info.event.title;
-
-                // Limpiar prefijos para mostrar solo lo importante
-                titulo = titulo
-                    .replace("Vencimiento VTV – ", "VTV · ")
-                    .replace("Vencimiento Verificación – ", "Verificación · ")
-                    .replace("Vencimiento Patente – ", "Patente · ")
-                    .replace("Turno VTV – ", "Turno VTV · ")
-                    .replace("Turno grabado autopartes – ", "Autopartes · ");
-
-                info.el.innerHTML = `
-                    <div class="fc-event-title fw-semibold small">
-                        ${titulo}
-                    </div>
-                `;
-                
-                // 🆕 AGREGAR TOOLTIP CON INFO DEL VEHÍCULO
-                if (info.event.extendedProps.vehiculo_info) {
-                    info.el.title = info.event.extendedProps.vehiculo_info;
-                }
-            },
-
-            /* 🆕 CLICK EN EVENTO - IR A LA FICHA */
-            eventClick: function(info) {
-                // Si tiene URL, ir a la ficha del vehículo
-                if (info.event.extendedProps.url) {
-                    window.location.href = info.event.extendedProps.url;
-                    info.jsEvent.preventDefault();
-                }
-            }
-        });
-
-        calendar.render();
-
-        // ===============================
-        // PDF DEL MES VISIBLE
-        // ===============================
-        btnPdf.addEventListener("click", function () {
-            let fecha = calendar.getDate();
-            let mes = fecha.getMonth() + 1;
-            let anio = fecha.getFullYear();
-
-            let url = `/calendario/pdf/${anio}/${mes}/`;
-            window.open(url, "_blank");
-        });
-    });
-}
-</script>
-
-{% endblock %}
+    .fc-button {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+        border: none !important;
+        box-shadow: 0 2

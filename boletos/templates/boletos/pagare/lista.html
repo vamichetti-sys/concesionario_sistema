@@ -1,118 +1,128 @@
 {% extends "base.html" %}
-
 {% block title %}Pagarés{% endblock %}
-
 {% block content %}
 
-<div class="d-flex justify-content-between align-items-start mb-4">
+<!-- ===============================
+     ENCABEZADO
+=============================== -->
+<div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h2 class="fw-bold mb-1" style="color:#002855;">
-            Pagarés
-        </h2>
-        <p class="text-muted mb-0">
-            Lotes de pagarés emitidos
-        </p>
+        <h3 class="fw-bold mb-1">Pagarés</h3>
+        <p class="text-muted mb-0">Lotes de pagarés emitidos</p>
     </div>
-
-    <a href="{% url 'boletos:crear_pagares' %}"
-       class="btn btn-primary rounded-pill fw-bold px-4">
-        + Nuevo pagaré
+    <a href="{% url 'boletos:crear_pagares' %}" class="btn btn-primary">
+        <i data-lucide="plus" style="width:16px;height:16px;margin-right:6px;"></i>
+        Nuevo pagaré
     </a>
 </div>
 
-<form method="get" class="mb-4">
-    <div class="input-group">
-        <input type="text"
-               name="q"
-               class="form-control"
-               placeholder="Buscar por cliente o DNI/CUIT…"
-               value="{{ query }}">
-        <button class="btn btn-outline-secondary" type="submit">
-            🔍 Buscar
-        </button>
-    </div>
-</form>
-
-<div class="card shadow-sm border-0 rounded-4">
-    <div class="card-body">
-
-        {% if lotes %}
-        <div class="table-responsive">
-            <table class="table table-sm align-middle">
-                <thead>
-                    <tr>
-                        <th>Cliente</th>
-                        <th>Beneficiario</th>
-                        <th>Lugar emisión</th>
-                        <th>Fecha emisión</th>
-                        <th class="text-center">Cantidad</th>
-                        <th class="text-end">Monto total</th>
-                        <th class="text-end">Acciones</th>
-                    </tr>
-                </thead>
-
-                <tbody>
-                {% for l in lotes %}
-                    <tr>
-                        <!-- CLIENTE / DEUDOR -->
-                        <td>
-                            <strong>{{ l.cliente.nombre_completo }}</strong>
-                            <div class="text-muted small">
-                                {{ l.cliente.dni_cuit }}
-                            </div>
-                        </td>
-
-                        <!-- BENEFICIARIO -->
-                        <td>
-                            {{ l.beneficiario }}
-                        </td>
-
-                        <!-- LUGAR DE EMISIÓN -->
-                        <td>
-                            {{ l.lugar_emision }}
-                        </td>
-
-                        <!-- FECHA DE EMISIÓN -->
-                        <td>
-                            {{ l.fecha_emision|date:"d/m/Y" }}
-                        </td>
-
-                        <!-- CANTIDAD -->
-                        <td class="text-center">
-                            {{ l.cantidad }}
-                        </td>
-
-                        <!-- MONTO TOTAL -->
-                        <td class="text-end fw-semibold">
-                            $ {{ l.monto_total|floatformat:0 }}
-                        </td>
-
-                        <!-- ACCIONES / PDF -->
-                        <td class="text-end">
-                            {% if l.pdf %}
-                                <a href="{{ l.pdf.url }}"
-                                   target="_blank"
-                                   class="btn btn-sm btn-outline-success">
-                                    🖨️ PDF (Lote)
-                                </a>
-                            {% else %}
-                                <span class="text-muted small">
-                                    Sin PDF
-                                </span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                {% endfor %}
-                </tbody>
-            </table>
+<!-- ===============================
+     BUSCADOR
+=============================== -->
+<div class="card p-3 mb-4">
+    <form method="get">
+        <div class="input-group">
+            <span class="input-group-text" style="background:#fff;border-right:none;">
+                <i data-lucide="search" style="width:18px;height:18px;color:#9ca3af;"></i>
+            </span>
+            <input type="text"
+                   name="q"
+                   class="form-control"
+                   style="border-left:none;"
+                   placeholder="Buscar por cliente o DNI/CUIT..."
+                   value="{{ query }}">
+            <button type="submit" class="btn btn-primary">Buscar</button>
         </div>
-        {% else %}
-            <div class="alert alert-success mb-0">
-                No hay pagarés registrados.
-            </div>
-        {% endif %}
-
-    </div>
+    </form>
 </div>
+
+<!-- ===============================
+     TABLA DE PAGARÉS
+=============================== -->
+<div class="card p-0">
+    {% if lotes %}
+    <div class="table-responsive">
+        <table class="table align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Cliente</th>
+                    <th>Beneficiario</th>
+                    <th>Lugar emisión</th>
+                    <th>Fecha emisión</th>
+                    <th class="text-center">Cantidad</th>
+                    <th class="text-end">Monto total</th>
+                    <th class="text-end">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for l in lotes %}
+                <tr>
+                    <!-- CLIENTE / DEUDOR -->
+                    <td>
+                        <div class="d-flex align-items-center gap-3">
+                            <div style="width:36px;height:36px;background:rgba(59,130,246,0.1);border-radius:8px;display:flex;align-items:center;justify-content:center;">
+                                <i data-lucide="user" style="width:16px;height:16px;color:#3b82f6;"></i>
+                            </div>
+                            <div>
+                                <span class="fw-semibold">{{ l.cliente.nombre_completo }}</span>
+                                <div class="text-muted" style="font-size:12px;">{{ l.cliente.dni_cuit }}</div>
+                            </div>
+                        </div>
+                    </td>
+
+                    <!-- BENEFICIARIO -->
+                    <td>{{ l.beneficiario }}</td>
+
+                    <!-- LUGAR DE EMISIÓN -->
+                    <td>{{ l.lugar_emision }}</td>
+
+                    <!-- FECHA DE EMISIÓN -->
+                    <td>
+                        <span class="text-muted">{{ l.fecha_emision|date:"d/m/Y" }}</span>
+                    </td>
+
+                    <!-- CANTIDAD -->
+                    <td class="text-center">
+                        <span class="badge bg-info">{{ l.cantidad }}</span>
+                    </td>
+
+                    <!-- MONTO TOTAL -->
+                    <td class="text-end">
+                        <span class="fw-bold" style="color:#10b981;">$ {{ l.monto_total|floatformat:0 }}</span>
+                    </td>
+
+                    <!-- ACCIONES / PDF -->
+                    <td class="text-end">
+                        {% if l.pdf %}
+                        <a href="{{ l.pdf.url }}" target="_blank" class="btn btn-success btn-sm">
+                            <i data-lucide="file-down" style="width:14px;height:14px;margin-right:4px;"></i>
+                            PDF
+                        </a>
+                        {% else %}
+                        <span class="text-muted" style="font-size:12px;">Sin PDF</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="p-5 text-center">
+        <i data-lucide="banknote" style="width:48px;height:48px;color:#9ca3af;margin-bottom:12px;"></i>
+        <p class="text-muted mb-3">No hay pagarés registrados</p>
+        <a href="{% url 'boletos:crear_pagares' %}" class="btn btn-primary">
+            <i data-lucide="plus" style="width:16px;height:16px;margin-right:6px;"></i>
+            Crear primer pagaré
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+</script>
 
 {% endblock %}

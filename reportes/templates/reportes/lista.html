@@ -2,85 +2,136 @@
 
 {% block content %}
 
-<h4 class="fw-bold mb-2" style="color:#002855;">
-    Reportes
-</h4>
-<p class="text-muted mb-4">
-    Análisis y seguimiento de información del sistema
-</p>
+<!-- ===============================
+     ENCABEZADO
+=============================== -->
+<div class="mb-4">
+    <h3 class="fw-bold mb-1">Reportes</h3>
+    <p class="text-muted mb-0">Análisis y seguimiento de información del sistema</p>
+</div>
 
-<!-- SELECTOR DE REPORTES -->
-<div class="row mb-5">
+<!-- ===============================
+     SELECTOR DE REPORTES
+=============================== -->
+<div class="row g-4 mb-4">
     <div class="col-md-6">
-        <div class="card-clean h-100 d-flex flex-column justify-content-between">
-            <div>
-                <h6 class="fw-bold mb-2">Reporte Web</h6>
-                <p class="text-muted mb-3">
-                    Información operativa del sistema: ventas y seguimiento general.
-                </p>
+        <div class="card p-4 h-100">
+            <div class="d-flex align-items-start gap-3">
+                <div style="width:50px;height:50px;background:rgba(59,130,246,0.1);border-radius:12px;display:flex;align-items:center;justify-content:center;">
+                    <i data-lucide="bar-chart-3" style="width:24px;height:24px;color:#3b82f6;"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <h5 class="fw-bold mb-1">Reporte Web</h5>
+                    <p class="text-muted mb-3" style="font-size:14px;">Información operativa del sistema: ventas y seguimiento general.</p>
+                    <a href="{% url 'reportes:reporte_web' %}" class="btn btn-primary">
+                        Ingresar
+                        <i data-lucide="arrow-right" style="width:16px;height:16px;margin-left:6px;"></i>
+                    </a>
+                </div>
             </div>
-            <a href="{% url 'reportes:reporte_web' %}" class="btn btn-primary">
-                Ingresar
-            </a>
         </div>
     </div>
 
     {% if perms.reportes.view_fichareporteinterno %}
     <div class="col-md-6">
-        <div class="card-clean h-100 d-flex flex-column justify-content-between">
-            <div>
-                <h6 class="fw-bold mb-2">Reporte Interno</h6>
-                <p class="text-muted mb-3">
-                    Control interno de stock, compras, ventas y resultados.
-                </p>
+        <div class="card p-4 h-100">
+            <div class="d-flex align-items-start gap-3">
+                <div style="width:50px;height:50px;background:rgba(139,92,246,0.1);border-radius:12px;display:flex;align-items:center;justify-content:center;">
+                    <i data-lucide="lock" style="width:24px;height:24px;color:#8b5cf6;"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <h5 class="fw-bold mb-1">Reporte Interno</h5>
+                    <p class="text-muted mb-3" style="font-size:14px;">Control interno de stock, compras, ventas y resultados.</p>
+                    <a href="{% url 'reportes:reporte_interno' %}" class="btn btn-secondary">
+                        Ingresar
+                        <i data-lucide="arrow-right" style="width:16px;height:16px;margin-left:6px;"></i>
+                    </a>
+                </div>
             </div>
-            <a href="{% url 'reportes:reporte_interno' %}" class="btn btn-outline-primary">
-                Ingresar
-            </a>
         </div>
     </div>
     {% endif %}
 </div>
 
-<!-- ACCIONES DE CIERRE -->
-<div class="mb-4 d-flex gap-2">
-    <a href="{% url 'reportes:cerrar_mes' %}" class="btn btn-outline-primary">
-        Cerrar mes {{ mes_actual }}/{{ anio_actual }}
-    </a>
-    <a href="{% url 'reportes:cerrar_anio' %}" class="btn btn-outline-dark">
-        Cerrar año {{ anio_actual }}
-    </a>
+<!-- ===============================
+     ACCIONES DE CIERRE
+=============================== -->
+<div class="card p-4 mb-4">
+    <div class="d-flex align-items-center gap-2 mb-3">
+        <i data-lucide="calendar-check" style="width:20px;height:20px;color:#3b82f6;"></i>
+        <h5 class="fw-bold mb-0">Acciones de cierre</h5>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        <a href="{% url 'reportes:cerrar_mes' %}" class="btn btn-primary">
+            <i data-lucide="calendar" style="width:16px;height:16px;margin-right:6px;"></i>
+            Cerrar mes {{ mes_actual }}/{{ anio_actual }}
+        </a>
+        <a href="{% url 'reportes:cerrar_anio' %}" class="btn btn-secondary">
+            <i data-lucide="calendar-range" style="width:16px;height:16px;margin-right:6px;"></i>
+            Cerrar año {{ anio_actual }}
+        </a>
+    </div>
 </div>
 
-<!-- REPORTES GUARDADOS -->
-<div class="row">
+<!-- ===============================
+     REPORTES GUARDADOS
+=============================== -->
+<div class="row g-4">
+    <!-- MENSUALES -->
     <div class="col-md-6">
-        <div class="card-clean">
-            <h6 class="fw-bold mb-3">Reportes Mensuales</h6>
+        <div class="card p-4">
+            <div class="d-flex align-items-center gap-2 mb-4">
+                <i data-lucide="calendar" style="width:20px;height:20px;color:#10b981;"></i>
+                <h5 class="fw-bold mb-0">Reportes Mensuales</h5>
+            </div>
+
+            {% if reportes_mensuales %}
             {% for r in reportes_mensuales %}
-                <div class="d-flex justify-content-between">
-                    <span>{{ r.mes }}/{{ r.anio }}</span>
-                    <strong>${{ r.total_facturado }}</strong>
+            <div class="d-flex justify-content-between align-items-center p-3 mb-2" style="background:#f8f9fa;border-radius:10px;">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-info">{{ r.mes }}/{{ r.anio }}</span>
                 </div>
-            {% empty %}
-                <p class="text-muted">No hay reportes mensuales</p>
+                <span class="fw-bold text-success">${{ r.total_facturado }}</span>
+            </div>
             {% endfor %}
+            {% else %}
+            <div class="p-4 text-center" style="background:#f8f9fa;border-radius:12px;">
+                <i data-lucide="calendar-x" style="width:32px;height:32px;color:#9ca3af;margin-bottom:8px;"></i>
+                <p class="text-muted mb-0">No hay reportes mensuales</p>
+            </div>
+            {% endif %}
         </div>
     </div>
 
+    <!-- ANUALES -->
     <div class="col-md-6">
-        <div class="card-clean">
-            <h6 class="fw-bold mb-3">Reportes Anuales</h6>
+        <div class="card p-4">
+            <div class="d-flex align-items-center gap-2 mb-4">
+                <i data-lucide="calendar-range" style="width:20px;height:20px;color:#f59e0b;"></i>
+                <h5 class="fw-bold mb-0">Reportes Anuales</h5>
+            </div>
+
+            {% if reportes_anuales %}
             {% for r in reportes_anuales %}
-                <div class="d-flex justify-content-between">
-                    <span>{{ r.anio }}</span>
-                    <strong>${{ r.total_facturado }}</strong>
+            <div class="d-flex justify-content-between align-items-center p-3 mb-2" style="background:#f8f9fa;border-radius:10px;">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-warning">{{ r.anio }}</span>
                 </div>
-            {% empty %}
-                <p class="text-muted">No hay reportes anuales</p>
+                <span class="fw-bold text-success">${{ r.total_facturado }}</span>
+            </div>
             {% endfor %}
+            {% else %}
+            <div class="p-4 text-center" style="background:#f8f9fa;border-radius:12px;">
+                <i data-lucide="calendar-x" style="width:32px;height:32px;color:#9ca3af;margin-bottom:8px;"></i>
+                <p class="text-muted mb-0">No hay reportes anuales</p>
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>
+
+<script>
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+</script>
 
 {% endblock %}

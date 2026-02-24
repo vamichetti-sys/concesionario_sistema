@@ -3,66 +3,62 @@
 {% block title %}Gestoría{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
 
-    <!-- ===============================
-         ENCABEZADO
-    =============================== -->
-    <div class="mb-5">
-        <h2 class="fw-bold mb-1" style="color:#002855;">
-            Gestoría
-        </h2>
-        <p class="text-muted mb-0">
-            Administración y seguimiento de transferencias y trámites legales
-        </p>
+<!-- ===============================
+     ENCABEZADO
+=============================== -->
+<div class="mb-4">
+    <h3 class="fw-bold mb-1">Gestoría</h3>
+    <p class="text-muted mb-0">Administración y seguimiento de transferencias y trámites legales</p>
+</div>
+
+<!-- ===============================
+     ACCESOS PRINCIPALES
+=============================== -->
+<div class="row g-4">
+
+    <!-- VIGENTES -->
+    <div class="col-md-6">
+        <div class="card p-4 h-100">
+            <div class="d-flex align-items-start gap-3">
+                <div style="width:50px;height:50px;background:rgba(59,130,246,0.1);border-radius:12px;display:flex;align-items:center;justify-content:center;">
+                    <i data-lucide="clock" style="width:24px;height:24px;color:#3b82f6;"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <h5 class="fw-bold mb-1">Transferencias Vigentes</h5>
+                    <p class="text-muted mb-3" style="font-size:14px;">Trámites en curso, pendientes de control o finalización</p>
+                    <a href="{% url 'gestoria:vigentes' %}" class="btn btn-primary">
+                        Ingresar
+                        <i data-lucide="arrow-right" style="width:16px;height:16px;margin-left:6px;"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- ===============================
-         ACCESOS PRINCIPALES
-    =============================== -->
-    <div class="row g-4">
-
-        <!-- VIGENTES -->
-        <div class="col-md-6">
-            <a href="{% url 'gestoria:vigentes' %}"
-               class="text-decoration-none">
-                <div class="card shadow-sm border-0 rounded-4 h-100">
-                    <div class="card-body p-4">
-                        <h4 class="fw-bold mb-2" style="color:#002855;">
-                            Transferencias Vigentes
-                        </h4>
-                        <p class="text-muted mb-4">
-                            Trámites en curso, pendientes de control o finalización
-                        </p>
-                        <span class="btn btn-primary btn-lg px-4">
-                            Ingresar
-                        </span>
-                    </div>
+    <!-- FINALIZADAS -->
+    <div class="col-md-6">
+        <div class="card p-4 h-100">
+            <div class="d-flex align-items-start gap-3">
+                <div style="width:50px;height:50px;background:rgba(16,185,129,0.1);border-radius:12px;display:flex;align-items:center;justify-content:center;">
+                    <i data-lucide="check-circle" style="width:24px;height:24px;color:#10b981;"></i>
                 </div>
-            </a>
-        </div>
-
-        <!-- FINALIZADAS -->
-        <div class="col-md-6">
-            <a href="{% url 'gestoria:finalizadas' %}"
-               class="text-decoration-none">
-                <div class="card shadow-sm border-0 rounded-4 h-100">
-                    <div class="card-body p-4">
-                        <h4 class="fw-bold mb-2 text-success">
-                            Transferencias Finalizadas
-                        </h4>
-                        <p class="text-muted mb-4">
-                            Trámites cerrados y documentación completa
-                        </p>
-                        <span class="btn btn-outline-success btn-lg px-4">
-                            Ver historial
-                        </span>
-                    </div>
+                <div class="flex-grow-1">
+                    <h5 class="fw-bold mb-1 text-success">Transferencias Finalizadas</h5>
+                    <p class="text-muted mb-3" style="font-size:14px;">Trámites cerrados y documentación completa</p>
+                    <a href="{% url 'gestoria:finalizadas' %}" class="btn btn-success">
+                        Ver historial
+                        <i data-lucide="arrow-right" style="width:16px;height:16px;margin-left:6px;"></i>
+                    </a>
                 </div>
-            </a>
+            </div>
         </div>
-
     </div>
 
 </div>
+
+<script>
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+</script>
+
 {% endblock %}

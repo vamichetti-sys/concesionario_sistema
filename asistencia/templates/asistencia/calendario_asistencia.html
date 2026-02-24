@@ -1,112 +1,160 @@
 {% extends "base.html" %}
-
 {% block content %}
 
 <style>
     .dia {
-        width:34px;
-        height:34px;
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        font-size:12px;
-        border-radius:6px;
-        color:white;
-        cursor:pointer;
+        width: 38px;
+        height: 38px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        font-weight: 500;
+        border-radius: 10px;
+        color: white;
+        cursor: pointer;
         position: relative;
         z-index: 10;
         pointer-events: auto;
+        transition: all 0.2s ease;
     }
 
-    .card-clean {
-        position: relative;
-        z-index: 1;
+    .dia:hover {
+        transform: scale(1.1);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     }
 
-    .presente { background:#2ecc71; }
-    .falta_justificada { background:#f1c40f; color:#333; }
-    .falta_injustificada { background:#e74c3c; }
-    .permiso { background:#fd7e14; }
-    .vacaciones { background:#3498db; }
-    .estudio { background:#6f42c1; }
-    .sin-carga { background:#bdc3c7; }
+    .presente { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+    .falta_justificada { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: #fff; }
+    .falta_injustificada { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
+    .permiso { background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); }
+    .vacaciones { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); }
+    .estudio { background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); }
+    .sin-carga { background: #e5e7eb; color: #6b7280; }
 
-    .text-purple { color:#6f42c1; }
-    .text-orange { color:#fd7e14; }
+    .text-purple { color: #8b5cf6 !important; }
+    .text-orange { color: #f97316 !important; }
+
+    .leyenda-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 12px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        font-size: 13px;
+        color: #374151;
+    }
+
+    .leyenda-item .dia {
+        width: 24px;
+        height: 24px;
+        font-size: 0;
+    }
+
+    .resumen-stat {
+        text-align: center;
+        padding: 16px;
+        background: #f8f9fa;
+        border-radius: 12px;
+    }
+
+    .resumen-stat .valor {
+        font-size: 28px;
+        font-weight: 700;
+        line-height: 1;
+    }
+
+    .resumen-stat small {
+        font-size: 12px;
+        color: #6b7280;
+    }
 </style>
 
-<h4 class="fw-bold mb-2" style="color:#002855;">
-    {{ empleado.nombre }} – {{ anio }}
-</h4>
-
 <!-- ===============================
-     BOTÓN PDF FALTAS ANUALES
+     ENCABEZADO
 =============================== -->
-<div class="mb-4">
-    <a
-        href="{% url 'asistencia:pdf_faltas_anuales' empleado.id anio %}"
-        target="_blank"
-        class="btn btn-outline-danger btn-sm"
-    >
-        🧾 Imprimir faltas anuales (PDF)
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+        <h3 class="fw-bold mb-1">{{ empleado.nombre }}</h3>
+        <p class="text-muted mb-0">Registro de asistencia {{ anio }}</p>
+    </div>
+    <a href="{% url 'asistencia:pdf_faltas_anuales' empleado.id anio %}"
+       target="_blank"
+       class="btn btn-danger">
+        <i data-lucide="file-text" style="width:16px;height:16px;margin-right:6px;"></i>
+        Imprimir faltas anuales
     </a>
 </div>
 
 <!-- ===============================
      LEYENDA DE COLORES
 =============================== -->
-<div class="d-flex flex-wrap gap-3 mb-3">
-    <div class="d-flex align-items-center gap-2"><span class="dia presente"></span> Presente</div>
-    <div class="d-flex align-items-center gap-2"><span class="dia falta_justificada"></span> Falta justificada</div>
-    <div class="d-flex align-items-center gap-2"><span class="dia falta_injustificada"></span> Falta injustificada</div>
-    <div class="d-flex align-items-center gap-2"><span class="dia vacaciones"></span> Vacaciones</div>
-    <div class="d-flex align-items-center gap-2"><span class="dia estudio"></span> Estudio</div>
-    <div class="d-flex align-items-center gap-2"><span class="dia permiso"></span> Permiso</div>
+<div class="d-flex flex-wrap gap-2 mb-4">
+    <div class="leyenda-item"><span class="dia presente"></span> Presente</div>
+    <div class="leyenda-item"><span class="dia falta_justificada"></span> Falta justificada</div>
+    <div class="leyenda-item"><span class="dia falta_injustificada"></span> Falta injustificada</div>
+    <div class="leyenda-item"><span class="dia vacaciones"></span> Vacaciones</div>
+    <div class="leyenda-item"><span class="dia estudio"></span> Estudio</div>
+    <div class="leyenda-item"><span class="dia permiso"></span> Permiso</div>
 </div>
 
 <!-- ===============================
      RESUMEN ANUAL
 =============================== -->
-<div class="card-clean mb-4">
-    <div class="row text-center">
+<div class="card p-4 mb-4">
+    <h6 class="fw-bold mb-3">Resumen anual</h6>
+    <div class="row g-3">
         <div class="col">
-            <div class="fw-bold text-danger">{{ resumen.falta_injustificada|default:0 }}</div>
-            <small class="text-muted">Faltas injustificadas</small>
+            <div class="resumen-stat">
+                <div class="valor text-danger">{{ resumen.falta_injustificada|default:0 }}</div>
+                <small>Faltas injustificadas</small>
+            </div>
         </div>
         <div class="col">
-            <div class="fw-bold text-warning">{{ resumen.falta_justificada|default:0 }}</div>
-            <small class="text-muted">Faltas justificadas</small>
+            <div class="resumen-stat">
+                <div class="valor" style="color:#f59e0b;">{{ resumen.falta_justificada|default:0 }}</div>
+                <small>Faltas justificadas</small>
+            </div>
         </div>
         <div class="col">
-            <div class="fw-bold text-primary">{{ resumen.vacaciones|default:0 }}</div>
-            <small class="text-muted">Vacaciones</small>
+            <div class="resumen-stat">
+                <div class="valor text-primary">{{ resumen.vacaciones|default:0 }}</div>
+                <small>Vacaciones</small>
+            </div>
         </div>
         <div class="col">
-            <div class="fw-bold text-purple">{{ resumen.estudio|default:0 }}</div>
-            <small class="text-muted">Estudio</small>
+            <div class="resumen-stat">
+                <div class="valor text-purple">{{ resumen.estudio|default:0 }}</div>
+                <small>Estudio</small>
+            </div>
         </div>
         <div class="col">
-            <div class="fw-bold text-orange">{{ resumen.permiso|default:0 }}</div>
-            <small class="text-muted">Permisos</small>
+            <div class="resumen-stat">
+                <div class="valor text-orange">{{ resumen.permiso|default:0 }}</div>
+                <small>Permisos</small>
+            </div>
         </div>
     </div>
 </div>
 
+<!-- ===============================
+     CALENDARIO POR MES
+=============================== -->
 {% for mes, dias in calendario.items %}
-<div class="card-clean mb-4">
+<div class="card p-4 mb-3">
     <h6 class="fw-bold mb-3">{{ mes }}/{{ anio }}</h6>
-
-    <div class="d-flex flex-wrap gap-1">
+    <div class="d-flex flex-wrap gap-2">
         {% for d in dias %}
-            <div
-                class="dia {% if d.estado %}{{ d.estado }}{% else %}sin-carga{% endif %}"
-                data-empleado="{{ empleado.id }}"
-                data-fecha="{{ d.fecha|date:'Y-m-d' }}"
-                data-estado="{{ d.estado|default:'' }}"
-                onclick="abrirModalAsistencia(this)"
-            >
-                {{ d.fecha.day }}
-            </div>
+        <div
+            class="dia {% if d.estado %}{{ d.estado }}{% else %}sin-carga{% endif %}"
+            data-empleado="{{ empleado.id }}"
+            data-fecha="{{ d.fecha|date:'Y-m-d' }}"
+            data-estado="{{ d.estado|default:'' }}"
+            onclick="abrirModalAsistencia(this)"
+        >
+            {{ d.fecha.day }}
+        </div>
         {% endfor %}
     </div>
 </div>
@@ -121,10 +169,9 @@
             <form id="formAsistencia">
                 {% csrf_token %}
                 <div class="modal-header">
-                    <h5 class="modal-title">Marcar asistencia</h5>
+                    <h5 class="modal-title fw-bold">Marcar asistencia</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-
                 <div class="modal-body">
                     <input type="hidden" name="empleado_id" id="empleado_id">
                     <input type="hidden" name="fecha" id="fecha">
@@ -141,11 +188,14 @@
                         </select>
                     </div>
 
-                    <textarea name="observaciones" class="form-control" placeholder="Opcional"></textarea>
+                    <div class="mb-3">
+                        <label class="form-label">Observaciones</label>
+                        <textarea name="observaciones" class="form-control" rows="3" placeholder="Opcional..."></textarea>
+                    </div>
                 </div>
-
                 <div class="modal-footer">
-                    <button type="submit" class="btn btn-primary w-100">Guardar</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar</button>
                 </div>
             </form>
         </div>
@@ -153,11 +203,10 @@
 </div>
 
 <!-- ==========================================================
-     JS (NO SE TOCA)
+     JS
 ========================================================== -->
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-
     const modalEl = document.getElementById("modalAsistencia");
     const form = document.getElementById("formAsistencia");
 
@@ -168,9 +217,8 @@ document.addEventListener("DOMContentLoaded", function () {
         new bootstrap.Modal(modalEl).show();
     };
 
-    form.addEventListener("submit", function(e){
+    form.addEventListener("submit", function(e) {
         e.preventDefault();
-
         fetch("{% url 'asistencia:marcar_asistencia' %}", {
             method: "POST",
             body: new FormData(form),
@@ -186,6 +234,10 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 
+    // Reinicializar íconos Lucide
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
 });
 </script>
 

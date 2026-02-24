@@ -3,147 +3,97 @@
 {% block title %}Movimiento de Cuenta{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
 
-    <!-- ===============================
-         ENCABEZADO
-    =============================== -->
-    <div class="mb-4">
-        <h2 class="fw-bold mb-1" style="color:#002855;">
-            Generar movimiento
-        </h2>
-        <p class="text-muted mb-0">
-            Cliente: <strong>{{ cuenta.cliente }}</strong>
-            {% if cuenta.venta %}
-                · Venta: <strong>#{{ cuenta.venta.id }}</strong>
-            {% endif %}
-        </p>
-    </div>
+<!-- ===============================
+     ENCABEZADO
+=============================== -->
+<div class="mb-4">
+    <a href="{% url 'cuentas:cuenta_corriente_detalle' cuenta.id %}" class="text-muted text-decoration-none d-inline-flex align-items-center mb-2" style="font-size:14px;">
+        <i data-lucide="arrow-left" style="width:16px;height:16px;margin-right:6px;"></i>
+        Volver a cuenta corriente
+    </a>
+    <h3 class="fw-bold mb-1">Generar movimiento</h3>
+    <p class="text-muted mb-0">Cliente: <strong>{{ cuenta.cliente }}</strong>{% if cuenta.venta %} · Venta: <strong>#{{ cuenta.venta.id }}</strong>{% endif %}</p>
+</div>
 
-    <!-- ===============================
-         FORMULARIO MOVIMIENTO
-    =============================== -->
-    <div class="card shadow-sm border-0 rounded-4">
-        <div class="card-body">
+<!-- ===============================
+     FORMULARIO
+=============================== -->
+<div class="card p-4" style="max-width:600px;">
+    <form method="post" onsubmit="return validarMovimiento();">
+        {% csrf_token %}
 
-            <form method="post" onsubmit="return validarMovimiento();">
-                {% csrf_token %}
-
-                <!-- TIPO DE MOVIMIENTO -->
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">
-                        Tipo de movimiento
-                    </label>
-                    <select name="tipo_movimiento"
-                            id="tipo_movimiento"
-                            class="form-select"
-                            required
-                            onchange="toggleCuotas(this.value)">
-                        <option value="">Seleccionar</option>
-                        <option value="cuota">Pago de cuota</option>
-                        <option value="unico">Pago único</option>
-                        <option value="cheque">Cheque</option>
-                    </select>
-                </div>
-
-                <!-- CUOTAS -->
-                <div class="mb-3" id="bloque-cuotas" style="display:none;">
-                    <label class="form-label fw-semibold">
-                        Cuota a imputar
-                    </label>
-                    <select name="cuota_id"
-                            id="cuota_id"
-                            class="form-select">
-                        <option value="">Seleccionar cuota</option>
-
-                        {% for cuota in cuotas %}
-                            <option value="{{ cuota.id }}">
-                                Cuota {{ cuota.numero }} – saldo $
-                                {{ cuota.saldo_actual|floatformat:0 }}
-                            </option>
-                        {% endfor %}
-
-                    </select>
-                    <div class="form-text">
-                        Si el monto supera esta cuota, se descontará de las siguientes.
-                    </div>
-                </div>
-
-                <!-- MONTO -->
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">
-                        Monto
-                    </label>
-                    <input type="number"
-                           name="monto"
-                           id="monto"
-                           class="form-control"
-                           step="0.01"
-                           min="0.01"
-                           required>
-                </div>
-
-                <!-- FORMA DE PAGO -->
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">
-                        Forma de pago
-                    </label>
-                    <select name="forma_pago"
-                            class="form-select"
-                            required>
-                        <option value="">Seleccionar</option>
-                        <option value="efectivo">Efectivo</option>
-                        <option value="transferencia">Transferencia</option>
-                        <option value="cheque">Cheque</option>
-                    </select>
-                </div>
-
-                <!-- OBSERVACIONES -->
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">
-                        Observaciones
-                    </label>
-                    <textarea name="observaciones"
-                              class="form-control"
-                              rows="2"></textarea>
-                </div>
-
-                <!-- MENSAJE DE ERROR -->
-                <div id="error-movimiento"
-                     class="alert alert-danger d-none">
-                </div>
-
-                <!-- BOTONES -->
-                <div class="d-flex justify-content-between mt-4">
-                    <a href="{% url 'cuentas:cuenta_corriente_detalle' cuenta.id %}"
-                       class="btn btn-outline-secondary rounded-pill px-4 fw-bold">
-                        ← Volver
-                    </a>
-
-                    <button type="submit"
-                            class="btn btn-success rounded-pill px-4 fw-bold">
-                        Registrar movimiento
-                    </button>
-                </div>
-
-            </form>
-
+        <!-- TIPO DE MOVIMIENTO -->
+        <div class="mb-4">
+            <label class="form-label">Tipo de movimiento</label>
+            <select name="tipo_movimiento" id="tipo_movimiento" class="form-select" required onchange="toggleCuotas(this.value)">
+                <option value="">Seleccionar</option>
+                <option value="cuota">Pago de cuota</option>
+                <option value="unico">Pago único</option>
+                <option value="cheque">Cheque</option>
+            </select>
         </div>
-    </div>
 
+        <!-- CUOTAS -->
+        <div class="mb-4" id="bloque-cuotas" style="display:none;">
+            <label class="form-label">Cuota a imputar</label>
+            <select name="cuota_id" id="cuota_id" class="form-select">
+                <option value="">Seleccionar cuota</option>
+                {% for cuota in cuotas %}
+                <option value="{{ cuota.id }}">Cuota {{ cuota.numero }} – saldo $ {{ cuota.saldo_actual|floatformat:0 }}</option>
+                {% endfor %}
+            </select>
+            <small class="text-muted">Si el monto supera esta cuota, se descontará de las siguientes.</small>
+        </div>
+
+        <!-- MONTO -->
+        <div class="mb-4">
+            <label class="form-label">Monto</label>
+            <div class="input-group">
+                <span class="input-group-text">$</span>
+                <input type="number" name="monto" id="monto" class="form-control" step="0.01" min="0.01" required>
+            </div>
+        </div>
+
+        <!-- FORMA DE PAGO -->
+        <div class="mb-4">
+            <label class="form-label">Forma de pago</label>
+            <select name="forma_pago" class="form-select" required>
+                <option value="">Seleccionar</option>
+                <option value="efectivo">Efectivo</option>
+                <option value="transferencia">Transferencia</option>
+                <option value="cheque">Cheque</option>
+            </select>
+        </div>
+
+        <!-- OBSERVACIONES -->
+        <div class="mb-4">
+            <label class="form-label">Observaciones</label>
+            <textarea name="observaciones" class="form-control" rows="2"></textarea>
+        </div>
+
+        <!-- ERROR -->
+        <div id="error-movimiento" class="alert alert-danger d-none"></div>
+
+        <hr class="my-4">
+
+        <!-- BOTONES -->
+        <div class="d-flex gap-3">
+            <button type="submit" class="btn btn-success">
+                <i data-lucide="check" style="width:16px;height:16px;margin-right:6px;"></i>
+                Registrar movimiento
+            </button>
+            <a href="{% url 'cuentas:cuenta_corriente_detalle' cuenta.id %}" class="btn btn-secondary">Volver</a>
+        </div>
+    </form>
 </div>
 
 <script>
 function toggleCuotas(valor) {
     const bloque = document.getElementById("bloque-cuotas");
     const cuotaSelect = document.getElementById("cuota_id");
-
-    if (valor === "cuota") {
-        bloque.style.display = "block";
-    } else {
-        bloque.style.display = "none";
-        cuotaSelect.value = "";
-    }
+    bloque.style.display = valor === "cuota" ? "block" : "none";
+    if (valor !== "cuota") cuotaSelect.value = "";
 }
 
 function validarMovimiento() {
@@ -160,15 +110,15 @@ function validarMovimiento() {
         errorBox.classList.remove("d-none");
         return false;
     }
-
     if (!monto || monto <= 0) {
         errorBox.innerText = "El monto debe ser mayor a 0.";
         errorBox.classList.remove("d-none");
         return false;
     }
-
     return true;
 }
+
+if (typeof lucide !== 'undefined') lucide.createIcons();
 </script>
 
 {% endblock %}

@@ -1,41 +1,86 @@
 {% extends "base.html" %}
 {% block title %}Editar precio de compra{% endblock %}
 {% block content %}
-<h3 class="fw-bold mb-4">Editar precio de compra</h3>
 
-<div class="card shadow-sm rounded-4 p-4 mb-4">
-  <div class="mb-3">
-    <strong>Vehículo:</strong> 
-    {{ deuda.vehiculo.marca }} {{ deuda.vehiculo.modelo }} — {{ deuda.vehiculo.dominio|default:"Sin dominio" }}
-  </div>
-  <div class="mb-3">
-    <strong>Proveedor:</strong> {{ deuda.proveedor.nombre_empresa }}
-  </div>
-  <div class="mb-3">
-    <strong>Total pagado:</strong> 
-    <span class="text-success">${{ deuda.monto_pagado }}</span>
-  </div>
-
-  <hr>
-
-  <form method="post">
-    {% csrf_token %}
-    <div class="mb-3">
-      <label class="form-label fw-bold">Precio de compra</label>
-      <input type="number" 
-             name="monto_total" 
-             class="form-control" 
-             value="{{ deuda.monto_total }}" 
-             step="0.01"
-             required>
-    </div>
-    <div class="d-flex gap-2">
-      <button type="submit" class="btn btn-primary">Guardar</button>
-      <a href="{% url 'compraventa:proveedor_cuenta_corriente' deuda.proveedor.id %}" 
-         class="btn btn-secondary">
-        Cancelar
-      </a>
-    </div>
-  </form>
+<!-- ===============================
+     ENCABEZADO
+=============================== -->
+<div class="mb-4">
+    <a href="{% url 'compraventa:proveedor_cuenta_corriente' deuda.proveedor.id %}" class="text-muted text-decoration-none d-inline-flex align-items-center mb-2" style="font-size:14px;">
+        <i data-lucide="arrow-left" style="width:16px;height:16px;margin-right:6px;"></i>
+        Volver a cuenta corriente
+    </a>
+    <h3 class="fw-bold mb-1">Editar precio de compra</h3>
 </div>
+
+<!-- ===============================
+     INFO DEL VEHÍCULO
+=============================== -->
+<div class="card p-4" style="max-width:600px;">
+    <div class="row g-3 mb-4">
+        <div class="col-md-6">
+            <div class="d-flex align-items-center gap-3">
+                <div style="width:44px;height:44px;background:rgba(59,130,246,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                    <i data-lucide="car" style="width:20px;height:20px;color:#3b82f6;"></i>
+                </div>
+                <div>
+                    <small class="text-muted">Vehículo</small>
+                    <div class="fw-semibold">{{ deuda.vehiculo.marca }} {{ deuda.vehiculo.modelo }}</div>
+                    <small class="text-muted">{{ deuda.vehiculo.dominio|default:"Sin dominio" }}</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="d-flex align-items-center gap-3">
+                <div style="width:44px;height:44px;background:rgba(139,92,246,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                    <i data-lucide="building" style="width:20px;height:20px;color:#8b5cf6;"></i>
+                </div>
+                <div>
+                    <small class="text-muted">Proveedor</small>
+                    <div class="fw-semibold">{{ deuda.proveedor.nombre_empresa }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="p-3 mb-4" style="background:#f8f9fa;border-radius:12px;">
+        <small class="text-muted">Total pagado</small>
+        <div class="fw-bold text-success" style="font-size:20px;">${{ deuda.monto_pagado }}</div>
+    </div>
+
+    <hr class="my-4">
+
+    <form method="post">
+        {% csrf_token %}
+        <div class="mb-4">
+            <label class="form-label">Precio de compra</label>
+            <div class="input-group">
+                <span class="input-group-text">$</span>
+                <input type="number" 
+                       name="monto_total" 
+                       class="form-control" 
+                       value="{{ deuda.monto_total }}" 
+                       step="0.01"
+                       required>
+            </div>
+        </div>
+
+        <div class="d-flex gap-3">
+            <button type="submit" class="btn btn-primary">
+                <i data-lucide="save" style="width:16px;height:16px;margin-right:6px;"></i>
+                Guardar
+            </button>
+            <a href="{% url 'compraventa:proveedor_cuenta_corriente' deuda.proveedor.id %}" class="btn btn-secondary">
+                Cancelar
+            </a>
+        </div>
+    </form>
+</div>
+
+<script>
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+</script>
+
 {% endblock %}

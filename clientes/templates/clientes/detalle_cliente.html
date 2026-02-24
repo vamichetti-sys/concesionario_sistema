@@ -5,196 +5,198 @@
 
 {% block content %}
 
-<!-- ENCABEZADO -->
+<!-- ===============================
+     ENCABEZADO
+=============================== -->
 <div class="d-flex justify-content-between align-items-start mb-4">
     <div>
-        <h2 class="fw-bold mb-1" style="color:#002855;">
-            Detalle del Cliente
-        </h2>
-        <p class="text-muted mb-0">
-            Información general y estado de cuenta
-        </p>
+        <a href="{% url 'clientes:lista_clientes' %}" class="text-muted text-decoration-none d-inline-flex align-items-center mb-2" style="font-size:14px;">
+            <i data-lucide="arrow-left" style="width:16px;height:16px;margin-right:6px;"></i>
+            Volver a clientes
+        </a>
+        <h3 class="fw-bold mb-1">{{ cliente.nombre_completo }}</h3>
+        <p class="text-muted mb-0">Información general y estado de cuenta</p>
     </div>
 
-    <div class="d-flex gap-2">
-        <a href="{% url 'clientes:editar_cliente' cliente.id %}"
-           class="btn btn-outline-primary rounded-pill px-4 fw-bold">
-            ✏️ Editar
-        </a>
-
-        <a href="{% url 'clientes:lista_clientes' %}"
-           class="btn btn-outline-secondary rounded-pill px-4 fw-bold">
-            ← Volver
-        </a>
-    </div>
+    <a href="{% url 'clientes:editar_cliente' cliente.id %}" class="btn btn-primary">
+        <i data-lucide="pencil" style="width:16px;height:16px;margin-right:6px;"></i>
+        Editar
+    </a>
 </div>
 
 <!-- ===============================
      DATOS DEL CLIENTE
 =============================== -->
-<div class="card shadow-sm border-0 rounded-4 mb-4">
-    <div class="card-body p-4">
+<div class="card p-4 mb-4">
+    <div class="d-flex align-items-center gap-2 mb-4">
+        <i data-lucide="user" style="width:20px;height:20px;color:#3b82f6;"></i>
+        <h5 class="fw-bold mb-0">Datos personales</h5>
+    </div>
 
-        <h4 class="fw-bold mb-1" style="color:#002855;">
-            {{ cliente.nombre_completo }}
-        </h4>
-
-        <p class="text-muted mb-3">
-            Datos personales del cliente
-        </p>
-
-        <hr>
-
-        <div class="row mt-3">
-            <div class="col-md-6">
-                <p class="mb-2">
-                    <strong>Teléfono:</strong><br>
-                    {{ cliente.telefono|default:"No registrado" }}
-                </p>
-
-                <p class="mb-2">
-                    <strong>Email:</strong><br>
-                    {{ cliente.email|default:"No registrado" }}
-                </p>
-            </div>
-
-            <div class="col-md-6">
-                <p class="mb-2">
-                    <strong>DNI / CUIT:</strong><br>
-                    {{ cliente.dni_cuit|default:"-" }}
-                </p>
-
-                <p class="mb-2">
-                    <strong>Dirección:</strong><br>
-                    {{ cliente.direccion|default:"-" }}
-                </p>
+    <div class="row g-4">
+        <div class="col-md-6">
+            <div class="d-flex align-items-center gap-3 mb-3">
+                <div style="width:44px;height:44px;background:rgba(59,130,246,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                    <i data-lucide="phone" style="width:20px;height:20px;color:#3b82f6;"></i>
+                </div>
+                <div>
+                    <small class="text-muted">Teléfono</small>
+                    <div class="fw-semibold">{{ cliente.telefono|default:"No registrado" }}</div>
+                </div>
             </div>
         </div>
 
+        <div class="col-md-6">
+            <div class="d-flex align-items-center gap-3 mb-3">
+                <div style="width:44px;height:44px;background:rgba(139,92,246,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                    <i data-lucide="mail" style="width:20px;height:20px;color:#8b5cf6;"></i>
+                </div>
+                <div>
+                    <small class="text-muted">Email</small>
+                    <div class="fw-semibold">{{ cliente.email|default:"No registrado" }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="d-flex align-items-center gap-3 mb-3">
+                <div style="width:44px;height:44px;background:rgba(16,185,129,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                    <i data-lucide="id-card" style="width:20px;height:20px;color:#10b981;"></i>
+                </div>
+                <div>
+                    <small class="text-muted">DNI / CUIT</small>
+                    <div class="fw-semibold">{{ cliente.dni_cuit|default:"-" }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="d-flex align-items-center gap-3 mb-3">
+                <div style="width:44px;height:44px;background:rgba(245,158,11,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                    <i data-lucide="map-pin" style="width:20px;height:20px;color:#f59e0b;"></i>
+                </div>
+                <div>
+                    <small class="text-muted">Dirección</small>
+                    <div class="fw-semibold">{{ cliente.direccion|default:"-" }}</div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
 <!-- ===============================
-     📄 DOCUMENTACIÓN LEGAL (BOLETOS)
-     SIEMPRE VISIBLE EN LA FICHA
+     DOCUMENTACIÓN LEGAL (BOLETOS)
 =============================== -->
 {% if boletos %}
-<div class="card shadow-sm border-0 rounded-4 mb-4">
-    <div class="card-body p-4">
-
-        <h5 class="fw-bold mb-3" style="color:#002855;">
-            Documentación legal
-        </h5>
-
-        {% for boleto in boletos %}
-            {% if boleto.pdf %}
-                <div class="d-flex justify-content-between align-items-center
-                            border rounded-pill px-3 py-2 mb-2">
-                    <div>
-                        <strong>Boleto Nº {{ boleto.numero }}</strong><br>
-                        <small class="text-muted">
-                            {{ boleto.creado|date:"d/m/Y" }}
-                        </small>
-                    </div>
-
-                    <a href="{{ boleto.pdf.url }}"
-                       target="_blank"
-                       class="btn btn-sm btn-outline-dark rounded-pill px-3">
-                        Ver PDF
-                    </a>
-                </div>
-            {% endif %}
-        {% endfor %}
-
+<div class="card p-4 mb-4">
+    <div class="d-flex align-items-center gap-2 mb-4">
+        <i data-lucide="file-text" style="width:20px;height:20px;color:#3b82f6;"></i>
+        <h5 class="fw-bold mb-0">Documentación legal</h5>
     </div>
+
+    {% for boleto in boletos %}
+        {% if boleto.pdf %}
+        <div class="d-flex justify-content-between align-items-center p-3 mb-2" style="background:#f8f9fa;border-radius:12px;">
+            <div class="d-flex align-items-center gap-3">
+                <div style="width:40px;height:40px;background:rgba(59,130,246,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                    <i data-lucide="file-signature" style="width:18px;height:18px;color:#3b82f6;"></i>
+                </div>
+                <div>
+                    <span class="fw-semibold">Boleto Nº {{ boleto.numero }}</span>
+                    <div class="text-muted" style="font-size:12px;">{{ boleto.creado|date:"d/m/Y" }}</div>
+                </div>
+            </div>
+            <a href="{{ boleto.pdf.url }}" target="_blank" class="btn btn-secondary btn-sm">
+                <i data-lucide="eye" style="width:14px;height:14px;margin-right:4px;"></i>
+                Ver PDF
+            </a>
+        </div>
+        {% endif %}
+    {% endfor %}
 </div>
 {% endif %}
+
 <!-- ===============================
      CUENTA CORRIENTE ACTIVA
 =============================== -->
 {% if cuenta_activa %}
-<div class="card shadow-sm border-0 rounded-4 mb-4">
-    <div class="card-body p-4">
+<div class="card p-4 mb-4">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div class="d-flex align-items-center gap-2">
+            <i data-lucide="credit-card" style="width:20px;height:20px;color:#3b82f6;"></i>
+            <h5 class="fw-bold mb-0">Cuenta Corriente</h5>
+        </div>
 
-        <h5 class="fw-bold mb-3" style="color:#002855;">
-            Cuenta Corriente
-        </h5>
+        {% with estado=cliente.cumplimiento_pago %}
+            {% if estado == 'verde' %}
+            <span class="badge bg-success">Al día</span>
+            {% elif estado == 'amarillo' %}
+            <span class="badge bg-warning">Moroso</span>
+            {% elif estado == 'rojo' %}
+            <span class="badge bg-danger">Incobrable</span>
+            {% endif %}
+        {% endwith %}
+    </div>
 
-        <p class="mb-2">
-            <strong>Estado de la cuenta:</strong><br>
-            {{ cuenta_activa.get_estado_display }}
-        </p>
+    <div class="row g-4 mb-4">
+        <div class="col-md-6">
+            <div class="p-3" style="background:#f8f9fa;border-radius:12px;">
+                <small class="text-muted">Estado de la cuenta</small>
+                <div class="fw-semibold">{{ cuenta_activa.get_estado_display }}</div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="p-3" style="background:#f8f9fa;border-radius:12px;">
+                <small class="text-muted">Saldo actual</small>
+                <div class="fw-bold {% if cuenta_activa.saldo > 0 %}text-danger{% else %}text-success{% endif %}" style="font-size:24px;">
+                    $ {{ cuenta_activa.saldo|floatformat:0 }}
+                </div>
+            </div>
+        </div>
+    </div>
 
-        <p class="mb-3">
-            <strong>Estado de pago:</strong>
-            {% with estado=cliente.cumplimiento_pago %}
-                {% if estado == 'verde' %}
-                    <span class="badge rounded-pill px-3 py-2 ms-2"
-                          style="background:#198754;">
-                        AL DÍA
-                    </span>
-                {% elif estado == 'amarillo' %}
-                    <span class="badge rounded-pill px-3 py-2 ms-2 text-dark"
-                          style="background:#ffc107;">
-                        MOROSO
-                    </span>
-                {% elif estado == 'rojo' %}
-                    <span class="badge rounded-pill px-3 py-2 ms-2"
-                          style="background:#dc3545;">
-                        INCOBRABLE
-                    </span>
-                {% endif %}
-            {% endwith %}
-        </p>
+    <a href="{% url 'cuentas:cuenta_corriente_detalle' cuenta_activa.id %}" class="btn btn-primary">
+        <i data-lucide="external-link" style="width:16px;height:16px;margin-right:6px;"></i>
+        Ver cuenta corriente
+    </a>
+</div>
+{% endif %}
 
-        <p class="mb-4">
-            <strong>Saldo actual:</strong><br>
-            <span class="fw-bold fs-5 {% if cuenta_activa.saldo > 0 %}text-danger{% else %}text-success{% endif %}">
-                $ {{ cuenta_activa.saldo|floatformat:0 }}
-            </span>
-        </p>
+<!-- ===============================
+     HISTORIAL DE COMPRAS
+=============================== -->
+{% if cuentas_historial %}
+<div class="card p-4">
+    <div class="d-flex align-items-center gap-2 mb-4">
+        <i data-lucide="history" style="width:20px;height:20px;color:#3b82f6;"></i>
+        <h5 class="fw-bold mb-0">Historial de Compras</h5>
+    </div>
 
-        <a href="{% url 'cuentas:cuenta_corriente_detalle' cuenta_activa.id %}"
-           class="btn btn-dark fw-bold rounded-pill px-4">
-            Ver cuenta corriente
+    <div class="d-flex flex-wrap gap-2">
+        {% for cuenta in cuentas_historial %}
+        <a href="/cuentas/historial/{{ cuenta.id }}/" class="btn btn-secondary">
+            <i data-lucide="car" style="width:16px;height:16px;margin-right:6px;"></i>
+            {{ cuenta.venta.vehiculo.marca }} {{ cuenta.venta.vehiculo.modelo }} {{ cuenta.venta.vehiculo.anio }}
         </a>
-
+        {% endfor %}
     </div>
 </div>
 {% endif %}
 
 <!-- ===============================
-     HISTORIAL DE COMPRAS (CUENTAS CERRADAS)
+     SIN CUENTAS
 =============================== -->
-{% if cuentas_historial %}
-<div class="card shadow-sm border-0 rounded-4">
-    <div class="card-body p-4">
-
-        <h5 class="fw-bold mb-3" style="color:#002855;">
-            Historial de Compras
-        </h5>
-
-        {% for cuenta in cuentas_historial %}
-            <div class="mb-3">
-
-                <a href="/cuentas/historial/{{ cuenta.id }}/"
-                   class="btn btn-outline-primary fw-bold rounded-pill px-4">
-                    {{ cuenta.venta.vehiculo.marca }}
-                    {{ cuenta.venta.vehiculo.modelo }}
-                    {{ cuenta.venta.vehiculo.anio }}
-                </a>
-
-            </div>
-        {% endfor %}
-
-    </div>
+{% if not cuenta_activa and not cuentas_historial %}
+<div class="card p-5 text-center">
+    <i data-lucide="inbox" style="width:48px;height:48px;color:#9ca3af;margin-bottom:12px;"></i>
+    <p class="text-muted mb-0">Este cliente no posee cuenta corriente ni historial</p>
 </div>
 {% endif %}
 
-{% if not cuenta_activa and not cuentas_historial %}
-<p class="text-muted">
-    Este cliente no posee cuenta corriente ni historial.
-</p>
-{% endif %}
+<script>
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+</script>
 
 {% endblock %}

@@ -1,32 +1,71 @@
 {% extends "base.html" %}
-
 {% block content %}
-<h4 class="fw-bold mb-4" style="color:#002855;">
-    Asistencia
-</h4>
 
-<!-- BOTÓN AGREGAR EMPLEADO -->
-<div class="mb-3">
+<!-- ===============================
+     ENCABEZADO
+=============================== -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-bold mb-1">Asistencia</h3>
+        <p class="text-muted mb-0">Gestión de empleados y registro de asistencia</p>
+    </div>
     <a href="{% url 'asistencia:crear_empleado' %}" class="btn btn-primary">
-        + Agregar empleado
+        <i data-lucide="plus" style="width:16px;height:16px;margin-right:6px;"></i>
+        Agregar empleado
     </a>
 </div>
 
-<div class="card-clean">
-    <ul class="list-group">
-        {% for e in empleados %}
-        <li class="list-group-item d-flex justify-content-between align-items-center">
-            {{ e.nombre }}
-            <a href="{% url 'asistencia:calendario_empleado' e.id %}"
-               class="btn btn-outline-primary btn-sm">
-                Ver calendario
-            </a>
-        </li>
-        {% empty %}
-        <li class="list-group-item text-muted">
-            No hay empleados cargados
-        </li>
-        {% endfor %}
-    </ul>
+<!-- ===============================
+     LISTA DE EMPLEADOS
+=============================== -->
+<div class="card p-0">
+    {% if empleados %}
+    <div class="table-responsive">
+        <table class="table align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Empleado</th>
+                    <th class="text-end">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for e in empleados %}
+                <tr>
+                    <td>
+                        <div class="d-flex align-items-center gap-3">
+                            <div style="width:40px;height:40px;background:linear-gradient(135deg,#3b82f6 0%,#2563eb 100%);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600;">
+                                {{ e.nombre|slice:":1"|upper }}
+                            </div>
+                            <span class="fw-semibold">{{ e.nombre }}</span>
+                        </div>
+                    </td>
+                    <td class="text-end">
+                        <a href="{% url 'asistencia:calendario_empleado' e.id %}" class="btn btn-secondary btn-sm">
+                            <i data-lucide="calendar" style="width:14px;height:14px;margin-right:4px;"></i>
+                            Ver calendario
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="p-5 text-center">
+        <i data-lucide="users" style="width:48px;height:48px;color:#9ca3af;margin-bottom:12px;"></i>
+        <p class="text-muted mb-3">No hay empleados cargados</p>
+        <a href="{% url 'asistencia:crear_empleado' %}" class="btn btn-primary">
+            <i data-lucide="plus" style="width:16px;height:16px;margin-right:6px;"></i>
+            Agregar primer empleado
+        </a>
+    </div>
+    {% endif %}
 </div>
+
+<script>
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+</script>
+
 {% endblock %}

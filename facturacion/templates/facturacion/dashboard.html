@@ -1,13 +1,28 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<h2 class="fw-bold" style="color:#002855;">
-    Facturación
-</h2>
 
-<div class="card-clean mt-4">
-    <p class="text-muted mb-0">
-        Módulo de facturación en construcción.
-    </p>
+<!-- ===============================
+     ENCABEZADO
+=============================== -->
+<div class="mb-4">
+    <h3 class="fw-bold mb-1">Facturación</h3>
+    <p class="text-muted mb-0">Gestión de facturas y comprobantes</p>
 </div>
+
+<!-- ===============================
+     EN CONSTRUCCIÓN
+=============================== -->
+<div class="card p-5 text-center">
+    <div style="width:80px;height:80px;background:rgba(59,130,246,0.1);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+        <i data-lucide="construction" style="width:40px;height:40px;color:#3b82f6;"></i>
+    </div>
+    <h5 class="fw-bold mb-2">Módulo en construcción</h5>
+    <p class="text-muted mb-0">Estamos trabajando en el módulo de facturación</p>
+</div>
+
+<script>
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+</script>
+
 {% endblock %}

@@ -1,41 +1,74 @@
 {% extends 'base.html' %}
 {% load static %}
-
 {% block title %}Calendario{% endblock %}
-
 {% block content %}
 
-<h2 class="fw-bold mb-4" style="color:#002855;">Calendario de Eventos</h2>
-
-<a href="/calendario/agregar/" class="btn btn-dark mb-3 fw-bold">+ Agregar Evento</a>
-
-<div class="card shadow-sm rounded-4 p-4">
-
-    <table class="table table-striped align-middle">
-        <thead style="background:#002855; color:white;">
-            <tr>
-                <th>Fecha</th>
-                <th>Título</th>
-                <th>Descripción</th>
-            </tr>
-        </thead>
-
-        <tbody>
-            {% for evento in eventos %}
-            <tr>
-                <td>{{ evento.fecha }}</td>
-                <td>{{ evento.titulo }}</td>
-                <td>{{ evento.descripcion|default:"-" }}</td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="3" class="text-center py-4">No hay eventos cargados.</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-
-    </table>
-
+<!-- ===============================
+     ENCABEZADO
+=============================== -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-bold mb-1">Calendario de Eventos</h3>
+        <p class="text-muted mb-0">Gestión de eventos y recordatorios</p>
+    </div>
+    <a href="/calendario/agregar/" class="btn btn-primary">
+        <i data-lucide="plus" style="width:16px;height:16px;margin-right:6px;"></i>
+        Agregar evento
+    </a>
 </div>
+
+<!-- ===============================
+     TABLA DE EVENTOS
+=============================== -->
+<div class="card p-0">
+    {% if eventos %}
+    <div class="table-responsive">
+        <table class="table align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Título</th>
+                    <th>Descripción</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for evento in eventos %}
+                <tr>
+                    <td>
+                        <div class="d-flex align-items-center gap-3">
+                            <div style="width:44px;height:44px;background:rgba(59,130,246,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                                <i data-lucide="calendar" style="width:20px;height:20px;color:#3b82f6;"></i>
+                            </div>
+                            <span class="fw-semibold">{{ evento.fecha|date:"d/m/Y" }}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="fw-semibold">{{ evento.titulo }}</span>
+                    </td>
+                    <td>
+                        <span class="text-muted">{{ evento.descripcion|default:"-" }}</span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="p-5 text-center">
+        <i data-lucide="calendar-x" style="width:48px;height:48px;color:#9ca3af;margin-bottom:12px;"></i>
+        <p class="text-muted mb-3">No hay eventos cargados</p>
+        <a href="/calendario/agregar/" class="btn btn-primary">
+            <i data-lucide="plus" style="width:16px;height:16px;margin-right:6px;"></i>
+            Agregar primer evento
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+</script>
 
 {% endblock %}

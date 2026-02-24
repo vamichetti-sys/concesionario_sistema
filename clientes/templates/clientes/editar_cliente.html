@@ -1,65 +1,66 @@
 {% extends "base.html" %}
-
 {% block title %}Editar Cliente{% endblock %}
-
 {% block content %}
-<div class="container-fluid">
 
-    <!-- ENCABEZADO -->
-    <div class="d-flex justify-content-between align-items-start mb-4">
-        <div>
-            <h2 class="fw-bold" style="color:#002855;">
-                Editar Cliente
-            </h2>
-            <p class="text-muted mb-0">
-                {{ cliente.nombre_completo }}
-            </p>
-        </div>
+<!-- ===============================
+     ENCABEZADO
+=============================== -->
+<div class="mb-4">
+    <a href="{% url 'clientes:detalle_cliente' cliente.id %}" class="text-muted text-decoration-none d-inline-flex align-items-center mb-2" style="font-size:14px;">
+        <i data-lucide="arrow-left" style="width:16px;height:16px;margin-right:6px;"></i>
+        Volver a ficha
+    </a>
+    <h3 class="fw-bold mb-1">Editar Cliente</h3>
+    <p class="text-muted mb-0">{{ cliente.nombre_completo }}</p>
+</div>
 
-        <a href="{% url 'clientes:detalle_cliente' cliente.id %}"
-           class="btn btn-outline-secondary rounded-pill px-4 fw-bold">
-            ← Volver
-        </a>
-    </div>
-
-    <form method="post" class="card shadow-sm border-0 rounded-4 p-4" style="max-width:700px;">
+<!-- ===============================
+     FORMULARIO
+=============================== -->
+<div class="card p-4" style="max-width:700px;">
+    <form method="post">
         {% csrf_token %}
 
-        <div class="row g-3">
-
+        <div class="row g-4">
             <div class="col-md-6">
-                {{ form.telefono.label_tag }}
+                <label class="form-label">Teléfono</label>
                 {{ form.telefono }}
             </div>
 
             <div class="col-md-6">
-                {{ form.email.label_tag }}
+                <label class="form-label">Email</label>
                 {{ form.email }}
             </div>
 
             <div class="col-md-6">
-                {{ form.dni_cuit.label_tag }}
+                <label class="form-label">DNI / CUIT</label>
                 {{ form.dni_cuit }}
             </div>
 
             <div class="col-md-6">
-                {{ form.direccion.label_tag }}
+                <label class="form-label">Dirección</label>
                 {{ form.direccion }}
             </div>
-
         </div>
 
-        <div class="mt-4 d-flex gap-2">
+        <hr class="my-4">
+
+        <div class="d-flex gap-3">
             <button type="submit" class="btn btn-primary">
+                <i data-lucide="save" style="width:16px;height:16px;margin-right:6px;"></i>
                 Guardar cambios
             </button>
-
-            <a href="{% url 'clientes:detalle_cliente' cliente.id %}"
-               class="btn btn-secondary">
+            <a href="{% url 'clientes:detalle_cliente' cliente.id %}" class="btn btn-secondary">
                 Cancelar
             </a>
         </div>
     </form>
-
 </div>
+
+<script>
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+</script>
+
 {% endblock %}

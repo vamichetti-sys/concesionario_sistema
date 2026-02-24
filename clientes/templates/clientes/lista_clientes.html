@@ -1,120 +1,150 @@
 {% extends 'base.html' %}
 {% load static %}
-
 {% block title %}Lista de Clientes{% endblock %}
-
 {% block content %}
 
-<!-- ENCABEZADO -->
+<!-- ===============================
+     ENCABEZADO
+=============================== -->
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h2 class="fw-bold mb-1" style="color:#002855;">
-            Clientes
-        </h2>
-        <p class="text-muted mb-0">
-            Gestión de clientes y estado de cuentas
-        </p>
+        <h3 class="fw-bold mb-1">Clientes</h3>
+        <p class="text-muted mb-0">Gestión de clientes y estado de cuentas</p>
     </div>
-
-    <a href="{% url 'clientes:crear_cliente' %}"
-       class="btn btn-dark fw-bold rounded-pill px-4">
-        + Agregar cliente
+    <a href="{% url 'clientes:crear_cliente' %}" class="btn btn-primary">
+        <i data-lucide="plus" style="width:16px;height:16px;margin-right:6px;"></i>
+        Agregar cliente
     </a>
 </div>
 
-<!-- BUSCADOR -->
-<form method="GET" class="mb-3 d-flex gap-2" style="max-width:520px;">
-    <input type="text"
-           name="q"
-           class="form-control rounded-pill"
-           placeholder="Buscar por nombre, teléfono o email..."
-           value="{{ query }}">
-    <button class="btn btn-primary fw-bold rounded-pill px-4">
-        Buscar
-    </button>
-</form>
+<!-- ===============================
+     BUSCADOR
+=============================== -->
+<div class="card p-3 mb-4">
+    <form method="GET">
+        <div class="input-group">
+            <span class="input-group-text" style="background:#fff;border-right:none;">
+                <i data-lucide="search" style="width:18px;height:18px;color:#9ca3af;"></i>
+            </span>
+            <input type="text"
+                   name="q"
+                   class="form-control"
+                   style="border-left:none;"
+                   placeholder="Buscar por nombre, teléfono o email..."
+                   value="{{ query }}">
+            <button type="submit" class="btn btn-primary">Buscar</button>
+        </div>
+    </form>
+</div>
 
-<div class="card shadow-sm border-0 rounded-4">
-    <div class="card-body p-0">
-
-        <table class="table table-striped mb-0 align-middle">
-            <thead style="background:#002855; color:white;">
+<!-- ===============================
+     TABLA DE CLIENTES
+=============================== -->
+<div class="card p-0">
+    {% if clientes_con_estado %}
+    <div class="table-responsive">
+        <table class="table align-middle mb-0">
+            <thead>
                 <tr>
-                    <th style="width:180px;">Acciones</th>
-                    <th>Nombre Completo</th>
+                    <th>Cliente</th>
                     <th>Teléfono</th>
                     <th>Email</th>
                     <th>Estado de pago</th>
+                    <th class="text-end">Acciones</th>
                 </tr>
             </thead>
-
             <tbody>
                 {% for item in clientes_con_estado %}
                 {% with cliente=item.cliente estado=item.estado_pago %}
                 <tr>
+                    <!-- CLIENTE -->
+                    <td>
+                        <div class="d-flex align-items-center gap-3">
+                            <div style="width:40px;height:40px;background:linear-gradient(135deg,#3b82f6 0%,#2563eb 100%);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600;">
+                                {{ cliente.nombre_completo|slice:":1"|upper }}
+                            </div>
+                            <div>
+                                <span class="fw-semibold">{{ cliente.nombre_completo }}</span>
+                                {% if not cliente.activo %}
+                                <span class="badge bg-warning" style="font-size:10px;margin-left:6px;">Inactivo</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </td>
 
-                    <!-- ACCIONES -->
-                    <td class="d-flex flex-column gap-1">
-                        <a href="{% url 'clientes:detalle_cliente' cliente.id %}"
-                           class="btn btn-sm btn-outline-primary fw-bold rounded-pill px-3">
-                            Ver ficha
-                        </a>
-
-                        {% if cliente.activo %}
-                            <a href="{% url 'clientes:desactivar_cliente' cliente.id %}"
-                               class="btn btn-sm btn-outline-danger fw-bold rounded-pill px-3"
-                               onclick="return confirm('¿Seguro que querés desactivar este cliente?');">
-                                Desactivar
-                            </a>
+                    <!-- TELÉFONO -->
+                    <td>
+                        {% if cliente.telefono %}
+                        <span class="d-flex align-items-center gap-2">
+                            <i data-lucide="phone" style="width:14px;height:14px;color:#9ca3af;"></i>
+                            {{ cliente.telefono }}
+                        </span>
                         {% else %}
-                            <span class="badge bg-secondary rounded-pill px-3 text-center">
-                                Inactivo
-                            </span>
+                        <span class="text-muted">-</span>
                         {% endif %}
                     </td>
 
-                    <!-- DATOS -->
-                    <td class="fw-bold">
-                        {{ cliente.nombre_completo }}
+                    <!-- EMAIL -->
+                    <td>
+                        {% if cliente.email %}
+                        <span class="d-flex align-items-center gap-2">
+                            <i data-lucide="mail" style="width:14px;height:14px;color:#9ca3af;"></i>
+                            {{ cliente.email }}
+                        </span>
+                        {% else %}
+                        <span class="text-muted">-</span>
+                        {% endif %}
                     </td>
-
-                    <td>{{ cliente.telefono|default:"-" }}</td>
-                    <td>{{ cliente.email|default:"-" }}</td>
 
                     <!-- ESTADO DE PAGO -->
                     <td>
                         {% if estado == 'verde' %}
-                            <span class="badge rounded-pill px-3 py-2"
-                                  style="background:#198754;">
-                                AL DÍA
-                            </span>
+                        <span class="badge bg-success">Al día</span>
                         {% elif estado == 'amarillo' %}
-                            <span class="badge rounded-pill px-3 py-2 text-dark"
-                                  style="background:#ffc107;">
-                                MOROSO
-                            </span>
+                        <span class="badge bg-warning">Moroso</span>
                         {% elif estado == 'rojo' %}
-                            <span class="badge rounded-pill px-3 py-2"
-                                  style="background:#dc3545;">
-                                INCOBRABLE
-                            </span>
+                        <span class="badge bg-danger">Incobrable</span>
                         {% endif %}
                     </td>
 
-                </tr>
-                {% endwith %}
-                {% empty %}
-                <tr>
-                    <td colspan="5" class="text-center py-4 text-muted">
-                        No hay clientes cargados.
+                    <!-- ACCIONES -->
+                    <td class="text-end">
+                        <div class="d-flex gap-2 justify-content-end">
+                            <a href="{% url 'clientes:detalle_cliente' cliente.id %}" class="btn btn-secondary btn-sm">
+                                <i data-lucide="eye" style="width:14px;height:14px;margin-right:4px;"></i>
+                                Ver ficha
+                            </a>
+                            {% if cliente.activo %}
+                            <a href="{% url 'clientes:desactivar_cliente' cliente.id %}"
+                               class="btn btn-outline-danger btn-sm"
+                               onclick="return confirm('¿Seguro que querés desactivar este cliente?');">
+                                <i data-lucide="user-x" style="width:14px;height:14px;"></i>
+                            </a>
+                            {% endif %}
+                        </div>
                     </td>
                 </tr>
+                {% endwith %}
                 {% endfor %}
             </tbody>
-
         </table>
-
     </div>
+    {% else %}
+    <div class="p-5 text-center">
+        <i data-lucide="users" style="width:48px;height:48px;color:#9ca3af;margin-bottom:12px;"></i>
+        <p class="text-muted mb-3">No hay clientes cargados</p>
+        <a href="{% url 'clientes:crear_cliente' %}" class="btn btn-primary">
+            <i data-lucide="plus" style="width:16px;height:16px;margin-right:6px;"></i>
+            Agregar primer cliente
+        </a>
+    </div>
+    {% endif %}
 </div>
+
+<script>
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+</script>
 
 {% endblock %}
