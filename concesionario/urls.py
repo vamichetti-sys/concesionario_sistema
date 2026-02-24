@@ -92,9 +92,15 @@ urlpatterns = [
     path('deudas/', include('deudas.urls')),
 
     # ===============================
-    # 📋 PRESUPUESTOS (NUEVO)
+    # 📋 PRESUPUESTOS
     # ===============================
     path('presupuestos/', include('presupuestos.urls')),
+
+    # ===============================
+    # 🔒 GESTIÓN INTERNA (NUEVO)
+    # ===============================
+    path('cheques/', include('cheques.urls')),
+    path('cuentas-internas/', include('cuentas_internas.urls')),
 ]
 
 # ==========================================================

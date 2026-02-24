@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block title %}Eliminar Movimiento{% endblock %}
+
+{% block content %}
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card p-4">
+            <div class="text-center mb-4">
+                <div style="width:64px;height:64px;background:rgba(239,68,68,0.1);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+                    <i data-lucide="alert-triangle" style="width:32px;height:32px;color:#ef4444;"></i>
+                </div>
+                <h4 class="fw-bold mb-2">Eliminar Movimiento</h4>
+                <p class="text-muted">¿Estás seguro de que querés eliminar este movimiento?</p>
+                <p class="fw-semibold">{{ movimiento.concepto }} - ${{ movimiento.monto|floatformat:0 }}</p>
+            </div>
+
+            <form method="POST">
+                {% csrf_token %}
+                <div class="d-flex gap-3">
+                    <a href="{% url 'cuentas_internas:detalle' cuenta.pk %}" class="btn btn-secondary flex-fill">Cancelar</a>
+                    <button type="submit" class="btn btn-danger flex-fill">
+                        <i data-lucide="trash-2" style="width:16px;height:16px;margin-right:6px;"></i>
+                        Eliminar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+</script>
+
+{% endblock %}

@@ -668,18 +668,40 @@
                 <i data-lucide="receipt"></i>
                 <span>Facturación</span>
             </a>
-            {% if perms.reportes.view_fichareporteinterno %}
-            <a href="/reportes/" class="nav-link {% if '/reportes/' in request.path %}active{% endif %}">
-                <i data-lucide="bar-chart-3"></i>
-                <span>Reportes</span>
-            </a>
-            {% endif %}
             <a href="/asistencia/" class="nav-link {% if '/asistencia/' in request.path %}active{% endif %}">
                 <i data-lucide="user-check"></i>
                 <span>Asistencia</span>
             </a>
         </div>
     </div>
+
+    {% if user.username == 'Vamichetti' or user.username == 'Hamichetti' %}
+    <!-- GESTIÓN INTERNA (Solo Vamichetti y Hamichetti) -->
+    <div class="sidebar-category">
+        <div class="sidebar-category-header" onclick="toggleCategory(this)">
+            <span>Gestión Interna</span>
+            <i data-lucide="chevron-down" class="chevron"></i>
+        </div>
+        <div class="sidebar-category-items" style="max-height:300px;">
+            <a href="/reportes/" class="nav-link {% if '/reportes/' in request.path %}active{% endif %}">
+                <i data-lucide="bar-chart-3"></i>
+                <span>Reportes</span>
+            </a>
+            <a href="/reportes/control-stock/" class="nav-link {% if '/reportes/control-stock/' in request.path %}active{% endif %}">
+                <i data-lucide="package"></i>
+                <span>Control de Stock</span>
+            </a>
+            <a href="/cheques/" class="nav-link {% if '/cheques/' in request.path %}active{% endif %}">
+                <i data-lucide="banknote"></i>
+                <span>Gestión de Cheques</span>
+            </a>
+            <a href="/cuentas-internas/" class="nav-link {% if '/cuentas-internas/' in request.path %}active{% endif %}">
+                <i data-lucide="wallet"></i>
+                <span>Cuentas Internas</span>
+            </a>
+        </div>
+    </div>
+    {% endif %}
 
     <div class="sidebar-divider"></div>
 

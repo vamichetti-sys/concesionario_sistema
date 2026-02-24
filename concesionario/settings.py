@@ -79,6 +79,8 @@ INSTALLED_APPS = [
     "documentacion",
     "reventa",
     "presupuestos",
+    "cheques",
+    "cuentas_internas",
 ]
 
 # ==========================================================

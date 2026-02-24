@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+
+{% block title %}Nuevo Movimiento{% endblock %}
+
+{% block content %}
+
+<div class="mb-4">
+    <a href="{% url 'cuentas_internas:detalle' cuenta.pk %}" class="text-muted text-decoration-none d-inline-flex align-items-center mb-2" style="font-size:14px;">
+        <i data-lucide="arrow-left" style="width:16px;height:16px;margin-right:6px;"></i>
+        Volver a {{ cuenta.nombre }}
+    </a>
+    <h3 class="fw-bold mb-1">Nuevo Movimiento</h3>
+    <p class="text-muted mb-0">Cuenta: {{ cuenta.nombre }} - {{ cuenta.cargo }}</p>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <form method="POST">
+            {% csrf_token %}
+            
+            <div class="card p-4 mb-4">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Tipo *</label>
+                        {{ form.tipo }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Monto *</label>
+                        {{ form.monto }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Fecha *</label>
+                        {{ form.fecha }}
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label">Concepto *</label>
+                        {{ form.concepto }}
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label">Observaciones</label>
+                        {{ form.observaciones }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex gap-3">
+                <button type="submit" class="btn btn-primary">
+                    <i data-lucide="save" style="width:16px;height:16px;margin-right:6px;"></i>
+                    Guardar
+                </button>
+                <a href="{% url 'cuentas_internas:detalle' cuenta.pk %}" class="btn btn-secondary">Cancelar</a>
+            </div>
+
+        </form>
+    </div>
+</div>
+
+<script>
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+</script>
+
+{% endblock %}

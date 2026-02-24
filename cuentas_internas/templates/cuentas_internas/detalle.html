@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ cuenta.nombre }}{% endblock %}
+
+{% block content %}
+
+<!-- ENCABEZADO -->
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+        <a href="{% url 'cuentas_internas:lista' %}" class="text-muted text-decoration-none d-inline-flex align-items-center mb-2" style="font-size:14px;">
+            <i data-lucide="arrow-left" style="width:16px;height:16px;margin-right:6px;"></i>
+            Volver a cuentas
+        </a>
+        <h3 class="fw-bold mb-1">{{ cuenta.nombre }}</h3>
+        <p class="text-muted mb-0">{{ cuenta.cargo }}</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'cuentas_internas:agregar_movimiento' cuenta.pk %}" class="btn btn-primary">
+            <i data-lucide="plus" style="width:16px;height:16px;margin-right:6px;"></i>
+            Nuevo Movimiento
+        </a>
+        <a href="{% url 'cuentas_internas:editar' cuenta.pk %}" class="btn btn-secondary">
+            <i data-lucide="pencil" style="width:16px;height:16px;margin-right:6px;"></i>
+            Editar
+        </a>
+    </div>
+</div>
+
+<!-- SALDO -->
+<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <div class="card p-4 text-center" style="position:relative;">
+            <span class="text-muted" style="font-size:13px;">Saldo actual</span>
+            {% if cuenta.saldo > 0 %}
+            <h2 class="fw-bold text-success mb-0">${{ cuenta.saldo|floatformat:0 }}</h2>
+            <small class="text-muted">Nos debe</small>
+            <div style="position:absolute;top:0;left:0;width:4px;height:100%;background:#10b981;border-radius:14px 0 0 14px;"></div>
+            {% elif cuenta.saldo < 0 %}
+            <h2 class="fw-bold text-danger mb-0">${{ cuenta.saldo|floatformat:0 }}</h2>
+            <small class="text-muted">Le debemos</small>
+            <div style="position:absolute;top:0;left:0;width:4px;height:100%;background:#ef4444;border-radius:14px 0 0 14px;"></div>
+            {% else %}
+            <h2 class="fw-bold mb-0">$0</h2>
+            <small class="text-muted">Sin saldo</small>
+            <div style="position:absolute;top:0;left:0;width:4px;height:100%;background:#9ca3af;border-radius:14px 0 0 14px;"></div>
+            {% endif %}
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card p-4">
+            <small class="text-muted">Teléfono</small>
+            <div class="fw-semibold">{{ cuenta.telefono|default:"—" }}</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card p-4">
+            <small class="text-muted">Estado</small>
+            <div>
+                {% if cuenta.activa %}
+                <span class="badge bg-success">Activa</span>
+                {% else %}
+                <span class="badge bg-secondary">Inactiva</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MOVIMIENTOS -->
+<div class="card p-4">
+    <h5 class="fw-bold mb-3">
+        <i data-lucide="list" style="width:20px;height:20px;margin-right:8px;color:#3b82f6;"></i>
+        Movimientos
+    </h5>
+
+    {% if movimientos %}
+    <div class="table-responsive">
+        <table class="table align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Tipo</th>
+                    <th>Concepto</th>
+                    <th class="text-end">Monto</th>
+                    <th class="text-end">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for mov in movimientos %}
+                <tr>
+                    <td>{{ mov.fecha|date:"d/m/Y" }}</td>
+                    <td>
+                        {% if mov.tipo == 'debe' %}
+                        <span class="badge bg-danger">Debe</span>
+                        {% else %}
+                        <span class="badge bg-success">Haber</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {{ mov.concepto }}
+                        {% if mov.observaciones %}
+                        <br><small class="text-muted">{{ mov.observaciones }}</small>
+                        {% endif %}
+                    </td>
+                    <td class="text-end">
+                        {% if mov.tipo == 'debe' %}
+                        <span class="fw-bold text-danger">+${{ mov.monto|floatformat:0 }}</span>
+                        {% else %}
+                        <span class="fw-bold text-success">-${{ mov.monto|floatformat:0 }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end">
+                        <a href="{% url 'cuentas_internas:eliminar_movimiento' mov.pk %}" class="btn btn-outline-danger btn-sm">
+                            <i data-lucide="trash-2" style="width:14px;height:14px;"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="text-center py-4">
+        <i data-lucide="inbox" style="width:48px;height:48px;color:#9ca3af;margin-bottom:12px;"></i>
+        <p class="text-muted mb-0">Sin movimientos</p>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+</script>
+
+{% endblock %}

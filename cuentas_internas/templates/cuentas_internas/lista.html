@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+
+{% block title %}Cuentas Internas{% endblock %}
+
+{% block content %}
+
+<!-- ENCABEZADO -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-bold mb-1">Cuentas Internas</h3>
+        <p class="text-muted mb-0">Cuentas corrientes personales</p>
+    </div>
+    <a href="{% url 'cuentas_internas:crear' %}" class="btn btn-primary">
+        <i data-lucide="plus" style="width:16px;height:16px;margin-right:6px;"></i>
+        Nueva Cuenta
+    </a>
+</div>
+
+<!-- RESUMEN -->
+<div class="row g-4 mb-4">
+    <div class="col-md-6">
+        <div class="card p-4" style="position:relative;">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <span class="text-muted" style="font-size:13px;">Total a cobrar</span>
+                <div style="width:40px;height:40px;background:rgba(16,185,129,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                    <i data-lucide="trending-up" style="width:20px;height:20px;color:#10b981;"></i>
+                </div>
+            </div>
+            <h3 class="fw-bold mb-0 text-success">${{ total_deudas|floatformat:0 }}</h3>
+            <div style="position:absolute;top:0;left:0;width:4px;height:100%;background:#10b981;border-radius:14px 0 0 14px;"></div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card p-4" style="position:relative;">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <span class="text-muted" style="font-size:13px;">Total a pagar</span>
+                <div style="width:40px;height:40px;background:rgba(239,68,68,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                    <i data-lucide="trending-down" style="width:20px;height:20px;color:#ef4444;"></i>
+                </div>
+            </div>
+            <h3 class="fw-bold mb-0 text-danger">${{ total_favor|floatformat:0 }}</h3>
+            <div style="position:absolute;top:0;left:0;width:4px;height:100%;background:#ef4444;border-radius:14px 0 0 14px;"></div>
+        </div>
+    </div>
+</div>
+
+<!-- FILTROS -->
+<div class="card p-3 mb-4">
+    <form method="GET" class="row g-3 align-items-end">
+        <div class="col-md-5">
+            <input type="text" name="q" class="form-control" placeholder="Buscar por nombre o cargo..." value="{{ query }}">
+        </div>
+        <div class="col-md-3">
+            <select name="mostrar" class="form-select">
+                <option value="activas" {% if mostrar == 'activas' %}selected{% endif %}>Activas</option>
+                <option value="inactivas" {% if mostrar == 'inactivas' %}selected{% endif %}>Inactivas</option>
+                <option value="todas" {% if mostrar == 'todas' %}selected{% endif %}>Todas</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-primary w-100">Filtrar</button>
+        </div>
+        <div class="col-md-2">
+            <a href="{% url 'cuentas_internas:lista' %}" class="btn btn-secondary w-100">Limpiar</a>
+        </div>
+    </form>
+</div>
+
+<!-- TABLA -->
+<div class="card p-0">
+    {% if cuentas %}
+    <div class="table-responsive">
+        <table class="table align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Cargo</th>
+                    <th>Teléfono</th>
+                    <th class="text-end">Saldo</th>
+                    <th>Estado</th>
+                    <th class="text-end">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cuenta in cuentas %}
+                <tr>
+                    <td>
+                        <a href="{% url 'cuentas_internas:detalle' cuenta.pk %}" class="fw-semibold text-decoration-none">
+                            {{ cuenta.nombre }}
+                        </a>
+                    </td>
+                    <td>{{ cuenta.cargo }}</td>
+                    <td><small class="text-muted">{{ cuenta.telefono|default:"—" }}</small></td>
+                    <td class="text-end">
+                        {% if cuenta.saldo > 0 %}
+                        <span class="fw-bold text-success">${{ cuenta.saldo|floatformat:0 }}</span>
+                        <small class="text-muted">(debe)</small>
+                        {% elif cuenta.saldo < 0 %}
+                        <span class="fw-bold text-danger">${{ cuenta.saldo|floatformat:0 }}</span>
+                        <small class="text-muted">(a favor)</small>
+                        {% else %}
+                        <span class="text-muted">$0</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if cuenta.activa %}
+                        <span class="badge bg-success">Activa</span>
+                        {% else %}
+                        <span class="badge bg-secondary">Inactiva</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end">
+                        <div class="d-flex gap-2 justify-content-end">
+                            <a href="{% url 'cuentas_internas:detalle' cuenta.pk %}" class="btn btn-primary btn-sm">
+                                <i data-lucide="eye" style="width:14px;height:14px;"></i>
+                            </a>
+                            <a href="{% url 'cuentas_internas:agregar_movimiento' cuenta.pk %}" class="btn btn-success btn-sm">
+                                <i data-lucide="plus" style="width:14px;height:14px;"></i>
+                            </a>
+                            <a href="{% url 'cuentas_internas:editar' cuenta.pk %}" class="btn btn-secondary btn-sm">
+                                <i data-lucide="pencil" style="width:14px;height:14px;"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="p-5 text-center">
+        <i data-lucide="wallet" style="width:48px;height:48px;color:#9ca3af;margin-bottom:12px;"></i>
+        <p class="text-muted mb-3">No hay cuentas internas</p>
+        <a href="{% url 'cuentas_internas:crear' %}" class="btn btn-primary">
+            <i data-lucide="plus" style="width:16px;height:16px;margin-right:6px;"></i>
+            Crear primera cuenta
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+</script>
+
+{% endblock %}
