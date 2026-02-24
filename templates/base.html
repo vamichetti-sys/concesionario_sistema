@@ -75,7 +75,8 @@
             letter-spacing: 1px;
         }
 
-        .sidebar a {
+        /* Links normales */
+        .sidebar a.nav-link {
             display: flex;
             align-items: center;
             gap: 12px;
@@ -89,20 +90,82 @@
             margin-bottom: 4px;
         }
 
-        .sidebar a:hover {
+        .sidebar a.nav-link:hover {
             background: rgba(255, 255, 255, 0.08);
             color: #ffffff;
         }
 
-        .sidebar a.active {
+        .sidebar a.nav-link.active {
             background: rgba(59, 130, 246, 0.2);
             color: #60a5fa;
         }
 
-        .sidebar a i {
+        .sidebar a.nav-link i {
             width: 20px;
             height: 20px;
             stroke-width: 1.5;
+        }
+
+        /* Categorías colapsables */
+        .sidebar-category {
+            margin-bottom: 8px;
+        }
+
+        .sidebar-category-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 14px;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            border-radius: 10px;
+            transition: all 0.2s ease;
+        }
+
+        .sidebar-category-header:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .sidebar-category-header i {
+            width: 16px;
+            height: 16px;
+            transition: transform 0.2s ease;
+        }
+
+        .sidebar-category-header.collapsed i.chevron {
+            transform: rotate(-90deg);
+        }
+
+        .sidebar-category-items {
+            padding-left: 12px;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .sidebar-category-items.collapsed {
+            max-height: 0 !important;
+        }
+
+        .sidebar-category-items a.nav-link {
+            padding: 10px 14px;
+            font-size: 13px;
+        }
+
+        .sidebar-category-items a.nav-link i {
+            width: 18px;
+            height: 18px;
+        }
+
+        /* Separador */
+        .sidebar-divider {
+            height: 1px;
+            background: rgba(255, 255, 255, 0.1);
+            margin: 16px 8px;
         }
 
         /* =========================
@@ -357,6 +420,11 @@
             color: #2563eb !important;
         }
 
+        .bg-secondary {
+            background: rgba(107, 114, 128, 0.1) !important;
+            color: #4b5563 !important;
+        }
+
         /* =========================
            TEXTOS
         ========================= */
@@ -479,6 +547,20 @@
         ::-webkit-scrollbar-thumb:hover {
             background: #a1a1a1;
         }
+
+        /* Scrollbar sidebar */
+        .sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .sidebar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.2);
+            border-radius: 3px;
+        }
     </style>
 </head>
 <body>
@@ -486,72 +568,121 @@
 <!-- SIDEBAR -->
 <div class="sidebar">
     <div class="sidebar-logo">
-    <img src="{% static 'img/logo_amichetti.png' %}" alt="Logo">
+        <img src="{% static 'img/logo_amichetti.png' %}" alt="Logo">
         <div class="logo-text">
             AMICHETTI
             <small>AUTOMOTORES</small>
         </div>
     </div>
 
-    <a href="/inicio/" class="{% if request.path == '/inicio/' %}active{% endif %}">
+    <!-- INICIO (siempre visible) -->
+    <a href="/inicio/" class="nav-link {% if request.path == '/inicio/' %}active{% endif %}">
         <i data-lucide="layout-dashboard"></i>
         <span>Inicio</span>
     </a>
-    <a href="/vehiculos/" class="{% if '/vehiculos/' in request.path %}active{% endif %}">
-        <i data-lucide="car"></i>
-        <span>Vehículos</span>
-    </a>
-    <a href="{% url 'compraventa:home' %}" class="{% if '/compraventa/' in request.path %}active{% endif %}">
-        <i data-lucide="repeat"></i>
-        <span>Compra-Venta</span>
-    </a>
-    <a href="/clientes/" class="{% if '/clientes/' in request.path %}active{% endif %}">
-        <i data-lucide="users"></i>
-        <span>Clientes</span>
-    </a>
-    <a href="/cuentas/" class="{% if '/cuentas/' in request.path %}active{% endif %}">
-        <i data-lucide="credit-card"></i>
-        <span>Cuentas Corrientes</span>
-    </a>
-    <a href="/ventas/" class="{% if '/ventas/' in request.path %}active{% endif %}">
-        <i data-lucide="shopping-cart"></i>
-        <span>Ventas</span>
-    </a>
-    <a href="/boletos/" class="{% if '/boletos/' in request.path %}active{% endif %}">
-        <i data-lucide="ticket"></i>
-        <span>Boletos</span>
-    </a>
-    <a href="/gestoria/" class="{% if '/gestoria/' in request.path %}active{% endif %}">
-        <i data-lucide="clipboard-list"></i>
-        <span>Gestoría</span>
-    </a>
-    <a href="/deudas/" class="{% if '/deudas/' in request.path %}active{% endif %}">
-        <i data-lucide="alert-circle"></i>
-        <span>Deuda</span>
-    </a>
-    <a href="{% url 'documentacion:home' %}" class="{% if '/documentacion/' in request.path %}active{% endif %}">
-        <i data-lucide="file-text"></i>
-        <span>Documentación</span>
-    </a>
-    <a href="/calendario/" class="{% if '/calendario/' in request.path %}active{% endif %}">
-        <i data-lucide="calendar"></i>
-        <span>Calendario</span>
-    </a>
-    <a href="/facturacion/" class="{% if '/facturacion/' in request.path %}active{% endif %}">
-        <i data-lucide="receipt"></i>
-        <span>Facturación</span>
-    </a>
 
-    {% if perms.reportes.view_fichareporteinterno %}
-    <a href="/reportes/" class="{% if '/reportes/' in request.path %}active{% endif %}">
-        <i data-lucide="bar-chart-3"></i>
-        <span>Reportes</span>
-    </a>
-    {% endif %}
+    <div class="sidebar-divider"></div>
 
-    <a href="/asistencia/" class="{% if '/asistencia/' in request.path %}active{% endif %}">
-        <i data-lucide="user-check"></i>
-        <span>Asistencia</span>
+    <!-- OPERACIONES -->
+    <div class="sidebar-category">
+        <div class="sidebar-category-header" onclick="toggleCategory(this)">
+            <span>Operaciones</span>
+            <i data-lucide="chevron-down" class="chevron"></i>
+        </div>
+        <div class="sidebar-category-items" style="max-height:300px;">
+            <a href="/vehiculos/" class="nav-link {% if '/vehiculos/' in request.path %}active{% endif %}">
+                <i data-lucide="car"></i>
+                <span>Vehículos</span>
+            </a>
+            <a href="{% url 'compraventa:home' %}" class="nav-link {% if '/compraventa/' in request.path %}active{% endif %}">
+                <i data-lucide="repeat"></i>
+                <span>Compra-Venta</span>
+            </a>
+            <a href="/ventas/" class="nav-link {% if '/ventas/' in request.path %}active{% endif %}">
+                <i data-lucide="shopping-cart"></i>
+                <span>Ventas</span>
+            </a>
+            <a href="/boletos/" class="nav-link {% if '/boletos/' in request.path %}active{% endif %}">
+                <i data-lucide="ticket"></i>
+                <span>Boletos</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- CLIENTES -->
+    <div class="sidebar-category">
+        <div class="sidebar-category-header" onclick="toggleCategory(this)">
+            <span>Clientes</span>
+            <i data-lucide="chevron-down" class="chevron"></i>
+        </div>
+        <div class="sidebar-category-items" style="max-height:300px;">
+            <a href="/clientes/" class="nav-link {% if '/clientes/' in request.path %}active{% endif %}">
+                <i data-lucide="users"></i>
+                <span>Clientes</span>
+            </a>
+            <a href="/cuentas/" class="nav-link {% if '/cuentas/' in request.path %}active{% endif %}">
+                <i data-lucide="credit-card"></i>
+                <span>Cuentas Corrientes</span>
+            </a>
+            <a href="/deudas/" class="nav-link {% if '/deudas/' in request.path %}active{% endif %}">
+                <i data-lucide="alert-circle"></i>
+                <span>Deudas</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- DOCUMENTACIÓN -->
+    <div class="sidebar-category">
+        <div class="sidebar-category-header" onclick="toggleCategory(this)">
+            <span>Documentación</span>
+            <i data-lucide="chevron-down" class="chevron"></i>
+        </div>
+        <div class="sidebar-category-items" style="max-height:300px;">
+            <a href="/gestoria/" class="nav-link {% if '/gestoria/' in request.path %}active{% endif %}">
+                <i data-lucide="clipboard-list"></i>
+                <span>Gestoría</span>
+            </a>
+            <a href="{% url 'documentacion:home' %}" class="nav-link {% if '/documentacion/' in request.path %}active{% endif %}">
+                <i data-lucide="file-text"></i>
+                <span>Documentación</span>
+            </a>
+            <a href="/calendario/" class="nav-link {% if '/calendario/' in request.path %}active{% endif %}">
+                <i data-lucide="calendar"></i>
+                <span>Calendario</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- ADMINISTRACIÓN -->
+    <div class="sidebar-category">
+        <div class="sidebar-category-header" onclick="toggleCategory(this)">
+            <span>Administración</span>
+            <i data-lucide="chevron-down" class="chevron"></i>
+        </div>
+        <div class="sidebar-category-items" style="max-height:300px;">
+            <a href="/facturacion/" class="nav-link {% if '/facturacion/' in request.path %}active{% endif %}">
+                <i data-lucide="receipt"></i>
+                <span>Facturación</span>
+            </a>
+            {% if perms.reportes.view_fichareporteinterno %}
+            <a href="/reportes/" class="nav-link {% if '/reportes/' in request.path %}active{% endif %}">
+                <i data-lucide="bar-chart-3"></i>
+                <span>Reportes</span>
+            </a>
+            {% endif %}
+            <a href="/asistencia/" class="nav-link {% if '/asistencia/' in request.path %}active{% endif %}">
+                <i data-lucide="user-check"></i>
+                <span>Asistencia</span>
+            </a>
+        </div>
+    </div>
+
+    <div class="sidebar-divider"></div>
+
+    <!-- CERRAR SESIÓN -->
+    <a href="{% url 'cerrar_sesion' %}" class="nav-link" style="color:rgba(239,68,68,0.8);">
+        <i data-lucide="log-out"></i>
+        <span>Cerrar sesión</span>
     </a>
 </div>
 
@@ -579,6 +710,45 @@
 <script>
     // Inicializar íconos Lucide
     lucide.createIcons();
+
+    // Toggle categorías del sidebar
+    function toggleCategory(header) {
+        const items = header.nextElementSibling;
+        const chevron = header.querySelector('.chevron');
+        
+        if (items.classList.contains('collapsed')) {
+            items.classList.remove('collapsed');
+            items.style.maxHeight = items.scrollHeight + 'px';
+            header.classList.remove('collapsed');
+        } else {
+            items.classList.add('collapsed');
+            items.style.maxHeight = '0';
+            header.classList.add('collapsed');
+        }
+    }
+
+    // Mantener abierta la categoría del módulo activo
+    document.addEventListener('DOMContentLoaded', function() {
+        const activeLink = document.querySelector('.sidebar-category-items a.nav-link.active');
+        if (activeLink) {
+            const categoryItems = activeLink.closest('.sidebar-category-items');
+            if (categoryItems) {
+                categoryItems.style.maxHeight = categoryItems.scrollHeight + 'px';
+            }
+        }
+
+        // Colapsar categorías sin elementos activos
+        document.querySelectorAll('.sidebar-category-items').forEach(function(items) {
+            if (!items.querySelector('a.nav-link.active')) {
+                items.classList.add('collapsed');
+                items.style.maxHeight = '0';
+                items.previousElementSibling.classList.add('collapsed');
+            }
+        });
+
+        // Reinicializar íconos después de manipular el DOM
+        lucide.createIcons();
+    });
 </script>
 
 {% block extra_js %}{% endblock %}
