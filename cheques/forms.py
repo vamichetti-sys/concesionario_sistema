@@ -6,21 +6,23 @@ class ChequeForm(forms.ModelForm):
     class Meta:
         model = Cheque
         fields = [
-            'tipo', 'numero', 'banco', 'titular', 'cuit_titular',
-            'monto', 'fecha_emision', 'fecha_cobro', 'estado',
-            'origen_destino', 'concepto', 'observaciones'
+            'fecha_ingreso', 'cliente', 'nro_factura',
+            'banco_emision', 'numero_cheque', 'titular_cheque', 'monto', 'fecha_deposito',
+            'estado', 'depositado_en', 'fecha_endoso', 'destinatario_endoso',
+            'observaciones'
         ]
         widgets = {
-            'tipo': forms.Select(attrs={'class': 'form-select'}),
-            'numero': forms.TextInput(attrs={'class': 'form-control'}),
-            'banco': forms.TextInput(attrs={'class': 'form-control'}),
-            'titular': forms.TextInput(attrs={'class': 'form-control'}),
-            'cuit_titular': forms.TextInput(attrs={'class': 'form-control'}),
-            'monto': forms.NumberInput(attrs={'class': 'form-control'}),
-            'fecha_emision': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'fecha_cobro': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'fecha_ingreso': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'cliente': forms.TextInput(attrs={'class': 'form-control'}),
+            'nro_factura': forms.TextInput(attrs={'class': 'form-control'}),
+            'banco_emision': forms.TextInput(attrs={'class': 'form-control'}),
+            'numero_cheque': forms.TextInput(attrs={'class': 'form-control'}),
+            'titular_cheque': forms.TextInput(attrs={'class': 'form-control'}),
+            'monto': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'fecha_deposito': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'estado': forms.Select(attrs={'class': 'form-select'}),
-            'origen_destino': forms.TextInput(attrs={'class': 'form-control'}),
-            'concepto': forms.TextInput(attrs={'class': 'form-control'}),
-            'observaciones': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'depositado_en': forms.TextInput(attrs={'class': 'form-control'}),
+            'fecha_endoso': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'destinatario_endoso': forms.TextInput(attrs={'class': 'form-control'}),
+            'observaciones': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
         }
