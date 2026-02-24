@@ -4,6 +4,6 @@ from .models import Cheque
 
 @admin.register(Cheque)
 class ChequeAdmin(admin.ModelAdmin):
-    list_display = ['numero', 'tipo', 'banco', 'titular', 'monto', 'fecha_cobro', 'estado']
-    list_filter = ['tipo', 'estado', 'banco']
-    search_fields = ['numero', 'titular', 'banco', 'origen_destino']
+    list_display = ['numero_cheque', 'cliente', 'banco_emision', 'titular_cheque', 'monto', 'fecha_deposito', 'estado']
+    list_filter = ['estado', 'banco_emision']
+    search_fields = ['numero_cheque', 'titular_cheque', 'cliente', 'banco_emision']
