@@ -57,15 +57,100 @@
     .fc {
         font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
     }
-
     .fc-toolbar-title {
         font-family: 'Poppins', sans-serif;
         font-weight: 600 !important;
         color: #1a1a2e !important;
         font-size: 1.25rem !important;
     }
-
     .fc-button {
         background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
         border: none !important;
-        box-shadow: 0 2
+        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3) !important;
+        border-radius: 8px !important;
+        padding: 8px 16px !important;
+        font-weight: 500 !important;
+    }
+    .fc-button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4) !important;
+    }
+    .fc-button-active {
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+    }
+    .fc-daygrid-day:hover {
+        background: #f8fafc;
+    }
+    .fc-event {
+        border-radius: 6px !important;
+        padding: 2px 6px !important;
+        font-size: 12px !important;
+        border: none !important;
+    }
+    .fc-daygrid-day-number {
+        color: #374151;
+        font-weight: 500;
+    }
+    .fc-day-today {
+        background: rgba(59, 130, 246, 0.08) !important;
+    }
+    .fc-day-today .fc-daygrid-day-number {
+        background: #3b82f6;
+        color: white;
+        border-radius: 50%;
+        width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var calendarEl = document.getElementById('calendar');
+    var calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        locale: 'es',
+        headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth,dayGridWeek'
+        },
+        buttonText: {
+            today: 'Hoy',
+            month: 'Mes',
+            week: 'Semana'
+        },
+        events: [
+            {% for evento in eventos %}
+            {
+                title: '{{ evento.titulo|escapejs }}',
+                start: '{{ evento.fecha|date:"Y-m-d" }}',
+                color: '{{ evento.color }}',
+                url: '{{ evento.url }}'
+            },
+            {% endfor %}
+        ],
+        eventClick: function(info) {
+            if (info.event.url) {
+                window.location.href = info.event.url;
+                info.jsEvent.preventDefault();
+            }
+        }
+    });
+    calendar.render();
+
+    // Exportar PDF
+    document.getElementById('btnPdfMes').addEventListener('click', function() {
+        var currentDate = calendar.getDate();
+        var month = currentDate.getMonth() + 1;
+        var year = currentDate.getFullYear();
+        window.location.href = '/calendario/pdf/?mes=' + month + '&anio=' + year;
+    });
+
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+});
+</script>
+
+{% endblock %}
