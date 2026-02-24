@@ -1,6 +1,7 @@
 print(">>> CARGANDO views.py")
 
 from decimal import Decimal
+from datetime import date
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse, HttpResponse
@@ -9,6 +10,7 @@ from django.contrib import messages
 from django.db.models import Q, Sum
 from django.db import transaction
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.csrf import csrf_exempt
 
 from .models import (
     Vehiculo,
@@ -22,9 +24,10 @@ from .forms import VehiculoBasicoForm, VehiculoForm, FichaVehicularForm
 # ===============================
 # REPORTLAB – PDF (SIN DEPENDENCIAS NATIVAS)
 # ===============================
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
-from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors
 
 
 # ==========================================================
@@ -35,23 +38,60 @@ def get_configuracion_gastos():
     return config
 
 
+# ==========================================================
+# LISTA DE VEHÍCULOS CON FILTROS Y DÍAS EN STOCK
+# ==========================================================
 def lista_vehiculos(request):
     query = request.GET.get("q", "")
-    vehiculos = Vehiculo.objects.all().order_by("-id")
+    estado_filtro = request.GET.get("estado", "")
+    
+    vehiculos = Vehiculo.objects.all().select_related('ficha').order_by("-id")
 
+    # Filtro por búsqueda
     if query:
         vehiculos = vehiculos.filter(
             Q(marca__icontains=query)
             | Q(modelo__icontains=query)
             | Q(dominio__icontains=query)
         )
+    
+    # Filtro por estado
+    if estado_filtro:
+        vehiculos = vehiculos.filter(estado=estado_filtro)
+
+    # Calcular días en stock para cada vehículo
+    hoy = date.today()
+    vehiculos_con_dias = []
+    
+    for v in vehiculos:
+        dias_en_stock = None
+        
+        # Buscar fecha_compra en FichaReporteInterno
+        if hasattr(v, 'ficha_reporte') and v.ficha_reporte and v.ficha_reporte.fecha_compra:
+            dias_en_stock = (hoy - v.ficha_reporte.fecha_compra).days
+        
+        vehiculos_con_dias.append({
+            'vehiculo': v,
+            'dias_en_stock': dias_en_stock
+        })
+
+    # Contadores para los filtros
+    total_stock = Vehiculo.objects.filter(estado='stock').count()
+    total_temporal = Vehiculo.objects.filter(estado='temporal').count()
+    total_vendido = Vehiculo.objects.filter(estado='vendido').count()
 
     return render(
         request,
         "vehiculos/lista_vehiculos.html",
-        {"vehiculos": vehiculos, "query": query},
+        {
+            "vehiculos_con_dias": vehiculos_con_dias,
+            "query": query,
+            "estado_filtro": estado_filtro,
+            "total_stock": total_stock,
+            "total_temporal": total_temporal,
+            "total_vendido": total_vendido,
+        },
     )
-
 
 
 def lista_vehiculos_vendidos(request):
@@ -178,6 +218,7 @@ def cambiar_estado_vehiculo(request, vehiculo_id):
 
     return redirect("vehiculos:lista_vehiculos")
 
+
 # ==========================================================
 # MODAL FICHA VEHICULAR (AJAX) – DEFINITIVA
 # ==========================================================
@@ -189,17 +230,16 @@ def ficha_vehicular_ajax(request, vehiculo_id):
     ficha_form = FichaVehicularForm(instance=ficha)
 
     CONCEPTOS = {
-    "f08": "Formulario 08",
-    "informes": "Informes",
-    "patentes": "Patentes",
-    "infracciones": "Infracciones",  # ← ESTA LÍNEA
-    "verificacion": "Verificación",
-    "autopartes": "Autopartes",
-    "vtv": "VTV",
-    "r541": "R541",
-    "firmas": "Firmas",
-}
-
+        "f08": "Formulario 08",
+        "informes": "Informes",
+        "patentes": "Patentes",
+        "infracciones": "Infracciones",
+        "verificacion": "Verificación",
+        "autopartes": "Autopartes",
+        "vtv": "VTV",
+        "r541": "R541",
+        "firmas": "Firmas",
+    }
 
     mapa_gastos = {
         "f08": ficha.gasto_f08,
@@ -265,16 +305,12 @@ def ficha_vehicular_ajax(request, vehiculo_id):
 
     return JsonResponse({"html": html})
 
+
 # ==========================================================
 # GUARDAR FICHA VEHICULAR (FINAL – LIMPIO Y CORRECTO)
 # ==========================================================
-from django.db import transaction
-from django.shortcuts import get_object_or_404, redirect
-from django.contrib import messages
-
 @transaction.atomic
 def guardar_ficha_vehicular(request, vehiculo_id):
-     
     vehiculo = get_object_or_404(Vehiculo, id=vehiculo_id)
     ficha, _ = FichaVehicular.objects.get_or_create(vehiculo=vehiculo)
 
@@ -299,7 +335,6 @@ def guardar_ficha_vehicular(request, vehiculo_id):
             # GUARDAR FICHA
             # ===============================
             ficha = ficha_form.save(commit=False)
-
 
             # ===============================
             # CAMPOS MANUALES (NO ESTÁN EN EL FORM)
@@ -334,6 +369,8 @@ def guardar_ficha_vehicular(request, vehiculo_id):
 
     # ❌ Si no es POST
     return redirect("vehiculos:lista_vehiculos")
+
+
 # ============================================
 # FICHA COMPLETA – DEFINITIVA
 # ============================================
@@ -425,6 +462,8 @@ def ficha_completa(request, vehiculo_id):
             "total_pendiente": total_pendiente,
         },
     )
+
+
 # ==========================================================
 # AGREGAR GASTO INGRESO (CUENTA CORRIENTE)
 # ==========================================================
@@ -462,20 +501,14 @@ def agregar_gasto_ingreso(request, vehiculo_id):
         {"vehiculo": vehiculo},
     )
 
+
 # ==========================================================
 # REGISTRAR PAGO DE GASTO DE INGRESO (DEFINITIVO)
 # ==========================================================
-from decimal import Decimal
-from django.db import transaction
-from django.shortcuts import get_object_or_404, redirect
-from django.contrib import messages
-from django.views.decorators.csrf import csrf_exempt
-
-from .models import Vehiculo, PagoGastoIngreso
 from cuentas.models import MovimientoCuenta
 
 
-@csrf_exempt              # 🔴 SOLO PARA PROBAR (DESPUÉS SE SACA)
+@csrf_exempt
 @transaction.atomic
 def registrar_pago_gasto(request):
 
@@ -516,23 +549,22 @@ def registrar_pago_gasto(request):
     # CONCEPTOS CANÓNICOS
     # ===============================
     CONCEPTOS = {
-    "f08": "Formulario 08",
-    "informes": "Informes",
-    "patentes": "Patentes",
-    "infracciones": "Infracciones",  # ← ESTA LÍNEA
-    "verificacion": "Verificación",
-    "autopartes": "Autopartes",
-    "vtv": "VTV",
-    "r541": "R541",
-    "firmas": "Firmas",
-}
-
+        "f08": "Formulario 08",
+        "informes": "Informes",
+        "patentes": "Patentes",
+        "infracciones": "Infracciones",
+        "verificacion": "Verificación",
+        "autopartes": "Autopartes",
+        "vtv": "VTV",
+        "r541": "R541",
+        "firmas": "Firmas",
+    }
 
     if concepto_key not in CONCEPTOS:
         messages.error(request, "Concepto de gasto inválido.")
         return redirect(request.META.get("HTTP_REFERER"))
 
-   # ===============================
+    # ===============================
     # CALCULAR SALDO REAL
     # ===============================
     mapa_gastos = {
@@ -559,6 +591,7 @@ def registrar_pago_gasto(request):
 
     saldo_actual = Decimal(monto_gasto) - Decimal(total_pagado)
     monto = Decimal(monto_raw)
+
     # ===============================
     # REGISTRAR PAGO DE GASTO
     # ===============================
@@ -582,7 +615,7 @@ def registrar_pago_gasto(request):
             cuenta=cuenta,
             vehiculo=vehiculo,
             descripcion=CONCEPTOS[concepto_key],
-            tipo="haber",          # 👈 RESTA DEUDA
+            tipo="haber",
             monto=monto,
             origen="permuta"
         )
@@ -596,17 +629,14 @@ def registrar_pago_gasto(request):
 
     return redirect("vehiculos:ficha_completa", vehiculo_id=vehiculo.id)
 
-from django.contrib.auth.decorators import login_required
-from django.shortcuts import get_object_or_404, redirect
-from django.contrib import messages
-from .models import Vehiculo
-from ventas.models import Venta
 
 # ==========================================================
 # QUITAR VEHÍCULO DEL STOCK (NO DELETE)
 # ==========================================================
 @login_required
 def eliminar_vehiculo(request, vehiculo_id):
+    from ventas.models import Venta
+    
     vehiculo = get_object_or_404(Vehiculo, id=vehiculo_id)
 
     if request.method == "POST":
@@ -626,13 +656,10 @@ def eliminar_vehiculo(request, vehiculo_id):
 
     return redirect("vehiculos:lista_vehiculos")
 
+
 # ==========================================================
 # AJAX – DATOS DE VEHÍCULO (RESTAURADO)
 # ==========================================================
-from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
-from django.shortcuts import get_object_or_404
-
 @login_required
 def vehiculo_datos_ajax(request):
     """
@@ -649,23 +676,21 @@ def vehiculo_datos_ajax(request):
     ficha = getattr(vehiculo, "ficha", None)
 
     return JsonResponse({
-    "id": vehiculo.id,
-    "marca": vehiculo.marca,
-    "modelo": vehiculo.modelo,
-    "anio": vehiculo.anio,
-    "dominio": vehiculo.dominio,
-    "precio": str(vehiculo.precio),
-
-    # DATOS DESDE LA FICHA
-    "motor": getattr(ficha, "numero_motor", "") if ficha else "",
-    "chasis": getattr(ficha, "numero_chasis", "") if ficha else "",
-})
+        "id": vehiculo.id,
+        "marca": vehiculo.marca,
+        "modelo": vehiculo.modelo,
+        "anio": vehiculo.anio,
+        "dominio": vehiculo.dominio,
+        "precio": str(vehiculo.precio),
+        "motor": getattr(ficha, "numero_motor", "") if ficha else "",
+        "chasis": getattr(ficha, "numero_chasis", "") if ficha else "",
+    })
 
 
 # ==========================================================
 # UTIL – CONVERTIR STRING A DECIMAL SEGURO
 # ==========================================================
-from decimal import Decimal, InvalidOperation
+from decimal import InvalidOperation
 
 def to_decimal(valor):
     """
@@ -688,14 +713,10 @@ def to_decimal(valor):
     except InvalidOperation:
         return Decimal("0")
 
+
 # ==========================================================
 # CONFIGURACIÓN GLOBAL DE GASTOS DE INGRESO (DEFINITIVO)
 # ==========================================================
-from decimal import Decimal
-from django.contrib.auth.decorators import login_required
-from django.shortcuts import render
-from django.contrib import messages
-
 @login_required
 def gastos_configuracion(request):
     from vehiculos.models import ConfiguracionGastosIngreso
@@ -733,12 +754,10 @@ def gastos_configuracion(request):
         {"config": config},
     )
 
+
 # ==========================================================
 # TEST – GUARDADO CONFIGURACIÓN GASTOS
 # ==========================================================
-from django.http import HttpResponse
-from decimal import Decimal
-
 def test_guardado_gastos(request):
     from vehiculos.models import ConfiguracionGastosIngreso
 
@@ -748,6 +767,8 @@ def test_guardado_gastos(request):
     obj.refresh_from_db()
 
     return HttpResponse(f"Valor guardado en DB: {obj.gasto_f08}")
+
+
 # ==========================================================
 # CALCULAR TOTAL DE GASTOS DE INGRESO
 # ==========================================================
@@ -776,6 +797,8 @@ def calcular_total_gastos(ficha):
 
     ficha.total_gastos = total
     ficha.save(update_fields=["total_gastos"])
+
+
 # ==========================================================
 # SINCRONIZAR TURNOS Y VENCIMIENTOS CON CALENDARIO
 # ==========================================================
@@ -804,19 +827,11 @@ def sincronizar_turnos_calendario(vehiculo, ficha):
                 fecha=fecha,
                 titulo=titulo,
             )
-from reportlab.platypus import (
-    SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
-)
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.pagesizes import A4
-from reportlab.lib import colors
-from django.http import HttpResponse
-from django.shortcuts import get_object_or_404
-from decimal import Decimal
-
-from .models import Vehiculo
 
 
+# ==========================================================
+# FICHA VEHICULAR PDF
+# ==========================================================
 def ficha_vehicular_pdf(request, vehiculo_id):
     vehiculo = get_object_or_404(Vehiculo, id=vehiculo_id)
     ficha = vehiculo.ficha
@@ -959,9 +974,10 @@ def ficha_vehicular_pdf(request, vehiculo_id):
         ["Firmas", f"$ {ficha.gasto_firmas or 0}"],
         ["TOTAL", f"$ {ficha.total_gastos or 0}"],
     ])
-   # ==================================================
-   # OBSERVACIONES Y DATOS ADICIONALES
-   # ==================================================
+
+    # ==================================================
+    # OBSERVACIONES Y DATOS ADICIONALES
+    # ==================================================
     seccion("Observaciones", [
         ["Observaciones", ficha.observaciones or "Sin observaciones"],
         ["Segunda llave", f"{ficha.duplicado_llave_estado or '-'} - {ficha.duplicado_llave_obs or '-'}"],
@@ -976,6 +992,7 @@ def ficha_vehicular_pdf(request, vehiculo_id):
     # ==================================================
     doc.build(elements)
     return response
+
 
 @transaction.atomic
 def guardar_ficha_parcial(request, vehiculo_id):
