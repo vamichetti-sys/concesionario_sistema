@@ -1,0 +1,237 @@
+{% extends 'base.html' %}
+
+{% block title %}Presupuesto #{{ p.numero }}{% endblock %}
+
+{% block content %}
+
+<!-- ENCABEZADO -->
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+        <a href="{% url 'presupuestos:lista' %}" class="text-muted text-decoration-none d-inline-flex align-items-center mb-2" style="font-size:14px;">
+            <i data-lucide="arrow-left" style="width:16px;height:16px;margin-right:6px;"></i>
+            Volver a presupuestos
+        </a>
+        <h3 class="fw-bold mb-1">Presupuesto #{{ p.numero }}</h3>
+        <p class="text-muted mb-0">{{ p.nombre_cliente }} · {{ p.fecha_creacion|date:"d/m/Y H:i" }}</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'presupuestos:editar' p.pk %}" class="btn btn-secondary">
+            <i data-lucide="pencil" style="width:16px;height:16px;margin-right:6px;"></i>
+            Editar
+        </a>
+        <a href="{% url 'presupuestos:eliminar' p.pk %}" class="btn btn-outline-danger">
+            <i data-lucide="trash-2" style="width:16px;height:16px;margin-right:6px;"></i>
+            Eliminar
+        </a>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- COLUMNA IZQUIERDA -->
+    <div class="col-md-8">
+
+        <!-- VEHÍCULO -->
+        <div class="card p-4 mb-4">
+            <h5 class="fw-bold mb-3">
+                <i data-lucide="car" style="width:20px;height:20px;margin-right:8px;color:#3b82f6;"></i>
+                Vehículo
+            </h5>
+            <div class="d-flex align-items-center gap-3">
+                <div style="width:60px;height:60px;background:rgba(59,130,246,0.1);border-radius:12px;display:flex;align-items:center;justify-content:center;">
+                    <i data-lucide="car" style="width:28px;height:28px;color:#3b82f6;"></i>
+                </div>
+                <div>
+                    <div class="fw-bold fs-5">{{ p.vehiculo.marca }} {{ p.vehiculo.modelo }}</div>
+                    <div class="text-muted">{{ p.vehiculo.anio }} · {{ p.vehiculo.dominio }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CLIENTE -->
+        <div class="card p-4 mb-4">
+            <h5 class="fw-bold mb-3">
+                <i data-lucide="user" style="width:20px;height:20px;margin-right:8px;color:#3b82f6;"></i>
+                Cliente
+            </h5>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <small class="text-muted">Nombre</small>
+                    <div class="fw-semibold">{{ p.nombre_cliente }}</div>
+                </div>
+                <div class="col-md-6">
+                    <small class="text-muted">Teléfono</small>
+                    <div class="fw-semibold">{{ p.telefono_cliente|default:"—" }}</div>
+                </div>
+                <div class="col-md-6">
+                    <small class="text-muted">Email</small>
+                    <div class="fw-semibold">{{ p.email_cliente|default:"—" }}</div>
+                </div>
+                <div class="col-md-6">
+                    <small class="text-muted">Cliente registrado</small>
+                    <div class="fw-semibold">{{ p.cliente.nombre_completo|default:"No vinculado" }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DETALLE ECONÓMICO -->
+        <div class="card p-4 mb-4">
+            <h5 class="fw-bold mb-3">
+                <i data-lucide="calculator" style="width:20px;height:20px;margin-right:8px;color:#3b82f6;"></i>
+                Detalle Económico
+            </h5>
+            <table class="table mb-0">
+                <tr>
+                    <td class="text-muted">Precio de lista</td>
+                    <td class="text-end fw-semibold">${{ p.precio_lista|floatformat:0 }}</td>
+                </tr>
+                {% if p.descuento_porcentaje > 0 %}
+                <tr>
+                    <td class="text-muted">Descuento ({{ p.descuento_porcentaje }}%)</td>
+                    <td class="text-end text-danger">-${{ p.precio_lista|floatformat:0 }}</td>
+                </tr>
+                {% endif %}
+                <tr>
+                    <td class="text-muted">Precio final</td>
+                    <td class="text-end fw-bold text-success">${{ p.precio_final|floatformat:0 }} {{ p.moneda }}</td>
+                </tr>
+                {% if p.gastos_transferencia > 0 %}
+                <tr>
+                    <td class="text-muted">Gastos de transferencia</td>
+                    <td class="text-end">${{ p.gastos_transferencia|floatformat:0 }}</td>
+                </tr>
+                {% endif %}
+                {% if p.otros_gastos > 0 %}
+                <tr>
+                    <td class="text-muted">Otros gastos</td>
+                    <td class="text-end">${{ p.otros_gastos|floatformat:0 }}</td>
+                </tr>
+                {% endif %}
+                {% if p.toma_usado %}
+                <tr>
+                    <td class="text-muted">Usado en parte de pago</td>
+                    <td class="text-end text-success">-${{ p.usado_valor|floatformat:0 }}</td>
+                </tr>
+                <tr>
+                    <td colspan="2"><small class="text-muted">{{ p.usado_descripcion }}</small></td>
+                </tr>
+                {% endif %}
+                <tr class="border-top">
+                    <td class="fw-bold">TOTAL A PAGAR</td>
+                    <td class="text-end fw-bold fs-5 text-primary">${{ p.total_a_pagar|floatformat:0 }}</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- FINANCIACIÓN -->
+        {% if p.forma_pago == 'financiado' %}
+        <div class="card p-4 mb-4">
+            <h5 class="fw-bold mb-3">
+                <i data-lucide="credit-card" style="width:20px;height:20px;margin-right:8px;color:#3b82f6;"></i>
+                Financiación
+            </h5>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <small class="text-muted">Anticipo</small>
+                    <div class="fw-bold">${{ p.anticipo|floatformat:0 }}</div>
+                </div>
+                <div class="col-md-4">
+                    <small class="text-muted">Cuotas</small>
+                    <div class="fw-bold">{{ p.cantidad_cuotas }} x ${{ p.monto_cuota|floatformat:0 }}</div>
+                </div>
+                <div class="col-md-4">
+                    <small class="text-muted">Saldo a financiar</small>
+                    <div class="fw-bold">${{ p.saldo_a_financiar|floatformat:0 }}</div>
+                </div>
+                {% if p.interes_descripcion %}
+                <div class="col-md-12">
+                    <small class="text-muted">Interés</small>
+                    <div class="fw-semibold">{{ p.interes_descripcion }}</div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- OBSERVACIONES -->
+        {% if p.observaciones %}
+        <div class="card p-4">
+            <h5 class="fw-bold mb-3">
+                <i data-lucide="message-square" style="width:20px;height:20px;margin-right:8px;color:#3b82f6;"></i>
+                Observaciones
+            </h5>
+            <p class="mb-0">{{ p.observaciones }}</p>
+        </div>
+        {% endif %}
+
+    </div>
+
+    <!-- COLUMNA DERECHA -->
+    <div class="col-md-4">
+
+        <!-- ESTADO -->
+        <div class="card p-4 mb-4">
+            <h5 class="fw-bold mb-3">Estado</h5>
+            <div class="mb-3">
+                {% if p.estado == 'borrador' %}
+                <span class="badge bg-secondary" style="font-size:14px;padding:8px 16px;">Borrador</span>
+                {% elif p.estado == 'enviado' %}
+                <span class="badge bg-info" style="font-size:14px;padding:8px 16px;">Enviado</span>
+                {% elif p.estado == 'aceptado' %}
+                <span class="badge bg-success" style="font-size:14px;padding:8px 16px;">Aceptado</span>
+                {% elif p.estado == 'rechazado' %}
+                <span class="badge bg-danger" style="font-size:14px;padding:8px 16px;">Rechazado</span>
+                {% elif p.estado == 'vencido' %}
+                <span class="badge bg-warning" style="font-size:14px;padding:8px 16px;">Vencido</span>
+                {% endif %}
+            </div>
+
+            <form method="POST" action="{% url 'presupuestos:cambiar_estado' p.pk %}">
+                {% csrf_token %}
+                <div class="d-flex gap-2">
+                    <select name="estado" class="form-select form-select-sm">
+                        <option value="borrador" {% if p.estado == 'borrador' %}selected{% endif %}>Borrador</option>
+                        <option value="enviado" {% if p.estado == 'enviado' %}selected{% endif %}>Enviado</option>
+                        <option value="aceptado" {% if p.estado == 'aceptado' %}selected{% endif %}>Aceptado</option>
+                        <option value="rechazado" {% if p.estado == 'rechazado' %}selected{% endif %}>Rechazado</option>
+                        <option value="vencido" {% if p.estado == 'vencido' %}selected{% endif %}>Vencido</option>
+                    </select>
+                    <button type="submit" class="btn btn-secondary btn-sm">Cambiar</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- INFO -->
+        <div class="card p-4 mb-4">
+            <h5 class="fw-bold mb-3">Información</h5>
+            <div class="mb-2">
+                <small class="text-muted">Creado</small>
+                <div class="fw-semibold">{{ p.fecha_creacion|date:"d/m/Y H:i" }}</div>
+            </div>
+            {% if p.fecha_envio %}
+            <div class="mb-2">
+                <small class="text-muted">Enviado</small>
+                <div class="fw-semibold">{{ p.fecha_envio|date:"d/m/Y H:i" }}</div>
+            </div>
+            {% endif %}
+            <div class="mb-2">
+                <small class="text-muted">Validez</small>
+                <div class="fw-semibold">{{ p.validez_dias }} días</div>
+            </div>
+            <div class="mb-2">
+                <small class="text-muted">Vendedor</small>
+                <div class="fw-semibold">{{ p.vendedor.username|default:"—" }}</div>
+            </div>
+            <div>
+                <small class="text-muted">Forma de pago</small>
+                <div class="fw-semibold">{{ p.get_forma_pago_display }}</div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+</script>
+
+{% endblock %}

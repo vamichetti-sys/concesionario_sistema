@@ -2,7 +2,6 @@ from django.contrib import admin
 from django.urls import path, include
 from inicio import views as inicio_views
 from django.contrib.auth import views as auth_views
-# ✅ AGREGADOS PARA MEDIA (NO ROMPEN NADA)
 from django.conf import settings
 from django.conf.urls.static import static
 
@@ -11,23 +10,23 @@ urlpatterns = [
     # 🛠 ADMIN
     # ===============================
     path('admin/', admin.site.urls),
-    
+
     # ===============================
     # 🔐 LOGIN PRINCIPAL
     # ===============================
     path('login/', inicio_views.ingreso, name='ingreso'),
     path('', inicio_views.ingreso),
-    
+
     # ===============================
     # 🏠 DASHBOARD PRINCIPAL
     # ===============================
     path('inicio/', inicio_views.inicio, name='inicio'),
-    
+
     # ===============================
     # 🚪 CERRAR SESIÓN
     # ===============================
     path('logout/', inicio_views.cerrar_sesion, name='logout'),
-    
+
     # ===============================
     # 🔁 RECUPERAR CONTRASEÑA
     # ===============================
@@ -59,52 +58,43 @@ urlpatterns = [
         ),
         name='password_reset_complete'
     ),
-    
+
     # ===============================
     # 📦 APPS INTERNAS
     # ===============================
     path('vehiculos/', include('vehiculos.urls')),
-    # 🔴 CAMBIO CLAVE (SOLO ESTE)
     path(
         'clientes/',
         include(('clientes.urls', 'clientes'), namespace='clientes')
     ),
     path('cuentas/', include('cuentas.urls')),
     path('calendario/', include('calendario.urls')),
-    
+
     # ===============================
     # ⭐ NUEVAS ÁREAS DEL SISTEMA
     # ===============================
-    # 👉 Compra - Venta (NUEVO)
     path('compraventa/', include('compraventa.urls')),
-    
-    # 👉 Ventas
     path('ventas/', include('ventas.urls')),
-    
-    # 👉 Gestoría
     path('gestoria/', include('gestoria.urls')),
-    
-    # 👉 Facturación
     path('facturacion/', include('facturacion.urls')),
-    
-    # 👉 Reportes
     path('reportes/', include('reportes.urls')),
-    
-    # 👉 Asistencia
     path('asistencia/', include('asistencia.urls')),
-    
-    # 👉 Documentación (NUEVO)
     path('documentacion/', include('documentacion.urls')),
-    
+
     # ===============================
     # 📄 BOLETOS DE COMPRAVENTA
     # ===============================
     path('boletos/', include('boletos.urls')),
-    
+
     # ===============================
-    # 💸 DEUDAS (NUEVO)
+    # 💸 DEUDAS
     # ===============================
     path('deudas/', include('deudas.urls')),
+
+    # ===============================
+    # 📋 PRESUPUESTOS (NUEVO)
+    # ===============================
+    path('presupuestos/', include('presupuestos.urls')),
 ]
 
 # ==========================================================

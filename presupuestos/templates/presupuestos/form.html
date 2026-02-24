@@ -1,0 +1,205 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+
+<!-- ENCABEZADO -->
+<div class="mb-4">
+    <a href="{% url 'presupuestos:lista' %}" class="text-muted text-decoration-none d-inline-flex align-items-center mb-2" style="font-size:14px;">
+        <i data-lucide="arrow-left" style="width:16px;height:16px;margin-right:6px;"></i>
+        Volver a presupuestos
+    </a>
+    <h3 class="fw-bold mb-1">{{ titulo }}</h3>
+</div>
+
+<form method="POST">
+    {% csrf_token %}
+
+    <div class="row g-4">
+        <!-- COLUMNA IZQUIERDA -->
+        <div class="col-md-8">
+            
+            <!-- DATOS DEL CLIENTE -->
+            <div class="card p-4 mb-4">
+                <h5 class="fw-bold mb-3">
+                    <i data-lucide="user" style="width:20px;height:20px;margin-right:8px;color:#3b82f6;"></i>
+                    Datos del Cliente
+                </h5>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Nombre del cliente *</label>
+                        {{ form.nombre_cliente }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Cliente existente (opcional)</label>
+                        {{ form.cliente }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Teléfono</label>
+                        {{ form.telefono_cliente }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Email</label>
+                        {{ form.email_cliente }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- VEHÍCULO Y PRECIOS -->
+            <div class="card p-4 mb-4">
+                <h5 class="fw-bold mb-3">
+                    <i data-lucide="car" style="width:20px;height:20px;margin-right:8px;color:#3b82f6;"></i>
+                    Vehículo y Precios
+                </h5>
+                <div class="row g-3">
+                    <div class="col-md-12">
+                        <label class="form-label">Vehículo *</label>
+                        {{ form.vehiculo }}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Precio de lista *</label>
+                        {{ form.precio_lista }}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Descuento %</label>
+                        {{ form.descuento_porcentaje }}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Precio final *</label>
+                        {{ form.precio_final }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Moneda</label>
+                        {{ form.moneda }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Forma de pago</label>
+                        {{ form.forma_pago }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- FINANCIACIÓN -->
+            <div class="card p-4 mb-4">
+                <h5 class="fw-bold mb-3">
+                    <i data-lucide="calculator" style="width:20px;height:20px;margin-right:8px;color:#3b82f6;"></i>
+                    Financiación
+                </h5>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Anticipo</label>
+                        {{ form.anticipo }}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Cantidad de cuotas</label>
+                        {{ form.cantidad_cuotas }}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Monto cuota</label>
+                        {{ form.monto_cuota }}
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label">Descripción interés</label>
+                        {{ form.interes_descripcion }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- TOMA DE USADO -->
+            <div class="card p-4 mb-4">
+                <h5 class="fw-bold mb-3">
+                    <i data-lucide="repeat" style="width:20px;height:20px;margin-right:8px;color:#3b82f6;"></i>
+                    Toma de Usado
+                </h5>
+                <div class="row g-3">
+                    <div class="col-md-12">
+                        <div class="form-check">
+                            {{ form.toma_usado }}
+                            <label class="form-check-label">¿Toma usado?</label>
+                        </div>
+                    </div>
+                    <div class="col-md-8">
+                        <label class="form-label">Descripción del usado</label>
+                        {{ form.usado_descripcion }}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Valor del usado</label>
+                        {{ form.usado_valor }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- GASTOS ADICIONALES -->
+            <div class="card p-4 mb-4">
+                <h5 class="fw-bold mb-3">
+                    <i data-lucide="receipt" style="width:20px;height:20px;margin-right:8px;color:#3b82f6;"></i>
+                    Gastos Adicionales
+                </h5>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Gastos de transferencia</label>
+                        {{ form.gastos_transferencia }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Otros gastos</label>
+                        {{ form.otros_gastos }}
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label">Detalle de otros gastos</label>
+                        {{ form.gastos_descripcion }}
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- COLUMNA DERECHA -->
+        <div class="col-md-4">
+            
+            <!-- ESTADO Y VALIDEZ -->
+            <div class="card p-4 mb-4">
+                <h5 class="fw-bold mb-3">
+                    <i data-lucide="settings" style="width:20px;height:20px;margin-right:8px;color:#3b82f6;"></i>
+                    Estado
+                </h5>
+                <div class="mb-3">
+                    <label class="form-label">Estado</label>
+                    {{ form.estado }}
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Validez (días)</label>
+                    {{ form.validez_dias }}
+                </div>
+            </div>
+
+            <!-- OBSERVACIONES -->
+            <div class="card p-4 mb-4">
+                <h5 class="fw-bold mb-3">
+                    <i data-lucide="message-square" style="width:20px;height:20px;margin-right:8px;color:#3b82f6;"></i>
+                    Observaciones
+                </h5>
+                {{ form.observaciones }}
+            </div>
+
+            <!-- BOTONES -->
+            <div class="card p-4">
+                <button type="submit" class="btn btn-primary w-100 mb-2">
+                    <i data-lucide="save" style="width:16px;height:16px;margin-right:6px;"></i>
+                    Guardar Presupuesto
+                </button>
+                <a href="{% url 'presupuestos:lista' %}" class="btn btn-secondary w-100">
+                    Cancelar
+                </a>
+            </div>
+
+        </div>
+    </div>
+
+</form>
+
+<script>
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+</script>
+
+{% endblock %}
