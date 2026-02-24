@@ -120,3 +120,52 @@
                 <tr>
                     <th>Vehículo</th>
                     <th>Dominio</th>
+                    <th>Vencimiento</th>
+                    <th class="text-end">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for vehiculo in vehiculos_vencidos %}
+                <tr>
+                    <td>
+                        <div class="d-flex align-items-center gap-3">
+                            <div style="width:40px;height:40px;background:rgba(239,68,68,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                                <i data-lucide="alert-circle" style="width:18px;height:18px;color:#ef4444;"></i>
+                            </div>
+                            <span class="fw-semibold">{{ vehiculo.marca }} {{ vehiculo.modelo }}</span>
+                        </div>
+                    </td>
+                    <td>
+                        {% if vehiculo.dominio %}
+                        <span class="badge bg-secondary">{{ vehiculo.dominio }}</span>
+                        {% else %}
+                        <span class="text-muted">Sin dominio</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="badge bg-danger">Vencido</span>
+                    </td>
+                    <td class="text-end">
+                        <a href="{% url 'vehiculos:ficha_completa' vehiculo.id %}" class="btn btn-secondary btn-sm">
+                            <i data-lucide="eye" style="width:14px;height:14px;margin-right:4px;"></i>
+                            Ver ficha
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="p-4 text-center" style="background:#f0fdf4;border-radius:12px;">
+        <i data-lucide="check-circle" style="width:32px;height:32px;color:#10b981;margin-bottom:8px;"></i>
+        <p class="text-success fw-semibold mb-0">No hay documentación vencida</p>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+</script>
+
+{% endblock %}
