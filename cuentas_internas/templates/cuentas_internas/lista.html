@@ -38,27 +38,27 @@
                         </a>
                     </th>
                     <th>
-                        <a href="?rango=1_7" class="text-decoration-none {% if rango_filtro == '1_7' %}text-primary fw-bold{% endif %}">
+                        <a href="?rango=d1_7" class="text-decoration-none {% if rango_filtro == 'd1_7' %}text-primary fw-bold{% endif %}">
                             1-7 días
                         </a>
                     </th>
                     <th>
-                        <a href="?rango=8_15" class="text-decoration-none {% if rango_filtro == '8_15' %}text-primary fw-bold{% endif %}">
+                        <a href="?rango=d8_15" class="text-decoration-none {% if rango_filtro == 'd8_15' %}text-primary fw-bold{% endif %}">
                             8-15 días
                         </a>
                     </th>
                     <th>
-                        <a href="?rango=16_30" class="text-decoration-none {% if rango_filtro == '16_30' %}text-primary fw-bold{% endif %}">
+                        <a href="?rango=d16_30" class="text-decoration-none {% if rango_filtro == 'd16_30' %}text-primary fw-bold{% endif %}">
                             16-30 días
                         </a>
                     </th>
                     <th>
-                        <a href="?rango=31_60" class="text-decoration-none {% if rango_filtro == '31_60' %}text-primary fw-bold{% endif %}">
+                        <a href="?rango=d31_60" class="text-decoration-none {% if rango_filtro == 'd31_60' %}text-primary fw-bold{% endif %}">
                             31-60 días
                         </a>
                     </th>
                     <th>
-                        <a href="?rango=mas_60" class="text-decoration-none {% if rango_filtro == 'mas_60' %}text-primary fw-bold{% endif %}">
+                        <a href="?rango=mas60" class="text-decoration-none {% if rango_filtro == 'mas60' %}text-primary fw-bold{% endif %}">
                             > 60 días
                         </a>
                     </th>
@@ -72,11 +72,11 @@
                         ${{ rangos.vencido.monto|floatformat:0 }}
                     </td>
                     <td>${{ rangos.hoy.monto|floatformat:0 }}</td>
-                    <td>${{ rangos.1_7.monto|floatformat:0 }}</td>
-                    <td>${{ rangos.8_15.monto|floatformat:0 }}</td>
-                    <td>${{ rangos.16_30.monto|floatformat:0 }}</td>
-                    <td>${{ rangos.31_60.monto|floatformat:0 }}</td>
-                    <td>${{ rangos.mas_60.monto|floatformat:0 }}</td>
+                    <td>${{ rangos.d1_7.monto|floatformat:0 }}</td>
+                    <td>${{ rangos.d8_15.monto|floatformat:0 }}</td>
+                    <td>${{ rangos.d16_30.monto|floatformat:0 }}</td>
+                    <td>${{ rangos.d31_60.monto|floatformat:0 }}</td>
+                    <td>${{ rangos.mas60.monto|floatformat:0 }}</td>
                     <td class="fw-bold" style="background:#d4edda;">${{ total_monto|floatformat:0 }}</td>
                 </tr>
                 <tr>
@@ -85,11 +85,11 @@
                         {{ rangos.vencido.cantidad }}
                     </td>
                     <td>{{ rangos.hoy.cantidad }}</td>
-                    <td>{{ rangos.1_7.cantidad }}</td>
-                    <td>{{ rangos.8_15.cantidad }}</td>
-                    <td>{{ rangos.16_30.cantidad }}</td>
-                    <td>{{ rangos.31_60.cantidad }}</td>
-                    <td>{{ rangos.mas_60.cantidad }}</td>
+                    <td>{{ rangos.d1_7.cantidad }}</td>
+                    <td>{{ rangos.d8_15.cantidad }}</td>
+                    <td>{{ rangos.d16_30.cantidad }}</td>
+                    <td>{{ rangos.d31_60.cantidad }}</td>
+                    <td>{{ rangos.mas60.cantidad }}</td>
                     <td class="fw-bold" style="background:#d4edda;">{{ total_cantidad }}</td>
                 </tr>
             </tbody>
@@ -205,63 +205,59 @@
                                 <i data-lucide="refresh-cw" style="width:12px;height:12px;"></i>
                             </button>
                         </div>
-
-                        <!-- Modal cambiar estado -->
-                        <div class="modal fade" id="modalEstado{{ cheque.pk }}" tabindex="-1">
-                            <div class="modal-dialog">
-                                <div class="modal-content">
-                                    <form method="POST" action="{% url 'cheques:cambiar_estado' cheque.pk %}">
-                                        {% csrf_token %}
-                                        <div class="modal-header">
-                                            <h6 class="modal-title">Cambiar estado - #{{ cheque.numero_cheque }}</h6>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                        </div>
-                                        <div class="modal-body text-start">
-                                            <div class="mb-3">
-                                                <label class="form-label">Estado</label>
-                                                <select name="estado" class="form-select" id="selectEstado{{ cheque.pk }}" onchange="toggleCampos{{ cheque.pk }}()">
-                                                    <option value="a_depositar" {% if cheque.estado == 'a_depositar' %}selected{% endif %}>A Depositar</option>
-                                                    <option value="depositado" {% if cheque.estado == 'depositado' %}selected{% endif %}>Depositado</option>
-                                                    <option value="endosado" {% if cheque.estado == 'endosado' %}selected{% endif %}>Endosado</option>
-                                                    <option value="rechazado" {% if cheque.estado == 'rechazado' %}selected{% endif %}>Rechazado</option>
-                                                </select>
-                                            </div>
-                                            <div class="mb-3" id="campoDepositado{{ cheque.pk }}" style="{% if cheque.estado != 'depositado' %}display:none;{% endif %}">
-                                                <label class="form-label">Depositado en</label>
-                                                <input type="text" name="depositado_en" class="form-control" value="{{ cheque.depositado_en }}">
-                                            </div>
-                                            <div id="camposEndoso{{ cheque.pk }}" style="{% if cheque.estado != 'endosado' %}display:none;{% endif %}">
-                                                <div class="mb-3">
-                                                    <label class="form-label">Fecha de endoso</label>
-                                                    <input type="date" name="fecha_endoso" class="form-control" value="{{ cheque.fecha_endoso|date:'Y-m-d' }}">
-                                                </div>
-                                                <div class="mb-3">
-                                                    <label class="form-label">Destinatario del endoso</label>
-                                                    <input type="text" name="destinatario_endoso" class="form-control" value="{{ cheque.destinatario_endoso }}">
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="modal-footer">
-                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                                            <button type="submit" class="btn btn-primary">Guardar</button>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
-                        <script>
-                            function toggleCampos{{ cheque.pk }}() {
-                                var estado = document.getElementById('selectEstado{{ cheque.pk }}').value;
-                                document.getElementById('campoDepositado{{ cheque.pk }}').style.display = (estado === 'depositado') ? 'block' : 'none';
-                                document.getElementById('camposEndoso{{ cheque.pk }}').style.display = (estado === 'endosado') ? 'block' : 'none';
-                            }
-                        </script>
                     </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
+    
+    <!-- MODALES FUERA DE LA TABLA -->
+    {% for cheque in cheques %}
+    <div class="modal fade" id="modalEstado{{ cheque.pk }}" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="POST" action="{% url 'cheques:cambiar_estado' cheque.pk %}">
+                    {% csrf_token %}
+                    <div class="modal-header">
+                        <h6 class="modal-title">Cambiar estado - #{{ cheque.numero_cheque }}</h6>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body text-start">
+                        <div class="mb-3">
+                            <label class="form-label">Estado</label>
+                            <select name="estado" class="form-select" id="selectEstado{{ cheque.pk }}" onchange="toggleCampos({{ cheque.pk }})">
+                                <option value="a_depositar" {% if cheque.estado == 'a_depositar' %}selected{% endif %}>A Depositar</option>
+                                <option value="depositado" {% if cheque.estado == 'depositado' %}selected{% endif %}>Depositado</option>
+                                <option value="endosado" {% if cheque.estado == 'endosado' %}selected{% endif %}>Endosado</option>
+                                <option value="rechazado" {% if cheque.estado == 'rechazado' %}selected{% endif %}>Rechazado</option>
+                            </select>
+                        </div>
+                        <div class="mb-3" id="campoDepositado{{ cheque.pk }}" style="{% if cheque.estado != 'depositado' %}display:none;{% endif %}">
+                            <label class="form-label">Depositado en</label>
+                            <input type="text" name="depositado_en" class="form-control" value="{{ cheque.depositado_en }}">
+                        </div>
+                        <div id="camposEndoso{{ cheque.pk }}" style="{% if cheque.estado != 'endosado' %}display:none;{% endif %}">
+                            <div class="mb-3">
+                                <label class="form-label">Fecha de endoso</label>
+                                <input type="date" name="fecha_endoso" class="form-control" value="{{ cheque.fecha_endoso|date:'Y-m-d' }}">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Destinatario del endoso</label>
+                                <input type="text" name="destinatario_endoso" class="form-control" value="{{ cheque.destinatario_endoso }}">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+    
     {% else %}
     <div class="p-5 text-center">
         <i data-lucide="banknote" style="width:48px;height:48px;color:#9ca3af;margin-bottom:12px;"></i>
@@ -275,6 +271,12 @@
 </div>
 
 <script>
+    function toggleCampos(id) {
+        var estado = document.getElementById('selectEstado' + id).value;
+        document.getElementById('campoDepositado' + id).style.display = (estado === 'depositado') ? 'block' : 'none';
+        document.getElementById('camposEndoso' + id).style.display = (estado === 'endosado') ? 'block' : 'none';
+    }
+    
     if (typeof lucide !== 'undefined') lucide.createIcons();
 </script>
 

@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Q, Sum
-from datetime import date
+from datetime import date, timedelta
 
 from .models import Cheque
 from .forms import ChequeForm
@@ -38,20 +38,19 @@ def lista_cheques(request):
     # Filtro por rango de vencimiento
     if rango_filtro:
         hoy = date.today()
-        from datetime import timedelta
         if rango_filtro == 'vencido':
             cheques = cheques.filter(estado='a_depositar', fecha_deposito__lt=hoy)
         elif rango_filtro == 'hoy':
             cheques = cheques.filter(estado='a_depositar', fecha_deposito=hoy)
-        elif rango_filtro == '1_7':
+        elif rango_filtro == 'd1_7':
             cheques = cheques.filter(estado='a_depositar', fecha_deposito__gt=hoy, fecha_deposito__lte=hoy + timedelta(days=7))
-        elif rango_filtro == '8_15':
+        elif rango_filtro == 'd8_15':
             cheques = cheques.filter(estado='a_depositar', fecha_deposito__gt=hoy + timedelta(days=7), fecha_deposito__lte=hoy + timedelta(days=15))
-        elif rango_filtro == '16_30':
+        elif rango_filtro == 'd16_30':
             cheques = cheques.filter(estado='a_depositar', fecha_deposito__gt=hoy + timedelta(days=15), fecha_deposito__lte=hoy + timedelta(days=30))
-        elif rango_filtro == '31_60':
+        elif rango_filtro == 'd31_60':
             cheques = cheques.filter(estado='a_depositar', fecha_deposito__gt=hoy + timedelta(days=30), fecha_deposito__lte=hoy + timedelta(days=60))
-        elif rango_filtro == 'mas_60':
+        elif rango_filtro == 'mas60':
             cheques = cheques.filter(estado='a_depositar', fecha_deposito__gt=hoy + timedelta(days=60))
     
     # Resumen por vencimiento
