@@ -2,10 +2,9 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Q, Sum
-from datetime import date, timedelta
 
-from .models import Cheque
-from .forms import ChequeForm
+from .models import CuentaInterna, MovimientoInterno
+from .forms import CuentaInternaForm, MovimientoInternoForm
 
 
 def usuario_autorizado(user):
@@ -13,160 +12,176 @@ def usuario_autorizado(user):
 
 
 @login_required
-def lista_cheques(request):
+def lista_cuentas(request):
     if not usuario_autorizado(request.user):
         messages.error(request, 'No tenés permiso para acceder a esta sección.')
         return redirect('inicio')
     
     query = request.GET.get('q', '')
-    estado_filtro = request.GET.get('estado', '')
-    rango_filtro = request.GET.get('rango', '')
+    mostrar = request.GET.get('mostrar', 'activas')
     
-    cheques = Cheque.objects.all()
+    cuentas = CuentaInterna.objects.all()
+    
+    if mostrar == 'activas':
+        cuentas = cuentas.filter(activa=True)
+    elif mostrar == 'inactivas':
+        cuentas = cuentas.filter(activa=False)
     
     if query:
-        cheques = cheques.filter(
-            Q(numero_cheque__icontains=query) |
-            Q(titular_cheque__icontains=query) |
-            Q(cliente__icontains=query) |
-            Q(banco_emision__icontains=query)
+        cuentas = cuentas.filter(
+            Q(nombre__icontains=query) |
+            Q(cargo__icontains=query)
         )
     
-    if estado_filtro:
-        cheques = cheques.filter(estado=estado_filtro)
+    # Totales
+    total_deudas = CuentaInterna.objects.filter(activa=True, saldo__gt=0).aggregate(Sum('saldo'))['saldo__sum'] or 0
+    total_favor = CuentaInterna.objects.filter(activa=True, saldo__lt=0).aggregate(Sum('saldo'))['saldo__sum'] or 0
     
-    # Filtro por rango de vencimiento
-    if rango_filtro:
-        hoy = date.today()
-        if rango_filtro == 'vencido':
-            cheques = cheques.filter(estado='a_depositar', fecha_deposito__lt=hoy)
-        elif rango_filtro == 'hoy':
-            cheques = cheques.filter(estado='a_depositar', fecha_deposito=hoy)
-        elif rango_filtro == 'd1_7':
-            cheques = cheques.filter(estado='a_depositar', fecha_deposito__gt=hoy, fecha_deposito__lte=hoy + timedelta(days=7))
-        elif rango_filtro == 'd8_15':
-            cheques = cheques.filter(estado='a_depositar', fecha_deposito__gt=hoy + timedelta(days=7), fecha_deposito__lte=hoy + timedelta(days=15))
-        elif rango_filtro == 'd16_30':
-            cheques = cheques.filter(estado='a_depositar', fecha_deposito__gt=hoy + timedelta(days=15), fecha_deposito__lte=hoy + timedelta(days=30))
-        elif rango_filtro == 'd31_60':
-            cheques = cheques.filter(estado='a_depositar', fecha_deposito__gt=hoy + timedelta(days=30), fecha_deposito__lte=hoy + timedelta(days=60))
-        elif rango_filtro == 'mas60':
-            cheques = cheques.filter(estado='a_depositar', fecha_deposito__gt=hoy + timedelta(days=60))
-    
-    # Resumen por vencimiento
-    rangos, total_monto, total_cantidad = Cheque.resumen_por_vencimiento()
-    
-    # Contadores por estado
-    total_a_depositar = Cheque.objects.filter(estado='a_depositar').aggregate(Sum('monto'))['monto__sum'] or 0
-    total_depositado = Cheque.objects.filter(estado='depositado').aggregate(Sum('monto'))['monto__sum'] or 0
-    total_endosado = Cheque.objects.filter(estado='endosado').aggregate(Sum('monto'))['monto__sum'] or 0
-    total_rechazado = Cheque.objects.filter(estado='rechazado').aggregate(Sum('monto'))['monto__sum'] or 0
-    
-    return render(request, 'cheques/lista.html', {
-        'cheques': cheques,
+    return render(request, 'cuentas_internas/lista.html', {
+        'cuentas': cuentas,
         'query': query,
-        'estado_filtro': estado_filtro,
-        'rango_filtro': rango_filtro,
-        'rangos': rangos,
-        'total_monto': total_monto,
-        'total_cantidad': total_cantidad,
-        'total_a_depositar': total_a_depositar,
-        'total_depositado': total_depositado,
-        'total_endosado': total_endosado,
-        'total_rechazado': total_rechazado,
-        'fecha_hoy': date.today(),
+        'mostrar': mostrar,
+        'total_deudas': total_deudas,
+        'total_favor': abs(total_favor),
     })
 
 
 @login_required
-def crear_cheque(request):
+def crear_cuenta(request):
     if not usuario_autorizado(request.user):
         messages.error(request, 'No tenés permiso para acceder a esta sección.')
         return redirect('inicio')
     
     if request.method == 'POST':
-        form = ChequeForm(request.POST)
+        form = CuentaInternaForm(request.POST)
         if form.is_valid():
-            cheque = form.save(commit=False)
-            cheque.creado_por = request.user
-            cheque.save()
-            messages.success(request, f'Cheque #{cheque.numero_cheque} registrado.')
-            return redirect('cheques:lista')
+            cuenta = form.save()
+            
+            # Si hay saldo inicial, crear movimiento
+            saldo_inicial = request.POST.get('saldo_inicial', 0)
+            try:
+                saldo_inicial = float(saldo_inicial)
+                if saldo_inicial != 0:
+                    tipo = 'debe' if saldo_inicial > 0 else 'haber'
+                    MovimientoInterno.objects.create(
+                        cuenta=cuenta,
+                        tipo=tipo,
+                        monto=abs(saldo_inicial),
+                        concepto='Saldo inicial',
+                        fecha=cuenta.fecha_creacion.date(),
+                        creado_por=request.user
+                    )
+            except ValueError:
+                pass
+            
+            messages.success(request, f'Cuenta "{cuenta.nombre}" creada.')
+            return redirect('cuentas_internas:detalle', pk=cuenta.pk)
     else:
-        form = ChequeForm(initial={'fecha_ingreso': date.today()})
+        form = CuentaInternaForm()
     
-    return render(request, 'cheques/form.html', {
+    return render(request, 'cuentas_internas/form.html', {
         'form': form,
-        'titulo': 'Nuevo Cheque',
+        'titulo': 'Nueva Cuenta Interna',
     })
 
 
 @login_required
-def editar_cheque(request, pk):
+def detalle_cuenta(request, pk):
     if not usuario_autorizado(request.user):
         messages.error(request, 'No tenés permiso para acceder a esta sección.')
         return redirect('inicio')
     
-    cheque = get_object_or_404(Cheque, pk=pk)
+    cuenta = get_object_or_404(CuentaInterna, pk=pk)
+    movimientos = cuenta.movimientos.all()
+    
+    return render(request, 'cuentas_internas/detalle.html', {
+        'cuenta': cuenta,
+        'movimientos': movimientos,
+    })
+
+
+@login_required
+def editar_cuenta(request, pk):
+    if not usuario_autorizado(request.user):
+        messages.error(request, 'No tenés permiso para acceder a esta sección.')
+        return redirect('inicio')
+    
+    cuenta = get_object_or_404(CuentaInterna, pk=pk)
     
     if request.method == 'POST':
-        form = ChequeForm(request.POST, instance=cheque)
+        form = CuentaInternaForm(request.POST, instance=cuenta)
         if form.is_valid():
             form.save()
-            messages.success(request, 'Cheque actualizado.')
-            return redirect('cheques:lista')
+            messages.success(request, 'Cuenta actualizada.')
+            return redirect('cuentas_internas:detalle', pk=cuenta.pk)
     else:
-        form = ChequeForm(instance=cheque)
+        form = CuentaInternaForm(instance=cuenta)
     
-    return render(request, 'cheques/form.html', {
+    return render(request, 'cuentas_internas/form.html', {
         'form': form,
-        'titulo': f'Editar Cheque #{cheque.numero_cheque}',
-        'cheque': cheque,
+        'titulo': f'Editar {cuenta.nombre}',
+        'cuenta': cuenta,
     })
 
 
 @login_required
-def eliminar_cheque(request, pk):
+def eliminar_cuenta(request, pk):
     if not usuario_autorizado(request.user):
         messages.error(request, 'No tenés permiso para acceder a esta sección.')
         return redirect('inicio')
     
-    cheque = get_object_or_404(Cheque, pk=pk)
+    cuenta = get_object_or_404(CuentaInterna, pk=pk)
     
     if request.method == 'POST':
-        numero = cheque.numero_cheque
-        cheque.delete()
-        messages.success(request, f'Cheque #{numero} eliminado.')
-        return redirect('cheques:lista')
+        nombre = cuenta.nombre
+        cuenta.delete()
+        messages.success(request, f'Cuenta "{nombre}" eliminada.')
+        return redirect('cuentas_internas:lista')
     
-    return render(request, 'cheques/eliminar.html', {'cheque': cheque})
+    return render(request, 'cuentas_internas/eliminar.html', {'cuenta': cuenta})
 
 
 @login_required
-def cambiar_estado_cheque(request, pk):
+def agregar_movimiento(request, pk):
     if not usuario_autorizado(request.user):
         messages.error(request, 'No tenés permiso para acceder a esta sección.')
         return redirect('inicio')
     
-    cheque = get_object_or_404(Cheque, pk=pk)
+    cuenta = get_object_or_404(CuentaInterna, pk=pk)
     
     if request.method == 'POST':
-        nuevo_estado = request.POST.get('estado')
-        depositado_en = request.POST.get('depositado_en', '')
-        fecha_endoso = request.POST.get('fecha_endoso', '')
-        destinatario_endoso = request.POST.get('destinatario_endoso', '')
-        
-        if nuevo_estado in ['a_depositar', 'depositado', 'endosado', 'rechazado']:
-            cheque.estado = nuevo_estado
-            
-            if nuevo_estado == 'depositado':
-                cheque.depositado_en = depositado_en
-            elif nuevo_estado == 'endosado':
-                if fecha_endoso:
-                    cheque.fecha_endoso = fecha_endoso
-                cheque.destinatario_endoso = destinatario_endoso
-            
-            cheque.save()
-            messages.success(request, f'Estado actualizado a {cheque.get_estado_display()}.')
+        form = MovimientoInternoForm(request.POST)
+        if form.is_valid():
+            movimiento = form.save(commit=False)
+            movimiento.cuenta = cuenta
+            movimiento.creado_por = request.user
+            movimiento.save()
+            messages.success(request, 'Movimiento registrado.')
+            return redirect('cuentas_internas:detalle', pk=cuenta.pk)
+    else:
+        form = MovimientoInternoForm()
     
-    return redirect('cheques:lista')
+    return render(request, 'cuentas_internas/movimiento_form.html', {
+        'form': form,
+        'cuenta': cuenta,
+    })
+
+
+@login_required
+def eliminar_movimiento(request, pk):
+    if not usuario_autorizado(request.user):
+        messages.error(request, 'No tenés permiso para acceder a esta sección.')
+        return redirect('inicio')
+    
+    movimiento = get_object_or_404(MovimientoInterno, pk=pk)
+    cuenta = movimiento.cuenta
+    
+    if request.method == 'POST':
+        movimiento.delete()
+        messages.success(request, 'Movimiento eliminado.')
+        return redirect('cuentas_internas:detalle', pk=cuenta.pk)
+    
+    return render(request, 'cuentas_internas/eliminar_movimiento.html', {
+        'movimiento': movimiento,
+        'cuenta': cuenta,
+    })
