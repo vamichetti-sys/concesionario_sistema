@@ -1,6 +1,6 @@
 from django.contrib.auth.decorators import login_required, permission_required
 from django.shortcuts import render, redirect, get_object_or_404
-from django.db.models import Sum
+from django.db.models import Sum, Q
 from datetime import date
 from decimal import Decimal
 
@@ -20,6 +20,7 @@ from .forms import (
     FichaReporteInternoForm,
     GastoReporteInternoForm,
 )
+
 
 # ==========================================================
 # HELPERS
@@ -128,6 +129,7 @@ def reporte_web(request):
         }
     )
 
+
 @login_required
 def _reporte_interno_base(request, unidad):
     # 🔑 Guardar unidad activa en sesión
@@ -146,25 +148,18 @@ def _reporte_interno_base(request, unidad):
     )
 
 
-
-
-from django.contrib.auth.decorators import login_required
-
 # ==========================================================
-# REPORTE INTERNO (TEST)
+# REPORTE INTERNO
 # ==========================================================
 @login_required
 def reporte_interno(request):
     # ESTE ES HAMICHETTI (el que ya existe)
     return _reporte_interno_base(request, "Hamichetti")
 
+
 @login_required
 def reporte_interno_vamichetti(request):
     return _reporte_interno_base(request, "Vamichetti")
-
-
-
-
 
 
 # ==========================================================
@@ -178,6 +173,7 @@ def reporte_interno_vamichetti(request):
 def control_stock(request):
     # 🔑 tomar la unidad activa desde sesión
     unidad = request.session.get("unidad_activa", "HA")
+    query = request.GET.get("q", "")
 
     vehiculos = Vehiculo.objects.filter(
         unidad=unidad
@@ -185,15 +181,23 @@ def control_stock(request):
         "ficha_reporte"
     ).order_by("-id")
 
+    # Filtro por búsqueda
+    if query:
+        vehiculos = vehiculos.filter(
+            Q(marca__icontains=query)
+            | Q(modelo__icontains=query)
+            | Q(dominio__icontains=query)
+        )
+
     return render(
         request,
         "reportes/interno/control_stock.html",
         {
             "page_title": "Control de Stock",
             "vehiculos": vehiculos,
+            "query": query,
         }
     )
-
 
 
 # ==========================================================
@@ -236,6 +240,7 @@ def editar_ficha_reporte(request, vehiculo_id):
         }
     )
 
+
 # ==========================================================
 # AGREGAR GASTO
 # ==========================================================
@@ -259,6 +264,7 @@ def agregar_gasto_reporte(request, ficha_id):
         vehiculo_id=ficha.vehiculo.id
     )
 
+
 # ==========================================================
 # ELIMINAR GASTO
 # ==========================================================
@@ -278,7 +284,6 @@ def eliminar_gasto_reporte(request, gasto_id):
     )
 
 
-
 # ==========================================================
 # REPORTE DE GANANCIAS (DINÁMICO)
 # ==========================================================
@@ -288,7 +293,6 @@ def eliminar_gasto_reporte(request, gasto_id):
     raise_exception=True
 )
 def reporte_ganancias(request):
-
     # 🔑 tomar la unidad activa desde sesión
     unidad = request.session.get("unidad_activa", "HA")
 
@@ -337,6 +341,7 @@ def reporte_ganancias(request):
             "data_anual": data_anual,
         }
     )
+
 
 # ==========================================================
 # CIERRE DE MES (CORREGIDO)

@@ -15,6 +15,24 @@
 </div>
 
 <!-- ===============================
+     BUSCADOR
+=============================== -->
+<div class="card p-3 mb-4">
+    <form method="GET">
+        <div class="input-group">
+            <span class="input-group-text" style="background:#fff;border-right:none;">
+                <i data-lucide="search" style="width:18px;height:18px;color:#9ca3af;"></i>
+            </span>
+            <input type="text" name="q" class="form-control" style="border-left:none;" placeholder="Buscar por marca, modelo o dominio..." value="{{ query|default:'' }}">
+            <button type="submit" class="btn btn-primary">Buscar</button>
+            {% if query %}
+            <a href="{% url 'reportes:control_stock' %}" class="btn btn-secondary">Limpiar</a>
+            {% endif %}
+        </div>
+    </form>
+</div>
+
+<!-- ===============================
      TABLA
 =============================== -->
 <div class="card p-0">
@@ -67,8 +85,8 @@
                     <!-- COMPRA -->
                     <td>
                         {% if ficha.fecha_compra %}
-                        <small class="text-muted">{{ ficha.fecha_compra }}</small><br>
-                        <span class="fw-semibold">${{ ficha.precio_compra }}</span>
+                        <small class="text-muted">{{ ficha.fecha_compra|date:"d/m/Y" }}</small><br>
+                        <span class="fw-semibold">${{ ficha.precio_compra|default:0 }}</span>
                         {% else %}
                         <span class="text-muted">Sin datos</span>
                         {% endif %}
@@ -77,8 +95,8 @@
                     <!-- VENTA -->
                     <td>
                         {% if ficha.fecha_venta %}
-                        <small class="text-muted">{{ ficha.fecha_venta }}</small><br>
-                        <span class="fw-semibold text-success">${{ ficha.precio_venta }}</span>
+                        <small class="text-muted">{{ ficha.fecha_venta|date:"d/m/Y" }}</small><br>
+                        <span class="fw-semibold text-success">${{ ficha.precio_venta|default:0 }}</span>
                         {% else %}
                         <span class="text-muted">Sin vender</span>
                         {% endif %}
@@ -116,7 +134,12 @@
     {% else %}
     <div class="p-5 text-center">
         <i data-lucide="car" style="width:48px;height:48px;color:#9ca3af;margin-bottom:12px;"></i>
+        {% if query %}
+        <p class="text-muted mb-3">No se encontraron vehículos para "{{ query }}"</p>
+        <a href="{% url 'reportes:control_stock' %}" class="btn btn-secondary">Limpiar búsqueda</a>
+        {% else %}
         <p class="text-muted mb-0">No hay vehículos cargados en el sistema</p>
+        {% endif %}
     </div>
     {% endif %}
 </div>
@@ -125,4 +148,4 @@
     if (typeof lucide !== 'undefined') lucide.createIcons();
 </script>
 
-{% endblock %}s
+{% endblock %}
