@@ -1,209 +1,125 @@
 {% extends 'base.html' %}
 
-{% block title %}Gestión de Cheques{% endblock %}
+{% block title %}Cuentas Internas{% endblock %}
 
 {% block content %}
 
 <!-- ENCABEZADO -->
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h3 class="fw-bold mb-1">Gestión de Cheques</h3>
-        <p class="text-muted mb-0">Fecha de hoy: {{ fecha_hoy|date:"d/m/Y" }}</p>
+        <h3 class="fw-bold mb-1">Cuentas Internas</h3>
+        <p class="text-muted mb-0">Cuentas corrientes personales</p>
     </div>
-    <a href="{% url 'cheques:crear' %}" class="btn btn-primary">
+    <a href="{% url 'cuentas_internas:crear' %}" class="btn btn-primary">
         <i data-lucide="plus" style="width:16px;height:16px;margin-right:6px;"></i>
-        Nuevo Cheque
+        Nueva Cuenta
     </a>
 </div>
 
-<!-- RESUMEN POR VENCIMIENTO (A DEPOSITAR) -->
-<div class="card p-4 mb-4">
-    <h6 class="fw-bold mb-3">
-        <i data-lucide="calendar" style="width:18px;height:18px;margin-right:6px;color:#3b82f6;"></i>
-        A Depositar - Resumen por Vencimiento
-    </h6>
-    <div class="table-responsive">
-        <table class="table table-sm text-center mb-0">
-            <thead>
-                <tr style="background:#f8f9fa;">
-                    <th></th>
-                    <th>
-                        <a href="?rango=vencido" class="text-decoration-none {% if rango_filtro == 'vencido' %}text-danger fw-bold{% endif %}">
-                            Vencido
-                        </a>
-                    </th>
-                    <th>
-                        <a href="?rango=hoy" class="text-decoration-none {% if rango_filtro == 'hoy' %}text-primary fw-bold{% endif %}">
-                            Hoy
-                        </a>
-                    </th>
-                    <th>
-                        <a href="?rango=d1_7" class="text-decoration-none {% if rango_filtro == 'd1_7' %}text-primary fw-bold{% endif %}">
-                            1-7 días
-                        </a>
-                    </th>
-                    <th>
-                        <a href="?rango=d8_15" class="text-decoration-none {% if rango_filtro == 'd8_15' %}text-primary fw-bold{% endif %}">
-                            8-15 días
-                        </a>
-                    </th>
-                    <th>
-                        <a href="?rango=d16_30" class="text-decoration-none {% if rango_filtro == 'd16_30' %}text-primary fw-bold{% endif %}">
-                            16-30 días
-                        </a>
-                    </th>
-                    <th>
-                        <a href="?rango=d31_60" class="text-decoration-none {% if rango_filtro == 'd31_60' %}text-primary fw-bold{% endif %}">
-                            31-60 días
-                        </a>
-                    </th>
-                    <th>
-                        <a href="?rango=mas60" class="text-decoration-none {% if rango_filtro == 'mas60' %}text-primary fw-bold{% endif %}">
-                            > 60 días
-                        </a>
-                    </th>
-                    <th style="background:#d4edda;">Total</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td class="text-start fw-semibold">Cheques en $</td>
-                    <td class="{% if rangos.vencido.monto > 0 %}text-danger fw-bold{% endif %}">
-                        ${{ rangos.vencido.monto|floatformat:0 }}
-                    </td>
-                    <td>${{ rangos.hoy.monto|floatformat:0 }}</td>
-                    <td>${{ rangos.d1_7.monto|floatformat:0 }}</td>
-                    <td>${{ rangos.d8_15.monto|floatformat:0 }}</td>
-                    <td>${{ rangos.d16_30.monto|floatformat:0 }}</td>
-                    <td>${{ rangos.d31_60.monto|floatformat:0 }}</td>
-                    <td>${{ rangos.mas60.monto|floatformat:0 }}</td>
-                    <td class="fw-bold" style="background:#d4edda;">${{ total_monto|floatformat:0 }}</td>
-                </tr>
-                <tr>
-                    <td class="text-start fw-semibold">Cantidad</td>
-                    <td class="{% if rangos.vencido.cantidad > 0 %}text-danger fw-bold{% endif %}">
-                        {{ rangos.vencido.cantidad }}
-                    </td>
-                    <td>{{ rangos.hoy.cantidad }}</td>
-                    <td>{{ rangos.d1_7.cantidad }}</td>
-                    <td>{{ rangos.d8_15.cantidad }}</td>
-                    <td>{{ rangos.d16_30.cantidad }}</td>
-                    <td>{{ rangos.d31_60.cantidad }}</td>
-                    <td>{{ rangos.mas60.cantidad }}</td>
-                    <td class="fw-bold" style="background:#d4edda;">{{ total_cantidad }}</td>
-                </tr>
-            </tbody>
-        </table>
+<!-- RESUMEN -->
+<div class="row g-4 mb-4">
+    <div class="col-md-6">
+        <div class="card p-4" style="position:relative;">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <span class="text-muted" style="font-size:13px;">Total a cobrar</span>
+                <div style="width:40px;height:40px;background:rgba(16,185,129,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                    <i data-lucide="trending-up" style="width:20px;height:20px;color:#10b981;"></i>
+                </div>
+            </div>
+            <h3 class="fw-bold mb-0 text-success">${{ total_deudas|floatformat:0 }}</h3>
+            <div style="position:absolute;top:0;left:0;width:4px;height:100%;background:#10b981;border-radius:14px 0 0 14px;"></div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card p-4" style="position:relative;">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <span class="text-muted" style="font-size:13px;">Total a pagar</span>
+                <div style="width:40px;height:40px;background:rgba(239,68,68,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                    <i data-lucide="trending-down" style="width:20px;height:20px;color:#ef4444;"></i>
+                </div>
+            </div>
+            <h3 class="fw-bold mb-0 text-danger">${{ total_favor|floatformat:0 }}</h3>
+            <div style="position:absolute;top:0;left:0;width:4px;height:100%;background:#ef4444;border-radius:14px 0 0 14px;"></div>
+        </div>
     </div>
 </div>
 
-<!-- FILTROS POR ESTADO -->
-<div class="card p-3 mb-4">
-    <div class="d-flex flex-wrap gap-2 align-items-center">
-        <span class="text-muted me-2">Estado:</span>
-        <a href="{% url 'cheques:lista' %}" class="btn btn-sm {% if not estado_filtro and not rango_filtro %}btn-primary{% else %}btn-outline-secondary{% endif %}">
-            Todos
-        </a>
-        <a href="?estado=a_depositar" class="btn btn-sm {% if estado_filtro == 'a_depositar' %}btn-warning{% else %}btn-outline-warning{% endif %}">
-            A Depositar (${{ total_a_depositar|floatformat:0 }})
-        </a>
-        <a href="?estado=depositado" class="btn btn-sm {% if estado_filtro == 'depositado' %}btn-success{% else %}btn-outline-success{% endif %}">
-            Depositado (${{ total_depositado|floatformat:0 }})
-        </a>
-        <a href="?estado=endosado" class="btn btn-sm {% if estado_filtro == 'endosado' %}btn-secondary{% else %}btn-outline-secondary{% endif %}">
-            Endosado (${{ total_endosado|floatformat:0 }})
-        </a>
-        <a href="?estado=rechazado" class="btn btn-sm {% if estado_filtro == 'rechazado' %}btn-danger{% else %}btn-outline-danger{% endif %}">
-            Rechazado (${{ total_rechazado|floatformat:0 }})
-        </a>
-    </div>
-</div>
-
-<!-- BUSCADOR -->
+<!-- FILTROS -->
 <div class="card p-3 mb-4">
     <form method="GET" class="row g-3 align-items-end">
-        <div class="col-md-8">
-            <input type="text" name="q" class="form-control" placeholder="Buscar por número, titular, cliente, banco..." value="{{ query }}">
+        <div class="col-md-5">
+            <input type="text" name="q" class="form-control" placeholder="Buscar por nombre o cargo..." value="{{ query }}">
+        </div>
+        <div class="col-md-3">
+            <select name="mostrar" class="form-select">
+                <option value="activas" {% if mostrar == 'activas' %}selected{% endif %}>Activas</option>
+                <option value="inactivas" {% if mostrar == 'inactivas' %}selected{% endif %}>Inactivas</option>
+                <option value="todas" {% if mostrar == 'todas' %}selected{% endif %}>Todas</option>
+            </select>
         </div>
         <div class="col-md-2">
-            <button type="submit" class="btn btn-primary w-100">Buscar</button>
+            <button type="submit" class="btn btn-primary w-100">Filtrar</button>
         </div>
         <div class="col-md-2">
-            <a href="{% url 'cheques:lista' %}" class="btn btn-secondary w-100">Limpiar</a>
+            <a href="{% url 'cuentas_internas:lista' %}" class="btn btn-secondary w-100">Limpiar</a>
         </div>
     </form>
 </div>
 
-<!-- TABLA DE CHEQUES -->
+<!-- TABLA -->
 <div class="card p-0">
-    {% if cheques %}
+    {% if cuentas %}
     <div class="table-responsive">
-        <table class="table align-middle mb-0" style="font-size:13px;">
+        <table class="table align-middle mb-0">
             <thead>
                 <tr>
-                    <th>Fecha Ingreso</th>
-                    <th>Cliente</th>
-                    <th>Nro Factura</th>
-                    <th>Fecha Depósito</th>
-                    <th>Banco</th>
-                    <th>Nro Cheque</th>
-                    <th>Titular</th>
-                    <th class="text-end">Monto</th>
+                    <th>Nombre</th>
+                    <th>Cargo</th>
+                    <th>Teléfono</th>
+                    <th class="text-end">Saldo</th>
                     <th>Estado</th>
-                    <th>Depositado En</th>
-                    <th>Fecha Endoso</th>
-                    <th>Destinatario</th>
-                    <th>Obs.</th>
                     <th class="text-end">Acciones</th>
                 </tr>
             </thead>
             <tbody>
-                {% for cheque in cheques %}
-                <tr class="{% if cheque.estado == 'depositado' %}table-success{% elif cheque.estado == 'a_depositar' %}table-warning{% elif cheque.estado == 'rechazado' %}table-danger{% endif %}">
-                    <td>{{ cheque.fecha_ingreso|date:"d/m/Y" }}</td>
-                    <td>{{ cheque.cliente }}</td>
-                    <td>{{ cheque.nro_factura|default:"—" }}</td>
+                {% for cuenta in cuentas %}
+                <tr>
                     <td>
-                        {{ cheque.fecha_deposito|date:"d/m/Y" }}
-                        {% if cheque.estado == 'a_depositar' and cheque.dias_para_deposito < 0 %}
-                        <span class="badge bg-danger">Vencido</span>
-                        {% elif cheque.estado == 'a_depositar' and cheque.dias_para_deposito == 0 %}
-                        <span class="badge bg-primary">Hoy</span>
-                        {% endif %}
+                        <a href="{% url 'cuentas_internas:detalle' cuenta.pk %}" class="fw-semibold text-decoration-none">
+                            {{ cuenta.nombre }}
+                        </a>
                     </td>
-                    <td>{{ cheque.banco_emision }}</td>
-                    <td class="fw-semibold">{{ cheque.numero_cheque }}</td>
-                    <td>{{ cheque.titular_cheque }}</td>
-                    <td class="text-end fw-bold">${{ cheque.monto|floatformat:2 }}</td>
-                    <td>
-                        {% if cheque.estado == 'a_depositar' %}
-                        <span class="badge bg-warning text-dark">A Depositar</span>
-                        {% elif cheque.estado == 'depositado' %}
-                        <span class="badge bg-success">Depositado</span>
-                        {% elif cheque.estado == 'endosado' %}
-                        <span class="badge bg-secondary">Endosado</span>
-                        {% elif cheque.estado == 'rechazado' %}
-                        <span class="badge bg-danger">Rechazado</span>
-                        {% endif %}
-                    </td>
-                    <td>{{ cheque.depositado_en|default:"—" }}</td>
-                    <td>{{ cheque.fecha_endoso|date:"d/m/Y"|default:"—" }}</td>
-                    <td>{{ cheque.destinatario_endoso|default:"—" }}</td>
-                    <td>
-                        {% if cheque.observaciones %}
-                        <span title="{{ cheque.observaciones }}" style="cursor:help;">📝</span>
+                    <td>{{ cuenta.cargo }}</td>
+                    <td><small class="text-muted">{{ cuenta.telefono|default:"—" }}</small></td>
+                    <td class="text-end">
+                        {% if cuenta.saldo > 0 %}
+                        <span class="fw-bold text-success">${{ cuenta.saldo|floatformat:0 }}</span>
+                        <small class="text-muted">(debe)</small>
+                        {% elif cuenta.saldo < 0 %}
+                        <span class="fw-bold text-danger">${{ cuenta.saldo|floatformat:0 }}</span>
+                        <small class="text-muted">(a favor)</small>
                         {% else %}
-                        —
+                        <span class="text-muted">$0</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if cuenta.activa %}
+                        <span class="badge bg-success">Activa</span>
+                        {% else %}
+                        <span class="badge bg-secondary">Inactiva</span>
                         {% endif %}
                     </td>
                     <td class="text-end">
-                        <div class="d-flex gap-1 justify-content-end">
-                            <a href="{% url 'cheques:editar' cheque.pk %}" class="btn btn-secondary btn-sm py-1 px-2">
-                                <i data-lucide="pencil" style="width:12px;height:12px;"></i>
+                        <div class="d-flex gap-2 justify-content-end">
+                            <a href="{% url 'cuentas_internas:detalle' cuenta.pk %}" class="btn btn-primary btn-sm">
+                                <i data-lucide="eye" style="width:14px;height:14px;"></i>
                             </a>
-                            <button type="button" class="btn btn-primary btn-sm py-1 px-2" data-bs-toggle="modal" data-bs-target="#modalEstado{{ cheque.pk }}">
-                                <i data-lucide="refresh-cw" style="width:12px;height:12px;"></i>
-                            </button>
+                            <a href="{% url 'cuentas_internas:agregar_movimiento' cuenta.pk %}" class="btn btn-success btn-sm">
+                                <i data-lucide="plus" style="width:14px;height:14px;"></i>
+                            </a>
+                            <a href="{% url 'cuentas_internas:editar' cuenta.pk %}" class="btn btn-secondary btn-sm">
+                                <i data-lucide="pencil" style="width:14px;height:14px;"></i>
+                            </a>
                         </div>
                     </td>
                 </tr>
@@ -211,72 +127,19 @@
             </tbody>
         </table>
     </div>
-    
-    <!-- MODALES FUERA DE LA TABLA -->
-    {% for cheque in cheques %}
-    <div class="modal fade" id="modalEstado{{ cheque.pk }}" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <form method="POST" action="{% url 'cheques:cambiar_estado' cheque.pk %}">
-                    {% csrf_token %}
-                    <div class="modal-header">
-                        <h6 class="modal-title">Cambiar estado - #{{ cheque.numero_cheque }}</h6>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body text-start">
-                        <div class="mb-3">
-                            <label class="form-label">Estado</label>
-                            <select name="estado" class="form-select" id="selectEstado{{ cheque.pk }}" onchange="toggleCampos({{ cheque.pk }})">
-                                <option value="a_depositar" {% if cheque.estado == 'a_depositar' %}selected{% endif %}>A Depositar</option>
-                                <option value="depositado" {% if cheque.estado == 'depositado' %}selected{% endif %}>Depositado</option>
-                                <option value="endosado" {% if cheque.estado == 'endosado' %}selected{% endif %}>Endosado</option>
-                                <option value="rechazado" {% if cheque.estado == 'rechazado' %}selected{% endif %}>Rechazado</option>
-                            </select>
-                        </div>
-                        <div class="mb-3" id="campoDepositado{{ cheque.pk }}" style="{% if cheque.estado != 'depositado' %}display:none;{% endif %}">
-                            <label class="form-label">Depositado en</label>
-                            <input type="text" name="depositado_en" class="form-control" value="{{ cheque.depositado_en }}">
-                        </div>
-                        <div id="camposEndoso{{ cheque.pk }}" style="{% if cheque.estado != 'endosado' %}display:none;{% endif %}">
-                            <div class="mb-3">
-                                <label class="form-label">Fecha de endoso</label>
-                                <input type="date" name="fecha_endoso" class="form-control" value="{{ cheque.fecha_endoso|date:'Y-m-d' }}">
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">Destinatario del endoso</label>
-                                <input type="text" name="destinatario_endoso" class="form-control" value="{{ cheque.destinatario_endoso }}">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-primary">Guardar</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-    {% endfor %}
-    
     {% else %}
     <div class="p-5 text-center">
-        <i data-lucide="banknote" style="width:48px;height:48px;color:#9ca3af;margin-bottom:12px;"></i>
-        <p class="text-muted mb-3">No hay cheques cargados</p>
-        <a href="{% url 'cheques:crear' %}" class="btn btn-primary">
+        <i data-lucide="wallet" style="width:48px;height:48px;color:#9ca3af;margin-bottom:12px;"></i>
+        <p class="text-muted mb-3">No hay cuentas internas</p>
+        <a href="{% url 'cuentas_internas:crear' %}" class="btn btn-primary">
             <i data-lucide="plus" style="width:16px;height:16px;margin-right:6px;"></i>
-            Cargar primer cheque
+            Crear primera cuenta
         </a>
     </div>
     {% endif %}
 </div>
 
 <script>
-    function toggleCampos(id) {
-        var estado = document.getElementById('selectEstado' + id).value;
-        document.getElementById('campoDepositado' + id).style.display = (estado === 'depositado') ? 'block' : 'none';
-        document.getElementById('camposEndoso' + id).style.display = (estado === 'endosado') ? 'block' : 'none';
-    }
-    
     if (typeof lucide !== 'undefined') lucide.createIcons();
 </script>
 

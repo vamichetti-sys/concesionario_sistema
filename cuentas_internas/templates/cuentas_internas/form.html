@@ -5,128 +5,73 @@
 {% block content %}
 
 <div class="mb-4">
-    <a href="{% url 'cheques:lista' %}" class="text-muted text-decoration-none d-inline-flex align-items-center mb-2" style="font-size:14px;">
+    <a href="{% url 'cuentas_internas:lista' %}" class="text-muted text-decoration-none d-inline-flex align-items-center mb-2" style="font-size:14px;">
         <i data-lucide="arrow-left" style="width:16px;height:16px;margin-right:6px;"></i>
-        Volver a cheques
+        Volver a cuentas
     </a>
     <h3 class="fw-bold mb-1">{{ titulo }}</h3>
 </div>
 
-<form method="POST">
-    {% csrf_token %}
-    
-    <div class="row">
-        <div class="col-md-8">
+<div class="row">
+    <div class="col-md-6">
+        <form method="POST">
+            {% csrf_token %}
             
-            <!-- DATOS DE INGRESO -->
             <div class="card p-4 mb-4">
                 <h5 class="fw-bold mb-3">
-                    <i data-lucide="calendar" style="width:20px;height:20px;margin-right:8px;color:#3b82f6;"></i>
-                    Datos de Ingreso
+                    <i data-lucide="user" style="width:20px;height:20px;margin-right:8px;color:#3b82f6;"></i>
+                    Datos de la Cuenta
                 </h5>
                 <div class="row g-3">
-                    <div class="col-md-4">
-                        <label class="form-label">Fecha de ingreso *</label>
-                        {{ form.fecha_ingreso }}
+                    <div class="col-md-12">
+                        <label class="form-label">Nombre / Persona *</label>
+                        {{ form.nombre }}
                     </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Cliente *</label>
-                        {{ form.cliente }}
+                    <div class="col-md-12">
+                        <label class="form-label">Cargo / Concepto *</label>
+                        {{ form.cargo }}
                     </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Nro de Factura</label>
-                        {{ form.nro_factura }}
+                    <div class="col-md-12">
+                        <label class="form-label">Teléfono</label>
+                        {{ form.telefono }}
+                    </div>
+                    {% if not cuenta %}
+                    <div class="col-md-12">
+                        <label class="form-label">Saldo inicial</label>
+                        <input type="number" name="saldo_inicial" class="form-control" value="0" step="0.01">
+                        <small class="text-muted">Positivo = nos debe | Negativo = le debemos</small>
+                    </div>
+                    {% endif %}
+                    <div class="col-md-12">
+                        <label class="form-label">Observaciones</label>
+                        {{ form.observaciones }}
+                    </div>
+                    <div class="col-md-12">
+                        <div class="form-check">
+                            {{ form.activa }}
+                            <label class="form-check-label">Cuenta activa</label>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- DATOS DEL CHEQUE -->
-            <div class="card p-4 mb-4">
-                <h5 class="fw-bold mb-3">
-                    <i data-lucide="banknote" style="width:20px;height:20px;margin-right:8px;color:#3b82f6;"></i>
-                    Datos del Cheque
-                </h5>
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label class="form-label">Banco de emisión *</label>
-                        {{ form.banco_emision }}
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Número de cheque *</label>
-                        {{ form.numero_cheque }}
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Titular del cheque *</label>
-                        {{ form.titular_cheque }}
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Monto *</label>
-                        {{ form.monto }}
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Fecha de depósito *</label>
-                        {{ form.fecha_deposito }}
-                    </div>
-                </div>
-            </div>
-
-            <!-- ESTADO Y DESTINO -->
-            <div class="card p-4 mb-4">
-                <h5 class="fw-bold mb-3">
-                    <i data-lucide="flag" style="width:20px;height:20px;margin-right:8px;color:#3b82f6;"></i>
-                    Estado y Destino
-                </h5>
-                <div class="row g-3">
-                    <div class="col-md-4">
-                        <label class="form-label">Estado</label>
-                        {{ form.estado }}
-                    </div>
-                    <div class="col-md-8">
-                        <label class="form-label">Depositado en</label>
-                        {{ form.depositado_en }}
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Fecha de endoso</label>
-                        {{ form.fecha_endoso }}
-                    </div>
-                    <div class="col-md-8">
-                        <label class="form-label">Destinatario del endoso</label>
-                        {{ form.destinatario_endoso }}
-                    </div>
-                </div>
-            </div>
-
-            <!-- OBSERVACIONES -->
-            <div class="card p-4 mb-4">
-                <h5 class="fw-bold mb-3">
-                    <i data-lucide="message-square" style="width:20px;height:20px;margin-right:8px;color:#3b82f6;"></i>
-                    Observaciones
-                </h5>
-                {{ form.observaciones }}
-            </div>
-
-        </div>
-
-        <div class="col-md-4">
-            <!-- BOTONES -->
-            <div class="card p-4">
-                <button type="submit" class="btn btn-primary w-100 mb-2">
+            <div class="d-flex gap-3">
+                <button type="submit" class="btn btn-primary">
                     <i data-lucide="save" style="width:16px;height:16px;margin-right:6px;"></i>
-                    Guardar Cheque
+                    Guardar
                 </button>
-                <a href="{% url 'cheques:lista' %}" class="btn btn-secondary w-100">Cancelar</a>
-                {% if cheque %}
-                <hr>
-                <a href="{% url 'cheques:eliminar' cheque.pk %}" class="btn btn-outline-danger w-100">
+                <a href="{% url 'cuentas_internas:lista' %}" class="btn btn-secondary">Cancelar</a>
+                {% if cuenta %}
+                <a href="{% url 'cuentas_internas:eliminar' cuenta.pk %}" class="btn btn-outline-danger ms-auto">
                     <i data-lucide="trash-2" style="width:16px;height:16px;margin-right:6px;"></i>
                     Eliminar
                 </a>
                 {% endif %}
             </div>
-        </div>
-    </div>
 
-</form>
+        </form>
+    </div>
+</div>
 
 <script>
     if (typeof lucide !== 'undefined') lucide.createIcons();

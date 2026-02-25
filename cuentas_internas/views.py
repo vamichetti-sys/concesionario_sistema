@@ -33,7 +33,6 @@ def lista_cuentas(request):
             Q(cargo__icontains=query)
         )
     
-    # Totales
     total_deudas = CuentaInterna.objects.filter(activa=True, saldo__gt=0).aggregate(Sum('saldo'))['saldo__sum'] or 0
     total_favor = CuentaInterna.objects.filter(activa=True, saldo__lt=0).aggregate(Sum('saldo'))['saldo__sum'] or 0
     
@@ -57,18 +56,18 @@ def crear_cuenta(request):
         if form.is_valid():
             cuenta = form.save()
             
-            # Si hay saldo inicial, crear movimiento
             saldo_inicial = request.POST.get('saldo_inicial', 0)
             try:
                 saldo_inicial = float(saldo_inicial)
                 if saldo_inicial != 0:
+                    from datetime import date
                     tipo = 'debe' if saldo_inicial > 0 else 'haber'
                     MovimientoInterno.objects.create(
                         cuenta=cuenta,
                         tipo=tipo,
                         monto=abs(saldo_inicial),
                         concepto='Saldo inicial',
-                        fecha=cuenta.fecha_creacion.date(),
+                        fecha=date.today(),
                         creado_por=request.user
                     )
             except ValueError:
