@@ -71,10 +71,16 @@
                         <span class="text-muted">{{ b.creado|date:"d/m/Y" }}</span>
                     </td>
                     <td class="text-end">
-                        <a href="{% url 'boletos:ver_boleto' b.id %}" class="btn btn-secondary btn-sm">
-                            <i data-lucide="eye" style="width:14px;height:14px;margin-right:4px;"></i>
-                            Ver / Imprimir
-                        </a>
+                        <div class="d-flex gap-2 justify-content-end">
+                            <a href="{% url 'boletos:ver_boleto' b.id %}" class="btn btn-secondary btn-sm">
+                                <i data-lucide="eye" style="width:14px;height:14px;margin-right:4px;"></i>
+                                Ver / Imprimir
+                            </a>
+                            <a href="{% url 'boletos:editar_boleto' b.id %}" class="btn btn-outline-primary btn-sm">
+                                <i data-lucide="pencil" style="width:14px;height:14px;margin-right:4px;"></i>
+                                Editar
+                            </a>
+                        </div>
                     </td>
                 </tr>
                 {% endfor %}
