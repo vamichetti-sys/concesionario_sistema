@@ -108,8 +108,7 @@ def crear_boleto_manual(request):
             f = form.cleaned_data
             cliente = f["cliente"]
             vehiculo = f.get("vehiculo")
-            
-            # 🆕 VALIDACIÓN DE VEHÍCULO
+
             if not vehiculo:
                 messages.error(request, "❌ Debe seleccionar un vehículo.")
                 return render(
@@ -118,13 +117,11 @@ def crear_boleto_manual(request):
                     {"form": form, "numero": numero}
                 )
 
-            # DATOS COMERCIALES DEL VEHÍCULO
             marca = vehiculo.marca
             modelo = vehiculo.modelo
             anio = vehiculo.anio
             dominio = vehiculo.dominio
 
-            # DATOS REGISTRALES (DESDE LA FICHA VEHICULAR)
             ficha = getattr(vehiculo, "ficha", None)
             motor = getattr(ficha, "numero_motor", "") if ficha else ""
             chasis = getattr(ficha, "numero_chasis", "") if ficha else ""
@@ -150,7 +147,6 @@ def crear_boleto_manual(request):
                 else None
             )
 
-            # ARMAR TEXTO LEGAL DEL BOLETO
             texto_final = f"""
 Entre el/los Señor/es {cliente.nombre_completo} por una parte como comprador
 y el/los Señor/es AMICHETTI HUGO ALBERTO por la otra parte como vendedor,
@@ -274,6 +270,140 @@ def ver_boleto(request, boleto_id):
     )
 
 
+# ====================================
+# EDITAR BOLETO
+# ====================================
+def editar_boleto(request, boleto_id):
+    boleto = get_object_or_404(BoletoCompraventa, id=boleto_id)
+
+    from .forms import EditarBoletoForm
+
+    # Pre-poblar precio/forma de pago extrayéndolos del texto_final existente
+    precio_numeros_inicial = ""
+    precio_letras_inicial = ""
+    saldo_forma_pago_inicial = ""
+
+    if boleto.texto_final:
+        match_9 = re.search(
+            r"9°.*?precio total.*?es de\s*(.*?)\((.*?)\),\s*quedando.*?modalidad de pago:\s*(.*?)(?=10°|\Z)",
+            boleto.texto_final,
+            re.DOTALL | re.IGNORECASE
+        )
+        if match_9:
+            precio_numeros_inicial   = match_9.group(1).strip()
+            precio_letras_inicial    = match_9.group(2).strip()
+            saldo_forma_pago_inicial = match_9.group(3).strip()
+
+    if request.method == "POST":
+        form = EditarBoletoForm(request.POST, instance=boleto)
+        if form.is_valid():
+            boleto = form.save(commit=False)
+
+            cliente  = boleto.cliente
+            vehiculo = boleto.vehiculo
+
+            marca   = vehiculo.marca   if vehiculo else ""
+            modelo  = vehiculo.modelo  if vehiculo else ""
+            anio    = vehiculo.anio    if vehiculo else ""
+            dominio = vehiculo.dominio if vehiculo else ""
+
+            ficha  = getattr(vehiculo, "ficha", None) if vehiculo else None
+            motor  = getattr(ficha, "numero_motor",  "") if ficha else ""
+            chasis = getattr(ficha, "numero_chasis", "") if ficha else ""
+
+            precio_numeros   = form.cleaned_data.get("precio_numeros", "")
+            precio_letras    = form.cleaned_data.get("precio_letras", "")
+            saldo_forma_pago = form.cleaned_data.get("saldo_forma_pago", "")
+
+            boleto.texto_final = f"""
+Entre el/los Señor/es {cliente.nombre_completo} por una parte como comprador
+y el/los Señor/es AMICHETTI HUGO ALBERTO por la otra parte como vendedor,
+convienen celebrar el presente boleto de acuerdo a las cláusulas siguientes:
+
+1° - El vendedor vende a {cliente.nombre_completo} un vehículo Marca {marca}
+Modelo {modelo} Año {anio} Motor {motor}
+Chasis {chasis} Dominio {dominio} en el estado que se encuentra, y que el comprador 
+ha revisado y controlado las numeraciones de motor, chasis y dominio, aceptando el
+mismo de conformidad.
+2° - El vendedor entrega en este acto toda la documentación referente al vehículo
+y el comprador se obliga a realizar la respectiva transferencia dentro de los
+treinta (30) días a partir de la fecha.
+3° - Los gastos que demande la transferencia del vehículo en el orden nacional, provincial, 
+municipal, o de cualquier otro orden serán abonados por el comprador, y lo correspondiente 
+a la Ley 21.432/976.-
+4° - El comprador deberá asegurar el automotor contra todo riesgo dentro de los dos dias de 
+la fecha presente en el boleto, siendo el endoso a favor del vendedor.-
+5° - El comprador no podrá vender el vehículo sin autorización expresa del vendedor
+hasta no haber abonado la totalidad de la deuda.-
+6° - La falta de cumplimiento de cualquiera de las cláusulas del contrato autoriza al 
+vendedor a solicitar el inmediato secuestro del vehículo, renunciando el comprador a toda 
+defensa en juicio
+7° - El vendedor podra optar para el caso en el que el comprador se constituya en mora 
+de alguna de las cuotas, por pedir el secuestro judicial de la unidad vendida constituyendo 
+el comprador para el caso de promover accion judicial, domicilio legal en {cliente.direccion or "LARREA 255"}
+Que asimismo y tambien para el caso de promover acción judicial, queda facultado el vendedor 
+a nombrar martillero, comprometiendose el comprador a no poner otra excepcion que la de pago
+y renunciando expresamente a la facultad de apelar la resolucion dictada.
+8° - Todos los gastos judiciales que se originen serán a cargo del comprador.
+9° - El precio total de la unidad es de {precio_numeros}({precio_letras}),
+quedando un saldo conforme la siguiente modalidad de pago: {saldo_forma_pago}
+10° - La mora en el pago de todas las cuotas convenidas como saldo de precio se producira
+por el mero vencimiento de una de ellas, sin necesidad de interpelacion judicial o extra 
+judicial de ninguna naturaleza, al producirse dicha mora el deudor perdera automaticamente
+a favor del vendedor todo lo abonado hasta esa fecha y la operacion quedara rescindida, 
+obligandose al comprador a devolver el vehiculo en ese mismo momento. De no hacerlo asi, 
+pagara una multa diaria de acuerdo a los daños y perjuicios ocasionados al vendedor mas toda
+otra indemnizacion que por ley correspondiere, pudiendo los vendedores a partir de ese momento
+disponer del vehiculo arriba citado. Se deja perfectamente aclarado que este recibo es provisorio, 
+debiendo el comprador gestionar directamente ante el titular o ante quien corresponda la transferencia
+del vehiculo arriba citado.-
+11° - El comprador pagara el 3% para gastos de prenda y el 1% para sellado. El comprador se hace 
+responsable civil y criminalmente ante quien corresponda de los daños que ocasionara con este 
+vehiculo a partir de la fecha. En fe de cual se firman dos ejemplares de un mismo tenor y a un solo efecto 
+En la ciudad de ROJAS, a los {date.today().strftime("%d/%m/%Y")}.
+
+LA UNIDAD HA SIDO REVISADA Y ACEPTADA EN CONFORMIDAD.
+"""
+
+            boleto.save()
+
+            # Regenerar PDF
+            try:
+                if boleto.pdf:
+                    boleto.pdf.delete(save=False)
+                pdf_file = generar_boleto_pdf_desde_html(request, boleto)
+                boleto.pdf.save(
+                    f"boleto_{boleto.numero}.pdf",
+                    pdf_file,
+                    save=True
+                )
+                messages.success(request, "✅ Boleto actualizado y PDF regenerado correctamente.")
+            except Exception as e:
+                print("❌ ERROR PDF BOLETO (edición):", e)
+                messages.warning(request, "⚠️ Boleto actualizado, pero el PDF no pudo regenerarse.")
+
+            return redirect("boletos:ver_boleto", boleto.id)
+
+    else:
+        form = EditarBoletoForm(
+            instance=boleto,
+            initial={
+                "precio_numeros":   precio_numeros_inicial,
+                "precio_letras":    precio_letras_inicial,
+                "saldo_forma_pago": saldo_forma_pago_inicial,
+            }
+        )
+
+    return render(
+        request,
+        "boletos/editar.html",
+        {
+            "form": form,
+            "boleto": boleto,
+        }
+    )
+
+
 # ==========================================================
 # =======================  PAGARÉ  =========================
 # ==========================================================
@@ -294,7 +424,6 @@ def lista_pagares(request):
             Q(beneficiario__icontains=q)
         )
 
-    # 🆕 ARMAR URL DEL PDF
     lotes_con_url = []
     for lote in lotes:
         lote_dict = {
@@ -319,9 +448,6 @@ def lista_pagares(request):
 
 
 def monto_en_letras_simple(monto) -> str:
-    """
-    Devuelve el monto en letras en formato simple y seguro para el pagaré.
-    """
     try:
         if monto is None:
             return ""
@@ -351,7 +477,6 @@ def _generar_pdf_lote_pagares_3_por_hoja(pagares):
 
     for pagare in pagares:
 
-        # 👉 nueva hoja cada 3 pagarés
         if contador == POR_HOJA:
             c.showPage()
             y = alto - 2 * cm
@@ -359,9 +484,6 @@ def _generar_pdf_lote_pagares_3_por_hoja(pagares):
 
         cliente = pagare.cliente
 
-        # =========================
-        # TÍTULO
-        # =========================
         c.setFont("Helvetica-Bold", 18)
         c.drawString(margen_x, y, "PAGARÉ")
         y -= 0.8 * cm
@@ -374,9 +496,6 @@ def _generar_pdf_lote_pagares_3_por_hoja(pagares):
         )
         y -= 1 * cm
 
-        # =========================
-        # TEXTO LEGAL
-        # =========================
         c.setFont("Helvetica", 11)
 
         if pagare.fecha_vencimiento:
@@ -413,9 +532,6 @@ def _generar_pdf_lote_pagares_3_por_hoja(pagares):
         c.drawText(textobject)
         y = textobject.getY() - 0.8 * cm
 
-        # =========================
-        # DATOS DEL DEUDOR
-        # =========================
         c.setFont("Helvetica-Bold", 11)
         c.drawString(margen_x, y, "Datos del Deudor:")
         y -= 0.6 * cm
@@ -428,15 +544,9 @@ def _generar_pdf_lote_pagares_3_por_hoja(pagares):
         c.drawString(margen_x, y, f"Domicilio: {cliente.direccion or ''}")
         y -= 1.2 * cm
 
-        # =========================
-        # FIRMA
-        # =========================
         c.drawString(margen_x, y, "Firma: _________________________________")
         y -= 1.5 * cm
 
-        # =========================
-        # LÍNEA DE CORTE
-        # =========================
         if contador < POR_HOJA - 1:
             c.setDash(3, 3)
             c.line(margen_x, y, ancho - margen_x, y)
@@ -456,7 +566,6 @@ def _generar_pdf_lote_pagares_3_por_hoja(pagares):
 @transaction.atomic
 def crear_pagares(request):
     if request.method == "POST":
-        # ANTI DOBLE ENVÍO
         if request.session.get("generando_pagares"):
             messages.warning(
                 request,
@@ -467,7 +576,6 @@ def crear_pagares(request):
         request.session["generando_pagares"] = True
 
         try:
-            # DATOS GENERALES
             cliente = get_object_or_404(
                 Cliente,
                 id=request.POST.get("cliente")
@@ -491,7 +599,6 @@ def crear_pagares(request):
 
             cantidad = int(request.POST.get("cantidad", 1))
 
-            # CREAR LOTE
             lote = PagareLote.objects.create(
                 cliente=cliente,
                 beneficiario=beneficiario,
@@ -501,7 +608,6 @@ def crear_pagares(request):
                 monto_total=Decimal("0.00"),
             )
 
-            # NUMERACIÓN
             ultimo = (
                 Pagare.objects
                 .aggregate(max_num=Max("numero"))
@@ -509,7 +615,6 @@ def crear_pagares(request):
                 or 0
             )
 
-            # CREAR PAGARÉS
             pagares = []
             monto_total = Decimal("0.00")
 
@@ -518,9 +623,7 @@ def crear_pagares(request):
                     request.POST.get(f"monto_{i}", "0")
                 )
 
-                fecha_v = request.POST.get(
-                    f"fecha_vencimiento_{i}"
-                )
+                fecha_v = request.POST.get(f"fecha_vencimiento_{i}")
                 fecha_v = (
                     date.fromisoformat(fecha_v)
                     if fecha_v else None
@@ -540,7 +643,6 @@ def crear_pagares(request):
                 pagares.append(pagare)
                 monto_total += monto
 
-            # GENERAR PDF DEL LOTE
             pdf_bytes = _generar_pdf_lote_pagares_3_por_hoja(pagares)
 
             if not pdf_bytes:
@@ -557,7 +659,6 @@ def crear_pagares(request):
                 save=True
             )
 
-            # ACTUALIZAR TOTALES DEL LOTE
             lote.monto_total = monto_total
             lote.cantidad = len(pagares)
             lote.save(update_fields=["monto_total", "cantidad"])
@@ -579,7 +680,6 @@ def crear_pagares(request):
         finally:
             request.session.pop("generando_pagares", None)
 
-    # GET
     return render(
         request,
         "boletos/pagare/crear.html",

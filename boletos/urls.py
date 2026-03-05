@@ -4,7 +4,6 @@ from . import views
 app_name = "boletos"
 
 urlpatterns = [
-
     # ===============================
     # 🟢 PANEL DE ENTRADA
     # ===============================
@@ -31,6 +30,11 @@ urlpatterns = [
         "ver/<int:boleto_id>/",
         views.ver_boleto,
         name="ver_boleto"
+    ),
+    path(
+        "editar/<int:boleto_id>/",
+        views.editar_boleto,
+        name="editar_boleto"
     ),
 
     # ===============================

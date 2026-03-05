@@ -4,7 +4,7 @@ from datetime import date
 
 from clientes.models import Cliente
 from vehiculos.models import Vehiculo
-from .models import Pagare
+from .models import BoletoCompraventa, Pagare
 
 
 # ==========================================================
@@ -42,7 +42,7 @@ class CrearBoletoForm(forms.Form):
     marca = forms.CharField(
         label="Marca",
         max_length=80,
-        required=False,  # 🔧 CAMBIO CLAVE
+        required=False,
         widget=forms.TextInput(
             attrs={
                 "class": "form-control",
@@ -55,7 +55,7 @@ class CrearBoletoForm(forms.Form):
     modelo = forms.CharField(
         label="Modelo",
         max_length=80,
-        required=False,  # 🔧 CAMBIO CLAVE
+        required=False,
         widget=forms.TextInput(
             attrs={
                 "class": "form-control",
@@ -68,7 +68,7 @@ class CrearBoletoForm(forms.Form):
     anio = forms.CharField(
         label="Año",
         max_length=10,
-        required=False,  # 🔧 CAMBIO CLAVE
+        required=False,
         widget=forms.TextInput(
             attrs={
                 "class": "form-control",
@@ -107,7 +107,7 @@ class CrearBoletoForm(forms.Form):
     patente = forms.CharField(
         label="Dominio / Patente",
         max_length=20,
-        required=False,  # 🔧 CAMBIO CLAVE
+        required=False,
         widget=forms.TextInput(
             attrs={
                 "class": "form-control",
@@ -123,7 +123,7 @@ class CrearBoletoForm(forms.Form):
     precio_total_unidad = forms.CharField(
         label="Precio total de la unidad",
         max_length=100,
-        required=False,  # 🔧 CAMBIO CLAVE
+        required=False,
         widget=forms.TextInput(
             attrs={"class": "form-control"}
         )
@@ -273,6 +273,53 @@ class CrearBoletoForm(forms.Form):
     def clean_vehiculo(self):
         return self.cleaned_data.get("vehiculo")
 
+
+# ==========================================================
+# BOLETO DE COMPRAVENTA – EDICIÓN (NUEVO)
+# ==========================================================
+class EditarBoletoForm(forms.ModelForm):
+    """
+    Permite editar cliente, vehículo, precio y forma de pago
+    de un boleto ya generado. Al guardar se regenera el texto_final y el PDF.
+    """
+
+    precio_numeros = forms.CharField(
+        label="Precio en números",
+        max_length=100,
+        required=False,
+        widget=forms.TextInput(attrs={
+            "class": "form-control",
+            "placeholder": "Ej: $5.000.000",
+        })
+    )
+    precio_letras = forms.CharField(
+        label="Precio en letras",
+        max_length=255,
+        required=False,
+        widget=forms.TextInput(attrs={
+            "class": "form-control",
+            "placeholder": "Ej: CINCO MILLONES DE PESOS",
+        })
+    )
+    saldo_forma_pago = forms.CharField(
+        label="Saldo / Forma de pago",
+        required=False,
+        widget=forms.Textarea(attrs={
+            "class": "form-control",
+            "rows": 3,
+            "placeholder": "Ej: 12 cuotas de $300.000 con vencimiento el día 10 de cada mes",
+        })
+    )
+
+    class Meta:
+        model = BoletoCompraventa
+        fields = ["cliente", "vehiculo"]
+        widgets = {
+            "cliente":  forms.Select(attrs={"class": "form-select"}),
+            "vehiculo": forms.Select(attrs={"class": "form-select"}),
+        }
+
+
 # ==========================================================
 # PAGARÉ – CREACIÓN EN LOTE (EXISTENTE)
 # ==========================================================
@@ -355,8 +402,10 @@ class CrearPagareLoteForm(forms.Form):
                     "para la cantidad de pagarés."
                 )
         return cleaned
+
+
 # ==========================================================
-# PAGARÉ – EDICIÓN INDIVIDUAL (NUEVO)
+# PAGARÉ – EDICIÓN INDIVIDUAL (EXISTENTE)
 # ==========================================================
 class EditarPagareForm(forms.ModelForm):
     """
