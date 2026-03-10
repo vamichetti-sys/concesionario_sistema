@@ -5,7 +5,7 @@
 <style>
 @page {
     size: A4;
-    margin: 12mm 15mm 12mm 15mm;
+    margin: 8mm 12mm 8mm 12mm;
 }
 
 html, body {
@@ -13,8 +13,8 @@ html, body {
     padding: 0;
     background: #fff;
     font-family: "Times New Roman", serif;
-    font-size: 10pt;
-    line-height: 1.35;
+    font-size: 9pt;
+    line-height: 1.2;
     color: #000;
 }
 
@@ -25,18 +25,17 @@ html, body {
     background: #fff;
     box-shadow: 0 4px 20px rgba(0,0,0,0.1);
     border-radius: 4px;
-    padding: 10mm 15mm;
+    padding: 8mm 12mm;
     box-sizing: border-box;
 }
 
-/* ENCABEZADO */
 .header-top {
     text-align: center;
-    margin-bottom: 6mm;
+    margin-bottom: 3mm;
 }
 
 .header-top .empresa {
-    font-size: 16pt;
+    font-size: 14pt;
     font-weight: bold;
     letter-spacing: 1px;
 }
@@ -44,50 +43,47 @@ html, body {
 .header-top .linea {
     border-bottom: 2px solid #000;
     width: 70%;
-    margin: 2mm auto;
+    margin: 1.5mm auto;
 }
 
 .header-top .sub {
-    font-size: 10pt;
+    font-size: 9pt;
     font-weight: bold;
 }
 
 .header-top .direccion {
-    font-size: 9pt;
+    font-size: 8.5pt;
 }
 
-/* CUERPO LEGAL */
 .boleto-body {
     font-family: "Times New Roman", Times, serif;
-    font-size: 9.5pt;
-    line-height: 1.4;
+    font-size: 8.2pt;
+    line-height: 1.2;
     text-align: justify;
 }
 
-/* Párrafo introductorio */
 .clausula-intro {
-    margin-bottom: 4mm;
+    margin-top: 0;
+    margin-bottom: 1mm;
 }
 
-/* Cada cláusula numerada */
 .clausula {
-    margin-bottom: 3mm;
-    text-indent: 0;
+    margin-top: 0;
+    margin-bottom: 1mm;
 }
 
-/* Cláusula final en mayúsculas */
 .clausula-final {
-    margin-top: 4mm;
+    margin-top: 2mm;
+    margin-bottom: 0;
     font-weight: bold;
     text-align: center;
 }
 
-/* FIRMAS */
 .boleto-firmas {
-    margin-top: 14mm;
+    margin-top: 8mm;
     display: flex;
     justify-content: space-between;
-    font-size: 8.5pt;
+    font-size: 8pt;
 }
 
 .firma-col {
@@ -96,10 +92,9 @@ html, body {
 
 .firma-linea {
     border-top: 1px solid #000;
-    margin-bottom: 2mm;
+    margin-bottom: 1.5mm;
 }
 
-/* BOTONES (NO IMPRIME) */
 .acciones-boleto {
     max-width: 210mm;
     margin: 20px auto;
@@ -129,7 +124,6 @@ html, body {
 }
 </style>
 
-<!-- ACCIONES (NO IMPRIME) -->
 <div class="acciones-boleto">
     <button onclick="window.print()" class="btn btn-primary">
         <i data-lucide="printer" style="width:16px;height:16px;margin-right:6px;"></i>
@@ -147,10 +141,8 @@ html, body {
     </a>
 </div>
 
-<!-- HOJA A4 -->
 <div class="boleto-page">
 
-    <!-- ENCABEZADO -->
     <div class="header-top">
         <div class="empresa">HUGO AMICHETTI AUTOMOTORES</div>
         <div class="linea"></div>
@@ -158,7 +150,6 @@ html, body {
         <div class="direccion">LARREA 255, ROJAS BS AS (2705)</div>
     </div>
 
-    <!-- CUERPO LEGAL -->
     <div class="boleto-body">
         {% for clausula in clausulas %}
             {% if forloop.first %}
@@ -171,7 +162,6 @@ html, body {
         {% endfor %}
     </div>
 
-    <!-- FIRMAS -->
     <div class="boleto-firmas">
         <div class="firma-col">
             <div class="firma-linea"></div>
