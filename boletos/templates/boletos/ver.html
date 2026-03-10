@@ -3,145 +3,111 @@
 {% block title %}Boleto {{ boleto.numero }}{% endblock %}
 {% block content %}
 <style>
-/* ===============================
-   AJUSTES FINALES PARA IMPRESIÓN
-=============================== */
-@media print {
-    .boleto-scale {
-        transform: none !important;
-    }
-}
-
 @page {
     size: A4;
-    margin: 15mm;
+    margin: 12mm 15mm 12mm 15mm;
 }
 
-/* ===============================
-   CONFIGURACIÓN A4 – FORZADA
-=============================== */
-@page {
-    size: A4;
-    margin: 0;
-}
-
-/* RESET GENERAL */
 html, body {
     margin: 0;
     padding: 0;
     background: #fff;
     font-family: "Times New Roman", serif;
     font-size: 10pt;
-    line-height: 1.3;
+    line-height: 1.35;
     color: #000;
 }
 
-/* ===============================
-   CONTENEDOR A4 REAL
-=============================== */
 .boleto-page {
     width: 210mm;
     min-height: 297mm;
     margin: 0 auto;
-    position: relative;
     background: #fff;
     box-shadow: 0 4px 20px rgba(0,0,0,0.1);
     border-radius: 4px;
+    padding: 10mm 15mm;
+    box-sizing: border-box;
 }
 
-/* ===============================
-   ESCALADO DEFINITIVO
-=============================== */
-.boleto-scale {
-    transform: scale(0.94);
-    transform-origin: top center;
-    width: 100%;
-}
-
-/* ===============================
-   EVITAR CORTES INTERNOS
-=============================== */
-* {
-    page-break-inside: avoid !important;
-    break-inside: avoid !important;
-}
-
-/* ===============================
-   ENCABEZADO
-=============================== */
+/* ENCABEZADO */
 .header-top {
     text-align: center;
-    margin: 8mm 0 6mm 0;
+    margin-bottom: 6mm;
 }
 
 .header-top .empresa {
-    font-size: 18pt;
+    font-size: 16pt;
     font-weight: bold;
+    letter-spacing: 1px;
 }
 
 .header-top .linea {
     border-bottom: 2px solid #000;
-    width: 65%;
-    margin: 3mm auto;
+    width: 70%;
+    margin: 2mm auto;
 }
 
 .header-top .sub {
-    font-size: 11pt;
+    font-size: 10pt;
     font-weight: bold;
 }
 
 .header-top .direccion {
-    font-size: 9.5pt;
+    font-size: 9pt;
 }
 
-/* ===============================
-   TEXTO LEGAL
-=============================== */
+/* CUERPO LEGAL */
 .boleto-body {
-    width: 90%;
-    margin: 0 auto;
     font-family: "Times New Roman", Times, serif;
-    font-size: 11pt;
-    line-height: 1.35;
+    font-size: 9.5pt;
+    line-height: 1.4;
     text-align: justify;
-    white-space: normal;
 }
 
-/* ===============================
-   FIRMAS
-=============================== */
+/* Párrafo introductorio */
+.clausula-intro {
+    margin-bottom: 4mm;
+}
+
+/* Cada cláusula numerada */
+.clausula {
+    margin-bottom: 3mm;
+    text-indent: 0;
+}
+
+/* Cláusula final en mayúsculas */
+.clausula-final {
+    margin-top: 4mm;
+    font-weight: bold;
+    text-align: center;
+}
+
+/* FIRMAS */
 .boleto-firmas {
-    width: 90%;
-    margin: 30mm auto 0 auto;
+    margin-top: 14mm;
     display: flex;
     justify-content: space-between;
     font-size: 8.5pt;
 }
 
 .firma-col {
-    width: 40%;
-    text-align: left;
+    width: 44%;
 }
 
 .firma-linea {
     border-top: 1px solid #000;
-    margin-bottom: 3mm;
+    margin-bottom: 2mm;
 }
 
-/* ===============================
-   BOTONES (NO IMPRIME)
-=============================== */
+/* BOTONES (NO IMPRIME) */
 .acciones-boleto {
     max-width: 210mm;
-    margin: 24px auto;
+    margin: 20px auto;
     display: flex;
     gap: 12px;
     justify-content: center;
 }
 
-/* ===============================
-   IMPRESIÓN
-=============================== */
 @media print {
     .sidebar,
     .topbar,
@@ -157,13 +123,13 @@ html, body {
     .boleto-page {
         box-shadow: none;
         border-radius: 0;
+        width: 100%;
+        padding: 0;
     }
 }
 </style>
 
-<!-- ===============================
-     ACCIONES (NO IMPRIME)
-=============================== -->
+<!-- ACCIONES (NO IMPRIME) -->
 <div class="acciones-boleto">
     <button onclick="window.print()" class="btn btn-primary">
         <i data-lucide="printer" style="width:16px;height:16px;margin-right:6px;"></i>
@@ -181,44 +147,48 @@ html, body {
     </a>
 </div>
 
-<!-- ===============================
-     HOJA A4
-=============================== -->
+<!-- HOJA A4 -->
 <div class="boleto-page">
-    <div class="boleto-scale">
 
-        <!-- ENCABEZADO -->
-        <div class="header-top">
-            <div class="empresa">HUGO AMICHETTI AUTOMOTORES</div>
-            <div class="linea"></div>
-            <div class="sub">AUTOMOTORES NUEVOS Y USADOS</div>
-            <div class="direccion">LARREA 255, ROJAS BS AS (2705)</div>
-        </div>
-
-        <!-- TEXTO LEGAL -->
-        <div class="boleto-body">
-            {{ texto_boleto }}
-        </div>
-
-        <!-- FIRMAS -->
-        <div class="boleto-firmas">
-            <div class="firma-col">
-                <div class="firma-linea"></div>
-                <strong>APELLIDO:</strong> {{ vendedor.apellido }}<br>
-                <strong>NOMBRE:</strong> {{ vendedor.nombre }}<br>
-                <strong>DIRECCIÓN:</strong> {{ vendedor.direccion }}<br>
-                <strong>DNI:</strong> {{ vendedor.dni }}
-            </div>
-            <div class="firma-col">
-                <div class="firma-linea"></div>
-                <strong>APELLIDO:</strong> {{ comprador.apellido }}<br>
-                <strong>NOMBRE:</strong> {{ comprador.nombre }}<br>
-                <strong>DIRECCIÓN:</strong> {{ comprador.direccion }}<br>
-                <strong>DNI:</strong> {{ comprador.dni }}
-            </div>
-        </div>
-
+    <!-- ENCABEZADO -->
+    <div class="header-top">
+        <div class="empresa">HUGO AMICHETTI AUTOMOTORES</div>
+        <div class="linea"></div>
+        <div class="sub">AUTOMOTORES NUEVOS Y USADOS</div>
+        <div class="direccion">LARREA 255, ROJAS BS AS (2705)</div>
     </div>
+
+    <!-- CUERPO LEGAL -->
+    <div class="boleto-body">
+        {% for clausula in clausulas %}
+            {% if forloop.first %}
+                <p class="clausula-intro">{{ clausula }}</p>
+            {% elif forloop.last %}
+                <p class="clausula-final">{{ clausula }}</p>
+            {% else %}
+                <p class="clausula">{{ clausula }}</p>
+            {% endif %}
+        {% endfor %}
+    </div>
+
+    <!-- FIRMAS -->
+    <div class="boleto-firmas">
+        <div class="firma-col">
+            <div class="firma-linea"></div>
+            <strong>APELLIDO:</strong> {{ vendedor.apellido }}<br>
+            <strong>NOMBRE:</strong> {{ vendedor.nombre }}<br>
+            <strong>DIRECCIÓN:</strong> {{ vendedor.direccion }}<br>
+            <strong>DNI:</strong> {{ vendedor.dni }}
+        </div>
+        <div class="firma-col">
+            <div class="firma-linea"></div>
+            <strong>APELLIDO:</strong> {{ comprador.apellido }}<br>
+            <strong>NOMBRE:</strong> {{ comprador.nombre }}<br>
+            <strong>DIRECCIÓN:</strong> {{ comprador.direccion }}<br>
+            <strong>DNI:</strong> {{ comprador.dni }}
+        </div>
+    </div>
+
 </div>
 
 <script>

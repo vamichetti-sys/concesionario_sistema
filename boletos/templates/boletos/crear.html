@@ -333,9 +333,16 @@ $(function () {
                 limpiarCamposCliente();
                 return;
             }
+            // Datos del comprador
             $('#id_comprador_texto').val(data.nombre_completo || '');
             $('#id_dni_comprador').val(data.dni || '');
             $('#id_domicilio_comprador').val(data.domicilio || '');
+
+            // ✅ Datos de firma — se autocompletan con los mismos datos
+            const partes = (data.nombre_completo || '').trim().split(' ');
+            $('#id_apellido_comprador').val(partes[0] || '');
+            $('#id_nombre_comprador').val(partes.slice(1).join(' ') || '');
+            $('#id_direccion_firma').val(data.domicilio || '');
         })
         .catch(() => limpiarCamposCliente());
     });
@@ -344,6 +351,9 @@ $(function () {
         $('#id_comprador_texto').val('');
         $('#id_dni_comprador').val('');
         $('#id_domicilio_comprador').val('');
+        $('#id_apellido_comprador').val('');
+        $('#id_nombre_comprador').val('');
+        $('#id_direccion_firma').val('');
     }
 });
 </script>

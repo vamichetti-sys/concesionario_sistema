@@ -24,6 +24,46 @@ from cuentas.models import CuentaCorriente
 
 
 # ====================================
+# HELPER: texto del boleto como lista de cláusulas
+# ====================================
+def _construir_clausulas(cliente, marca, modelo, anio, motor, chasis, dominio,
+                          precio_numeros, precio_letras, saldo_forma_pago):
+    """
+    Devuelve una lista de strings, una por cláusula numerada.
+    El precio_numeros ya lleva $ si no lo tiene.
+    """
+    # Asegurar signo $ en precio_numeros
+    pn = str(precio_numeros).strip()
+    if pn and not pn.startswith("$"):
+        pn = f"$ {pn}"
+
+    nombre = cliente.nombre_completo
+    direccion = cliente.direccion or "LARREA 255"
+
+    clausulas = [
+        f"Entre el/los Señor/es {nombre} por una parte como comprador y el/los Señor/es AMICHETTI HUGO ALBERTO por la otra parte como vendedor, convienen celebrar el presente boleto de acuerdo a las cláusulas siguientes:",
+        f"1° - El vendedor vende a {nombre} un vehículo Marca {marca} Modelo {modelo} Año {anio} Motor {motor} Chasis {chasis} Dominio {dominio} en el estado que se encuentra, y que el comprador ha revisado y controlado las numeraciones de motor, chasis y dominio, aceptando el mismo de conformidad.",
+        "2° - El vendedor entrega en este acto toda la documentación referente al vehículo y el comprador se obliga a realizar la respectiva transferencia dentro de los treinta (30) días a partir de la fecha.",
+        "3° - Los gastos que demande la transferencia del vehículo en el orden nacional, provincial, municipal, o de cualquier otro orden serán abonados por el comprador, y lo correspondiente a la Ley 21.432/976.-",
+        "4° - El comprador deberá asegurar el automotor contra todo riesgo dentro de los dos dias de la fecha presente en el boleto, siendo el endoso a favor del vendedor.-",
+        "5° - El comprador no podrá vender el vehículo sin autorización expresa del vendedor hasta no haber abonado la totalidad de la deuda.-",
+        "6° - La falta de cumplimiento de cualquiera de las cláusulas del contrato autoriza al vendedor a solicitar el inmediato secuestro del vehículo, renunciando el comprador a toda defensa en juicio.",
+        f"7° - El vendedor podra optar para el caso en el que el comprador se constituya en mora de alguna de las cuotas, por pedir el secuestro judicial de la unidad vendida constituyendo el comprador para el caso de promover accion judicial, domicilio legal en {direccion}. Que asimismo y tambien para el caso de promover acción judicial, queda facultado el vendedor a nombrar martillero, comprometiendose el comprador a no poner otra excepcion que la de pago y renunciando expresamente a la facultad de apelar la resolucion dictada.",
+        "8° - Todos los gastos judiciales que se originen serán a cargo del comprador.",
+        f"9° - El precio total de la unidad es de {pn} ({precio_letras}), quedando un saldo conforme la siguiente modalidad de pago: {saldo_forma_pago}",
+        "10° - La mora en el pago de todas las cuotas convenidas como saldo de precio se producira por el mero vencimiento de una de ellas, sin necesidad de interpelacion judicial o extra judicial de ninguna naturaleza, al producirse dicha mora el deudor perdera automaticamente a favor del vendedor todo lo abonado hasta esa fecha y la operacion quedara rescindida, obligandose al comprador a devolver el vehiculo en ese mismo momento. De no hacerlo asi, pagara una multa diaria de acuerdo a los daños y perjuicios ocasionados al vendedor mas toda otra indemnizacion que por ley correspondiere, pudiendo los vendedores a partir de ese momento disponer del vehiculo arriba citado. Se deja perfectamente aclarado que este recibo es provisorio, debiendo el comprador gestionar directamente ante el titular o ante quien corresponda la transferencia del vehiculo arriba citado.-",
+        f"11° - El comprador pagara el 3% para gastos de prenda y el 1% para sellado. El comprador se hace responsable civil y criminalmente ante quien corresponda de los daños que ocasionara con este vehiculo a partir de la fecha. En fe de cual se firman dos ejemplares de un mismo tenor y a un solo efecto en la ciudad de ROJAS, a los {date.today().strftime('%d/%m/%Y')}.",
+        "LA UNIDAD HA SIDO REVISADA Y ACEPTADA EN CONFORMIDAD.",
+    ]
+    return clausulas
+
+
+def _clausulas_a_texto(clausulas):
+    """Convierte la lista de cláusulas a texto plano para guardar en texto_final."""
+    return "\n\n".join(clausulas)
+
+
+# ====================================
 # 🟢 PANEL DE BOLETOS
 # ====================================
 def panel_boletos(request):
@@ -60,11 +100,14 @@ def generar_boleto_pdf_desde_html(request, boleto):
     apellido_cliente = partes[0] if partes else ""
     nombre_cliente = partes[1] if len(partes) > 1 else ""
 
+    # Convertir texto_final a lista de cláusulas para el template
+    clausulas = [p.strip() for p in boleto.texto_final.split("\n\n") if p.strip()]
+
     html_string = render_to_string(
         "boletos/ver.html",
         {
             "boleto": boleto,
-            "texto_boleto": boleto.texto_final,
+            "clausulas": clausulas,
             "vendedor": {
                 "apellido": "AMICHETTI",
                 "nombre": "HUGO ALBERTO",
@@ -147,55 +190,19 @@ def crear_boleto_manual(request):
                 else None
             )
 
-            texto_final = f"""
-Entre el/los Señor/es {cliente.nombre_completo} por una parte como comprador
-y el/los Señor/es AMICHETTI HUGO ALBERTO por la otra parte como vendedor,
-convienen celebrar el presente boleto de acuerdo a las cláusulas siguientes:
-
-1° - El vendedor vende a {cliente.nombre_completo} un vehículo Marca {marca}
-Modelo {modelo} Año {anio} Motor {motor}
-Chasis {chasis} Dominio {dominio} en el estado que se encuentra, y que el comprador 
-ha revisado y controlado las numeraciones de motor, chasis y dominio, aceptando el
-mismo de conformidad.
-2° - El vendedor entrega en este acto toda la documentación referente al vehículo
-y el comprador se obliga a realizar la respectiva transferencia dentro de los
-treinta (30) días a partir de la fecha.
-3° - Los gastos que demande la transferencia del vehículo en el orden nacional, provincial, 
-municipal, o de cualquier otro orden serán abonados por el comprador, y lo correspondiente 
-a la Ley 21.432/976.-
-4° - El comprador deberá asegurar el automotor contra todo riesgo dentro de los dos dias de 
-la fecha presente en el boleto, siendo el endoso a favor del vendedor.-
-5° - El comprador no podrá vender el vehículo sin autorización expresa del vendedor
-hasta no haber abonado la totalidad de la deuda.-
-6° - La falta de cumplimiento de cualquiera de las cláusulas del contrato autoriza al 
-vendedor a solicitar el inmediato secuestro del vehículo, renunciando el comprador a toda 
-defensa en juicio
-7° - El vendedor podra optar para el caso en el que el comprador se constituya en mora 
-de alguna de las cuotas, por pedir el secuestro judicial de la unidad vendida constituyendo 
-el comprador para el caso de promover accion judicial, domicilio legal en {cliente.direccion or "LARREA 255"}
-Que asimismo y tambien para el caso de promover acción judicial, queda facultado el vendedor 
-a nombrar martillero, comprometiendose el comprador a no poner otra excepcion que la de pago
-y renunciando expresamente a la facultad de apelar la resolucion dictada.
-8° - Todos los gastos judiciales que se originen serán a cargo del comprador.
-9° - El precio total de la unidad es de {f.get("precio_numeros")}({f.get("precio_letras")}),
-quedando un saldo conforme la siguiente modalidad de pago: {f.get("saldo_forma_pago")}
-10° - La mora en el pago de todas las cuotas convenidas como saldo de precio se producira
-por el mero vencimiento de una de ellas, sin necesidad de interpelacion judicial o extra 
-judicial de ninguna naturaleza, al producirse dicha mora el deudor perdera automaticamente
-a favor del vendedor todo lo abonado hasta esa fecha y la operacion quedara rescindida, 
-obligandose al comprador a devolver el vehiculo en ese mismo momento. De no hacerlo asi, 
-pagara una multa diaria de acuerdo a los daños y perjuicios ocasionados al vendedor mas toda
-otra indemnizacion que por ley correspondiere, pudiendo los vendedores a partir de ese momento
-disponer del vehiculo arriba citado. Se deja perfectamente aclarado que este recibo es provisorio, 
-debiendo el comprador gestionar directamente ante el titular o ante quien corresponda la transferencia
-del vehiculo arriba citado.-
-11° - El comprador pagara el 3% para gastos de prenda y el 1% para sellado. El comprador se hace 
-responsable civil y criminalmente ante quien corresponda de los daños que ocasionara con este 
-vehiculo a partir de la fecha. En fe de cual se firman dos ejemplares de un mismo tenor y a un solo efecto 
-En la ciudad de ROJAS, a los {date.today().strftime("%d/%m/%Y")}.
-
-LA UNIDAD HA SIDO REVISADA Y ACEPTADA EN CONFORMIDAD.
-"""
+            clausulas = _construir_clausulas(
+                cliente=cliente,
+                marca=marca,
+                modelo=modelo,
+                anio=anio,
+                motor=motor,
+                chasis=chasis,
+                dominio=dominio,
+                precio_numeros=f.get("precio_numeros", ""),
+                precio_letras=f.get("precio_letras", ""),
+                saldo_forma_pago=f.get("saldo_forma_pago", ""),
+            )
+            texto_final = _clausulas_a_texto(clausulas)
 
             boleto = BoletoCompraventa.objects.create(
                 numero=numero,
@@ -236,14 +243,13 @@ LA UNIDAD HA SIDO REVISADA Y ACEPTADA EN CONFORMIDAD.
 def ver_boleto(request, boleto_id):
     boleto = get_object_or_404(BoletoCompraventa, id=boleto_id)
 
-    texto_boleto = re.sub(
-        r"\n\s*\n+", "\n", (boleto.texto_final or "").strip()
-    )
+    # Convertir texto_final a lista de cláusulas
+    clausulas = [p.strip() for p in (boleto.texto_final or "").split("\n\n") if p.strip()]
 
     vendedor = {
         "apellido": "AMICHETTI",
         "nombre": "HUGO ALBERTO",
-        "direccion": "LARREA 155",
+        "direccion": "LARREA 255, ROJAS",
         "dni": "13814200",
     }
 
@@ -263,7 +269,7 @@ def ver_boleto(request, boleto_id):
         "boletos/ver.html",
         {
             "boleto": boleto,
-            "texto_boleto": texto_boleto,
+            "clausulas": clausulas,
             "vendedor": vendedor,
             "comprador": comprador,
         }
@@ -285,7 +291,7 @@ def editar_boleto(request, boleto_id):
 
     if boleto.texto_final:
         match_9 = re.search(
-            r"9°.*?precio total.*?es de\s*(.*?)\((.*?)\),\s*quedando.*?modalidad de pago:\s*(.*?)(?=10°|\Z)",
+            r"9°.*?precio total.*?es de\s*\$?\s*(.*?)\((.*?)\),\s*quedando.*?modalidad de pago:\s*(.*?)(?=10°|\Z)",
             boleto.texto_final,
             re.DOTALL | re.IGNORECASE
         )
@@ -315,56 +321,19 @@ def editar_boleto(request, boleto_id):
             precio_letras    = form.cleaned_data.get("precio_letras", "")
             saldo_forma_pago = form.cleaned_data.get("saldo_forma_pago", "")
 
-            boleto.texto_final = f"""
-Entre el/los Señor/es {cliente.nombre_completo} por una parte como comprador
-y el/los Señor/es AMICHETTI HUGO ALBERTO por la otra parte como vendedor,
-convienen celebrar el presente boleto de acuerdo a las cláusulas siguientes:
-
-1° - El vendedor vende a {cliente.nombre_completo} un vehículo Marca {marca}
-Modelo {modelo} Año {anio} Motor {motor}
-Chasis {chasis} Dominio {dominio} en el estado que se encuentra, y que el comprador 
-ha revisado y controlado las numeraciones de motor, chasis y dominio, aceptando el
-mismo de conformidad.
-2° - El vendedor entrega en este acto toda la documentación referente al vehículo
-y el comprador se obliga a realizar la respectiva transferencia dentro de los
-treinta (30) días a partir de la fecha.
-3° - Los gastos que demande la transferencia del vehículo en el orden nacional, provincial, 
-municipal, o de cualquier otro orden serán abonados por el comprador, y lo correspondiente 
-a la Ley 21.432/976.-
-4° - El comprador deberá asegurar el automotor contra todo riesgo dentro de los dos dias de 
-la fecha presente en el boleto, siendo el endoso a favor del vendedor.-
-5° - El comprador no podrá vender el vehículo sin autorización expresa del vendedor
-hasta no haber abonado la totalidad de la deuda.-
-6° - La falta de cumplimiento de cualquiera de las cláusulas del contrato autoriza al 
-vendedor a solicitar el inmediato secuestro del vehículo, renunciando el comprador a toda 
-defensa en juicio
-7° - El vendedor podra optar para el caso en el que el comprador se constituya en mora 
-de alguna de las cuotas, por pedir el secuestro judicial de la unidad vendida constituyendo 
-el comprador para el caso de promover accion judicial, domicilio legal en {cliente.direccion or "LARREA 255"}
-Que asimismo y tambien para el caso de promover acción judicial, queda facultado el vendedor 
-a nombrar martillero, comprometiendose el comprador a no poner otra excepcion que la de pago
-y renunciando expresamente a la facultad de apelar la resolucion dictada.
-8° - Todos los gastos judiciales que se originen serán a cargo del comprador.
-9° - El precio total de la unidad es de {precio_numeros}({precio_letras}),
-quedando un saldo conforme la siguiente modalidad de pago: {saldo_forma_pago}
-10° - La mora en el pago de todas las cuotas convenidas como saldo de precio se producira
-por el mero vencimiento de una de ellas, sin necesidad de interpelacion judicial o extra 
-judicial de ninguna naturaleza, al producirse dicha mora el deudor perdera automaticamente
-a favor del vendedor todo lo abonado hasta esa fecha y la operacion quedara rescindida, 
-obligandose al comprador a devolver el vehiculo en ese mismo momento. De no hacerlo asi, 
-pagara una multa diaria de acuerdo a los daños y perjuicios ocasionados al vendedor mas toda
-otra indemnizacion que por ley correspondiere, pudiendo los vendedores a partir de ese momento
-disponer del vehiculo arriba citado. Se deja perfectamente aclarado que este recibo es provisorio, 
-debiendo el comprador gestionar directamente ante el titular o ante quien corresponda la transferencia
-del vehiculo arriba citado.-
-11° - El comprador pagara el 3% para gastos de prenda y el 1% para sellado. El comprador se hace 
-responsable civil y criminalmente ante quien corresponda de los daños que ocasionara con este 
-vehiculo a partir de la fecha. En fe de cual se firman dos ejemplares de un mismo tenor y a un solo efecto 
-En la ciudad de ROJAS, a los {date.today().strftime("%d/%m/%Y")}.
-
-LA UNIDAD HA SIDO REVISADA Y ACEPTADA EN CONFORMIDAD.
-"""
-
+            clausulas = _construir_clausulas(
+                cliente=cliente,
+                marca=marca,
+                modelo=modelo,
+                anio=anio,
+                motor=motor,
+                chasis=chasis,
+                dominio=dominio,
+                precio_numeros=precio_numeros,
+                precio_letras=precio_letras,
+                saldo_forma_pago=saldo_forma_pago,
+            )
+            boleto.texto_final = _clausulas_a_texto(clausulas)
             boleto.save()
 
             # Regenerar PDF
