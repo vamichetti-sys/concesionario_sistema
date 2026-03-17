@@ -927,11 +927,11 @@ def stock_pdf(request):
         filas.append(["Sin vehículos", "", "", "", ""])
 
     col_widths = [
-        doc.width * 0.35,
-        doc.width * 0.15,
-        doc.width * 0.10,
-        doc.width * 0.18,
-        doc.width * 0.22,
+        doc.width * 0.42,
+        doc.width * 0.13,
+        doc.width * 0.08,
+        doc.width * 0.16,
+        doc.width * 0.21,
     ]
 
     tabla = Table(filas, colWidths=col_widths, repeatRows=1)
