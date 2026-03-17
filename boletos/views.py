@@ -447,30 +447,6 @@ def lista_pagares(request):
     )
 
 
-# ====================================
-# ELIMINAR LOTE DE PAGARÉS
-# ====================================
-def eliminar_lote(request, lote_id):
-    lote = get_object_or_404(PagareLote, id=lote_id)
-
-    if request.method == "POST":
-        # Eliminar PDF del storage
-        if lote.pdf:
-            try:
-                lote.pdf.delete(save=False)
-            except Exception:
-                pass
-        lote.delete()
-        messages.success(request, "Lote de pagarés eliminado correctamente.")
-        return redirect("boletos:lista_pagares")
-
-    return render(
-        request,
-        "boletos/pagare/eliminar_lote.html",
-        {"lote": lote}
-    )
-
-
 def monto_en_letras_simple(monto) -> str:
     try:
         if monto is None:
@@ -482,179 +458,7 @@ def monto_en_letras_simple(monto) -> str:
         return str(monto)
 
 
-def _generar_pdf_lote_pagares_landscape(pagares):
-    """
-    Genera PDF con 2 pagarés por hoja A4 landscape con cuerpo legal completo.
-    """
-    from reportlab.lib.pagesizes import landscape
-    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, HRFlowable
-    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-    from reportlab.lib import colors as rcolors
-    from io import BytesIO as _BytesIO
-
-    buf = _BytesIO()
-    PAGE = landscape(A4)
-    ancho, alto = PAGE
-
-    AZUL = colors.HexColor("#002855")
-    AZUL_CLARO = colors.HexColor("#dce9f7")
-
-    meses_es = [
-        "", "enero", "febrero", "marzo", "abril", "mayo", "junio",
-        "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
-    ]
-
-    def fecha_letras(f):
-        return f"{f.day} de {meses_es[f.month]} de {f.year}"
-
-    c = canvas.Canvas(buf, pagesize=PAGE)
-    mitad = ancho / 2
-    margen = 1.5 * cm
-    sep_x = mitad + 0.5 * cm
-
-    def dibujar_pagare(c, pagare, x_inicio, x_fin):
-        w = x_fin - x_inicio - margen
-        x = x_inicio + margen
-        y = alto - 1.2 * cm
-        cliente = pagare.cliente
-
-        # Encabezado empresa
-        c.setFont("Helvetica-Bold", 10)
-        c.setFillColor(AZUL)
-        c.drawString(x, y, "AMICHETTI AUTOMOTORES")
-        y -= 0.45 * cm
-        c.setFont("Helvetica", 7.5)
-        c.setFillColor(colors.HexColor("#555555"))
-        c.drawString(x, y, "Larrea 255, Rojas, Buenos Aires")
-        y -= 0.55 * cm
-
-        # Línea separadora
-        c.setStrokeColor(AZUL)
-        c.setLineWidth(1.2)
-        c.line(x, y, x + w, y)
-        y -= 0.55 * cm
-
-        # Título PAGARÉ + monto
-        c.setFont("Helvetica-Bold", 16)
-        c.setFillColor(AZUL)
-        c.drawString(x, y, "PAGARÉ")
-
-        monto_str = f"$ {pagare.monto:,.0f}".replace(",", ".")
-        c.setFont("Helvetica-Bold", 14)
-        c.setFillColor(colors.HexColor("#10b981"))
-        c.drawRightString(x + w, y, monto_str)
-        y -= 0.5 * cm
-
-        # Número y fecha
-        c.setFont("Helvetica", 8)
-        c.setFillColor(colors.HexColor("#6b7280"))
-        venc_str = pagare.fecha_vencimiento.strftime("%d/%m/%Y") if pagare.fecha_vencimiento else "A la vista"
-        c.drawString(x, y, f"Nº {pagare.numero}  ·  Emitido: {pagare.fecha_emision.strftime('%d/%m/%Y')}  ·  Vence: {venc_str}")
-        y -= 0.6 * cm
-
-        # Cuerpo legal
-        c.setFont("Helvetica", 8.5)
-        c.setFillColor(colors.black)
-
-        venc_letras = fecha_letras(pagare.fecha_vencimiento) if pagare.fecha_vencimiento else "pagadero a la vista"
-
-        cuerpo = (
-            f"Debo/Debemos y pagaré/pagaremos mancomunada y solidariamente SIN PROTESTO ",
-            f"(Art. 50 D. Ley 5965/63), a la orden de {pagare.beneficiario.upper()}, ",
-            f"la suma de PESOS {pagare.monto:,.0f} ($ {pagare.monto:,.0f}), ",
-            f"en {pagare.lugar_emision} el día {venc_letras}. ",
-            f"En caso de mora, el deudor pagará intereses punitorios. ",
-            f"El deudor constituye domicilio especial en {cliente.direccion or pagare.lugar_emision} ",
-            f"y renuncia a los fueros que pudieran corresponderle.",
-        )
-        texto = " ".join(cuerpo)
-
-        # Wrap manual
-        palabras = texto.split(" ")
-        linea = ""
-        for p in palabras:
-            prueba = linea + p + " "
-            if c.stringWidth(prueba, "Helvetica", 8.5) > w:
-                c.drawString(x, y, linea.rstrip())
-                y -= 0.42 * cm
-                linea = p + " "
-            else:
-                linea = prueba
-        if linea:
-            c.drawString(x, y, linea.rstrip())
-            y -= 0.42 * cm
-
-        y -= 0.3 * cm
-
-        # Datos del deudor
-        c.setFont("Helvetica-Bold", 8)
-        c.setFillColor(AZUL)
-        c.drawString(x, y, "Datos del deudor:")
-        y -= 0.42 * cm
-        c.setFont("Helvetica", 8)
-        c.setFillColor(colors.black)
-        c.drawString(x, y, f"Nombre: {cliente.nombre_completo.upper()}   DNI/CUIT: {cliente.dni_cuit or ''}   Domicilio: {cliente.direccion or ''}")
-        y -= 0.55 * cm
-
-        # Firma
-        firma_y = 1.5 * cm
-        c.setStrokeColor(colors.HexColor("#333333"))
-        c.setLineWidth(0.5)
-        # Firma deudor
-        c.line(x, firma_y, x + w * 0.4, firma_y)
-        c.setFont("Helvetica", 7)
-        c.setFillColor(colors.HexColor("#555555"))
-        c.drawString(x, firma_y - 0.35 * cm, "Firma del deudor")
-        c.drawString(x, firma_y - 0.65 * cm, cliente.nombre_completo.upper())
-        # Firma aclaración
-        c.line(x + w * 0.55, firma_y, x + w, firma_y)
-        c.drawString(x + w * 0.55, firma_y - 0.35 * cm, "Aclaración")
-
-        # Caja vencimiento
-        box_x = x + w * 0.42
-        box_y = firma_y - 0.2 * cm
-        box_w = w * 0.1
-        box_h = 1.0 * cm
-        c.setStrokeColor(AZUL)
-        c.setLineWidth(0.8)
-        c.rect(box_x, box_y, box_w, box_h)
-        c.setFont("Helvetica-Bold", 7)
-        c.setFillColor(AZUL)
-        c.drawCentredString(box_x + box_w / 2, box_y + 0.65 * cm, "VENCE")
-        c.setFont("Helvetica-Bold", 8)
-        c.setFillColor(colors.black)
-        c.drawCentredString(box_x + box_w / 2, box_y + 0.2 * cm, venc_str)
-
-    # Línea divisoria vertical entre los dos pagarés
-    def linea_central(c):
-        c.setStrokeColor(colors.HexColor("#cccccc"))
-        c.setDash(4, 4)
-        c.setLineWidth(0.8)
-        c.line(mitad, 0.5 * cm, mitad, alto - 0.5 * cm)
-        c.setDash()
-
-    i = 0
-    while i < len(pagares):
-        # Pagaré izquierdo
-        dibujar_pagare(c, pagares[i], 0, mitad)
-        # Pagaré derecho (si existe)
-        if i + 1 < len(pagares):
-            linea_central(c)
-            dibujar_pagare(c, pagares[i + 1], sep_x, ancho)
-        c.showPage()
-        i += 2
-
-    c.save()
-    buf.seek(0)
-    return buf.getvalue()
-
-
-# Alias para compatibilidad con el nombre anterior
 def _generar_pdf_lote_pagares_3_por_hoja(pagares):
-    return _generar_pdf_lote_pagares_landscape(pagares)
-
-
-def PLACEHOLDER_OLD_3_POR_HOJA():
     buffer = BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
 
@@ -759,19 +563,12 @@ def PLACEHOLDER_OLD_3_POR_HOJA():
 # ====================================
 # CREAR PAGARÉS + PDF
 # ====================================
-@transaction.atomic
 def crear_pagares(request):
     if request.method == "POST":
-        if request.session.get("generando_pagares"):
-            messages.warning(
-                request,
-                "Los pagarés ya se estaban generando. Se evitó duplicación."
-            )
-            return redirect("boletos:lista_pagares")
-
-        request.session["generando_pagares"] = True
+        request.session.pop("generando_pagares", None)
 
         try:
+            import traceback as _tb
             cliente = get_object_or_404(
                 Cliente,
                 id=request.POST.get("cliente")
@@ -795,9 +592,6 @@ def crear_pagares(request):
 
             cantidad = int(request.POST.get("cantidad", 1))
 
-            dia_vencimiento = int(request.POST.get("dia_vencimiento", 10))
-            dia_vencimiento = max(1, min(28, dia_vencimiento))
-
             lote = PagareLote.objects.create(
                 cliente=cliente,
                 beneficiario=beneficiario,
@@ -805,7 +599,6 @@ def crear_pagares(request):
                 fecha_emision=fecha_emision,
                 cantidad=cantidad,
                 monto_total=Decimal("0.00"),
-                dia_vencimiento=dia_vencimiento,
             )
 
             ultimo = (
@@ -871,14 +664,12 @@ def crear_pagares(request):
             return redirect("boletos:lista_pagares")
 
         except Exception as e:
+            _tb.print_exc()
             messages.error(
                 request,
                 f"❌ Error al crear pagarés: {str(e)}"
             )
             return redirect("boletos:crear_pagares")
-
-        finally:
-            request.session.pop("generando_pagares", None)
 
     return render(
         request,
