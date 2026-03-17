@@ -1,718 +1,320 @@
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, get_object_or_404, redirect
-from django.db.models import Max, Q
-from django.contrib import messages
-from django.db import transaction
-from django.http import HttpResponse
-from django.conf import settings
-import re
-from decimal import Decimal
-from datetime import date
-from io import BytesIO
+from django.http import JsonResponse, HttpResponse
+from django.db import models
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.dateparse import parse_date
+from datetime import date, timedelta
 
-from django.core.files.base import ContentFile
-from django.template.loader import render_to_string
-
-from reportlab.pdfgen import canvas
+# PDF
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from reportlab.lib.pagesizes import A4
-from reportlab.lib.units import cm
+from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib import colors
 
-from .models import BoletoCompraventa, Pagare, PagareLote
-from .forms import CrearBoletoForm, CrearPagareLoteForm
-from clientes.models import Cliente
-from cuentas.models import CuentaCorriente
+from .models import Empleado, AsistenciaDiaria
+from .forms import EmpleadoForm
 
 
-# ====================================
-# HELPER: texto del boleto como lista de cláusulas
-# ====================================
-def _construir_clausulas(cliente, marca, modelo, anio, motor, chasis, dominio,
-                          precio_numeros, precio_letras, saldo_forma_pago):
-    """
-    Devuelve una lista de strings, una por cláusula numerada.
-    El precio_numeros ya lleva $ si no lo tiene.
-    """
-    # Asegurar signo $ en precio_numeros
-    pn = str(precio_numeros).strip()
-    if pn and not pn.startswith("$"):
-        pn = f"$ {pn}"
-
-    nombre = cliente.nombre_completo
-    direccion = cliente.direccion or "LARREA 255"
-
-    clausulas = [
-        f"Entre el/los Señor/es {nombre} por una parte como comprador y el/los Señor/es AMICHETTI HUGO ALBERTO por la otra parte como vendedor, convienen celebrar el presente boleto de acuerdo a las cláusulas siguientes:",
-        f"1° - El vendedor vende a {nombre} un vehículo Marca {marca} Modelo {modelo} Año {anio} Motor {motor} Chasis {chasis} Dominio {dominio} en el estado que se encuentra, y que el comprador ha revisado y controlado las numeraciones de motor, chasis y dominio, aceptando el mismo de conformidad.",
-        "2° - El vendedor entrega en este acto toda la documentación referente al vehículo y el comprador se obliga a realizar la respectiva transferencia dentro de los treinta (30) días a partir de la fecha.",
-        "3° - Los gastos que demande la transferencia del vehículo en el orden nacional, provincial, municipal, o de cualquier otro orden serán abonados por el comprador, y lo correspondiente a la Ley 21.432/976.-",
-        "4° - El comprador deberá asegurar el automotor contra todo riesgo dentro de los dos dias de la fecha presente en el boleto, siendo el endoso a favor del vendedor.-",
-        "5° - El comprador no podrá vender el vehículo sin autorización expresa del vendedor hasta no haber abonado la totalidad de la deuda.-",
-        "6° - La falta de cumplimiento de cualquiera de las cláusulas del contrato autoriza al vendedor a solicitar el inmediato secuestro del vehículo, renunciando el comprador a toda defensa en juicio.",
-        f"7° - El vendedor podra optar para el caso en el que el comprador se constituya en mora de alguna de las cuotas, por pedir el secuestro judicial de la unidad vendida constituyendo el comprador para el caso de promover accion judicial, domicilio legal en {direccion}. Que asimismo y tambien para el caso de promover acción judicial, queda facultado el vendedor a nombrar martillero, comprometiendose el comprador a no poner otra excepcion que la de pago y renunciando expresamente a la facultad de apelar la resolucion dictada.",
-        "8° - Todos los gastos judiciales que se originen serán a cargo del comprador.",
-        f"9° - El precio total de la unidad es de {pn} ({precio_letras}), quedando un saldo conforme la siguiente modalidad de pago: {saldo_forma_pago}",
-        "10° - La mora en el pago de todas las cuotas convenidas como saldo de precio se producira por el mero vencimiento de una de ellas, sin necesidad de interpelacion judicial o extra judicial de ninguna naturaleza, al producirse dicha mora el deudor perdera automaticamente a favor del vendedor todo lo abonado hasta esa fecha y la operacion quedara rescindida, obligandose al comprador a devolver el vehiculo en ese mismo momento. De no hacerlo asi, pagara una multa diaria de acuerdo a los daños y perjuicios ocasionados al vendedor mas toda otra indemnizacion que por ley correspondiere, pudiendo los vendedores a partir de ese momento disponer del vehiculo arriba citado. Se deja perfectamente aclarado que este recibo es provisorio, debiendo el comprador gestionar directamente ante el titular o ante quien corresponda la transferencia del vehiculo arriba citado.-",
-        f"11° - El comprador pagara el 3% para gastos de prenda y el 1% para sellado. El comprador se hace responsable civil y criminalmente ante quien corresponda de los daños que ocasionara con este vehiculo a partir de la fecha. En fe de cual se firman dos ejemplares de un mismo tenor y a un solo efecto en la ciudad de ROJAS, a los {date.today().strftime('%d/%m/%Y')}.",
-        "LA UNIDAD HA SIDO REVISADA Y ACEPTADA EN CONFORMIDAD.",
-    ]
-    return clausulas
-
-
-def _clausulas_a_texto(clausulas):
-    """Convierte la lista de cláusulas a texto plano para guardar en texto_final."""
-    return "\n\n".join(clausulas)
-
-
-# ====================================
-# 🟢 PANEL DE BOLETOS
-# ====================================
-def panel_boletos(request):
-    return render(request, "boletos/panel.html")
-
-
-# ====================================
-# LISTA + BUSCADOR DE BOLETOS
-# ====================================
-def lista_boletos(request):
-    q = request.GET.get("q", "")
-    boletos = BoletoCompraventa.objects.all()
-
-    if q:
-        boletos = boletos.filter(Q(texto_final__icontains=q))
+# ==========================================================
+# LISTA DE EMPLEADOS
+# ==========================================================
+@login_required
+def lista_empleados(request):
+    empleados = Empleado.objects.filter(activo=True)
 
     return render(
         request,
-        "boletos/lista.html",
-        {"boletos": boletos, "query": q}
-    )
-
-
-# ====================================
-# GENERAR PDF BOLETO DESDE HTML
-# ====================================
-def generar_boleto_pdf_desde_html(request, boleto):
-    from weasyprint import HTML
-
-    cliente = boleto.cliente
-    nombre_completo = cliente.nombre_completo or ""
-    partes = nombre_completo.strip().split(" ", 1)
-
-    apellido_cliente = partes[0] if partes else ""
-    nombre_cliente = partes[1] if len(partes) > 1 else ""
-
-    # Convertir texto_final a lista de cláusulas para el template
-    clausulas = [p.strip() for p in boleto.texto_final.split("\n\n") if p.strip()]
-
-    html_string = render_to_string(
-        "boletos/ver.html",
+        "asistencia/lista_empleados.html",
         {
-            "boleto": boleto,
-            "clausulas": clausulas,
-            "vendedor": {
-                "apellido": "AMICHETTI",
-                "nombre": "HUGO ALBERTO",
-                "direccion": "LARREA 255, ROJAS",
-                "dni": "13814200",
-            },
-            "comprador": {
-                "apellido": apellido_cliente,
-                "nombre": nombre_cliente,
-                "direccion": cliente.direccion or "",
-                "dni": cliente.dni_cuit or "",
-            },
-        },
-        request=request
-    )
-
-    buffer = BytesIO()
-    HTML(
-        string=html_string,
-        base_url=request.build_absolute_uri()
-    ).write_pdf(buffer)
-
-    buffer.seek(0)
-    return ContentFile(buffer.read())
-
-
-# ====================================
-# CREAR BOLETO
-# ====================================
-def crear_boleto_manual(request):
-    ultimo = BoletoCompraventa.objects.aggregate(
-        numero_max=Max("numero")
-    )["numero_max"] or 0
-
-    numero = ultimo + 1
-
-    if request.method == "POST":
-        form = CrearBoletoForm(request.POST)
-
-        if form.is_valid():
-            f = form.cleaned_data
-            cliente = f["cliente"]
-            vehiculo = f.get("vehiculo")
-
-            if not vehiculo:
-                messages.error(request, "❌ Debe seleccionar un vehículo.")
-                return render(
-                    request,
-                    "boletos/crear.html",
-                    {"form": form, "numero": numero}
-                )
-
-            marca = vehiculo.marca
-            modelo = vehiculo.modelo
-            anio = vehiculo.anio
-            dominio = vehiculo.dominio
-
-            ficha = getattr(vehiculo, "ficha", None)
-            motor = getattr(ficha, "numero_motor", "") if ficha else ""
-            chasis = getattr(ficha, "numero_chasis", "") if ficha else ""
-
-            if not cliente or not cliente.activo:
-                messages.error(request, "❌ Cliente inválido.")
-                return render(
-                    request,
-                    "boletos/crear.html",
-                    {"form": form, "numero": numero}
-                )
-
-            cuenta_activa = (
-                CuentaCorriente.objects
-                .filter(cliente=cliente)
-                .exclude(estado="cerrada")
-                .first()
-            )
-
-            venta = (
-                cuenta_activa.venta
-                if cuenta_activa and hasattr(cuenta_activa, "venta")
-                else None
-            )
-
-            clausulas = _construir_clausulas(
-                cliente=cliente,
-                marca=marca,
-                modelo=modelo,
-                anio=anio,
-                motor=motor,
-                chasis=chasis,
-                dominio=dominio,
-                precio_numeros=f.get("precio_numeros", ""),
-                precio_letras=f.get("precio_letras", ""),
-                saldo_forma_pago=f.get("saldo_forma_pago", ""),
-            )
-            texto_final = _clausulas_a_texto(clausulas)
-
-            boleto = BoletoCompraventa.objects.create(
-                numero=numero,
-                cliente=cliente,
-                vehiculo=vehiculo,
-                cuenta_corriente=cuenta_activa,
-                venta=venta,
-                texto_final=texto_final
-            )
-
-            try:
-                pdf_file = generar_boleto_pdf_desde_html(request, boleto)
-                boleto.pdf.save(
-                    f"boleto_{boleto.numero}.pdf",
-                    pdf_file,
-                    save=True
-                )
-            except Exception as e:
-                print("❌ ERROR PDF BOLETO:", e)
-                messages.warning(
-                    request,
-                    "⚠️ El boleto se creó correctamente, pero el PDF no pudo generarse."
-                )
-
-            messages.success(request, "✅ Boleto generado correctamente")
-            return redirect("boletos:ver_boleto", boleto.id)
-
-    return render(
-        request,
-        "boletos/crear.html",
-        {"form": CrearBoletoForm(), "numero": numero}
-    )
-
-
-# ====================================
-# VER BOLETO
-# ====================================
-def ver_boleto(request, boleto_id):
-    boleto = get_object_or_404(BoletoCompraventa, id=boleto_id)
-
-    # Convertir texto_final a lista de cláusulas
-    clausulas = [p.strip() for p in (boleto.texto_final or "").split("\n\n") if p.strip()]
-
-    vendedor = {
-        "apellido": "AMICHETTI",
-        "nombre": "HUGO ALBERTO",
-        "direccion": "LARREA 255, ROJAS",
-        "dni": "13814200",
-    }
-
-    cliente = boleto.cliente
-    nombre_completo = (cliente.nombre_completo or "").strip()
-    partes = nombre_completo.split(" ", 1)
-
-    comprador = {
-        "apellido": partes[0] if partes else "",
-        "nombre": partes[1] if len(partes) > 1 else "",
-        "direccion": cliente.direccion or "",
-        "dni": cliente.dni_cuit or "",
-    }
-
-    return render(
-        request,
-        "boletos/ver.html",
-        {
-            "boleto": boleto,
-            "clausulas": clausulas,
-            "vendedor": vendedor,
-            "comprador": comprador,
+            "page_title": "Asistencia",
+            "empleados": empleados,
         }
     )
 
 
-# ====================================
-# EDITAR BOLETO
-# ====================================
-def editar_boleto(request, boleto_id):
-    boleto = get_object_or_404(BoletoCompraventa, id=boleto_id)
-
-    from .forms import EditarBoletoForm
-
-    # Pre-poblar precio/forma de pago extrayéndolos del texto_final existente
-    precio_numeros_inicial = ""
-    precio_letras_inicial = ""
-    saldo_forma_pago_inicial = ""
-
-    if boleto.texto_final:
-        match_9 = re.search(
-            r"9°.*?precio total.*?es de\s*\$?\s*(.*?)\((.*?)\),\s*quedando.*?modalidad de pago:\s*(.*?)(?=10°|\Z)",
-            boleto.texto_final,
-            re.DOTALL | re.IGNORECASE
-        )
-        if match_9:
-            precio_numeros_inicial   = match_9.group(1).strip()
-            precio_letras_inicial    = match_9.group(2).strip()
-            saldo_forma_pago_inicial = match_9.group(3).strip()
-
+# ==========================================================
+# CREAR EMPLEADO
+# ==========================================================
+@login_required
+def crear_empleado(request):
     if request.method == "POST":
-        form = EditarBoletoForm(request.POST, instance=boleto)
+        form = EmpleadoForm(request.POST)
         if form.is_valid():
-            boleto = form.save(commit=False)
-
-            cliente  = boleto.cliente
-            vehiculo = boleto.vehiculo
-
-            marca   = vehiculo.marca   if vehiculo else ""
-            modelo  = vehiculo.modelo  if vehiculo else ""
-            anio    = vehiculo.anio    if vehiculo else ""
-            dominio = vehiculo.dominio if vehiculo else ""
-
-            ficha  = getattr(vehiculo, "ficha", None) if vehiculo else None
-            motor  = getattr(ficha, "numero_motor",  "") if ficha else ""
-            chasis = getattr(ficha, "numero_chasis", "") if ficha else ""
-
-            precio_numeros   = form.cleaned_data.get("precio_numeros", "")
-            precio_letras    = form.cleaned_data.get("precio_letras", "")
-            saldo_forma_pago = form.cleaned_data.get("saldo_forma_pago", "")
-
-            clausulas = _construir_clausulas(
-                cliente=cliente,
-                marca=marca,
-                modelo=modelo,
-                anio=anio,
-                motor=motor,
-                chasis=chasis,
-                dominio=dominio,
-                precio_numeros=precio_numeros,
-                precio_letras=precio_letras,
-                saldo_forma_pago=saldo_forma_pago,
-            )
-            boleto.texto_final = _clausulas_a_texto(clausulas)
-            boleto.save()
-
-            # Regenerar PDF
-            try:
-                if boleto.pdf:
-                    boleto.pdf.delete(save=False)
-                pdf_file = generar_boleto_pdf_desde_html(request, boleto)
-                boleto.pdf.save(
-                    f"boleto_{boleto.numero}.pdf",
-                    pdf_file,
-                    save=True
-                )
-                messages.success(request, "✅ Boleto actualizado y PDF regenerado correctamente.")
-            except Exception as e:
-                print("❌ ERROR PDF BOLETO (edición):", e)
-                messages.warning(request, "⚠️ Boleto actualizado, pero el PDF no pudo regenerarse.")
-
-            return redirect("boletos:ver_boleto", boleto.id)
-
+            form.save()
+            return redirect("asistencia:lista")
     else:
-        form = EditarBoletoForm(
-            instance=boleto,
-            initial={
-                "precio_numeros":   precio_numeros_inicial,
-                "precio_letras":    precio_letras_inicial,
-                "saldo_forma_pago": saldo_forma_pago_inicial,
+        form = EmpleadoForm()
+
+    return render(
+        request,
+        "asistencia/crear_empleado.html",
+        {
+            "page_title": "Agregar empleado",
+            "form": form,
+        }
+    )
+
+
+# ==========================================================
+# CALENDARIO ANUAL POR EMPLEADO
+# ==========================================================
+@login_required
+def calendario_empleado(request, empleado_id):
+    empleado = get_object_or_404(Empleado, id=empleado_id)
+
+    hoy = date.today()
+    try:
+        anio = int(request.GET.get("anio", hoy.year))
+    except (ValueError, TypeError):
+        anio = hoy.year
+
+    asistencias = AsistenciaDiaria.objects.filter(
+        empleado=empleado,
+        fecha__year=anio
+    )
+
+    asistencia_por_fecha = {a.fecha: a.estado for a in asistencias}
+
+    colores = {
+        "presente": "#28a745",
+        "falta_justificada": "#ffc107",
+        "falta_injustificada": "#dc3545",
+        "permiso": "#fd7e14",
+        "vacaciones": "#0dcaf0",
+        "estudio": "#6f42c1",
+        None: "#e9ecef",
+    }
+
+    calendario = {}
+
+    for mes in range(1, 13):
+        dias_mes = []
+        primer_dia = date(anio, mes, 1)
+
+        if mes == 12:
+            ultimo_dia = date(anio, 12, 31)
+        else:
+            ultimo_dia = date(anio, mes + 1, 1) - timedelta(days=1)
+
+        dia_actual = primer_dia
+        while dia_actual <= ultimo_dia:
+            estado = asistencia_por_fecha.get(dia_actual)
+            dias_mes.append({
+                "fecha": dia_actual,
+                "estado": estado,
+                "color": colores.get(estado),
+            })
+            dia_actual += timedelta(days=1)
+
+        calendario[mes] = dias_mes
+
+    resumen_qs = (
+        AsistenciaDiaria.objects
+        .filter(empleado=empleado, fecha__year=anio)
+        .values("estado")
+        .annotate(total=models.Count("id"))
+    )
+
+    resumen = {r["estado"]: r["total"] for r in resumen_qs}
+
+    return render(
+        request,
+        "asistencia/calendario_asistencia.html",
+        {
+            "page_title": f"Asistencia – {empleado.nombre}",
+            "empleado": empleado,
+            "calendario": calendario,
+            "anio": anio,
+            "resumen": resumen,
+        }
+    )
+
+
+# ==========================================================
+# MARCAR / MODIFICAR ASISTENCIA (AJAX)
+# ==========================================================
+@csrf_exempt
+@login_required
+def marcar_asistencia(request):
+    if request.method == "POST":
+        empleado_id = request.POST.get("empleado_id")
+        
+        # 🆕 VALIDACIÓN
+        if not empleado_id:
+            return JsonResponse(
+                {"ok": False, "error": "ID de empleado requerido"},
+                status=400
+            )
+        
+        fecha_str = request.POST.get("fecha")
+        estado = request.POST.get("estado")
+        observaciones = request.POST.get("observaciones", "")
+
+        fecha = parse_date(fecha_str)
+        if not fecha:
+            return JsonResponse(
+                {"ok": False, "error": "Fecha inválida"},
+                status=400
+            )
+
+        empleado = get_object_or_404(Empleado, id=empleado_id)
+
+        estados_validos = dict(AsistenciaDiaria.ESTADOS)
+        if estado not in estados_validos:
+            return JsonResponse(
+                {"ok": False, "error": "Estado inválido"},
+                status=400
+            )
+
+        asistencia, created = AsistenciaDiaria.objects.update_or_create(
+            empleado=empleado,
+            fecha=fecha,
+            defaults={
+                "estado": estado,
+                "observaciones": observaciones,
             }
         )
 
-    return render(
-        request,
-        "boletos/editar.html",
-        {
-            "form": form,
-            "boleto": boleto,
-        }
-    )
+        return JsonResponse({
+            "ok": True,
+            "created": created,
+            "estado": asistencia.estado,
+        })
+
+    return JsonResponse({"ok": False}, status=400)
 
 
 # ==========================================================
-# =======================  PAGARÉ  =========================
+# PDF – REPORTE ANUAL DE ASISTENCIA POR EMPLEADO
 # ==========================================================
+@login_required
+def pdf_faltas_anuales(request, empleado_id, anio):
+    empleado = get_object_or_404(Empleado, id=empleado_id)
 
-def lista_pagares(request):
-    q = request.GET.get("q", "").strip()
-
-    lotes = (
-        PagareLote.objects
-        .select_related("cliente")
-        .order_by("-fecha_emision")
-    )
-
-    if q:
-        lotes = lotes.filter(
-            Q(cliente__nombre_completo__icontains=q) |
-            Q(cliente__dni_cuit__icontains=q) |
-            Q(beneficiario__icontains=q)
-        )
-
-    lotes_con_url = []
-    for lote in lotes:
-        lote_dict = {
-            'id': lote.id,
-            'cliente': lote.cliente,
-            'beneficiario': lote.beneficiario,
-            'fecha_emision': lote.fecha_emision,
-            'cantidad': lote.cantidad,
-            'monto_total': lote.monto_total,
-            'pdf_url': lote.pdf.url if lote.pdf else None
-        }
-        lotes_con_url.append(lote_dict)
-
-    return render(
-        request,
-        "boletos/pagare/lista.html",
-        {
-            "lotes": lotes_con_url,
-            "query": q,
-        }
-    )
-
-
-def monto_en_letras_simple(monto) -> str:
     try:
-        if monto is None:
-            return ""
-        if not isinstance(monto, Decimal):
-            monto = Decimal(str(monto))
-        return f"{monto:,.0f}".replace(",", ".")
-    except Exception:
-        return str(monto)
+        anio = int(anio)
+        if anio < 2000 or anio > date.today().year + 1:
+            return HttpResponse("Año inválido", status=400)
+    except (ValueError, TypeError):
+        return HttpResponse("Año inválido", status=400)
 
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib import colors
 
-def _generar_pdf_lote_pagares_3_por_hoja(pagares):
-    buffer = BytesIO()
-    c = canvas.Canvas(buffer, pagesize=A4)
+    # Todas las asistencias del año
+    asistencias = AsistenciaDiaria.objects.filter(
+        empleado=empleado,
+        fecha__year=anio,
+    ).order_by("fecha")
 
-    ancho, alto = A4
-    margen_x = 2 * cm
-    POR_HOJA = 3
-    contador = 0
-    y = alto - 2 * cm
+    faltas = asistencias.filter(estado__in=["falta_injustificada", "falta_justificada"])
 
-    def fecha_en_letras(fecha):
-        meses = [
-            "enero", "febrero", "marzo", "abril", "mayo", "junio",
-            "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
-        ]
-        return f"{fecha.day} de {meses[fecha.month - 1]} de {fecha.year}"
+    # Resumen
+    from django.db.models import Count
+    resumen_qs = asistencias.values("estado").annotate(total=Count("id"))
+    resumen = {r["estado"]: r["total"] for r in resumen_qs}
 
-    for pagare in pagares:
+    response = HttpResponse(content_type="application/pdf")
+    response["Content-Disposition"] = f'inline; filename="asistencia_{empleado.id}_{anio}.pdf"'
 
-        if contador == POR_HOJA:
-            c.showPage()
-            y = alto - 2 * cm
-            contador = 0
-
-        cliente = pagare.cliente
-
-        c.setFont("Helvetica-Bold", 18)
-        c.drawString(margen_x, y, "PAGARÉ")
-        y -= 0.8 * cm
-
-        c.setFont("Helvetica-Bold", 11)
-        c.drawString(
-            margen_x,
-            y,
-            f"Nº {pagare.numero} — Fecha de emisión: {fecha_en_letras(pagare.fecha_emision)}"
-        )
-        y -= 1 * cm
-
-        c.setFont("Helvetica", 11)
-
-        if pagare.fecha_vencimiento:
-            texto_legal = (
-                f"PAGARÉ SIN PROTESTO (Art. 50 D. Ley 5965/63), "
-                f"al Sr./a {pagare.beneficiario}, "
-                f"la cantidad de PESOS {monto_en_letras_simple(pagare.monto)}, "
-                f"el día {fecha_en_letras(pagare.fecha_vencimiento)}."
-            )
-        else:
-            texto_legal = (
-                f"PAGARÉ SIN PROTESTO (Art. 50 D. Ley 5965/63), "
-                f"al Sr./a {pagare.beneficiario}, "
-                f"la cantidad de PESOS {monto_en_letras_simple(pagare.monto)}, "
-                f"pagadero a la vista."
-            )
-
-        textobject = c.beginText(margen_x, y)
-        textobject.setLeading(16)
-        max_width = ancho - (2 * margen_x)
-        linea_actual = ""
-
-        for palabra in texto_legal.split(" "):
-            prueba = linea_actual + palabra + " "
-            if c.stringWidth(prueba, "Helvetica", 11) > max_width:
-                textobject.textLine(linea_actual.rstrip())
-                linea_actual = palabra + " "
-            else:
-                linea_actual = prueba
-
-        if linea_actual:
-            textobject.textLine(linea_actual.rstrip())
-
-        c.drawText(textobject)
-        y = textobject.getY() - 0.8 * cm
-
-        c.setFont("Helvetica-Bold", 11)
-        c.drawString(margen_x, y, "Datos del Deudor:")
-        y -= 0.6 * cm
-
-        c.setFont("Helvetica", 11)
-        c.drawString(margen_x, y, f"Nombre: {cliente.nombre_completo}")
-        y -= 0.6 * cm
-        c.drawString(margen_x, y, f"DNI/CUIT: {cliente.dni_cuit or ''}")
-        y -= 0.6 * cm
-        c.drawString(margen_x, y, f"Domicilio: {cliente.direccion or ''}")
-        y -= 1.2 * cm
-
-        c.drawString(margen_x, y, "Firma: _________________________________")
-        y -= 1.5 * cm
-
-        if contador < POR_HOJA - 1:
-            c.setDash(3, 3)
-            c.line(margen_x, y, ancho - margen_x, y)
-            c.setDash()
-            y -= 1.2 * cm
-
-        contador += 1
-
-    c.save()
-    buffer.seek(0)
-    return buffer.getvalue()
-
-
-# ====================================
-# CREAR PAGARÉS + PDF
-# ====================================
-@transaction.atomic
-def crear_pagares(request):
-    if request.method == "POST":
-        if request.session.get("generando_pagares"):
-            messages.warning(
-                request,
-                "Los pagarés ya se estaban generando. Se evitó duplicación."
-            )
-            return redirect("boletos:lista_pagares")
-
-        request.session["generando_pagares"] = True
-
-        try:
-            cliente = get_object_or_404(
-                Cliente,
-                id=request.POST.get("cliente")
-            )
-
-            beneficiario = (
-                request.POST.get("beneficiario")
-                or "AMICHETTI HUGO ALBERTO"
-            )
-
-            lugar_emision = (
-                request.POST.get("lugar_emision")
-                or "Rojas"
-            )
-
-            fecha_emision = (
-                date.fromisoformat(request.POST.get("fecha_emision"))
-                if request.POST.get("fecha_emision")
-                else date.today()
-            )
-
-            cantidad = int(request.POST.get("cantidad", 1))
-
-            lote = PagareLote.objects.create(
-                cliente=cliente,
-                beneficiario=beneficiario,
-                lugar_emision=lugar_emision,
-                fecha_emision=fecha_emision,
-                cantidad=cantidad,
-                monto_total=Decimal("0.00"),
-            )
-
-            ultimo = (
-                Pagare.objects
-                .aggregate(max_num=Max("numero"))
-                .get("max_num")
-                or 0
-            )
-
-            pagares = []
-            monto_total = Decimal("0.00")
-
-            for i in range(1, cantidad + 1):
-                monto = Decimal(
-                    request.POST.get(f"monto_{i}", "0")
-                )
-
-                fecha_v = request.POST.get(f"fecha_vencimiento_{i}")
-                fecha_v = (
-                    date.fromisoformat(fecha_v)
-                    if fecha_v else None
-                )
-
-                pagare = Pagare.objects.create(
-                    lote=lote,
-                    cliente=cliente,
-                    numero=ultimo + i,
-                    beneficiario=beneficiario,
-                    monto=monto,
-                    lugar_emision=lugar_emision,
-                    fecha_emision=fecha_emision,
-                    fecha_vencimiento=fecha_v
-                )
-
-                pagares.append(pagare)
-                monto_total += monto
-
-            pdf_bytes = _generar_pdf_lote_pagares_3_por_hoja(pagares)
-
-            if not pdf_bytes:
-                raise ValueError("No se pudo generar el PDF del pagaré.")
-
-            filename = (
-                f"pagares_lote_{lote.id}_"
-                f"{fecha_emision.isoformat()}.pdf"
-            )
-
-            lote.pdf.save(
-                filename,
-                ContentFile(pdf_bytes),
-                save=True
-            )
-
-            lote.monto_total = monto_total
-            lote.cantidad = len(pagares)
-            lote.save(update_fields=["monto_total", "cantidad"])
-
-            messages.success(
-                request,
-                f"✅ Se creó el lote con {len(pagares)} pagarés en UN solo PDF."
-            )
-
-            return redirect("boletos:lista_pagares")
-
-        except Exception as e:
-            messages.error(
-                request,
-                f"❌ Error al crear pagarés: {str(e)}"
-            )
-            return redirect("boletos:crear_pagares")
-
-        finally:
-            request.session.pop("generando_pagares", None)
-
-    return render(
-        request,
-        "boletos/pagare/crear.html",
-        {"form": CrearPagareLoteForm()}
+    doc = SimpleDocTemplate(
+        response, pagesize=A4,
+        rightMargin=35, leftMargin=35,
+        topMargin=35, bottomMargin=35,
     )
 
+    styles = getSampleStyleSheet()
+    AZUL = colors.HexColor("#002855")
+    AZUL_CLARO = colors.HexColor("#dce9f7")
 
-# ====================================
-# VER PAGARÉ
-# ====================================
-def ver_pagare(request, pagare_id):
-    pagare = get_object_or_404(Pagare, id=pagare_id)
-    return render(
-        request,
-        "boletos/pagare/ver.html",
-        {"pagare": pagare}
-    )
+    title_style = ParagraphStyle("title", fontSize=18, textColor=AZUL,
+        alignment=1, fontName="Helvetica-Bold", spaceAfter=4)
+    subtitle_style = ParagraphStyle("subtitle", fontSize=10, alignment=1,
+        textColor=colors.HexColor("#555555"), spaceAfter=16)
+    section_style = ParagraphStyle("section", fontSize=11, textColor=colors.white,
+        backColor=AZUL, fontName="Helvetica-Bold",
+        leftIndent=6, spaceBefore=14, spaceAfter=6)
+    normal = styles["Normal"]
 
+    elements = []
 
-# ====================================
-# PDF PAGARÉ INDIVIDUAL
-# ====================================
-def pagare_pdf(request, pagare_id):
-    pagare = get_object_or_404(Pagare, id=pagare_id)
+    # ── Header ────────────────────────────────────────────
+    elements.append(Paragraph("AMICHETTI AUTOMOTORES", title_style))
+    elements.append(Paragraph(
+        f"Reporte de asistencia &nbsp;|&nbsp; {empleado.nombre} &nbsp;|&nbsp; Año {anio}",
+        subtitle_style
+    ))
 
-    buffer = BytesIO()
-    c = canvas.Canvas(buffer, pagesize=A4)
+    # ── Resumen ───────────────────────────────────────────
+    elements.append(Paragraph("Resumen anual", section_style))
 
-    azul = colors.HexColor("#002855")
-    y = A4[1] - 2.2 * cm
+    etiquetas = {
+        "presente": "Presente",
+        "falta_justificada": "Falta justificada",
+        "falta_injustificada": "Falta injustificada",
+        "vacaciones": "Vacaciones",
+        "estudio": "Día por estudio",
+        "permiso": "Permiso",
+    }
 
-    c.setFont("Helvetica-Bold", 18)
-    c.setFillColor(azul)
-    c.drawString(2 * cm, y, "PAGARÉ")
+    resumen_data = [["Estado", "Días"]]
+    for key, label in etiquetas.items():
+        total = resumen.get(key, 0)
+        if total > 0:
+            resumen_data.append([label, str(total)])
 
-    y -= 1 * cm
-    c.setFont("Helvetica", 11)
-    c.drawString(2 * cm, y, f"Nº {pagare.numero}")
+    if len(resumen_data) == 1:
+        resumen_data.append(["Sin registros", "0"])
 
-    y -= 1 * cm
+    resumen_table = Table(resumen_data, colWidths=[doc.width * 0.75, doc.width * 0.25])
+    resumen_table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), AZUL),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("FONTSIZE", (0, 0), (-1, -1), 9),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, AZUL_CLARO]),
+        ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#aaaaaa")),
+        ("ALIGN", (1, 0), (1, -1), "CENTER"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 8),
+        ("TOPPADDING", (0, 0), (-1, -1), 5),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+    ]))
+    elements.append(resumen_table)
 
-    cliente = pagare.cliente
-    venc = pagare.fecha_vencimiento.strftime("%d/%m/%Y") if pagare.fecha_vencimiento else "Pagadero a la vista"
+    # ── Detalle de faltas ─────────────────────────────────
+    elements.append(Paragraph("Detalle de faltas", section_style))
 
-    texto = [
-        "PAGARÉ SIN PROTESTO A LA ORDEN DE AMICHETTI HUGO ALBERTO",
-        "",
-        f"Monto: $ {pagare.monto:,.2f}",
-        f"Lugar y fecha de emisión: {pagare.lugar_emision}, {pagare.fecha_emision.strftime('%d/%m/%Y')}",
-        f"Fecha de vencimiento: {venc}",
-        "",
-        f"Deudor: {cliente.nombre_completo}",
-        f"DNI/CUIT: {cliente.dni_cuit or ''}",
-        f"Domicilio: {cliente.direccion or ''}",
-        "",
-        "Firma: ________________________________",
-    ]
+    data = [["Fecha", "Tipo de falta"]]
+    for f in faltas:
+        data.append([f.fecha.strftime("%d/%m/%Y"), f.get_estado_display()])
 
-    for t in texto:
-        c.drawString(2 * cm, y, t)
-        y -= 0.7 * cm
+    if len(data) == 1:
+        elements.append(Paragraph("El empleado no registra faltas en este año.", normal))
+    else:
+        tabla = Table(data, colWidths=[doc.width * 0.3, doc.width * 0.7])
+        tabla.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), AZUL),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("FONTSIZE", (0, 0), (-1, -1), 9),
+            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, AZUL_CLARO]),
+            ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#aaaaaa")),
+            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+            ("TOPPADDING", (0, 0), (-1, -1), 5),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+        ]))
+        elements.append(tabla)
 
-    c.showPage()
-    c.save()
+    elements.append(Spacer(1, 14))
+    pie_style = ParagraphStyle("pie", fontSize=8,
+        textColor=colors.HexColor("#888888"), alignment=1)
+    elements.append(Paragraph(
+        f"Total de faltas: <b>{faltas.count()}</b> &nbsp;|&nbsp; Registros totales: <b>{asistencias.count()}</b>",
+        pie_style
+    ))
 
-    buffer.seek(0)
-    return HttpResponse(buffer.getvalue(), content_type="application/pdf")
+    doc.build(elements)
+    return response
