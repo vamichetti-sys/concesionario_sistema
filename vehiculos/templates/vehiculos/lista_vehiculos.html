@@ -14,6 +14,7 @@
         <p class="text-muted mb-0">Gestión de inventario del concesionario</p>
     </div>
     <div class="d-flex gap-2">
+        <a href="{% url 'vehiculos:stock_pdf' %}{% if estado_filtro %}?estado={{ estado_filtro }}{% endif %}{% if query %}&q={{ query }}{% endif %}" class="btn btn-outline-secondary" target="_blank"><i data-lucide="file-down" style="width:16px;height:16px;margin-right:6px;"></i> Imprimir PDF</a>
         <a href="/vehiculos/gastos/" class="btn btn-secondary">
             <i data-lucide="settings" style="width:16px;height:16px;margin-right:6px;"></i>
             Gastos
