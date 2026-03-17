@@ -830,6 +830,161 @@ def sincronizar_turnos_calendario(vehiculo, ficha):
 
 
 # ==========================================================
+# PDF – LISTADO DE STOCK
+# ==========================================================
+def stock_pdf(request):
+    """
+    Genera un PDF con la tabla de vehículos en stock:
+    Marca, Modelo, Año, Kilómetros y Precio.
+    Acepta filtros por ?estado= y ?q= igual que lista_vehiculos.
+    """
+    from io import BytesIO
+
+    query = request.GET.get("q", "")
+    estado_filtro = request.GET.get("estado", "stock")
+
+    vehiculos = Vehiculo.objects.all().order_by("-id")
+
+    if query:
+        vehiculos = vehiculos.filter(
+            Q(marca__icontains=query)
+            | Q(modelo__icontains=query)
+            | Q(dominio__icontains=query)
+        )
+
+    if estado_filtro:
+        vehiculos = vehiculos.filter(estado=estado_filtro)
+
+    # ── Respuesta ──────────────────────────────────────────
+    buffer = BytesIO()
+
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        rightMargin=30,
+        leftMargin=30,
+        topMargin=30,
+        bottomMargin=30,
+    )
+
+    styles = getSampleStyleSheet()
+
+    # ── Estilos ────────────────────────────────────────────
+    title_style = ParagraphStyle(
+        "title",
+        fontSize=18,
+        textColor=colors.HexColor("#002855"),
+        alignment=1,
+        fontName="Helvetica-Bold",
+        spaceAfter=4,
+    )
+    subtitle_style = ParagraphStyle(
+        "subtitle",
+        fontSize=10,
+        alignment=1,
+        textColor=colors.HexColor("#555555"),
+        spaceAfter=16,
+    )
+
+    AZUL = colors.HexColor("#002855")
+    AZUL_CLARO = colors.HexColor("#dce9f7")
+
+    # ── Contenido ──────────────────────────────────────────
+    elements = []
+
+    elements.append(Paragraph("AMICHETTI AUTOMOTORES", title_style))
+
+    from datetime import date as _date
+    label_estado = {
+        "stock": "En stock",
+        "temporal": "Temporalmente no disponibles",
+        "vendido": "Vendidos",
+    }.get(estado_filtro, "Todos los vehículos")
+
+    elements.append(
+        Paragraph(
+            f"Listado de vehículos – {label_estado} &nbsp;|&nbsp; {_date.today().strftime('%d/%m/%Y')}",
+            subtitle_style,
+        )
+    )
+
+    # ── Tabla ─────────────────────────────────────────────
+    encabezado = ["Marca / Modelo", "Dominio", "Año", "Kilómetros", "Precio"]
+
+    filas = [encabezado]
+    for v in vehiculos:
+        km = f"{v.kilometros:,}".replace(",", ".") if v.kilometros else "–"
+        precio = f"$ {v.precio:,.0f}".replace(",", ".")
+        filas.append([
+            f"{v.marca} {v.modelo}",
+            v.dominio or "–",
+            str(v.anio),
+            km,
+            precio,
+        ])
+
+    if len(filas) == 1:
+        filas.append(["Sin vehículos", "", "", "", ""])
+
+    col_widths = [
+        doc.width * 0.35,
+        doc.width * 0.15,
+        doc.width * 0.10,
+        doc.width * 0.18,
+        doc.width * 0.22,
+    ]
+
+    tabla = Table(filas, colWidths=col_widths, repeatRows=1)
+
+    tabla.setStyle(TableStyle([
+        # Encabezado
+        ("BACKGROUND", (0, 0), (-1, 0), AZUL),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("FONTSIZE", (0, 0), (-1, 0), 10),
+        ("ALIGN", (0, 0), (-1, 0), "CENTER"),
+
+        # Filas
+        ("FONTSIZE", (0, 1), (-1, -1), 9),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, AZUL_CLARO]),
+        ("ALIGN", (2, 1), (-1, -1), "CENTER"),   # Año, Km, Precio centrados
+        ("ALIGN", (-1, 1), (-1, -1), "RIGHT"),    # Precio alineado derecha
+
+        # General
+        ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#aaaaaa")),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 6),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+        ("TOPPADDING", (0, 0), (-1, -1), 5),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+    ]))
+
+    elements.append(tabla)
+
+    # ── Pie ───────────────────────────────────────────────
+    elements.append(Spacer(1, 16))
+    pie_style = ParagraphStyle(
+        "pie",
+        fontSize=8,
+        textColor=colors.HexColor("#888888"),
+        alignment=1,
+    )
+    elements.append(
+        Paragraph(
+            f"Total de vehículos: {len(filas) - 1}",
+            pie_style,
+        )
+    )
+
+    doc.build(elements)
+
+    buffer.seek(0)
+    response = HttpResponse(buffer, content_type="application/pdf")
+    response["Content-Disposition"] = 'inline; filename="stock_vehiculos.pdf"'
+    return response
+
+
+# ==========================================================
 # FICHA VEHICULAR PDF
 # ==========================================================
 def ficha_vehicular_pdf(request, vehiculo_id):
