@@ -93,6 +93,11 @@ class PagareLote(models.Model):
 
     cantidad = models.PositiveIntegerField(default=1)
 
+    dia_vencimiento = models.PositiveIntegerField(
+        default=10,
+        verbose_name="Día de vencimiento mensual"
+    )
+
     pdf = models.FileField(
         upload_to="pagares/lotes/",
         null=True,
