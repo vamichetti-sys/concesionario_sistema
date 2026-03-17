@@ -64,7 +64,10 @@ def calendario_empleado(request, empleado_id):
     empleado = get_object_or_404(Empleado, id=empleado_id)
 
     hoy = date.today()
-    anio = hoy.year
+    try:
+        anio = int(request.GET.get("anio", hoy.year))
+    except (ValueError, TypeError):
+        anio = hoy.year
 
     asistencias = AsistenciaDiaria.objects.filter(
         empleado=empleado,
@@ -183,13 +186,12 @@ def marcar_asistencia(request):
 
 
 # ==========================================================
-# PDF – FALTAS ANUALES POR EMPLEADO
+# PDF – REPORTE ANUAL DE ASISTENCIA POR EMPLEADO
 # ==========================================================
 @login_required
 def pdf_faltas_anuales(request, empleado_id, anio):
     empleado = get_object_or_404(Empleado, id=empleado_id)
-    
-    # 🆕 VALIDACIÓN DEL AÑO
+
     try:
         anio = int(anio)
         if anio < 2000 or anio > date.today().year + 1:
@@ -197,81 +199,122 @@ def pdf_faltas_anuales(request, empleado_id, anio):
     except (ValueError, TypeError):
         return HttpResponse("Año inválido", status=400)
 
-    faltas = AsistenciaDiaria.objects.filter(
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib import colors
+
+    # Todas las asistencias del año
+    asistencias = AsistenciaDiaria.objects.filter(
         empleado=empleado,
         fecha__year=anio,
-        estado__in=["falta_injustificada", "falta_justificada"]
     ).order_by("fecha")
 
+    faltas = asistencias.filter(estado__in=["falta_injustificada", "falta_justificada"])
+
+    # Resumen
+    from django.db.models import Count
+    resumen_qs = asistencias.values("estado").annotate(total=Count("id"))
+    resumen = {r["estado"]: r["total"] for r in resumen_qs}
+
     response = HttpResponse(content_type="application/pdf")
-    response["Content-Disposition"] = (
-        f'inline; filename="faltas_{empleado.id}_{anio}.pdf"'
-    )
+    response["Content-Disposition"] = f'inline; filename="asistencia_{empleado.id}_{anio}.pdf"'
 
     doc = SimpleDocTemplate(
-        response,
-        pagesize=A4,
-        rightMargin=40,
-        leftMargin=40,
-        topMargin=40,
-        bottomMargin=40,
+        response, pagesize=A4,
+        rightMargin=35, leftMargin=35,
+        topMargin=35, bottomMargin=35,
     )
 
     styles = getSampleStyleSheet()
+    AZUL = colors.HexColor("#002855")
+    AZUL_CLARO = colors.HexColor("#dce9f7")
+
+    title_style = ParagraphStyle("title", fontSize=18, textColor=AZUL,
+        alignment=1, fontName="Helvetica-Bold", spaceAfter=4)
+    subtitle_style = ParagraphStyle("subtitle", fontSize=10, alignment=1,
+        textColor=colors.HexColor("#555555"), spaceAfter=16)
+    section_style = ParagraphStyle("section", fontSize=11, textColor=colors.white,
+        backColor=AZUL, fontName="Helvetica-Bold",
+        leftIndent=6, spaceBefore=14, spaceAfter=6)
+    normal = styles["Normal"]
+
     elements = []
 
-    elements.append(
-        Paragraph("Reporte anual de faltas", styles["Title"])
-    )
-    elements.append(Spacer(1, 10))
+    # ── Header ────────────────────────────────────────────
+    elements.append(Paragraph("AMICHETTI AUTOMOTORES", title_style))
+    elements.append(Paragraph(
+        f"Reporte de asistencia &nbsp;|&nbsp; {empleado.nombre} &nbsp;|&nbsp; Año {anio}",
+        subtitle_style
+    ))
 
-    elements.append(
-        Paragraph(f"<b>Empleado:</b> {empleado.nombre}", styles["Normal"])
-    )
-    elements.append(
-        Paragraph(f"<b>Año:</b> {anio}", styles["Normal"])
-    )
+    # ── Resumen ───────────────────────────────────────────
+    elements.append(Paragraph("Resumen anual", section_style))
 
-    elements.append(Spacer(1, 20))
+    etiquetas = {
+        "presente": "Presente",
+        "falta_justificada": "Falta justificada",
+        "falta_injustificada": "Falta injustificada",
+        "vacaciones": "Vacaciones",
+        "estudio": "Día por estudio",
+        "permiso": "Permiso",
+    }
+
+    resumen_data = [["Estado", "Días"]]
+    for key, label in etiquetas.items():
+        total = resumen.get(key, 0)
+        if total > 0:
+            resumen_data.append([label, str(total)])
+
+    if len(resumen_data) == 1:
+        resumen_data.append(["Sin registros", "0"])
+
+    resumen_table = Table(resumen_data, colWidths=[doc.width * 0.75, doc.width * 0.25])
+    resumen_table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), AZUL),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("FONTSIZE", (0, 0), (-1, -1), 9),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, AZUL_CLARO]),
+        ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#aaaaaa")),
+        ("ALIGN", (1, 0), (1, -1), "CENTER"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 8),
+        ("TOPPADDING", (0, 0), (-1, -1), 5),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+    ]))
+    elements.append(resumen_table)
+
+    # ── Detalle de faltas ─────────────────────────────────
+    elements.append(Paragraph("Detalle de faltas", section_style))
 
     data = [["Fecha", "Tipo de falta"]]
-
     for f in faltas:
-        data.append([
-            f.fecha.strftime("%d/%m/%Y"),
-            f.get_estado_display()
-        ])
+        data.append([f.fecha.strftime("%d/%m/%Y"), f.get_estado_display()])
 
     if len(data) == 1:
-        elements.append(
-            Paragraph(
-                "El empleado no registra faltas en este año.",
-                styles["Normal"]
-            )
-        )
+        elements.append(Paragraph("El empleado no registra faltas en este año.", normal))
     else:
-        table = Table(data, colWidths=[120, 260])
-        table.setStyle(
-            TableStyle([
-                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#002855")),
-                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-                ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
-                ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                ("BOTTOMPADDING", (0, 0), (-1, 0), 8),
-                ("TOPPADDING", (0, 0), (-1, 0), 8),
-            ])
-        )
-        elements.append(table)
+        tabla = Table(data, colWidths=[doc.width * 0.3, doc.width * 0.7])
+        tabla.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), AZUL),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("FONTSIZE", (0, 0), (-1, -1), 9),
+            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, AZUL_CLARO]),
+            ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#aaaaaa")),
+            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+            ("TOPPADDING", (0, 0), (-1, -1), 5),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+        ]))
+        elements.append(tabla)
 
-    elements.append(Spacer(1, 20))
-
-    elements.append(
-        Paragraph(
-            f"Total de faltas: <b>{faltas.count()}</b>",
-            styles["Normal"]
-        )
-    )
+    elements.append(Spacer(1, 14))
+    pie_style = ParagraphStyle("pie", fontSize=8,
+        textColor=colors.HexColor("#888888"), alignment=1)
+    elements.append(Paragraph(
+        f"Total de faltas: <b>{faltas.count()}</b> &nbsp;|&nbsp; Registros totales: <b>{asistencias.count()}</b>",
+        pie_style
+    ))
 
     doc.build(elements)
     return response

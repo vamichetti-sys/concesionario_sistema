@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load i18n %}
 {% block content %}
 
 <style>
@@ -79,12 +80,22 @@
         <h3 class="fw-bold mb-1">{{ empleado.nombre }}</h3>
         <p class="text-muted mb-0">Registro de asistencia {{ anio }}</p>
     </div>
-    <a href="{% url 'asistencia:pdf_faltas_anuales' empleado.id anio %}"
-       target="_blank"
-       class="btn btn-danger">
-        <i data-lucide="file-text" style="width:16px;height:16px;margin-right:6px;"></i>
-        Imprimir faltas anuales
-    </a>
+    <div class="d-flex gap-2 align-items-center">
+        <!-- Navegación años -->
+        <a href="?anio={{ anio|add:"-1" }}" class="btn btn-secondary">
+            <i data-lucide="chevron-left" style="width:16px;height:16px;"></i>
+        </a>
+        <span class="fw-bold" style="min-width:60px;text-align:center;">{{ anio }}</span>
+        <a href="?anio={{ anio|add:"1" }}" class="btn btn-secondary">
+            <i data-lucide="chevron-right" style="width:16px;height:16px;"></i>
+        </a>
+        <a href="{% url 'asistencia:pdf_faltas_anuales' empleado.id anio %}"
+           target="_blank"
+           class="btn btn-danger ms-2">
+            <i data-lucide="file-text" style="width:16px;height:16px;margin-right:6px;"></i>
+            Imprimir reporte
+        </a>
+    </div>
 </div>
 
 <!-- ===============================
@@ -143,7 +154,21 @@
 =============================== -->
 {% for mes, dias in calendario.items %}
 <div class="card p-4 mb-3">
-    <h6 class="fw-bold mb-3">{{ mes }}/{{ anio }}</h6>
+    <h6 class="fw-bold mb-3">
+        {% if mes == 1 %}Enero
+        {% elif mes == 2 %}Febrero
+        {% elif mes == 3 %}Marzo
+        {% elif mes == 4 %}Abril
+        {% elif mes == 5 %}Mayo
+        {% elif mes == 6 %}Junio
+        {% elif mes == 7 %}Julio
+        {% elif mes == 8 %}Agosto
+        {% elif mes == 9 %}Septiembre
+        {% elif mes == 10 %}Octubre
+        {% elif mes == 11 %}Noviembre
+        {% elif mes == 12 %}Diciembre
+        {% endif %} {{ anio }}
+    </h6>
     <div class="d-flex flex-wrap gap-2">
         {% for d in dias %}
         <div
