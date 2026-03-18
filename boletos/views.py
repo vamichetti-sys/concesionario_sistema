@@ -459,105 +459,79 @@ def monto_en_letras_simple(monto) -> str:
 
 
 def _generar_pdf_lote_pagares_3_por_hoja(pagares):
-    buffer = BytesIO()
-    c = canvas.Canvas(buffer, pagesize=A4)
+    from reportlab.lib.pagesizes import landscape
+    meses_es = ["","enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"]
+    def fecha_letras(f): return f"{f.day} de {meses_es[f.month]} de {f.year}"
+    buf = BytesIO()
+    PAGE = landscape(A4)
+    ancho, alto = PAGE
+    AZUL = colors.HexColor("#002855")
+    c = canvas.Canvas(buf, pagesize=PAGE)
+    mitad = ancho / 2
+    margen = 1.5 * cm
+    sep_x = mitad + 0.5 * cm
 
-    ancho, alto = A4
-    margen_x = 2 * cm
-    POR_HOJA = 3
-    contador = 0
-    y = alto - 2 * cm
+    def dibujar(c, pagare, x0, x1):
+        w = x1 - x0 - margen * 1.5
+        x = x0 + margen
+        y = alto - 1.2 * cm
+        cl = pagare.cliente
+        c.setFont("Helvetica-Bold", 10); c.setFillColor(AZUL)
+        c.drawString(x, y, "AMICHETTI AUTOMOTORES"); y -= 0.4*cm
+        c.setFont("Helvetica", 7.5); c.setFillColor(colors.HexColor("#555555"))
+        c.drawString(x, y, "Larrea 255, Rojas, Buenos Aires"); y -= 0.5*cm
+        c.setStrokeColor(AZUL); c.setLineWidth(1.2); c.line(x, y, x+w, y); y -= 0.5*cm
+        c.setFont("Helvetica-Bold", 16); c.setFillColor(AZUL); c.drawString(x, y, "PAGARE")
+        monto_str = f"$ {pagare.monto:,.0f}".replace(",",".")
+        c.setFont("Helvetica-Bold", 13); c.setFillColor(colors.HexColor("#059669"))
+        c.drawRightString(x+w, y, monto_str); y -= 0.5*cm
+        venc_str = pagare.fecha_vencimiento.strftime("%d/%m/%Y") if pagare.fecha_vencimiento else "A la vista"
+        c.setFont("Helvetica", 7.5); c.setFillColor(colors.HexColor("#6b7280"))
+        c.drawString(x, y, f"N {pagare.numero}  Emitido: {pagare.fecha_emision.strftime('%d/%m/%Y')}  Vence: {venc_str}"); y -= 0.6*cm
+        c.setFont("Helvetica", 8.5); c.setFillColor(colors.black)
+        venc_letras = fecha_letras(pagare.fecha_vencimiento) if pagare.fecha_vencimiento else "pagadero a la vista"
+        texto = (f"Debo/Debemos y pagare/pagaremos mancomunada y solidariamente SIN PROTESTO "
+            f"(Art. 50 D. Ley 5965/63), a la orden de {pagare.beneficiario.upper()}, "
+            f"la suma de PESOS {pagare.monto:,.0f}, en {pagare.lugar_emision} "
+            f"el dia {venc_letras}. En caso de mora el deudor pagara intereses punitorios. "
+            f"El deudor constituye domicilio especial en {cl.direccion or pagare.lugar_emision} "
+            f"y renuncia a los fueros que pudieran corresponderle.")
+        palabras = texto.split(" "); linea = ""
+        for p in palabras:
+            prueba = linea + p + " "
+            if c.stringWidth(prueba, "Helvetica", 8.5) > w:
+                c.drawString(x, y, linea.rstrip()); y -= 0.4*cm; linea = p + " "
+            else: linea = prueba
+        if linea: c.drawString(x, y, linea.rstrip()); y -= 0.4*cm
+        y -= 0.2*cm
+        c.setFont("Helvetica-Bold", 8); c.setFillColor(AZUL); c.drawString(x, y, "Datos del deudor:"); y -= 0.4*cm
+        c.setFont("Helvetica", 7.5); c.setFillColor(colors.black)
+        c.drawString(x, y, f"Nombre: {cl.nombre_completo.upper()}   DNI/CUIT: {cl.dni_cuit or ''}   Domicilio: {cl.direccion or ''}"[:110])
+        firma_y = 1.4*cm
+        c.setStrokeColor(colors.HexColor("#333333")); c.setLineWidth(0.5)
+        c.line(x, firma_y, x+w*0.38, firma_y)
+        c.setFont("Helvetica", 7); c.setFillColor(colors.HexColor("#555555"))
+        c.drawString(x, firma_y-0.32*cm, "Firma del deudor")
+        c.drawString(x, firma_y-0.58*cm, cl.nombre_completo.upper()[:40])
+        c.line(x+w*0.55, firma_y, x+w, firma_y)
+        c.drawString(x+w*0.55, firma_y-0.32*cm, "Aclaracion")
+        bx=x+w*0.41; by=firma_y-0.15*cm; bw=w*0.11; bh=0.9*cm
+        c.setStrokeColor(AZUL); c.setLineWidth(0.8); c.rect(bx,by,bw,bh)
+        c.setFont("Helvetica-Bold",6.5); c.setFillColor(AZUL); c.drawCentredString(bx+bw/2,by+0.6*cm,"VENCE")
+        c.setFont("Helvetica-Bold",7.5); c.setFillColor(colors.black); c.drawCentredString(bx+bw/2,by+0.18*cm,venc_str)
 
-    def fecha_en_letras(fecha):
-        meses = [
-            "enero", "febrero", "marzo", "abril", "mayo", "junio",
-            "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
-        ]
-        return f"{fecha.day} de {meses[fecha.month - 1]} de {fecha.year}"
+    def linea_central(c):
+        c.setStrokeColor(colors.HexColor("#cccccc")); c.setDash(4,4); c.setLineWidth(0.8)
+        c.line(mitad,0.5*cm,mitad,alto-0.5*cm); c.setDash()
 
-    for pagare in pagares:
-
-        if contador == POR_HOJA:
-            c.showPage()
-            y = alto - 2 * cm
-            contador = 0
-
-        cliente = pagare.cliente
-
-        c.setFont("Helvetica-Bold", 18)
-        c.drawString(margen_x, y, "PAGARÉ")
-        y -= 0.8 * cm
-
-        c.setFont("Helvetica-Bold", 11)
-        c.drawString(
-            margen_x,
-            y,
-            f"Nº {pagare.numero} — Fecha de emisión: {fecha_en_letras(pagare.fecha_emision)}"
-        )
-        y -= 1 * cm
-
-        c.setFont("Helvetica", 11)
-
-        if pagare.fecha_vencimiento:
-            texto_legal = (
-                f"PAGARÉ SIN PROTESTO (Art. 50 D. Ley 5965/63), "
-                f"al Sr./a {pagare.beneficiario}, "
-                f"la cantidad de PESOS {monto_en_letras_simple(pagare.monto)}, "
-                f"el día {fecha_en_letras(pagare.fecha_vencimiento)}."
-            )
-        else:
-            texto_legal = (
-                f"PAGARÉ SIN PROTESTO (Art. 50 D. Ley 5965/63), "
-                f"al Sr./a {pagare.beneficiario}, "
-                f"la cantidad de PESOS {monto_en_letras_simple(pagare.monto)}, "
-                f"pagadero a la vista."
-            )
-
-        textobject = c.beginText(margen_x, y)
-        textobject.setLeading(16)
-        max_width = ancho - (2 * margen_x)
-        linea_actual = ""
-
-        for palabra in texto_legal.split(" "):
-            prueba = linea_actual + palabra + " "
-            if c.stringWidth(prueba, "Helvetica", 11) > max_width:
-                textobject.textLine(linea_actual.rstrip())
-                linea_actual = palabra + " "
-            else:
-                linea_actual = prueba
-
-        if linea_actual:
-            textobject.textLine(linea_actual.rstrip())
-
-        c.drawText(textobject)
-        y = textobject.getY() - 0.8 * cm
-
-        c.setFont("Helvetica-Bold", 11)
-        c.drawString(margen_x, y, "Datos del Deudor:")
-        y -= 0.6 * cm
-
-        c.setFont("Helvetica", 11)
-        c.drawString(margen_x, y, f"Nombre: {cliente.nombre_completo}")
-        y -= 0.6 * cm
-        c.drawString(margen_x, y, f"DNI/CUIT: {cliente.dni_cuit or ''}")
-        y -= 0.6 * cm
-        c.drawString(margen_x, y, f"Domicilio: {cliente.direccion or ''}")
-        y -= 1.2 * cm
-
-        c.drawString(margen_x, y, "Firma: _________________________________")
-        y -= 1.5 * cm
-
-        if contador < POR_HOJA - 1:
-            c.setDash(3, 3)
-            c.line(margen_x, y, ancho - margen_x, y)
-            c.setDash()
-            y -= 1.2 * cm
-
-        contador += 1
-
-    c.save()
-    buffer.seek(0)
-    return buffer.getvalue()
+    i = 0
+    while i < len(pagares):
+        dibujar(c, pagares[i], 0, mitad)
+        if i+1 < len(pagares):
+            linea_central(c); dibujar(c, pagares[i+1], sep_x, ancho)
+        c.showPage(); i += 2
+    c.save(); buf.seek(0)
+    return buf.getvalue()
 
 
 # ====================================
@@ -746,10 +720,16 @@ def pagare_pdf(request, pagare_id):
 def ver_lote(request, lote_id):
     lote = get_object_or_404(PagareLote, id=lote_id)
     pagares = lote.pagares.all().order_by('numero')
+    pdf_url = None
+    if lote.pdf:
+        url = lote.pdf.url
+        if 'cloudinary.com' in url:
+            url = url + '?fl_attachment'
+        pdf_url = url
     return render(
         request,
         'boletos/pagare/lote_detalle.html',
-        {'lote': lote, 'pagares': pagares}
+        {'lote': lote, 'pagares': pagares, 'pdf_url': pdf_url}
     )
 
 
