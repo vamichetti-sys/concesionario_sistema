@@ -465,78 +465,136 @@ def monto_en_letras_simple(monto) -> str:
 
 
 def _generar_pdf_lote_pagares_3_por_hoja(pagares):
-    from reportlab.lib.pagesizes import landscape
+    """PDF A4 vertical, 2 pagares por hoja uno debajo del otro."""
+    buf = BytesIO()
+    c = canvas.Canvas(buf, pagesize=A4)
+    ancho, alto = A4
+    AZUL = colors.HexColor("#002855")
+    margen = 1.5 * cm
+    mitad_y = alto / 2
+
     meses_es = ["","enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"]
     def fecha_letras(f): return f"{f.day} de {meses_es[f.month]} de {f.year}"
-    buf = BytesIO()
-    PAGE = landscape(A4)
-    ancho, alto = PAGE
-    AZUL = colors.HexColor("#002855")
-    c = canvas.Canvas(buf, pagesize=PAGE)
-    mitad = ancho / 2
-    margen = 1.5 * cm
-    sep_x = mitad + 0.5 * cm
 
-    def dibujar(c, pagare, x0, x1):
-        w = x1 - x0 - margen * 1.5
-        x = x0 + margen
-        y = alto - 1.2 * cm
+    def dibujar_pagare(c, pagare, y_top, y_bottom):
+        x = margen
+        w = ancho - 2 * margen
+        y = y_top - 0.8 * cm
         cl = pagare.cliente
-        c.setFont("Helvetica-Bold", 10); c.setFillColor(AZUL)
-        c.drawString(x, y, "AMICHETTI AUTOMOTORES"); y -= 0.4*cm
-        c.setFont("Helvetica", 7.5); c.setFillColor(colors.HexColor("#555555"))
-        c.drawString(x, y, "Larrea 255, Rojas, Buenos Aires"); y -= 0.5*cm
-        c.setStrokeColor(AZUL); c.setLineWidth(1.2); c.line(x, y, x+w, y); y -= 0.5*cm
-        c.setFont("Helvetica-Bold", 16); c.setFillColor(AZUL); c.drawString(x, y, "PAGARE")
-        monto_str = f"$ {pagare.monto:,.0f}".replace(",",".")
-        c.setFont("Helvetica-Bold", 13); c.setFillColor(colors.HexColor("#059669"))
-        c.drawRightString(x+w, y, monto_str); y -= 0.5*cm
+
+        # Header empresa
+        c.setFont("Helvetica-Bold", 9); c.setFillColor(AZUL)
+        c.drawString(x, y, "AMICHETTI AUTOMOTORES")
+        c.setFont("Helvetica", 7); c.setFillColor(colors.HexColor("#555555"))
+        c.drawString(x + 5.5*cm, y, "Larrea 255, Rojas, Buenos Aires")
+        y -= 0.5*cm
+
+        # Linea separadora
+        c.setStrokeColor(AZUL); c.setLineWidth(1)
+        c.line(x, y, x + w, y); y -= 0.5*cm
+
+        # Titulo + monto
+        c.setFont("Helvetica-Bold", 14); c.setFillColor(AZUL)
+        c.drawString(x, y, "PAGARE")
+        monto_str = f"$ {pagare.monto:,.0f}".replace(",", ".")
+        # Caja monto
+        bw = 4.5*cm; bh = 1.0*cm
+        bx = x + w - bw; by = y - 0.1*cm
+        c.setStrokeColor(AZUL); c.setLineWidth(0.8)
+        c.rect(bx, by, bw, bh)
+        c.setFont("Helvetica", 6); c.setFillColor(AZUL)
+        c.drawCentredString(bx + bw/2, by + 0.75*cm, "IMPORTE")
+        c.setFont("Helvetica-Bold", 11); c.setFillColor(colors.HexColor("#059669"))
+        c.drawCentredString(bx + bw/2, by + 0.2*cm, monto_str)
+        y -= 0.5*cm
+
+        # Numero y fechas
         venc_str = pagare.fecha_vencimiento.strftime("%d/%m/%Y") if pagare.fecha_vencimiento else "A la vista"
-        c.setFont("Helvetica", 7.5); c.setFillColor(colors.HexColor("#6b7280"))
-        c.drawString(x, y, f"N {pagare.numero}  Emitido: {pagare.fecha_emision.strftime('%d/%m/%Y')}  Vence: {venc_str}"); y -= 0.6*cm
+        c.setFont("Helvetica", 7); c.setFillColor(colors.HexColor("#6b7280"))
+        c.drawString(x, y, f"N {pagare.numero}  Lugar: {pagare.lugar_emision}  Fecha de emision: {pagare.fecha_emision.strftime('%d/%m/%Y')}")
+        y -= 0.5*cm
+
+        # Cuerpo legal
         c.setFont("Helvetica", 7.5); c.setFillColor(colors.black)
         venc_letras = fecha_letras(pagare.fecha_vencimiento) if pagare.fecha_vencimiento else "pagadero a la vista"
-        texto = (f"Debo/Debemos y pagare/pagaremos mancomunada y solidariamente SIN PROTESTO "
+        texto = (
+            f"Debo/Debemos y pagare/pagaremos mancomunada y solidariamente SIN PROTESTO "
             f"(Art. 50 D. Ley 5965/63), a la orden de {pagare.beneficiario.upper()}, "
-            f"la suma de PESOS {pagare.monto:,.0f}, en {pagare.lugar_emision} "
-            f"el dia {venc_letras}. En caso de mora el deudor pagara intereses punitorios. "
+            f"la suma de PESOS {pagare.monto:,.0f} ($ {monto_str}), "
+            f"en {pagare.lugar_emision} el dia {venc_letras}. "
+            f"En caso de mora el deudor pagara intereses punitorios. "
             f"El deudor constituye domicilio especial en {cl.direccion or pagare.lugar_emision} "
-            f"y renuncia a los fueros que pudieran corresponderle.")
+            f"y renuncia a los fueros que pudieran corresponderle."
+        )
+
+        y_firma = y_bottom + 2.2*cm
         palabras = texto.split(" "); linea = ""
         for p in palabras:
             prueba = linea + p + " "
             if c.stringWidth(prueba, "Helvetica", 7.5) > w:
-                c.drawString(x, y, linea.rstrip()); y -= 0.35*cm; linea = p + " "
-            else: linea = prueba
-        if linea: c.drawString(x, y, linea.rstrip()); y -= 0.35*cm
-        y -= 0.2*cm
-        c.setFont("Helvetica-Bold", 8); c.setFillColor(AZUL); c.drawString(x, y, "Datos del deudor:"); y -= 0.4*cm
-        c.setFont("Helvetica", 7.5); c.setFillColor(colors.black)
-        c.drawString(x, y, f"Nombre: {cl.nombre_completo.upper()}   DNI/CUIT: {cl.dni_cuit or ''}   Domicilio: {cl.direccion or ''}"[:110])
-        # Firmas siempre al fondo fijo
-        firma_y = 1.8*cm
-        c.setStrokeColor(colors.HexColor("#333333")); c.setLineWidth(0.5)
-        c.line(x, firma_y, x+w*0.38, firma_y)
-        c.setFont("Helvetica", 7); c.setFillColor(colors.HexColor("#555555"))
-        c.drawString(x, firma_y-0.32*cm, "Firma del deudor")
-        c.drawString(x, firma_y-0.58*cm, cl.nombre_completo.upper()[:40])
-        c.line(x+w*0.55, firma_y, x+w, firma_y)
-        c.drawString(x+w*0.55, firma_y-0.32*cm, "Aclaracion")
-        bx=x+w*0.41; by=firma_y-0.15*cm; bw=w*0.13; bh=1.0*cm
-        c.setStrokeColor(AZUL); c.setLineWidth(0.8); c.rect(bx,by,bw,bh)
-        c.setFont("Helvetica-Bold",6.5); c.setFillColor(AZUL); c.drawCentredString(bx+bw/2,by+0.68*cm,"VENCE")
-        c.setFont("Helvetica-Bold",7.5); c.setFillColor(colors.black); c.drawCentredString(bx+bw/2,by+0.22*cm,venc_str)
+                if y - 0.38*cm > y_firma:
+                    c.drawString(x, y, linea.rstrip()); y -= 0.38*cm
+                linea = p + " "
+            else:
+                linea = prueba
+        if linea and y > y_firma:
+            c.drawString(x, y, linea.rstrip()); y -= 0.38*cm
 
-    def linea_central(c):
-        c.setStrokeColor(colors.HexColor("#cccccc")); c.setDash(4,4); c.setLineWidth(0.8)
-        c.line(mitad,0.5*cm,mitad,alto-0.5*cm); c.setDash()
+        y -= 0.2*cm
+
+        # Datos deudor
+        c.setFont("Helvetica-Bold", 7.5); c.setFillColor(AZUL)
+        c.drawString(x, y, "El presente pagare es librado por:")
+        y -= 0.38*cm
+        c.setFont("Helvetica", 7.5); c.setFillColor(colors.black)
+        c.drawString(x, y, f"{cl.nombre_completo.upper()}, DNI/CUIT {cl.dni_cuit or ''}, con domicilio en {cl.direccion or ''}")
+        y -= 0.5*cm
+
+        # Firmas
+        firma_y = y_bottom + 1.0*cm
+        c.setStrokeColor(colors.black); c.setLineWidth(0.5)
+        # Firma deudor
+        c.line(x, firma_y, x + w*0.35, firma_y)
+        c.setFont("Helvetica", 6.5); c.setFillColor(colors.HexColor("#555555"))
+        c.drawString(x, firma_y - 0.3*cm, "FIRMA DEL DEUDOR")
+        c.drawString(x, firma_y - 0.55*cm, cl.nombre_completo.upper()[:35])
+        c.drawString(x, firma_y - 0.78*cm, f"DNI: {cl.dni_cuit or ''}")
+
+        # Caja vencimiento
+        vbw = 3*cm; vbh = 1.1*cm
+        vbx = x + w/2 - vbw/2
+        vby = y_bottom + 0.3*cm
+        c.setStrokeColor(AZUL); c.setLineWidth(0.8)
+        c.rect(vbx, vby, vbw, vbh)
+        c.setFont("Helvetica-Bold", 6.5); c.setFillColor(AZUL)
+        c.drawCentredString(vbx + vbw/2, vby + 0.78*cm, "VENCE EL")
+        c.setFont("Helvetica-Bold", 9); c.setFillColor(colors.black)
+        c.drawCentredString(vbx + vbw/2, vby + 0.25*cm, venc_str)
+
+        # Aclaracion
+        c.setStrokeColor(colors.black); c.setLineWidth(0.5)
+        c.line(x + w*0.65, firma_y, x + w, firma_y)
+        c.setFont("Helvetica", 6.5); c.setFillColor(colors.HexColor("#555555"))
+        c.drawString(x + w*0.65, firma_y - 0.3*cm, "ACLARACION")
+
+    def linea_corte(c, y):
+        c.setStrokeColor(colors.HexColor("#999999"))
+        c.setDash(4, 4); c.setLineWidth(0.6)
+        c.line(margen, y, ancho - margen, y)
+        c.setDash()
 
     i = 0
     while i < len(pagares):
-        dibujar(c, pagares[i], 0, mitad)
-        if i+1 < len(pagares):
-            linea_central(c); dibujar(c, pagares[i+1], sep_x, ancho)
-        c.showPage(); i += 2
+        # Pagare superior
+        dibujar_pagare(c, pagares[i], alto, mitad_y)
+        # Linea de corte
+        linea_corte(c, mitad_y)
+        # Pagare inferior
+        if i + 1 < len(pagares):
+            dibujar_pagare(c, pagares[i+1], mitad_y, 0)
+        c.showPage()
+        i += 2
+
     c.save(); buf.seek(0)
     return buf.getvalue()
 
