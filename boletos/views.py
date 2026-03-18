@@ -426,6 +426,12 @@ def lista_pagares(request):
 
     lotes_con_url = []
     for lote in lotes:
+        pdf_url = None
+        if lote.pdf:
+            url = lote.pdf.url
+            if 'cloudinary.com' in url:
+                url = url + '?fl_attachment'
+            pdf_url = url
         lote_dict = {
             'id': lote.id,
             'cliente': lote.cliente,
@@ -433,7 +439,7 @@ def lista_pagares(request):
             'fecha_emision': lote.fecha_emision,
             'cantidad': lote.cantidad,
             'monto_total': lote.monto_total,
-            'pdf_url': lote.pdf.url if lote.pdf else None
+            'pdf_url': pdf_url
         }
         lotes_con_url.append(lote_dict)
 
