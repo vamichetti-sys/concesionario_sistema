@@ -738,3 +738,33 @@ def pagare_pdf(request, pagare_id):
 
     buffer.seek(0)
     return HttpResponse(buffer.getvalue(), content_type="application/pdf")
+
+
+# ====================================
+# VER LOTE DE PAGARÉS
+# ====================================
+def ver_lote(request, lote_id):
+    lote = get_object_or_404(PagareLote, id=lote_id)
+    pagares = lote.pagares.all().order_by('numero')
+    return render(
+        request,
+        'boletos/pagare/lote_detalle.html',
+        {'lote': lote, 'pagares': pagares}
+    )
+
+
+# ====================================
+# ELIMINAR LOTE DE PAGARÉS
+# ====================================
+def eliminar_lote(request, lote_id):
+    lote = get_object_or_404(PagareLote, id=lote_id)
+    if request.method == 'POST':
+        if lote.pdf:
+            try:
+                lote.pdf.delete(save=False)
+            except Exception:
+                pass
+        lote.delete()
+        messages.success(request, 'Lote de pagarés eliminado correctamente.')
+        return redirect('boletos:lista_pagares')
+    return render(request, 'boletos/pagare/eliminar_lote.html', {'lote': lote})
