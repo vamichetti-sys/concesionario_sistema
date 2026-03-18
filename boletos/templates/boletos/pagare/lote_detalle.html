@@ -22,12 +22,10 @@
 
 <!-- BOTONES -->
 <div class="d-flex gap-2 mb-4">
-    {% if lote.pdf %}
-    <a href="{{ lote.pdf.url }}" target="_blank" class="btn btn-primary">
+    <a href="{% url 'boletos:descargar_pdf_lote' lote.id %}" class="btn btn-primary">
         <i data-lucide="file-down" style="width:16px;height:16px;margin-right:6px;"></i>
         Descargar PDF
     </a>
-    {% endif %}
     <a href="{% url 'boletos:eliminar_lote' lote.id %}" class="btn btn-outline-danger">
         <i data-lucide="trash-2" style="width:16px;height:16px;margin-right:6px;"></i>
         Eliminar lote
