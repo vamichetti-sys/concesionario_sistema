@@ -494,7 +494,7 @@ def _generar_pdf_lote_pagares_3_por_hoja(pagares):
         venc_str = pagare.fecha_vencimiento.strftime("%d/%m/%Y") if pagare.fecha_vencimiento else "A la vista"
         c.setFont("Helvetica", 7.5); c.setFillColor(colors.HexColor("#6b7280"))
         c.drawString(x, y, f"N {pagare.numero}  Emitido: {pagare.fecha_emision.strftime('%d/%m/%Y')}  Vence: {venc_str}"); y -= 0.6*cm
-        c.setFont("Helvetica", 8.5); c.setFillColor(colors.black)
+        c.setFont("Helvetica", 7.5); c.setFillColor(colors.black)
         venc_letras = fecha_letras(pagare.fecha_vencimiento) if pagare.fecha_vencimiento else "pagadero a la vista"
         texto = (f"Debo/Debemos y pagare/pagaremos mancomunada y solidariamente SIN PROTESTO "
             f"(Art. 50 D. Ley 5965/63), a la orden de {pagare.beneficiario.upper()}, "
@@ -505,10 +505,10 @@ def _generar_pdf_lote_pagares_3_por_hoja(pagares):
         palabras = texto.split(" "); linea = ""
         for p in palabras:
             prueba = linea + p + " "
-            if c.stringWidth(prueba, "Helvetica", 8.5) > w:
-                c.drawString(x, y, linea.rstrip()); y -= 0.4*cm; linea = p + " "
+            if c.stringWidth(prueba, "Helvetica", 7.5) > w:
+                c.drawString(x, y, linea.rstrip()); y -= 0.35*cm; linea = p + " "
             else: linea = prueba
-        if linea: c.drawString(x, y, linea.rstrip()); y -= 0.4*cm
+        if linea: c.drawString(x, y, linea.rstrip()); y -= 0.35*cm
         y -= 0.2*cm
         c.setFont("Helvetica-Bold", 8); c.setFillColor(AZUL); c.drawString(x, y, "Datos del deudor:"); y -= 0.4*cm
         c.setFont("Helvetica", 7.5); c.setFillColor(colors.black)
