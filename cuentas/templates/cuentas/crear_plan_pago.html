@@ -12,7 +12,7 @@
         <i data-lucide="arrow-left" style="width:16px;height:16px;margin-right:6px;"></i>
         Volver a cuenta corriente
     </a>
-    <h3 class="fw-bold mb-1">Crear Plan de Pago</h3>
+    <h3 class="fw-bold mb-1">{% if plan %}Editar{% else %}Crear{% endif %} Plan de Pago</h3>
     <p class="text-muted mb-0">Cliente: <strong>{{ cuenta.cliente }}</strong> · Saldo actual: <strong>$ {{ cuenta.saldo|floatformat:0 }}</strong></p>
 </div>
 
@@ -24,48 +24,102 @@
         {% csrf_token %}
 
         <div class="row g-4">
+
             <!-- DESCRIPCIÓN -->
             <div class="col-12">
-                <label class="form-label">Descripción</label>
+                <label class="form-label fw-semibold">Descripción</label>
                 {{ form.descripcion }}
             </div>
 
             <!-- TIPO DE PLAN -->
             <div class="col-md-6">
-                <label class="form-label">Tipo de plan</label>
+                <label class="form-label fw-semibold">Tipo de plan</label>
                 {{ form.tipo_plan }}
             </div>
 
             <!-- MONEDA -->
             <div class="col-md-6">
-                <label class="form-label">Moneda</label>
+                <label class="form-label fw-semibold">Moneda</label>
                 {{ form.moneda }}
             </div>
 
             <!-- MONTO FINANCIADO -->
             <div class="col-md-6">
-                <label class="form-label">Monto financiado</label>
+                <label class="form-label fw-semibold">Monto financiado</label>
                 {{ form.monto_financiado }}
             </div>
 
             <!-- ANTICIPO -->
             <div class="col-md-6">
-                <label class="form-label">Anticipo</label>
+                <label class="form-label fw-semibold">Anticipo</label>
                 {{ form.anticipo }}
+            </div>
+        </div>
+
+        <!-- ===============================
+             BLOQUE INTERESES
+        =============================== -->
+        <hr class="my-4">
+        <div class="d-flex align-items-center gap-2 mb-3">
+            <i data-lucide="percent" style="width:18px;height:18px;color:#f59e0b;"></i>
+            <h6 class="fw-bold mb-0">Intereses</h6>
+        </div>
+
+        <div class="row g-4">
+            <!-- INTERÉS DE FINANCIACIÓN -->
+            <div class="col-md-6">
+                <label class="form-label fw-semibold">
+                    Interés sobre el total (%)
+                    <span class="text-muted fw-normal" style="font-size:13px;">— Ej: 30 agrega un 30%</span>
+                </label>
+                {{ form.interes_financiacion }}
+                <small class="text-muted">El sistema calcula el total con interés automáticamente.</small>
+            </div>
+
+            <!-- INTERÉS MORA MENSUAL -->
+            <div class="col-md-6">
+                <label class="form-label fw-semibold">
+                    Interés mora mensual (%)
+                </label>
+                {{ form.interes_mora_mensual }}
+                <small class="text-muted">Se aplica por cuota vencida.</small>
+            </div>
+        </div>
+
+        <!-- RESUMEN CON INTERÉS (calculado en vivo) -->
+        <div id="resumen-interes" class="mt-3 p-3 rounded" style="background:#fffbeb;border:1px solid #fde68a;display:none;">
+            <div class="row g-3 text-center">
+                <div class="col-4">
+                    <small class="text-muted d-block">Monto base</small>
+                    <span class="fw-bold" id="txt-monto-base">—</span>
+                </div>
+                <div class="col-4">
+                    <small class="text-muted d-block">Interés aplicado</small>
+                    <span class="fw-bold text-warning" id="txt-interes-monto">—</span>
+                </div>
+                <div class="col-4">
+                    <small class="text-muted d-block">Total con interés</small>
+                    <span class="fw-bold text-danger" style="font-size:18px;" id="txt-total-interes">—</span>
+                </div>
             </div>
         </div>
 
         <!-- BLOQUE CUOTAS -->
         <div id="bloque-cuotas" class="mt-4">
             <hr class="my-4">
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <i data-lucide="layout-list" style="width:18px;height:18px;color:#3b82f6;"></i>
+                <h6 class="fw-bold mb-0">Cuotas</h6>
+            </div>
             <div class="row g-4">
                 <div class="col-md-6">
-                    <label class="form-label">Cantidad de cuotas</label>
+                    <label class="form-label fw-semibold">Cantidad de cuotas</label>
                     {{ form.cantidad_cuotas }}
                 </div>
                 <div class="col-md-6">
-                    <label class="form-label">Monto por cuota</label>
+                    <label class="form-label fw-semibold">Monto por cuota</label>
                     {{ form.monto_cuota }}
+                    <small class="text-muted">Se calcula automáticamente, pero podés editarlo.</small>
                 </div>
             </div>
         </div>
@@ -75,20 +129,13 @@
         <div class="row g-4">
             <!-- FECHA INICIO -->
             <div class="col-md-6">
-                <label class="form-label">Fecha de inicio</label>
+                <label class="form-label fw-semibold">Fecha de inicio</label>
                 {{ form.fecha_inicio }}
             </div>
 
-            <!-- INTERÉS MORA -->
-            <div class="col-md-6">
-                <label class="form-label">Interés por mora mensual (%)</label>
-                {{ form.interes_mora_mensual }}
-                <small class="text-muted">Interés automático por cuota vencida</small>
-            </div>
-
             <!-- DESCRIPCIÓN INTERÉS -->
-            <div class="col-12">
-                <label class="form-label">Descripción del interés</label>
+            <div class="col-md-6">
+                <label class="form-label fw-semibold">Descripción del interés</label>
                 {{ form.interes_descripcion }}
             </div>
         </div>
@@ -98,7 +145,7 @@
             <hr class="my-4">
             <div class="d-flex align-items-center gap-2 mb-3">
                 <i data-lucide="list" style="width:20px;height:20px;color:#3b82f6;"></i>
-                <h6 class="fw-bold mb-0">Detalle de cuotas (editable)</h6>
+                <h6 class="fw-bold mb-0">Cuotas generadas <span class="text-muted fw-normal" style="font-size:13px;">— podés editar la fecha de cada una</span></h6>
             </div>
 
             <input type="hidden" name="form-TOTAL_FORMS" id="id_form-TOTAL_FORMS">
@@ -122,7 +169,7 @@
         <div class="d-flex gap-3">
             <button type="submit" class="btn btn-primary">
                 <i data-lucide="check" style="width:16px;height:16px;margin-right:6px;"></i>
-                Crear Plan
+                {% if plan %}Guardar cambios{% else %}Crear Plan{% endif %}
             </button>
             <a href="{% url 'cuentas:cuenta_corriente_detalle' cuenta.id %}" class="btn btn-secondary">
                 Cancelar
@@ -131,51 +178,96 @@
     </form>
 </div>
 
+<!-- ===============================
+     JAVASCRIPT
+=============================== -->
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    const tipoPlan = document.getElementById('id_tipo_plan');
-    const montoFinanciado = document.getElementById('id_monto_financiado');
-    const cantidadCuotas = document.getElementById('id_cantidad_cuotas');
-    const montoCuota = document.getElementById('id_monto_cuota');
-    const fechaInicio = document.getElementById('id_fecha_inicio');
-    const anticipo = document.getElementById('id_anticipo');
-    const preview = document.getElementById('preview-cuotas');
-    const lista = document.getElementById('lista-cuotas');
-    const bloqueCuotas = document.getElementById('bloque-cuotas');
-    const errorBox = document.getElementById('error-plan');
-    const totalFormsInput = document.getElementById('id_form-TOTAL_FORMS');
 
-    function toggleCuotas() {
-        bloqueCuotas.style.display = tipoPlan.value === 'cuotas' ? 'block' : 'none';
-        if (tipoPlan.value !== 'cuotas') preview.style.display = 'none';
+    const tipoPlan          = document.getElementById('id_tipo_plan');
+    const montoFinanciado   = document.getElementById('id_monto_financiado');
+    const cantidadCuotas    = document.getElementById('id_cantidad_cuotas');
+    const montoCuota        = document.getElementById('id_monto_cuota');
+    const fechaInicio       = document.getElementById('id_fecha_inicio');
+    const anticipo          = document.getElementById('id_anticipo');
+    const interesFinanc     = document.getElementById('id_interes_financiacion');
+    const interesMora       = document.getElementById('id_interes_mora_mensual');
+
+    const preview           = document.getElementById('preview-cuotas');
+    const lista             = document.getElementById('lista-cuotas');
+    const bloqueCuotas      = document.getElementById('bloque-cuotas');
+    const errorBox          = document.getElementById('error-plan');
+    const totalFormsInput   = document.getElementById('id_form-TOTAL_FORMS');
+    const resumenInteres    = document.getElementById('resumen-interes');
+
+    // ==============================
+    // HELPERS DE FORMATO
+    // ==============================
+    function formatPesos(valor) {
+        return '$ ' + valor.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
     }
 
+    // ==============================
+    // CALCULAR TOTAL CON INTERÉS
+    // ==============================
+    function calcularTotalConInteres() {
+        const monto   = parseFloat(montoFinanciado.value) || 0;
+        const interes = parseFloat(interesFinanc.value) || 0;
+
+        if (monto <= 0) {
+            resumenInteres.style.display = 'none';
+            return monto;
+        }
+
+        const montoInteres = monto * (interes / 100);
+        const total        = monto + montoInteres;
+
+        if (interes > 0) {
+            document.getElementById('txt-monto-base').textContent    = formatPesos(monto);
+            document.getElementById('txt-interes-monto').textContent = formatPesos(montoInteres);
+            document.getElementById('txt-total-interes').textContent = formatPesos(total);
+            resumenInteres.style.display = 'block';
+        } else {
+            resumenInteres.style.display = 'none';
+        }
+
+        return total;
+    }
+
+    // ==============================
+    // CALCULAR MONTO POR CUOTA
+    // ==============================
     function calcularMontoCuota() {
         if (tipoPlan.value !== 'cuotas') return;
-        const monto = parseFloat(montoFinanciado.value);
+        const total  = calcularTotalConInteres();
         const cuotas = parseInt(cantidadCuotas.value);
-        if (!isNaN(monto) && monto > 0 && !isNaN(cuotas) && cuotas > 0) {
-            montoCuota.value = (monto / cuotas).toFixed(2);
+        if (total > 0 && cuotas > 0) {
+            montoCuota.value = (total / cuotas).toFixed(2);
         }
     }
 
+    // ==============================
+    // GENERAR PREVIEW DE CUOTAS
+    // ==============================
     function generarPreviewCuotas() {
         lista.innerHTML = '';
         preview.style.display = 'none';
         if (tipoPlan.value !== 'cuotas') return;
 
         const cuotas = parseInt(cantidadCuotas.value);
-        const monto = parseFloat(montoFinanciado.value);
+        const total  = calcularTotalConInteres();
         const inicio = fechaInicio.value;
-        if (!cuotas || cuotas <= 0 || !monto || monto <= 0 || !inicio) return;
 
-        const montoUnitario = (monto / cuotas).toFixed(2);
-        const fechaBase = new Date(inicio);
+        if (!cuotas || cuotas <= 0 || total <= 0 || !inicio) return;
+
+        const montoUnitario = (total / cuotas).toFixed(2);
+        const fechaBase     = new Date(inicio + 'T00:00:00');
+
         totalFormsInput.value = cuotas;
         preview.style.display = 'block';
 
         for (let i = 0; i < cuotas; i++) {
-            const fecha = new Date(fechaBase);
+            const fecha    = new Date(fechaBase);
             fecha.setDate(fecha.getDate() + (30 * i));
             const fechaStr = fecha.toISOString().split('T')[0];
 
@@ -189,7 +281,7 @@ document.addEventListener('DOMContentLoaded', function () {
                             <input type="date" name="form-${i}-vencimiento" class="form-control" value="${fechaStr}">
                         </div>
                         <div class="col-md-5">
-                            <input type="number" class="form-control" value="${montoUnitario}" readonly>
+                            <input type="text" class="form-control" value="${formatPesos(parseFloat(montoUnitario))}" readonly style="color:#374151;background:#e9ecef;">
                         </div>
                     </div>
                 </div>
@@ -197,37 +289,73 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    // ==============================
+    // MOSTRAR / OCULTAR BLOQUE CUOTAS
+    // ==============================
+    function toggleCuotas() {
+        bloqueCuotas.style.display = tipoPlan.value === 'cuotas' ? 'block' : 'none';
+        if (tipoPlan.value !== 'cuotas') preview.style.display = 'none';
+    }
+
+    // ==============================
+    // VALIDACIÓN ANTES DE SUBMIT
+    // ==============================
     window.validarPlan = function () {
         errorBox.classList.add('d-none');
         errorBox.innerText = '';
-        const monto = parseFloat(montoFinanciado.value);
+
+        const monto       = parseFloat(montoFinanciado.value);
         const anticipoVal = parseFloat(anticipo.value) || 0;
-        const cuotas = parseInt(cantidadCuotas.value);
+        const cuotas      = parseInt(cantidadCuotas.value);
+        const interes     = parseFloat(interesFinanc.value) || 0;
 
         if (!monto || monto <= 0) {
-            errorBox.innerText = "El monto financiado debe ser mayor a 0.";
+            errorBox.innerText = 'El monto financiado debe ser mayor a 0.';
             errorBox.classList.remove('d-none');
             return false;
         }
         if (anticipoVal > monto) {
-            errorBox.innerText = "El anticipo no puede ser mayor al monto financiado.";
+            errorBox.innerText = 'El anticipo no puede ser mayor al monto financiado.';
+            errorBox.classList.remove('d-none');
+            return false;
+        }
+        if (interes < 0) {
+            errorBox.innerText = 'El interés de financiación no puede ser negativo.';
             errorBox.classList.remove('d-none');
             return false;
         }
         if (tipoPlan.value === 'cuotas' && (!cuotas || cuotas <= 0)) {
-            errorBox.innerText = "Indicá la cantidad de cuotas.";
+            errorBox.innerText = 'Indicá la cantidad de cuotas.';
             errorBox.classList.remove('d-none');
             return false;
         }
         return true;
     };
 
+    // ==============================
+    // EVENTOS
+    // ==============================
     tipoPlan.addEventListener('change', toggleCuotas);
-    [montoFinanciado, cantidadCuotas].forEach(el => {
-        el.addEventListener('input', () => { calcularMontoCuota(); generarPreviewCuotas(); });
+
+    [montoFinanciado, interesFinanc].forEach(el => {
+        el.addEventListener('input', () => {
+            calcularMontoCuota();
+            generarPreviewCuotas();
+        });
     });
+
+    cantidadCuotas.addEventListener('input', () => {
+        calcularMontoCuota();
+        generarPreviewCuotas();
+    });
+
     fechaInicio.addEventListener('change', generarPreviewCuotas);
+
+    // ==============================
+    // INIT
+    // ==============================
     toggleCuotas();
+    calcularTotalConInteres();
 
     if (typeof lucide !== 'undefined') lucide.createIcons();
 });

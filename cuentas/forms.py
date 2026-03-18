@@ -10,28 +10,22 @@ from .models import (
 
 
 # ==========================================================
-# PLAN DE PAGO (NO SE TOCA)
+# PLAN DE PAGO
 # ==========================================================
 class PlanPagoForm(forms.ModelForm):
     class Meta:
         model = PlanPago
         fields = [
             'descripcion',
-
-            # 🔹 Definición del acuerdo
             'tipo_plan',
             'monto_financiado',
             'moneda',
-
-            # 🔹 Anticipo
             'anticipo',
-
-            # 🔹 Cuotas / vencimientos
             'cantidad_cuotas',
             'monto_cuota',
             'fecha_inicio',
-
             # 🔹 Intereses
+            'interes_financiacion',
             'interes_mora_mensual',
             'interes_descripcion',
         ]
@@ -40,50 +34,57 @@ class PlanPagoForm(forms.ModelForm):
             'descripcion': forms.TextInput(
                 attrs={'class': 'form-control'}
             ),
-
             'tipo_plan': forms.Select(
                 attrs={'class': 'form-select'}
             ),
-
             'monto_financiado': forms.NumberInput(
                 attrs={'class': 'form-control', 'step': '0.01'}
             ),
-
             'moneda': forms.Select(
                 attrs={'class': 'form-select'}
             ),
-
             'anticipo': forms.NumberInput(
                 attrs={'class': 'form-control', 'step': '0.01'}
             ),
-
             'cantidad_cuotas': forms.NumberInput(
                 attrs={'class': 'form-control'}
             ),
-
             'monto_cuota': forms.NumberInput(
-                attrs={'class': 'form-control', 'step': '0.01'}
+                attrs={
+                    'class': 'form-control',
+                    'step': '0.01',
+                    'placeholder': 'Se calcula automáticamente, pero podés editarlo.'
+                }
             ),
-
             'fecha_inicio': forms.DateInput(
                 attrs={'type': 'date', 'class': 'form-control'}
             ),
-
-            'interes_mora_mensual': forms.NumberInput(
-                attrs={'class': 'form-control', 'step': '0.01'}
+            'interes_financiacion': forms.NumberInput(
+                attrs={
+                    'class': 'form-control',
+                    'step': '0.01',
+                    'placeholder': 'Ej: 30 agrega un 30%',
+                    'min': '0'
+                }
             ),
-
+            'interes_mora_mensual': forms.NumberInput(
+                attrs={
+                    'class': 'form-control',
+                    'step': '0.01',
+                    'min': '0'
+                }
+            ),
             'interes_descripcion': forms.Textarea(
                 attrs={
                     'class': 'form-control',
                     'rows': 2,
-                    'placeholder': 'Ej: 5% mensual a partir del vencimiento'
+                    'placeholder': 'Ej: 40% financiación + 4% mora mensual'
                 }
             ),
         }
 
     # ======================================================
-    # VALIDACIONES DE NEGOCIO (NO ROMPEN NADA)
+    # VALIDACIONES DE NEGOCIO
     # ======================================================
     def clean(self):
         cleaned_data = super().clean()
@@ -92,37 +93,27 @@ class PlanPagoForm(forms.ModelForm):
         monto_financiado = cleaned_data.get('monto_financiado') or Decimal('0')
         anticipo = cleaned_data.get('anticipo') or Decimal('0')
         cantidad_cuotas = cleaned_data.get('cantidad_cuotas')
+        interes_financiacion = cleaned_data.get('interes_financiacion') or Decimal('0')
+        interes_mora = cleaned_data.get('interes_mora_mensual') or Decimal('0')
 
-        # ------------------------------
-        # Validaciones generales
-        # ------------------------------
         if monto_financiado <= 0:
-            self.add_error(
-                'monto_financiado',
-                'El monto financiado debe ser mayor a cero.'
-            )
+            self.add_error('monto_financiado', 'El monto financiado debe ser mayor a cero.')
 
         if anticipo < 0:
-            self.add_error(
-                'anticipo',
-                'El anticipo no puede ser negativo.'
-            )
+            self.add_error('anticipo', 'El anticipo no puede ser negativo.')
 
         if anticipo > monto_financiado:
-            self.add_error(
-                'anticipo',
-                'El anticipo no puede ser mayor al monto financiado.'
-            )
+            self.add_error('anticipo', 'El anticipo no puede ser mayor al monto financiado.')
 
-        # ------------------------------
-        # Validaciones por tipo de plan
-        # ------------------------------
+        if interes_financiacion < 0:
+            self.add_error('interes_financiacion', 'El interés no puede ser negativo.')
+
+        if interes_mora < 0:
+            self.add_error('interes_mora_mensual', 'El interés por mora no puede ser negativo.')
+
         if tipo_plan == 'cuotas':
             if not cantidad_cuotas or cantidad_cuotas <= 0:
-                self.add_error(
-                    'cantidad_cuotas',
-                    'Debe indicar la cantidad de cuotas.'
-                )
+                self.add_error('cantidad_cuotas', 'Debe indicar la cantidad de cuotas.')
 
         elif tipo_plan == 'unico':
             cleaned_data['cantidad_cuotas'] = 1
@@ -135,7 +126,7 @@ class PlanPagoForm(forms.ModelForm):
 
 
 # ==========================================================
-# 🆕 FORMSET PARA EDITAR FECHAS DE CUOTAS (AL CREAR PLAN)
+# FORMSET PARA EDITAR FECHAS DE CUOTAS (AL CREAR PLAN)
 # ==========================================================
 CuotaFechaFormSet = modelformset_factory(
     CuotaPlan,
@@ -211,9 +202,6 @@ class PagoForm(forms.Form):
         widget=forms.TextInput(attrs={'class': 'form-control'})
     )
 
-    # ======================================================
-    # CONSTRUCTOR (FILTRA CUOTAS PENDIENTES)
-    # ======================================================
     def __init__(self, *args, **kwargs):
         self.cuenta = kwargs.pop('cuenta', None)
         super().__init__(*args, **kwargs)
@@ -224,9 +212,6 @@ class PagoForm(forms.Form):
                 estado='pendiente'
             ).order_by('numero')
 
-    # ======================================================
-    # VALIDACIONES DE NEGOCIO (BLINDAJE)
-    # ======================================================
     def clean(self):
         cleaned_data = super().clean()
 
@@ -237,30 +222,18 @@ class PagoForm(forms.Form):
         cuota = cleaned_data.get('cuota')
 
         if monto <= 0:
-            self.add_error(
-                'monto',
-                'El monto debe ser mayor a cero.'
-            )
+            self.add_error('monto', 'El monto debe ser mayor a cero.')
             return cleaned_data
 
         if forma_pago == 'cheque':
             if not banco:
-                self.add_error(
-                    'banco',
-                    'Debe indicar el banco del cheque.'
-                )
+                self.add_error('banco', 'Debe indicar el banco del cheque.')
             if not numero_cheque:
-                self.add_error(
-                    'numero_cheque',
-                    'Debe indicar el número de cheque.'
-                )
+                self.add_error('numero_cheque', 'Debe indicar el número de cheque.')
 
         if self.cuenta and self.cuenta.saldo is not None:
             if monto > self.cuenta.saldo:
-                self.add_error(
-                    'monto',
-                    'El monto ingresado supera el saldo total de la cuenta.'
-                )
+                self.add_error('monto', 'El monto ingresado supera el saldo total de la cuenta.')
 
         if cuota:
             total_pendiente_plan = sum(
@@ -269,11 +242,7 @@ class PagoForm(forms.Form):
                     estado='pendiente'
                 )
             )
-
             if monto > total_pendiente_plan:
-                self.add_error(
-                    'monto',
-                    'El monto ingresado supera lo pendiente del plan de pago.'
-                )
+                self.add_error('monto', 'El monto ingresado supera lo pendiente del plan de pago.')
 
         return cleaned_data

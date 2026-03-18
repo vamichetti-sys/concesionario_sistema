@@ -51,13 +51,6 @@ class CuentaCorriente(models.Model):
     # CÁLCULO AUTOMÁTICO DE SALDO
     # ======================================================
     def recalcular_saldo(self):
-        """
-        Reglas reales del negocio:
-        - Crear plan de pago → genera deuda
-        - Registrar pago → reduce deuda
-        - saldo > 0  → deuda
-        - saldo = 0  → al_dia
-        """
         total_debe = self.movimientos.filter(
             tipo__in=['debe', 'deuda']
         ).aggregate(
@@ -194,7 +187,7 @@ class PlanPago(models.Model):
     )
 
     TIPOS_PLAN = (
-        ('cuotas', 'Cuotas'),
+        ('cuotas', 'Cuotas en pesos'),
         ('unico', 'Pago único'),
         ('cheques', 'Cheques'),
     )
@@ -218,12 +211,23 @@ class PlanPago(models.Model):
         default='cuotas'
     )
 
-    interes_descripcion = models.TextField(blank=True)
+    # 🔹 Interés de financiación (sobre el total, ej: 40%)
+    interes_financiacion = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=0,
+        help_text="Porcentaje de interés aplicado al monto financiado. Ej: 40 = 40%"
+    )
+
+    # 🔹 Interés por mora de cuota (mensual)
     interes_mora_mensual = models.DecimalField(
         max_digits=5,
         decimal_places=2,
-        default=0
+        default=0,
+        help_text="Porcentaje de mora mensual por cuota vencida. Ej: 4 = 4%"
     )
+
+    interes_descripcion = models.TextField(blank=True)
 
     moneda = models.CharField(
         max_length=3,
@@ -242,6 +246,17 @@ class PlanPago(models.Model):
     def __str__(self):
         return f"Plan {self.get_tipo_plan_display()} | {self.cuenta}"
 
+    # ======================================================
+    # PROPIEDAD: total con interés de financiación
+    # ======================================================
+    @property
+    def total_con_interes(self):
+        """Monto financiado + interés de financiación aplicado."""
+        if self.interes_financiacion and self.interes_financiacion > 0:
+            factor = Decimal('1') + (self.interes_financiacion / Decimal('100'))
+            return (self.monto_financiado * factor).quantize(Decimal('0.01'))
+        return self.monto_financiado
+
     def save(self, *args, **kwargs):
         es_nuevo = self.pk is None
         super().save(*args, **kwargs)
@@ -249,14 +264,14 @@ class PlanPago(models.Model):
         if es_nuevo:
             cuenta = self.cuenta
 
-            # ✅ FIX: Siempre crear el movimiento de deuda para cada plan nuevo
-            # Antes se usaba icontains='Plan de pago' y si ya existía uno viejo
-            # (por ejemplo de un plan anulado), no se creaba la deuda nueva.
+            # La deuda se genera por el total con interés de financiación
+            monto_deuda = self.total_con_interes
+
             MovimientoCuenta.objects.create(
                 cuenta=cuenta,
                 descripcion=f'Plan de pago #{self.pk} - {self.descripcion}',
                 tipo='debe',
-                monto=self.monto_financiado,
+                monto=monto_deuda,
                 origen='venta'
             )
             cuenta.recalcular_saldo()
@@ -459,4 +474,3 @@ class BitacoraCuenta(models.Model):
 
     def __str__(self):
         return f"{self.fecha} - {self.accion}"
-
