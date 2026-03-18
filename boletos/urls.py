@@ -61,6 +61,11 @@ urlpatterns = [
         name="pagare_pdf"
     ),
     path(
+        'pagare/lote/<int:lote_id>/pdf/',
+        views.descargar_pdf_lote,
+        name='descargar_pdf_lote'
+    ),
+    path(
         'pagare/lote/<int:lote_id>/',
         views.ver_lote,
         name='ver_lote'

@@ -720,6 +720,21 @@ def pagare_pdf(request, pagare_id):
     return HttpResponse(buffer.getvalue(), content_type="application/pdf")
 
 
+
+
+# ====================================
+# DESCARGAR PDF LOTE ON-DEMAND
+# ====================================
+def descargar_pdf_lote(request, lote_id):
+    lote = get_object_or_404(PagareLote, id=lote_id)
+    pagares = list(lote.pagares.all().order_by('numero'))
+    
+    pdf_bytes = _generar_pdf_lote_pagares_3_por_hoja(pagares)
+    
+    response = HttpResponse(pdf_bytes, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="pagares_lote_{lote.id}.pdf"'
+    return response
+
 # ====================================
 # VER LOTE DE PAGARÉS
 # ====================================
