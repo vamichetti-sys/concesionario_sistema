@@ -730,7 +730,9 @@ def ver_lote(request, lote_id):
     if lote.pdf:
         url = lote.pdf.url
         if 'cloudinary.com' in url:
-            url = url + '?fl_attachment'
+            url = url.replace('/image/upload/', '/raw/upload/')
+            if '?' not in url:
+                url = url + '?fl_attachment'
         pdf_url = url
     return render(
         request,
