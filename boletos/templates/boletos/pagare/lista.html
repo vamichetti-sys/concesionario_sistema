@@ -91,16 +91,19 @@
                         <span class="fw-bold" style="color:#10b981;">$ {{ l.monto_total|floatformat:0 }}</span>
                     </td>
 
-                    <!-- ACCIONES / PDF -->
+                    <!-- ACCIONES -->
                     <td class="text-end">
-                        {% if l.pdf %}
-                        <a href="{{ l.pdf.url }}" target="_blank" class="btn btn-success btn-sm">
-                            <i data-lucide="file-down" style="width:14px;height:14px;margin-right:4px;"></i>
-                            PDF
-                        </a>
-                        {% else %}
-                        <span class="text-muted" style="font-size:12px;">Sin PDF</span>
-                        {% endif %}
+                        <div class="d-flex gap-2 justify-content-end">
+                            <a href="{% url 'boletos:ver_lote' l.id %}" class="btn btn-primary btn-sm">
+                                <i data-lucide="eye" style="width:14px;height:14px;margin-right:4px;"></i>
+                                Ver
+                            </a>
+                            {% if l.pdf_url %}
+                            <a href="{{ l.pdf_url }}" target="_blank" class="btn btn-success btn-sm">
+                                <i data-lucide="file-down" style="width:14px;height:14px;"></i>
+                            </a>
+                            {% endif %}
+                        </div>
                     </td>
                 </tr>
                 {% endfor %}

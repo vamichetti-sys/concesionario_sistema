@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block title %}Lote de pagarés{% endblock %}
+{% block content %}
+
+<!-- ENCABEZADO -->
+<div class="mb-4">
+    <a href="{% url 'boletos:lista_pagares' %}" class="text-muted text-decoration-none d-inline-flex align-items-center mb-2" style="font-size:14px;">
+        <i data-lucide="arrow-left" style="width:16px;height:16px;margin-right:6px;"></i>
+        Volver a pagarés
+    </a>
+    <h3 class="fw-bold mb-1">Lote de pagarés — {{ lote.cliente.nombre_completo }}</h3>
+</div>
+
+<!-- MENSAJES -->
+{% if messages %}
+{% for message in messages %}
+<div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} mb-4">
+    {{ message }}
+</div>
+{% endfor %}
+{% endif %}
+
+<!-- BOTONES -->
+<div class="d-flex gap-2 mb-4">
+    {% if lote.pdf %}
+    <a href="{{ lote.pdf.url }}" target="_blank" class="btn btn-primary">
+        <i data-lucide="file-down" style="width:16px;height:16px;margin-right:6px;"></i>
+        Descargar PDF
+    </a>
+    {% endif %}
+    <a href="{% url 'boletos:eliminar_lote' lote.id %}" class="btn btn-outline-danger">
+        <i data-lucide="trash-2" style="width:16px;height:16px;margin-right:6px;"></i>
+        Eliminar lote
+    </a>
+</div>
+
+<!-- INFO DEL LOTE -->
+<div class="card p-4 mb-4">
+    <div class="row g-4">
+        <div class="col-md-3">
+            <small class="text-muted d-block">Cliente</small>
+            <span class="fw-semibold">{{ lote.cliente.nombre_completo }}</span>
+        </div>
+        <div class="col-md-3">
+            <small class="text-muted d-block">Beneficiario</small>
+            <span class="fw-semibold">{{ lote.beneficiario }}</span>
+        </div>
+        <div class="col-md-2">
+            <small class="text-muted d-block">Monto total</small>
+            <span class="fw-bold" style="color:#10b981;">${{ lote.monto_total|floatformat:0 }}</span>
+        </div>
+        <div class="col-md-2">
+            <small class="text-muted d-block">Cantidad</small>
+            <span class="fw-semibold">{{ lote.cantidad }} pagarés</span>
+        </div>
+        <div class="col-md-2">
+            <small class="text-muted d-block">Lugar · Fecha emisión</small>
+            <span class="fw-semibold">{{ lote.lugar_emision }} · {{ lote.fecha_emision|date:"d/m/Y" }}</span>
+        </div>
+    </div>
+</div>
+
+<!-- TABLA DE PAGARÉS -->
+{% if pagares %}
+<div class="card p-0">
+    <div class="p-4 border-bottom">
+        <h6 class="fw-bold mb-0">Pagarés generados</h6>
+    </div>
+    <div class="table-responsive">
+        <table class="table align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Nº</th>
+                    <th>Emisión</th>
+                    <th>Vencimiento</th>
+                    <th class="text-end">Monto</th>
+                    <th>Beneficiario</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in pagares %}
+                <tr>
+                    <td><span class="badge bg-secondary">{{ p.numero }}</span></td>
+                    <td class="text-muted">{{ p.fecha_emision|date:"d/m/Y" }}</td>
+                    <td class="fw-semibold">
+                        {% if p.fecha_vencimiento %}
+                            {{ p.fecha_vencimiento|date:"d/m/Y" }}
+                        {% else %}
+                            <span class="badge bg-info">A la vista</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end fw-bold">${{ p.monto|floatformat:0 }}</td>
+                    <td class="text-muted">{{ p.beneficiario }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr class="border-top">
+                    <td colspan="3" class="fw-bold text-muted" style="font-size:12px;">TOTAL</td>
+                    <td class="text-end fw-bold" style="color:#10b981;">${{ lote.monto_total|floatformat:0 }}</td>
+                    <td></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+{% else %}
+<div class="card p-5 text-center">
+    <p class="text-muted mb-0">Sin pagarés generados.</p>
+</div>
+{% endif %}
+
+<script>
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+</script>
+
+{% endblock %}

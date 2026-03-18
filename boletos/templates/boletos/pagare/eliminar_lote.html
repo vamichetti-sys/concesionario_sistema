@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Eliminar lote de pagarés{% endblock %}
+{% block content %}
+
+<div class="mb-4">
+    <a href="{% url 'boletos:lista_pagares' %}" class="text-muted text-decoration-none d-inline-flex align-items-center mb-2" style="font-size:14px;">
+        <i data-lucide="arrow-left" style="width:16px;height:16px;margin-right:6px;"></i>
+        Volver a pagarés
+    </a>
+    <h3 class="fw-bold mb-1">Eliminar lote de pagarés</h3>
+</div>
+
+<div class="card p-4" style="max-width:500px;">
+    <div class="d-flex align-items-center gap-3 mb-4">
+        <div style="width:48px;height:48px;background:rgba(239,68,68,0.1);border-radius:12px;display:flex;align-items:center;justify-content:center;">
+            <i data-lucide="trash-2" style="width:24px;height:24px;color:#ef4444;"></i>
+        </div>
+        <div>
+            <div class="fw-bold">{{ lote.cliente.nombre_completo }}</div>
+            <div class="text-muted" style="font-size:13px;">
+                {{ lote.cantidad }} pagarés · $ {{ lote.monto_total|floatformat:0 }} · {{ lote.fecha_emision|date:"d/m/Y" }}
+            </div>
+        </div>
+    </div>
+
+    <div class="alert alert-danger mb-4" style="font-size:14px;">
+        <i data-lucide="alert-triangle" style="width:16px;height:16px;margin-right:6px;"></i>
+        Esta acción es <strong>irreversible</strong>. Se eliminarán el lote y todos sus pagarés.
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+        <div class="d-flex gap-3">
+            <button type="submit" class="btn btn-danger">
+                <i data-lucide="trash-2" style="width:16px;height:16px;margin-right:6px;"></i>
+                Sí, eliminar
+            </button>
+            <a href="{% url 'boletos:lista_pagares' %}" class="btn btn-secondary">
+                Cancelar
+            </a>
+        </div>
+    </form>
+</div>
+
+<script>
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+</script>
+
+{% endblock %}
