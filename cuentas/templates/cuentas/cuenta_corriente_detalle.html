@@ -93,20 +93,30 @@
 =============================== -->
 <div class="card p-4 mb-4">
     <div class="d-flex flex-wrap gap-3">
+
         <a href="{% url 'cuentas:registrar_movimiento' cuenta.id %}" class="btn btn-primary">
             <i data-lucide="plus" style="width:16px;height:16px;margin-right:6px;"></i>
             Generar movimiento
         </a>
-        <a href="{% url 'cuentas:crear_plan_pago' cuenta.id %}" class="btn btn-secondary">
-            <i data-lucide="calendar" style="width:16px;height:16px;margin-right:6px;"></i>
-            Crear plan de pago
-        </a>
+
         {% if plan and plan.estado == "activo" %}
+        <!-- Plan activo: mostrar Editar y Anular -->
+        <a href="{% url 'cuentas:crear_plan_pago' cuenta.id %}" class="btn btn-secondary">
+            <i data-lucide="pencil" style="width:16px;height:16px;margin-right:6px;"></i>
+            Editar plan
+        </a>
         <a href="{% url 'cuentas:eliminar_plan_pago' cuenta.id %}" class="btn btn-outline-danger" onclick="return confirm('¿Anular el plan de pago?');">
             <i data-lucide="x" style="width:16px;height:16px;margin-right:6px;"></i>
             Anular plan
         </a>
+        {% else %}
+        <!-- Sin plan activo: mostrar Crear -->
+        <a href="{% url 'cuentas:crear_plan_pago' cuenta.id %}" class="btn btn-secondary">
+            <i data-lucide="calendar" style="width:16px;height:16px;margin-right:6px;"></i>
+            Crear plan de pago
+        </a>
         {% endif %}
+
     </div>
 </div>
 
@@ -130,13 +140,19 @@
                     <th class="text-end">Pagado</th>
                     <th class="text-end">Saldo</th>
                     <th>Estado</th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody>
                 {% for cuota in cuenta.plan_pago.cuotas.all %}
                 <tr>
                     <td><span class="badge bg-info">{{ cuota.numero }}</span></td>
-                    <td><span class="text-muted">{{ cuota.vencimiento|date:"d/m/Y" }}</span></td>
+                    <td>
+                        <span class="text-muted">{{ cuota.vencimiento|date:"d/m/Y" }}</span>
+                        {% if cuota.esta_vencida %}
+                        <span class="badge bg-danger ms-1" style="font-size:10px;">Vencida</span>
+                        {% endif %}
+                    </td>
                     <td class="text-end">$ {{ cuota.monto|floatformat:0 }}</td>
                     <td class="text-end text-success">$ {{ cuota.total_pagado|floatformat:0 }}</td>
                     <td class="text-end fw-bold {% if cuota.saldo_pendiente > 0 %}text-danger{% else %}text-success{% endif %}">
@@ -145,10 +161,17 @@
                     <td>
                         {% if cuota.estado == 'pagada' %}
                         <span class="badge bg-success">Pagada</span>
-                        {% elif cuota.estado == 'vencida' %}
+                        {% elif cuota.esta_vencida %}
                         <span class="badge bg-danger">Vencida</span>
                         {% else %}
                         <span class="badge bg-secondary">{{ cuota.get_estado_display }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if cuota.estado != 'pagada' %}
+                        <a href="{% url 'cuentas:editar_cuota' cuota.id %}" class="btn btn-sm btn-outline-secondary">
+                            Editar
+                        </a>
                         {% endif %}
                     </td>
                 </tr>
@@ -314,31 +337,21 @@
 
 <script>
 function setearVehiculoVincular(vehiculoId) {
-    const form = document.getElementById('formVincularVehiculo');
-    const btn = document.getElementById('btnVincularVehiculo');
+    const form    = document.getElementById('formVincularVehiculo');
+    const btn     = document.getElementById('btnVincularVehiculo');
     const baseUrl = form.dataset.urlBase;
-
-    if (!vehiculoId) {
-        form.action = "";
-        btn.disabled = true;
-        return;
-    }
-    form.action = baseUrl.replace('9999', vehiculoId);
+    if (!vehiculoId) { form.action = ""; btn.disabled = true; return; }
+    form.action  = baseUrl.replace('9999', vehiculoId);
     btn.disabled = false;
 }
 
 function validarVinculacionVehiculo() {
     const form = document.getElementById('formVincularVehiculo');
-    if (!form.action) {
-        alert("Tenés que seleccionar un vehículo antes de continuar.");
-        return false;
-    }
+    if (!form.action) { alert("Tenés que seleccionar un vehículo antes de continuar."); return false; }
     return true;
 }
 
-if (typeof lucide !== 'undefined') {
-    lucide.createIcons();
-}
+if (typeof lucide !== 'undefined') lucide.createIcons();
 </script>
 
 {% endblock %}
