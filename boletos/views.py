@@ -513,7 +513,8 @@ def _generar_pdf_lote_pagares_3_por_hoja(pagares):
         c.setFont("Helvetica-Bold", 8); c.setFillColor(AZUL); c.drawString(x, y, "Datos del deudor:"); y -= 0.4*cm
         c.setFont("Helvetica", 7.5); c.setFillColor(colors.black)
         c.drawString(x, y, f"Nombre: {cl.nombre_completo.upper()}   DNI/CUIT: {cl.dni_cuit or ''}   Domicilio: {cl.direccion or ''}"[:110])
-        firma_y = 1.4*cm
+        # Firmas siempre al fondo fijo
+        firma_y = 1.8*cm
         c.setStrokeColor(colors.HexColor("#333333")); c.setLineWidth(0.5)
         c.line(x, firma_y, x+w*0.38, firma_y)
         c.setFont("Helvetica", 7); c.setFillColor(colors.HexColor("#555555"))
@@ -521,10 +522,10 @@ def _generar_pdf_lote_pagares_3_por_hoja(pagares):
         c.drawString(x, firma_y-0.58*cm, cl.nombre_completo.upper()[:40])
         c.line(x+w*0.55, firma_y, x+w, firma_y)
         c.drawString(x+w*0.55, firma_y-0.32*cm, "Aclaracion")
-        bx=x+w*0.41; by=firma_y-0.15*cm; bw=w*0.11; bh=0.9*cm
+        bx=x+w*0.41; by=firma_y-0.15*cm; bw=w*0.13; bh=1.0*cm
         c.setStrokeColor(AZUL); c.setLineWidth(0.8); c.rect(bx,by,bw,bh)
-        c.setFont("Helvetica-Bold",6.5); c.setFillColor(AZUL); c.drawCentredString(bx+bw/2,by+0.6*cm,"VENCE")
-        c.setFont("Helvetica-Bold",7.5); c.setFillColor(colors.black); c.drawCentredString(bx+bw/2,by+0.18*cm,venc_str)
+        c.setFont("Helvetica-Bold",6.5); c.setFillColor(AZUL); c.drawCentredString(bx+bw/2,by+0.68*cm,"VENCE")
+        c.setFont("Helvetica-Bold",7.5); c.setFillColor(colors.black); c.drawCentredString(bx+bw/2,by+0.22*cm,venc_str)
 
     def linea_central(c):
         c.setStrokeColor(colors.HexColor("#cccccc")); c.setDash(4,4); c.setLineWidth(0.8)
