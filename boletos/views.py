@@ -258,12 +258,15 @@ def ver_boleto(request, boleto_id):
         "dni": cliente.dni_cuit or "",
     }
 
+    clausulas = [p.strip() for p in texto_boleto.split("\n") if p.strip()]
+
     return render(
         request,
         "boletos/ver.html",
         {
             "boleto": boleto,
             "texto_boleto": texto_boleto,
+            "clausulas": clausulas,
             "vendedor": vendedor,
             "comprador": comprador,
         }
