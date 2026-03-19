@@ -78,6 +78,41 @@ def _construir_texto_boleto(cliente, vehiculo, f, moneda='ARS'):
 
 
 # ====================================
+# HELPER: contexto compartido para boleto
+# ====================================
+def _contexto_boleto(boleto):
+    texto_boleto = re.sub(
+        r"\n\s*\n+", "\n", (boleto.texto_final or "").strip()
+    )
+    clausulas = [p.strip() for p in texto_boleto.split("\n") if p.strip()]
+    nota = ""
+    if "Nota:" in (boleto.texto_final or ""):
+        nota = boleto.texto_final.split("Nota:")[-1].strip()
+
+    cliente = boleto.cliente
+    nombre_completo = (cliente.nombre_completo or "").strip()
+    partes = nombre_completo.split(" ", 1)
+
+    return {
+        "boleto": boleto,
+        "clausulas": clausulas,
+        "nota": nota,
+        "vendedor": {
+            "apellido": "AMICHETTI",
+            "nombre": "HUGO ALBERTO",
+            "direccion": "LARREA 255",
+            "dni": "13814200",
+        },
+        "comprador": {
+            "apellido": partes[0] if partes else "",
+            "nombre": partes[1] if len(partes) > 1 else "",
+            "direccion": cliente.direccion or "",
+            "dni": cliente.dni_cuit or "",
+        },
+    }
+
+
+# ====================================
 # PANEL DE BOLETOS
 # ====================================
 def panel_boletos(request):
@@ -90,270 +125,41 @@ def panel_boletos(request):
 def lista_boletos(request):
     q = request.GET.get("q", "")
     boletos = BoletoCompraventa.objects.all()
-
     if q:
         boletos = boletos.filter(Q(texto_final__icontains=q))
-
-    return render(
-        request,
-        "boletos/lista.html",
-        {"boletos": boletos, "query": q}
-    )
+    return render(request, "boletos/lista.html", {"boletos": boletos, "query": q})
 
 
 # ====================================
-# GENERAR PDF BOLETO DESDE HTML
-# — usa template separado (sin base.html)
+# GENERAR PDF CON WEASYPRINT
 # ====================================
 def generar_boleto_pdf_desde_html(request, boleto):
     from weasyprint import HTML
-
-    cliente = boleto.cliente
-    nombre_completo = cliente.nombre_completo or ""
-    partes = nombre_completo.strip().split(" ", 1)
-
-    apellido_cliente = partes[0] if partes else ""
-    nombre_cliente   = partes[1] if len(partes) > 1 else ""
-
-    texto_boleto = re.sub(
-        r"\n\s*\n+", "\n", (boleto.texto_final or "").strip()
-    )
-    clausulas = [p.strip() for p in texto_boleto.split("\n") if p.strip()]
-
-    html_string = render_to_string(
-        # ✅ Template limpio, sin base.html ni sidebar
-        "boletos/boleto_pdf.html",
-        {
-            "boleto": boleto,
-            "clausulas": clausulas,
-            "nota": boleto.texto_final.split("Nota:")[-1].strip() if "Nota:" in (boleto.texto_final or "") else "",
-            "vendedor": {
-                "apellido": "AMICHETTI",
-                "nombre": "HUGO ALBERTO",
-                "direccion": "LARREA 255, ROJAS",
-                "dni": "13814200",
-            },
-            "comprador": {
-                "apellido": apellido_cliente,
-                "nombre": nombre_cliente,
-                "direccion": cliente.direccion or "",
-                "dni": cliente.dni_cuit or "",
-            },
-        },
-        request=request
-    )
-
+    ctx = _contexto_boleto(boleto)
+    html_string = render_to_string("boletos/boleto_pdf.html", ctx, request=request)
     buffer = BytesIO()
-    HTML(
-        string=html_string,
-        base_url=request.build_absolute_uri()
-    ).write_pdf(buffer)
-
+    HTML(string=html_string, base_url=request.build_absolute_uri()).write_pdf(buffer)
     buffer.seek(0)
     return ContentFile(buffer.read())
 
 
 # ====================================
-# CREAR BOLETO
-# ====================================
-def crear_boleto_manual(request):
-    ultimo = BoletoCompraventa.objects.aggregate(
-        numero_max=Max("numero")
-    )["numero_max"] or 0
-
-    numero = ultimo + 1
-
-    if request.method == "POST":
-        form = CrearBoletoForm(request.POST)
-
-        if form.is_valid():
-            f        = form.cleaned_data
-            cliente  = f["cliente"]
-            vehiculo = f.get("vehiculo")
-            moneda   = f.get("moneda", "ARS")
-
-            if not vehiculo:
-                messages.error(request, "❌ Debe seleccionar un vehículo.")
-                return render(
-                    request,
-                    "boletos/crear.html",
-                    {"form": form, "numero": numero}
-                )
-
-            if not cliente or not cliente.activo:
-                messages.error(request, "❌ Cliente inválido.")
-                return render(
-                    request,
-                    "boletos/crear.html",
-                    {"form": form, "numero": numero}
-                )
-
-            cuenta_activa = (
-                CuentaCorriente.objects
-                .filter(cliente=cliente)
-                .exclude(estado="cerrada")
-                .first()
-            )
-
-            venta = (
-                cuenta_activa.venta
-                if cuenta_activa and hasattr(cuenta_activa, "venta")
-                else None
-            )
-
-            texto_final = _construir_texto_boleto(cliente, vehiculo, f, moneda)
-
-            boleto = BoletoCompraventa.objects.create(
-                numero=numero,
-                cliente=cliente,
-                vehiculo=vehiculo,
-                cuenta_corriente=cuenta_activa,
-                venta=venta,
-                texto_final=texto_final
-            )
-
-            try:
-                pdf_file = generar_boleto_pdf_desde_html(request, boleto)
-                boleto.pdf.save(
-                    f"boleto_{boleto.numero}.pdf",
-                    pdf_file,
-                    save=True
-                )
-            except Exception as e:
-                print("❌ ERROR PDF BOLETO:", e)
-                messages.warning(
-                    request,
-                    "⚠️ El boleto se creó correctamente, pero el PDF no pudo generarse."
-                )
-
-            messages.success(request, "✅ Boleto generado correctamente")
-            return redirect("boletos:ver_boleto", boleto.id)
-
-    return render(
-        request,
-        "boletos/crear.html",
-        {"form": CrearBoletoForm(), "numero": numero}
-    )
-
-
-# ====================================
-# VER BOLETO
+# VER BOLETO (pantalla)
 # ====================================
 def ver_boleto(request, boleto_id):
     boleto = get_object_or_404(BoletoCompraventa, id=boleto_id)
-
-    texto_boleto = re.sub(
-        r"\n\s*\n+", "\n", (boleto.texto_final or "").strip()
-    )
-
-    vendedor = {
-        "apellido": "AMICHETTI",
-        "nombre": "HUGO ALBERTO",
-        "direccion": "LARREA 255",
-        "dni": "13814200",
-    }
-
-    cliente = boleto.cliente
-    nombre_completo = (cliente.nombre_completo or "").strip()
-    partes = nombre_completo.split(" ", 1)
-
-    comprador = {
-        "apellido": partes[0] if partes else "",
-        "nombre": partes[1] if len(partes) > 1 else "",
-        "direccion": cliente.direccion or "",
-        "dni": cliente.dni_cuit or "",
-    }
-
-    clausulas = [p.strip() for p in texto_boleto.split("\n") if p.strip()]
-
-    return render(
-        request,
-        "boletos/ver.html",
-        {
-            "boleto": boleto,
-            "texto_boleto": texto_boleto,
-            "clausulas": clausulas,
-            "vendedor": vendedor,
-            "comprador": comprador,
-        }
-    )
+    ctx = _contexto_boleto(boleto)
+    return render(request, "boletos/ver.html", ctx)
 
 
 # ====================================
-# EDITAR BOLETO
+# IMPRIMIR BOLETO (página limpia, sin base.html)
+# — soluciona el blanco en Safari y Chrome
 # ====================================
-def editar_boleto(request, boleto_id):
+def imprimir_boleto(request, boleto_id):
     boleto = get_object_or_404(BoletoCompraventa, id=boleto_id)
-
-    from .forms import EditarBoletoForm
-
-    precio_numeros_inicial   = ""
-    precio_letras_inicial    = ""
-    saldo_forma_pago_inicial = ""
-    moneda_inicial           = "ARS"
-
-    if boleto.texto_final:
-        if 'U$S' in boleto.texto_final or 'DÓLARES' in boleto.texto_final:
-            moneda_inicial = 'USD'
-
-        match_9 = re.search(
-            r"9°.*?precio total.*?es de\s*[U$S$]*\s*(.*?)\((.*?)\),\s*quedando.*?modalidad de pago:\s*(.*?)(?=10°|\Z)",
-            boleto.texto_final,
-            re.DOTALL | re.IGNORECASE
-        )
-        if match_9:
-            precio_numeros_inicial   = match_9.group(1).strip()
-            precio_letras_inicial    = match_9.group(2).strip()
-            saldo_forma_pago_inicial = match_9.group(3).strip()
-
-    if request.method == "POST":
-        form = EditarBoletoForm(request.POST, instance=boleto)
-        if form.is_valid():
-            boleto   = form.save(commit=False)
-            cliente  = boleto.cliente
-            vehiculo = boleto.vehiculo
-            moneda   = form.cleaned_data.get("moneda", "ARS")
-
-            boleto.texto_final = _construir_texto_boleto(
-                cliente, vehiculo, form.cleaned_data, moneda
-            )
-            boleto.save()
-
-            try:
-                if boleto.pdf:
-                    boleto.pdf.delete(save=False)
-                pdf_file = generar_boleto_pdf_desde_html(request, boleto)
-                boleto.pdf.save(
-                    f"boleto_{boleto.numero}.pdf",
-                    pdf_file,
-                    save=True
-                )
-                messages.success(request, "✅ Boleto actualizado y PDF regenerado correctamente.")
-            except Exception as e:
-                print("❌ ERROR PDF BOLETO (edición):", e)
-                messages.warning(request, "⚠️ Boleto actualizado, pero el PDF no pudo regenerarse.")
-
-            return redirect("boletos:ver_boleto", boleto.id)
-
-    else:
-        form = EditarBoletoForm(
-            instance=boleto,
-            initial={
-                "moneda":           moneda_inicial,
-                "precio_numeros":   precio_numeros_inicial,
-                "precio_letras":    precio_letras_inicial,
-                "saldo_forma_pago": saldo_forma_pago_inicial,
-            }
-        )
-
-    return render(
-        request,
-        "boletos/editar.html",
-        {
-            "form": form,
-            "boleto": boleto,
-        }
-    )
+    ctx = _contexto_boleto(boleto)
+    return render(request, "boletos/boleto_pdf.html", ctx)
 
 
 # ====================================
@@ -373,26 +179,135 @@ def eliminar_boleto(request, boleto_id):
     return redirect("boletos:ver_boleto", boleto_id=boleto_id)
 
 
+# ====================================
+# CREAR BOLETO
+# ====================================
+def crear_boleto_manual(request):
+    ultimo = BoletoCompraventa.objects.aggregate(numero_max=Max("numero"))["numero_max"] or 0
+    numero = ultimo + 1
+
+    if request.method == "POST":
+        form = CrearBoletoForm(request.POST)
+        if form.is_valid():
+            f        = form.cleaned_data
+            cliente  = f["cliente"]
+            vehiculo = f.get("vehiculo")
+            moneda   = f.get("moneda", "ARS")
+
+            if not vehiculo:
+                messages.error(request, "❌ Debe seleccionar un vehículo.")
+                return render(request, "boletos/crear.html", {"form": form, "numero": numero})
+
+            if not cliente or not cliente.activo:
+                messages.error(request, "❌ Cliente inválido.")
+                return render(request, "boletos/crear.html", {"form": form, "numero": numero})
+
+            cuenta_activa = (
+                CuentaCorriente.objects
+                .filter(cliente=cliente)
+                .exclude(estado="cerrada")
+                .first()
+            )
+            venta = (
+                cuenta_activa.venta
+                if cuenta_activa and hasattr(cuenta_activa, "venta")
+                else None
+            )
+
+            texto_final = _construir_texto_boleto(cliente, vehiculo, f, moneda)
+            boleto = BoletoCompraventa.objects.create(
+                numero=numero,
+                cliente=cliente,
+                vehiculo=vehiculo,
+                cuenta_corriente=cuenta_activa,
+                venta=venta,
+                texto_final=texto_final
+            )
+
+            try:
+                pdf_file = generar_boleto_pdf_desde_html(request, boleto)
+                boleto.pdf.save(f"boleto_{boleto.numero}.pdf", pdf_file, save=True)
+            except Exception as e:
+                print("❌ ERROR PDF BOLETO:", e)
+                messages.warning(request, "⚠️ El boleto se creó, pero el PDF no pudo generarse.")
+
+            messages.success(request, "✅ Boleto generado correctamente")
+            return redirect("boletos:ver_boleto", boleto.id)
+
+    return render(request, "boletos/crear.html", {"form": CrearBoletoForm(), "numero": numero})
+
+
+# ====================================
+# EDITAR BOLETO
+# ====================================
+def editar_boleto(request, boleto_id):
+    boleto = get_object_or_404(BoletoCompraventa, id=boleto_id)
+    from .forms import EditarBoletoForm
+
+    precio_numeros_inicial   = ""
+    precio_letras_inicial    = ""
+    saldo_forma_pago_inicial = ""
+    moneda_inicial           = "ARS"
+
+    if boleto.texto_final:
+        if 'U$S' in boleto.texto_final or 'DÓLARES' in boleto.texto_final:
+            moneda_inicial = 'USD'
+        match_9 = re.search(
+            r"9°.*?precio total.*?es de\s*[U$S$]*\s*(.*?)\((.*?)\),\s*quedando.*?modalidad de pago:\s*(.*?)(?=10°|\Z)",
+            boleto.texto_final,
+            re.DOTALL | re.IGNORECASE
+        )
+        if match_9:
+            precio_numeros_inicial   = match_9.group(1).strip()
+            precio_letras_inicial    = match_9.group(2).strip()
+            saldo_forma_pago_inicial = match_9.group(3).strip()
+
+    if request.method == "POST":
+        form = EditarBoletoForm(request.POST, instance=boleto)
+        if form.is_valid():
+            boleto   = form.save(commit=False)
+            cliente  = boleto.cliente
+            vehiculo = boleto.vehiculo
+            moneda   = form.cleaned_data.get("moneda", "ARS")
+            boleto.texto_final = _construir_texto_boleto(cliente, vehiculo, form.cleaned_data, moneda)
+            boleto.save()
+            try:
+                if boleto.pdf:
+                    boleto.pdf.delete(save=False)
+                pdf_file = generar_boleto_pdf_desde_html(request, boleto)
+                boleto.pdf.save(f"boleto_{boleto.numero}.pdf", pdf_file, save=True)
+                messages.success(request, "✅ Boleto actualizado y PDF regenerado correctamente.")
+            except Exception as e:
+                print("❌ ERROR PDF BOLETO (edición):", e)
+                messages.warning(request, "⚠️ Boleto actualizado, pero el PDF no pudo regenerarse.")
+            return redirect("boletos:ver_boleto", boleto.id)
+    else:
+        form = EditarBoletoForm(
+            instance=boleto,
+            initial={
+                "moneda":           moneda_inicial,
+                "precio_numeros":   precio_numeros_inicial,
+                "precio_letras":    precio_letras_inicial,
+                "saldo_forma_pago": saldo_forma_pago_inicial,
+            }
+        )
+
+    return render(request, "boletos/editar.html", {"form": form, "boleto": boleto})
+
+
 # ==========================================================
 # =======================  PAGARÉ  =========================
 # ==========================================================
 
 def lista_pagares(request):
     q = request.GET.get("q", "").strip()
-
-    lotes = (
-        PagareLote.objects
-        .select_related("cliente")
-        .order_by("-fecha_emision")
-    )
-
+    lotes = PagareLote.objects.select_related("cliente").order_by("-fecha_emision")
     if q:
         lotes = lotes.filter(
             Q(cliente__nombre_completo__icontains=q) |
             Q(cliente__dni_cuit__icontains=q) |
             Q(beneficiario__icontains=q)
         )
-
     lotes_con_url = []
     for lote in lotes:
         pdf_url = None
@@ -401,7 +316,7 @@ def lista_pagares(request):
             if 'cloudinary.com' in url:
                 url = url + '?fl_attachment'
             pdf_url = url
-        lote_dict = {
+        lotes_con_url.append({
             'id': lote.id,
             'cliente': lote.cliente,
             'beneficiario': lote.beneficiario,
@@ -409,17 +324,8 @@ def lista_pagares(request):
             'cantidad': lote.cantidad,
             'monto_total': lote.monto_total,
             'pdf_url': pdf_url
-        }
-        lotes_con_url.append(lote_dict)
-
-    return render(
-        request,
-        "boletos/pagare/lista.html",
-        {
-            "lotes": lotes_con_url,
-            "query": q,
-        }
-    )
+        })
+    return render(request, "boletos/pagare/lista.html", {"lotes": lotes_con_url, "query": q})
 
 
 def monto_en_letras_simple(monto) -> str:
@@ -504,7 +410,6 @@ def _generar_pdf_lote_pagares_3_por_hoja(pagares):
             c.drawString(x, y, linea.rstrip()); y -= 0.38*cm
 
         y -= 0.2*cm
-
         c.setFont("Helvetica-Bold", 7.5); c.setFillColor(AZUL)
         c.drawString(x, y, "El presente pagare es librado por:")
         y -= 0.38*cm
@@ -560,116 +465,59 @@ def _generar_pdf_lote_pagares_3_por_hoja(pagares):
 def crear_pagares(request):
     if request.method == "POST":
         request.session.pop("generando_pagares", None)
-
         try:
             import traceback as _tb
-            cliente = get_object_or_404(
-                Cliente,
-                id=request.POST.get("cliente")
-            )
-
-            beneficiario = (
-                request.POST.get("beneficiario")
-                or "AMICHETTI HUGO ALBERTO"
-            )
-
-            lugar_emision = (
-                request.POST.get("lugar_emision")
-                or "Rojas"
-            )
-
+            cliente = get_object_or_404(Cliente, id=request.POST.get("cliente"))
+            beneficiario  = request.POST.get("beneficiario") or "AMICHETTI HUGO ALBERTO"
+            lugar_emision = request.POST.get("lugar_emision") or "Rojas"
             fecha_emision = (
                 date.fromisoformat(request.POST.get("fecha_emision"))
-                if request.POST.get("fecha_emision")
-                else date.today()
+                if request.POST.get("fecha_emision") else date.today()
             )
-
             cantidad = int(request.POST.get("cantidad", 1))
 
             lote = PagareLote.objects.create(
-                cliente=cliente,
-                beneficiario=beneficiario,
-                lugar_emision=lugar_emision,
-                fecha_emision=fecha_emision,
-                cantidad=cantidad,
-                monto_total=Decimal("0.00"),
+                cliente=cliente, beneficiario=beneficiario,
+                lugar_emision=lugar_emision, fecha_emision=fecha_emision,
+                cantidad=cantidad, monto_total=Decimal("0.00"),
             )
 
-            ultimo = (
-                Pagare.objects
-                .aggregate(max_num=Max("numero"))
-                .get("max_num")
-                or 0
-            )
-
+            ultimo = Pagare.objects.aggregate(max_num=Max("numero")).get("max_num") or 0
             pagares = []
             monto_total = Decimal("0.00")
 
             for i in range(1, cantidad + 1):
-                monto = Decimal(
-                    request.POST.get(f"monto_{i}", "0")
-                )
-
+                monto   = Decimal(request.POST.get(f"monto_{i}", "0"))
                 fecha_v = request.POST.get(f"fecha_vencimiento_{i}")
-                fecha_v = (
-                    date.fromisoformat(fecha_v)
-                    if fecha_v else None
-                )
-
-                pagare = Pagare.objects.create(
-                    lote=lote,
-                    cliente=cliente,
-                    numero=ultimo + i,
-                    beneficiario=beneficiario,
-                    monto=monto,
-                    lugar_emision=lugar_emision,
-                    fecha_emision=fecha_emision,
+                fecha_v = date.fromisoformat(fecha_v) if fecha_v else None
+                pagare  = Pagare.objects.create(
+                    lote=lote, cliente=cliente, numero=ultimo + i,
+                    beneficiario=beneficiario, monto=monto,
+                    lugar_emision=lugar_emision, fecha_emision=fecha_emision,
                     fecha_vencimiento=fecha_v
                 )
-
                 pagares.append(pagare)
                 monto_total += monto
 
             pdf_bytes = _generar_pdf_lote_pagares_3_por_hoja(pagares)
-
             if not pdf_bytes:
                 raise ValueError("No se pudo generar el PDF del pagaré.")
 
-            filename = (
-                f"pagares_lote_{lote.id}_"
-                f"{fecha_emision.isoformat()}.pdf"
-            )
-
-            lote.pdf.save(
-                filename,
-                ContentFile(pdf_bytes),
-                save=True
-            )
-
+            filename = f"pagares_lote_{lote.id}_{fecha_emision.isoformat()}.pdf"
+            lote.pdf.save(filename, ContentFile(pdf_bytes), save=True)
             lote.monto_total = monto_total
             lote.cantidad = len(pagares)
             lote.save(update_fields=["monto_total", "cantidad"])
 
-            messages.success(
-                request,
-                f"✅ Se creó el lote con {len(pagares)} pagarés en UN solo PDF."
-            )
-
+            messages.success(request, f"✅ Se creó el lote con {len(pagares)} pagarés en UN solo PDF.")
             return redirect("boletos:lista_pagares")
 
         except Exception as e:
             _tb.print_exc()
-            messages.error(
-                request,
-                f"❌ Error al crear pagarés: {str(e)}"
-            )
+            messages.error(request, f"❌ Error al crear pagarés: {str(e)}")
             return redirect("boletos:crear_pagares")
 
-    return render(
-        request,
-        "boletos/pagare/crear.html",
-        {"form": CrearPagareLoteForm()}
-    )
+    return render(request, "boletos/pagare/crear.html", {"form": CrearPagareLoteForm()})
 
 
 # ====================================
@@ -677,11 +525,7 @@ def crear_pagares(request):
 # ====================================
 def ver_pagare(request, pagare_id):
     pagare = get_object_or_404(Pagare, id=pagare_id)
-    return render(
-        request,
-        "boletos/pagare/ver.html",
-        {"pagare": pagare}
-    )
+    return render(request, "boletos/pagare/ver.html", {"pagare": pagare})
 
 
 # ====================================
@@ -689,47 +533,30 @@ def ver_pagare(request, pagare_id):
 # ====================================
 def pagare_pdf(request, pagare_id):
     pagare = get_object_or_404(Pagare, id=pagare_id)
-
     buffer = BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
-
     azul = colors.HexColor("#002855")
     y = A4[1] - 2.2 * cm
-
-    c.setFont("Helvetica-Bold", 18)
-    c.setFillColor(azul)
+    c.setFont("Helvetica-Bold", 18); c.setFillColor(azul)
     c.drawString(2 * cm, y, "PAGARÉ")
-
     y -= 1 * cm
     c.setFont("Helvetica", 11)
     c.drawString(2 * cm, y, f"Nº {pagare.numero}")
-
     y -= 1 * cm
-
     cliente = pagare.cliente
     venc = pagare.fecha_vencimiento.strftime("%d/%m/%Y") if pagare.fecha_vencimiento else "Pagadero a la vista"
-
-    texto = [
-        "PAGARÉ SIN PROTESTO A LA ORDEN DE AMICHETTI HUGO ALBERTO",
-        "",
+    for t in [
+        "PAGARÉ SIN PROTESTO A LA ORDEN DE AMICHETTI HUGO ALBERTO", "",
         f"Monto: $ {pagare.monto:,.2f}",
         f"Lugar y fecha de emisión: {pagare.lugar_emision}, {pagare.fecha_emision.strftime('%d/%m/%Y')}",
-        f"Fecha de vencimiento: {venc}",
-        "",
+        f"Fecha de vencimiento: {venc}", "",
         f"Deudor: {cliente.nombre_completo}",
         f"DNI/CUIT: {cliente.dni_cuit or ''}",
-        f"Domicilio: {cliente.direccion or ''}",
-        "",
+        f"Domicilio: {cliente.direccion or ''}", "",
         "Firma: ________________________________",
-    ]
-
-    for t in texto:
-        c.drawString(2 * cm, y, t)
-        y -= 0.7 * cm
-
-    c.showPage()
-    c.save()
-
+    ]:
+        c.drawString(2 * cm, y, t); y -= 0.7 * cm
+    c.showPage(); c.save()
     buffer.seek(0)
     return HttpResponse(buffer.getvalue(), content_type="application/pdf")
 
@@ -740,9 +567,7 @@ def pagare_pdf(request, pagare_id):
 def descargar_pdf_lote(request, lote_id):
     lote = get_object_or_404(PagareLote, id=lote_id)
     pagares = list(lote.pagares.all().order_by('numero'))
-
     pdf_bytes = _generar_pdf_lote_pagares_3_por_hoja(pagares)
-
     response = HttpResponse(pdf_bytes, content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="pagares_lote_{lote.id}.pdf"'
     return response
@@ -762,11 +587,7 @@ def ver_lote(request, lote_id):
             if '?' not in url:
                 url = url + '?fl_attachment'
         pdf_url = url
-    return render(
-        request,
-        'boletos/pagare/lote_detalle.html',
-        {'lote': lote, 'pagares': pagares, 'pdf_url': pdf_url}
-    )
+    return render(request, 'boletos/pagare/lote_detalle.html', {'lote': lote, 'pagares': pagares, 'pdf_url': pdf_url})
 
 
 # ====================================

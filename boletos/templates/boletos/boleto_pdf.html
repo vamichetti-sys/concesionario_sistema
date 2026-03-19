@@ -3,84 +3,51 @@
 <head>
 <meta charset="utf-8">
 <style>
-@page {
-    size: A4 portrait;
-    margin: 10mm 12mm 10mm 12mm;
-}
-
-* { box-sizing: border-box; }
-
+@page { size: A4 portrait; margin: 12mm 14mm 12mm 14mm; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
 html, body {
-    margin: 0;
-    padding: 0;
     background: #fff;
     font-family: "Times New Roman", Times, serif;
     font-size: 8.8pt;
-    line-height: 1.25;
+    line-height: 1.28;
     color: #000;
 }
-
-.boleto-page {
-    width: 100%;
-}
-
-/* ENCABEZADO */
 .header-top {
     text-align: center;
     border-bottom: 1.5px solid #000;
-    padding-bottom: 2.5mm;
+    padding-bottom: 3mm;
     margin-bottom: 3mm;
 }
-.empresa   { font-size: 13pt; font-weight: bold; letter-spacing: 0.5px; }
-.sub       { font-size: 8.5pt; font-weight: bold; }
-.direccion { font-size: 8pt; }
-
-/* TÍTULO */
+.empresa  { font-size: 13pt; font-weight: bold; letter-spacing: 0.5px; }
+.sub      { font-size: 8.5pt; font-weight: bold; }
+.direccion{ font-size: 8pt; }
 .titulo-boleto {
-    font-size: 9.5pt;
+    font-size: 10pt;
     font-weight: bold;
     text-align: center;
     margin: 2.5mm 0;
     letter-spacing: 2px;
     text-decoration: underline;
+    text-transform: uppercase;
 }
-
-/* CUERPO */
-.boleto-body {
-    text-align: justify;
-}
-.boleto-body p {
-    margin: 0 0 1.3mm 0;
-}
-
-/* NOTA */
+.boleto-body { text-align: justify; }
+.boleto-body p { margin: 0 0 1.4mm 0; }
 .nota-area {
     margin-top: 3mm;
     font-size: 8pt;
-    min-height: 7mm;
-    border-bottom: 0.5px solid #888;
+    min-height: 8mm;
+    border-bottom: 0.5px solid #555;
     padding-bottom: 2mm;
 }
-
-/* FIRMAS */
 .boleto-firmas {
-    margin-top: 8mm;
+    margin-top: 9mm;
     display: flex;
     justify-content: space-between;
 }
-.firma-col {
-    width: 44%;
-    font-size: 8pt;
-}
-.firma-linea {
-    border-top: 1px solid #000;
-    margin-bottom: 1.5mm;
-    width: 100%;
-}
-
-/* PIE */
+.firma-col { width: 44%; font-size: 8pt; line-height: 1.5; }
+.firma-linea { border-top: 1px solid #000; margin-bottom: 2mm; width: 100%; }
 .boleto-pie {
-    margin-top: 4mm;
+    margin-top: 5mm;
     padding-top: 2.5mm;
     border-top: 1px solid #000;
     display: flex;
@@ -88,9 +55,42 @@ html, body {
     font-size: 7.5pt;
     text-align: center;
 }
+@media screen {
+    body { background: #f3f4f6; padding: 20px; }
+    .boleto-page {
+        width: 210mm;
+        margin: 0 auto 16px;
+        background: #fff;
+        padding: 12mm 14mm;
+        box-shadow: 0 2px 16px rgba(0,0,0,0.15);
+    }
+    .btn-imprimir {
+        display: block;
+        width: 210mm;
+        margin: 0 auto 12px;
+        padding: 12px;
+        background: #1e3a5f;
+        color: #fff;
+        font-family: Arial, sans-serif;
+        font-size: 15px;
+        font-weight: bold;
+        text-align: center;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+    }
+}
+@media print {
+    .btn-imprimir { display: none !important; }
+    body { background: #fff; padding: 0; }
+    .boleto-page { padding: 0; width: 100%; }
+}
 </style>
 </head>
 <body>
+
+<button class="btn-imprimir" onclick="window.print()">🖨 Imprimir / Guardar como PDF</button>
+
 <div class="boleto-page">
 
     <div class="header-top">
@@ -99,7 +99,7 @@ html, body {
         <div class="direccion">LARREA 255, ROJAS BS AS (2705)</div>
     </div>
 
-    <div class="titulo-boleto">BOLETO DE COMPRA VENTA</div>
+    <div class="titulo-boleto">Boleto de Compra Venta</div>
 
     <div class="boleto-body">
         {% for clausula in clausulas %}
