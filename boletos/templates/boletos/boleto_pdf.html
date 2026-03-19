@@ -10,108 +10,99 @@ html, body {
     width: 100%;
     background: #fff;
     font-family: "Times New Roman", Times, serif;
-    font-size: 10pt;
-    line-height: 1.35;
+    font-size: 8.2pt;
+    line-height: 1.22;
     color: #000;
 }
 
 .boleto-page {
     width: 100%;
-    padding: 16mm 18mm 14mm 18mm;
+    padding: 8mm 12mm 8mm 12mm;
 }
 
-/* ── ENCABEZADO ── */
 .header-top {
     text-align: center;
     border-bottom: 1.5px solid #000;
-    padding-bottom: 4mm;
-    margin-bottom: 4mm;
+    padding-bottom: 2mm;
+    margin-bottom: 2mm;
 }
-.empresa   { font-size: 14pt; font-weight: bold; letter-spacing: 0.5px; }
-.sub       { font-size: 9pt; font-weight: bold; margin-top: 1mm; }
-.direccion { font-size: 8.5pt; margin-top: 1mm; }
+.empresa   { font-size: 11pt; font-weight: bold; letter-spacing: 0.5px; }
+.sub       { font-size: 8pt; font-weight: bold; margin-top: 0.5mm; }
+.direccion { font-size: 7.5pt; margin-top: 0.5mm; }
 
-/* ── TÍTULO ── */
 .titulo-boleto {
-    font-size: 11pt;
+    font-size: 9pt;
     font-weight: bold;
     text-align: center;
-    margin: 3mm 0;
-    letter-spacing: 2px;
+    margin: 2mm 0;
+    letter-spacing: 1.5px;
     text-decoration: underline;
     text-transform: uppercase;
 }
 
-/* ── CUERPO ── */
 .boleto-body {
     width: 100%;
     text-align: justify;
 }
 .boleto-body p {
-    margin: 0 0 2mm 0;
-    text-indent: 0;
+    margin: 0 0 1mm 0;
 }
 
-/* ── NOTA ── */
 .nota-area {
     width: 100%;
-    margin-top: 4mm;
-    font-size: 9pt;
-    min-height: 10mm;
+    margin-top: 2mm;
+    font-size: 7.5pt;
+    min-height: 6mm;
     border-bottom: 0.7px solid #555;
-    padding-bottom: 2mm;
+    padding-bottom: 1.5mm;
 }
 
-/* ── FIRMAS ── */
 .boleto-firmas {
     width: 100%;
-    margin-top: 10mm;
+    margin-top: 6mm;
     display: flex;
     justify-content: space-between;
 }
 .firma-col {
     width: 45%;
-    font-size: 9pt;
-    line-height: 1.6;
+    font-size: 7.5pt;
+    line-height: 1.5;
 }
 .firma-linea {
     border-top: 1px solid #000;
-    margin-bottom: 2mm;
+    margin-bottom: 1.5mm;
     width: 100%;
 }
 
-/* ── PIE ── */
 .boleto-pie {
     width: 100%;
-    margin-top: 6mm;
-    padding-top: 3mm;
+    margin-top: 4mm;
+    padding-top: 2mm;
     border-top: 1px solid #000;
     display: flex;
     justify-content: space-around;
-    font-size: 8.5pt;
+    font-size: 7.5pt;
     text-align: center;
 }
 
-/* ── BOTÓN SOLO EN PANTALLA ── */
 .btn-imprimir {
     display: block;
     width: 100%;
-    padding: 14px;
+    padding: 12px;
     background: #1e3a5f;
     color: #fff;
     font-family: Arial, sans-serif;
-    font-size: 16px;
+    font-size: 15px;
     font-weight: bold;
     text-align: center;
     border: none;
     cursor: pointer;
-    margin-bottom: 0;
 }
 .btn-imprimir:hover { background: #2d5490; }
 
 @page {
     size: A4 portrait;
-    margin: 14mm 16mm 14mm 16mm;
+    margin: 8mm 10mm 8mm 10mm;
 }
 
 @media print {
@@ -166,6 +157,5 @@ html, body {
     </div>
 
 </div>
-
 </body>
 </html>
