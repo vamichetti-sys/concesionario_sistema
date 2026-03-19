@@ -1,17 +1,12 @@
-cat > boletos/templates/boletos/ver.html << 'HTMLEOF'
 {% extends "base.html" %}
 {% load static %}
 {% block title %}Boleto {{ boleto.numero }}{% endblock %}
 {% block content %}
 <style>
-@page {
-    size: A4;
-    margin: 8mm;
-}
+@page { size: A4; margin: 8mm; }
 
 html, body {
-    margin: 0;
-    padding: 0;
+    margin: 0; padding: 0;
     background: #fff;
     font-family: "Times New Roman", serif;
     font-size: 9pt;
@@ -39,8 +34,8 @@ html, body {
     padding-bottom: 2mm;
 }
 
-.empresa { font-size: 14pt; font-weight: bold; letter-spacing: 1px; }
-.sub { font-size: 9pt; font-weight: bold; }
+.empresa   { font-size: 14pt; font-weight: bold; letter-spacing: 1px; }
+.sub       { font-size: 9pt; font-weight: bold; }
 .direccion { font-size: 8.5pt; }
 
 .titulo-boleto {
@@ -55,7 +50,6 @@ html, body {
 .boleto-body {
     flex: 1;
     font-family: "Times New Roman", Times, serif;
-    overflow: hidden;
     font-size: 9pt;
     line-height: 1.2;
     text-align: justify;
@@ -63,19 +57,18 @@ html, body {
 
 .boleto-body p { margin: 0 0 0.8mm 0; }
 
-.nota-linea {
+.nota-area {
     margin-top: 2mm;
-    border-bottom: 0.5px solid #000;
-    font-size: 8pt;
+    font-size: 8.5pt;
+    min-height: 10mm;
+    border-bottom: 0.5px solid #888;
 }
 
 .boleto-firmas {
-    margin-top: auto;
-    transform: translateY(-20mm);
+    margin-top: 8mm;
     display: flex;
     justify-content: space-between;
-    font-size: 8pt;
-    page-break-inside: avoid;
+    font-size: 8.5pt;
 }
 
 .firma-col { width: 44%; }
@@ -111,11 +104,16 @@ html, body {
 }
 </style>
 
+<!-- BOTONES -->
 <div class="acciones-boleto">
     <button onclick="window.print()" class="btn btn-primary">
         <i data-lucide="printer" style="width:16px;height:16px;margin-right:6px;"></i>
         Imprimir en A4
     </button>
+    <a href="{% url 'boletos:editar_boleto' boleto.id %}" class="btn btn-secondary">
+        <i data-lucide="pencil" style="width:16px;height:16px;margin-right:6px;"></i>
+        Editar
+    </a>
     {% if boleto.pdf %}
     <a href="{{ boleto.pdf.url }}" target="_blank" class="btn btn-success">
         <i data-lucide="file-down" style="width:16px;height:16px;margin-right:6px;"></i>
@@ -128,7 +126,9 @@ html, body {
     </a>
 </div>
 
+<!-- HOJA A4 -->
 <div class="boleto-page">
+
     <div class="header-top">
         <div class="empresa">HUGO AMICHETTI AUTOMOTORES</div>
         <div class="sub">AUTOMOTORES NUEVOS Y USADOS</div>
@@ -143,6 +143,9 @@ html, body {
         {% endfor %}
     </div>
 
+    <div class="nota-area">
+        <strong>Nota:</strong>
+    </div>
 
     <div class="boleto-firmas">
         <div class="firma-col">
@@ -165,10 +168,11 @@ html, body {
         <div>📞 2474660154 - 2475465115</div>
         <div>✉ HUGOAMICHETTIAUTOMOTORES@GMAIL.COM</div>
     </div>
+
 </div>
 
 <script>
-    if (typeof lucide !== 'undefined') { lucide.createIcons(); }
+    if (typeof lucide !== 'undefined') lucide.createIcons();
 </script>
 
 {% endblock %}

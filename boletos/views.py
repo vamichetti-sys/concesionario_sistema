@@ -24,7 +24,61 @@ from cuentas.models import CuentaCorriente
 
 
 # ====================================
-# 🟢 PANEL DE BOLETOS
+# HELPER: símbolo de moneda
+# ====================================
+def _simbolo_moneda(moneda):
+    return 'U$S' if moneda == 'USD' else '$'
+
+
+# ====================================
+# HELPER: construir texto del boleto
+# ====================================
+def _construir_texto_boleto(cliente, vehiculo, f, moneda='ARS'):
+    marca   = vehiculo.marca   if vehiculo else f.get('marca', '')
+    modelo  = vehiculo.modelo  if vehiculo else f.get('modelo', '')
+    anio    = vehiculo.anio    if vehiculo else f.get('anio', '')
+    dominio = vehiculo.dominio if vehiculo else f.get('patente', '')
+
+    ficha  = getattr(vehiculo, 'ficha', None) if vehiculo else None
+    motor  = getattr(ficha, 'numero_motor',  '') if ficha else ''
+    chasis = getattr(ficha, 'numero_chasis', '') if ficha else ''
+
+    precio_numeros   = f.get('precio_numeros', '')
+    precio_letras    = f.get('precio_letras', '')
+    saldo_forma_pago = f.get('saldo_forma_pago', '')
+    domicilio_legal  = f.get('domicilio_legal', '') or (cliente.direccion or 'LARREA 255')
+    compania_seguro  = f.get('compania_seguro', '')
+    nota             = f.get('nota', '')
+
+    simbolo      = _simbolo_moneda(moneda)
+    moneda_texto = 'DÓLARES' if moneda == 'USD' else 'PESOS'
+
+    hoy      = date.today()
+    dia      = hoy.strftime('%d')
+    mes      = hoy.strftime('%m')
+    anio_hoy = hoy.strftime('%Y')
+
+    texto = f"""Entre el/los Señor/es AMICHETTI HUGO ALBERTO por una parte como comprador y el/los señor/es {cliente.nombre_completo} por la otra parte como vendedor, convienen celebrar el presente boleto de acuerdo a las clausulas siguientes:
+1° - El/los Señor/es {cliente.nombre_completo} vende/n al/los Señor/es AMICHETTI HUGO ALBERTO Un AUTOMOTOR Marca {marca} Modelo {modelo} Año {anio} Motor {motor} Chasis {chasis} Patente {dominio} en el estado que se encuentra, y que el comprador ha revisado y Controlando las numeraciones del motor, chasis, dominio y acepta de conformidad.
+2° - El vendedor entrega en este acto toda la documentación referente al vehiculo y el comprador se obliga a realizar la respectiva transferencia dentro de los (30) treinta días a partir de la fecha, siendo a su cargo todo tramite que deba realizar y ante quien corresponda, eximiendo al vendedor de toda responsabilidad en lo referente a la transferencia o patentamiento.
+3° - Los gastos que demande la transferencia del vehiculo en el orden nacional, provincial, municipal o de cualquier otro orden serán abonados por el comprador, y lo correspondiente a la ley 21.432/976.-
+4° - El comprador deberá asegurar el automotor contra todo riesgo en la CIA {compania_seguro} dentro de los dos días de la fecha del presente boleto, siendo el endoso a favor del vendedor.-
+5° - El comprador no podrá vender el vehiculo sin autorización expresa del vendedor hasta no haber abonado la totalidad de la deuda.-
+6° - La falta de cumplimiento de cualquiera de las cláusulas del presente contrato autoriza al vendedor a solicitar el inmediato secuestro del vehiculo, renunciando el comprador a toda defensa en juicio.
+7° - El vendedor podrá optar para el caso en el que el comprador se constituya en mora de alguna de las cuotas, por pedir el secuestro judicial de la unidad vendida, constituyendo el comprador para el caso de iniciársele acción judicial, domicilio legal en la calle {domicilio_legal}. Que asimismo y también para el caso de promover acción judicial, queda facultado el vendedor a nombrar martillero, comprometiéndose el comprador a no poner otra excepción que la de pago y renunciando expresamente a la facultad de apelar la resolución judicial dictada.
+8° - Todos los gastos que origine cualquier acción judicial, que se iniciara, serán a cargo del comprador.
+9° - El precio total de la unidad es de {simbolo} {precio_numeros} ({precio_letras} {moneda_texto}), quedando un saldo conforme la siguiente modalidad de pago: {saldo_forma_pago}
+10° - La mora en el pago de todas las cuotas convenidas como saldo de precio se producirá por el mero vencimiento de una de ellas, sin necesidad de interpelación judicial o extra judicial de ninguna naturaleza, al producirse dicha mora el deudor perderá automáticamente a favor del vendedor todo lo abonado hasta esa fecha y la operación quedará rescindida, obligándose al comprador a devolver el vehículo en ese mismo momento. De no hacerlo así, pagará una multa diaria de acuerdo a los daños y perjuicios ocasionados al vendedor más toda otra indemnización que por ley correspondiere, pudiendo los vendedores a partir de ese momento disponer del vehículo arriba citado. Se deja perfectamente aclarado que este recibo es provisorio, debiendo el comprador gestionar directamente ante el titular o ante quien corresponda la transferencia del vehículo arriba citado.-
+11° - El comprador pagará el 3% para gastos de prenda y el 1% para sellado. El comprador se hace responsable civil y criminalmente ante quien corresponda de los daños que ocasionara con este vehículo a partir de la fecha. En fe de cual se firman dos ejemplares de un mismo tenor y a un solo efecto en la ciudad de ROJAS a los {dia} días del mes de {mes} de {anio_hoy}.-"""
+
+    if nota:
+        texto += f"\nNota: {nota}"
+
+    return texto
+
+
+# ====================================
+# PANEL DE BOLETOS
 # ====================================
 def panel_boletos(request):
     return render(request, "boletos/panel.html")
@@ -58,7 +112,7 @@ def generar_boleto_pdf_desde_html(request, boleto):
     partes = nombre_completo.strip().split(" ", 1)
 
     apellido_cliente = partes[0] if partes else ""
-    nombre_cliente = partes[1] if len(partes) > 1 else ""
+    nombre_cliente   = partes[1] if len(partes) > 1 else ""
 
     html_string = render_to_string(
         "boletos/ver.html",
@@ -105,9 +159,10 @@ def crear_boleto_manual(request):
         form = CrearBoletoForm(request.POST)
 
         if form.is_valid():
-            f = form.cleaned_data
-            cliente = f["cliente"]
+            f        = form.cleaned_data
+            cliente  = f["cliente"]
             vehiculo = f.get("vehiculo")
+            moneda   = f.get("moneda", "ARS")
 
             if not vehiculo:
                 messages.error(request, "❌ Debe seleccionar un vehículo.")
@@ -116,15 +171,6 @@ def crear_boleto_manual(request):
                     "boletos/crear.html",
                     {"form": form, "numero": numero}
                 )
-
-            marca = vehiculo.marca
-            modelo = vehiculo.modelo
-            anio = vehiculo.anio
-            dominio = vehiculo.dominio
-
-            ficha = getattr(vehiculo, "ficha", None)
-            motor = getattr(ficha, "numero_motor", "") if ficha else ""
-            chasis = getattr(ficha, "numero_chasis", "") if ficha else ""
 
             if not cliente or not cliente.activo:
                 messages.error(request, "❌ Cliente inválido.")
@@ -147,55 +193,7 @@ def crear_boleto_manual(request):
                 else None
             )
 
-            texto_final = f"""
-Entre el/los Señor/es {cliente.nombre_completo} por una parte como comprador
-y el/los Señor/es AMICHETTI HUGO ALBERTO por la otra parte como vendedor,
-convienen celebrar el presente boleto de acuerdo a las cláusulas siguientes:
-
-1° - El vendedor vende a {cliente.nombre_completo} un vehículo Marca {marca}
-Modelo {modelo} Año {anio} Motor {motor}
-Chasis {chasis} Dominio {dominio} en el estado que se encuentra, y que el comprador 
-ha revisado y controlado las numeraciones de motor, chasis y dominio, aceptando el
-mismo de conformidad.
-2° - El vendedor entrega en este acto toda la documentación referente al vehículo
-y el comprador se obliga a realizar la respectiva transferencia dentro de los
-treinta (30) días a partir de la fecha.
-3° - Los gastos que demande la transferencia del vehículo en el orden nacional, provincial, 
-municipal, o de cualquier otro orden serán abonados por el comprador, y lo correspondiente 
-a la Ley 21.432/976.-
-4° - El comprador deberá asegurar el automotor contra todo riesgo dentro de los dos dias de 
-la fecha presente en el boleto, siendo el endoso a favor del vendedor.-
-5° - El comprador no podrá vender el vehículo sin autorización expresa del vendedor
-hasta no haber abonado la totalidad de la deuda.-
-6° - La falta de cumplimiento de cualquiera de las cláusulas del contrato autoriza al 
-vendedor a solicitar el inmediato secuestro del vehículo, renunciando el comprador a toda 
-defensa en juicio
-7° - El vendedor podra optar para el caso en el que el comprador se constituya en mora 
-de alguna de las cuotas, por pedir el secuestro judicial de la unidad vendida constituyendo 
-el comprador para el caso de promover accion judicial, domicilio legal en {cliente.direccion or "LARREA 255"}
-Que asimismo y tambien para el caso de promover acción judicial, queda facultado el vendedor 
-a nombrar martillero, comprometiendose el comprador a no poner otra excepcion que la de pago
-y renunciando expresamente a la facultad de apelar la resolucion dictada.
-8° - Todos los gastos judiciales que se originen serán a cargo del comprador.
-9° - El precio total de la unidad es de {f.get("precio_numeros")}({f.get("precio_letras")}),
-quedando un saldo conforme la siguiente modalidad de pago: {f.get("saldo_forma_pago")}
-10° - La mora en el pago de todas las cuotas convenidas como saldo de precio se producira
-por el mero vencimiento de una de ellas, sin necesidad de interpelacion judicial o extra 
-judicial de ninguna naturaleza, al producirse dicha mora el deudor perdera automaticamente
-a favor del vendedor todo lo abonado hasta esa fecha y la operacion quedara rescindida, 
-obligandose al comprador a devolver el vehiculo en ese mismo momento. De no hacerlo asi, 
-pagara una multa diaria de acuerdo a los daños y perjuicios ocasionados al vendedor mas toda
-otra indemnizacion que por ley correspondiere, pudiendo los vendedores a partir de ese momento
-disponer del vehiculo arriba citado. Se deja perfectamente aclarado que este recibo es provisorio, 
-debiendo el comprador gestionar directamente ante el titular o ante quien corresponda la transferencia
-del vehiculo arriba citado.-
-11° - El comprador pagara el 3% para gastos de prenda y el 1% para sellado. El comprador se hace 
-responsable civil y criminalmente ante quien corresponda de los daños que ocasionara con este 
-vehiculo a partir de la fecha. En fe de cual se firman dos ejemplares de un mismo tenor y a un solo efecto 
-En la ciudad de ROJAS, a los {date.today().strftime("%d/%m/%Y")}.
-
-LA UNIDAD HA SIDO REVISADA Y ACEPTADA EN CONFORMIDAD.
-"""
+            texto_final = _construir_texto_boleto(cliente, vehiculo, f, moneda)
 
             boleto = BoletoCompraventa.objects.create(
                 numero=numero,
@@ -243,7 +241,7 @@ def ver_boleto(request, boleto_id):
     vendedor = {
         "apellido": "AMICHETTI",
         "nombre": "HUGO ALBERTO",
-        "direccion": "LARREA 155",
+        "direccion": "LARREA 255",
         "dni": "13814200",
     }
 
@@ -281,14 +279,17 @@ def editar_boleto(request, boleto_id):
 
     from .forms import EditarBoletoForm
 
-    # Pre-poblar precio/forma de pago extrayéndolos del texto_final existente
-    precio_numeros_inicial = ""
-    precio_letras_inicial = ""
+    precio_numeros_inicial   = ""
+    precio_letras_inicial    = ""
     saldo_forma_pago_inicial = ""
+    moneda_inicial           = "ARS"
 
     if boleto.texto_final:
+        if 'U$S' in boleto.texto_final or 'DÓLARES' in boleto.texto_final:
+            moneda_inicial = 'USD'
+
         match_9 = re.search(
-            r"9°.*?precio total.*?es de\s*(.*?)\((.*?)\),\s*quedando.*?modalidad de pago:\s*(.*?)(?=10°|\Z)",
+            r"9°.*?precio total.*?es de\s*[U$S$]*\s*(.*?)\((.*?)\),\s*quedando.*?modalidad de pago:\s*(.*?)(?=10°|\Z)",
             boleto.texto_final,
             re.DOTALL | re.IGNORECASE
         )
@@ -300,77 +301,16 @@ def editar_boleto(request, boleto_id):
     if request.method == "POST":
         form = EditarBoletoForm(request.POST, instance=boleto)
         if form.is_valid():
-            boleto = form.save(commit=False)
-
+            boleto   = form.save(commit=False)
             cliente  = boleto.cliente
             vehiculo = boleto.vehiculo
+            moneda   = form.cleaned_data.get("moneda", "ARS")
 
-            marca   = vehiculo.marca   if vehiculo else ""
-            modelo  = vehiculo.modelo  if vehiculo else ""
-            anio    = vehiculo.anio    if vehiculo else ""
-            dominio = vehiculo.dominio if vehiculo else ""
-
-            ficha  = getattr(vehiculo, "ficha", None) if vehiculo else None
-            motor  = getattr(ficha, "numero_motor",  "") if ficha else ""
-            chasis = getattr(ficha, "numero_chasis", "") if ficha else ""
-
-            precio_numeros   = form.cleaned_data.get("precio_numeros", "")
-            precio_letras    = form.cleaned_data.get("precio_letras", "")
-            saldo_forma_pago = form.cleaned_data.get("saldo_forma_pago", "")
-
-            boleto.texto_final = f"""
-Entre el/los Señor/es {cliente.nombre_completo} por una parte como comprador
-y el/los Señor/es AMICHETTI HUGO ALBERTO por la otra parte como vendedor,
-convienen celebrar el presente boleto de acuerdo a las cláusulas siguientes:
-
-1° - El vendedor vende a {cliente.nombre_completo} un vehículo Marca {marca}
-Modelo {modelo} Año {anio} Motor {motor}
-Chasis {chasis} Dominio {dominio} en el estado que se encuentra, y que el comprador 
-ha revisado y controlado las numeraciones de motor, chasis y dominio, aceptando el
-mismo de conformidad.
-2° - El vendedor entrega en este acto toda la documentación referente al vehículo
-y el comprador se obliga a realizar la respectiva transferencia dentro de los
-treinta (30) días a partir de la fecha.
-3° - Los gastos que demande la transferencia del vehículo en el orden nacional, provincial, 
-municipal, o de cualquier otro orden serán abonados por el comprador, y lo correspondiente 
-a la Ley 21.432/976.-
-4° - El comprador deberá asegurar el automotor contra todo riesgo dentro de los dos dias de 
-la fecha presente en el boleto, siendo el endoso a favor del vendedor.-
-5° - El comprador no podrá vender el vehículo sin autorización expresa del vendedor
-hasta no haber abonado la totalidad de la deuda.-
-6° - La falta de cumplimiento de cualquiera de las cláusulas del contrato autoriza al 
-vendedor a solicitar el inmediato secuestro del vehículo, renunciando el comprador a toda 
-defensa en juicio
-7° - El vendedor podra optar para el caso en el que el comprador se constituya en mora 
-de alguna de las cuotas, por pedir el secuestro judicial de la unidad vendida constituyendo 
-el comprador para el caso de promover accion judicial, domicilio legal en {cliente.direccion or "LARREA 255"}
-Que asimismo y tambien para el caso de promover acción judicial, queda facultado el vendedor 
-a nombrar martillero, comprometiendose el comprador a no poner otra excepcion que la de pago
-y renunciando expresamente a la facultad de apelar la resolucion dictada.
-8° - Todos los gastos judiciales que se originen serán a cargo del comprador.
-9° - El precio total de la unidad es de {precio_numeros}({precio_letras}),
-quedando un saldo conforme la siguiente modalidad de pago: {saldo_forma_pago}
-10° - La mora en el pago de todas las cuotas convenidas como saldo de precio se producira
-por el mero vencimiento de una de ellas, sin necesidad de interpelacion judicial o extra 
-judicial de ninguna naturaleza, al producirse dicha mora el deudor perdera automaticamente
-a favor del vendedor todo lo abonado hasta esa fecha y la operacion quedara rescindida, 
-obligandose al comprador a devolver el vehiculo en ese mismo momento. De no hacerlo asi, 
-pagara una multa diaria de acuerdo a los daños y perjuicios ocasionados al vendedor mas toda
-otra indemnizacion que por ley correspondiere, pudiendo los vendedores a partir de ese momento
-disponer del vehiculo arriba citado. Se deja perfectamente aclarado que este recibo es provisorio, 
-debiendo el comprador gestionar directamente ante el titular o ante quien corresponda la transferencia
-del vehiculo arriba citado.-
-11° - El comprador pagara el 3% para gastos de prenda y el 1% para sellado. El comprador se hace 
-responsable civil y criminalmente ante quien corresponda de los daños que ocasionara con este 
-vehiculo a partir de la fecha. En fe de cual se firman dos ejemplares de un mismo tenor y a un solo efecto 
-En la ciudad de ROJAS, a los {date.today().strftime("%d/%m/%Y")}.
-
-LA UNIDAD HA SIDO REVISADA Y ACEPTADA EN CONFORMIDAD.
-"""
-
+            boleto.texto_final = _construir_texto_boleto(
+                cliente, vehiculo, form.cleaned_data, moneda
+            )
             boleto.save()
 
-            # Regenerar PDF
             try:
                 if boleto.pdf:
                     boleto.pdf.delete(save=False)
@@ -391,6 +331,7 @@ LA UNIDAD HA SIDO REVISADA Y ACEPTADA EN CONFORMIDAD.
         form = EditarBoletoForm(
             instance=boleto,
             initial={
+                "moneda":           moneda_inicial,
                 "precio_numeros":   precio_numeros_inicial,
                 "precio_letras":    precio_letras_inicial,
                 "saldo_forma_pago": saldo_forma_pago_inicial,
@@ -485,22 +426,18 @@ def _generar_pdf_lote_pagares_3_por_hoja(pagares):
         y = y_top - 0.8 * cm
         cl = pagare.cliente
 
-        # Header empresa
         c.setFont("Helvetica-Bold", 9); c.setFillColor(AZUL)
         c.drawString(x, y, "AMICHETTI AUTOMOTORES")
         c.setFont("Helvetica", 7); c.setFillColor(colors.HexColor("#555555"))
         c.drawString(x + 5.5*cm, y, "Larrea 255, Rojas, Buenos Aires")
         y -= 0.5*cm
 
-        # Linea separadora
         c.setStrokeColor(AZUL); c.setLineWidth(1)
         c.line(x, y, x + w, y); y -= 0.5*cm
 
-        # Titulo + monto
         c.setFont("Helvetica-Bold", 14); c.setFillColor(AZUL)
         c.drawString(x, y, "PAGARE")
         monto_str = f"$ {pagare.monto:,.0f}".replace(",", ".")
-        # Caja monto
         bw = 4.5*cm; bh = 1.0*cm
         bx = x + w - bw; by = y - 0.1*cm
         c.setStrokeColor(AZUL); c.setLineWidth(0.8)
@@ -511,13 +448,11 @@ def _generar_pdf_lote_pagares_3_por_hoja(pagares):
         c.drawCentredString(bx + bw/2, by + 0.2*cm, monto_str)
         y -= 0.5*cm
 
-        # Numero y fechas
         venc_str = pagare.fecha_vencimiento.strftime("%d/%m/%Y") if pagare.fecha_vencimiento else "A la vista"
         c.setFont("Helvetica", 7); c.setFillColor(colors.HexColor("#6b7280"))
         c.drawString(x, y, f"N {pagare.numero}  Lugar: {pagare.lugar_emision}  Fecha de emision: {pagare.fecha_emision.strftime('%d/%m/%Y')}")
         y -= 0.5*cm
 
-        # Cuerpo legal
         c.setFont("Helvetica", 7.5); c.setFillColor(colors.black)
         venc_letras = fecha_letras(pagare.fecha_vencimiento) if pagare.fecha_vencimiento else "pagadero a la vista"
         texto = (
@@ -545,7 +480,6 @@ def _generar_pdf_lote_pagares_3_por_hoja(pagares):
 
         y -= 0.2*cm
 
-        # Datos deudor
         c.setFont("Helvetica-Bold", 7.5); c.setFillColor(AZUL)
         c.drawString(x, y, "El presente pagare es librado por:")
         y -= 0.38*cm
@@ -553,17 +487,14 @@ def _generar_pdf_lote_pagares_3_por_hoja(pagares):
         c.drawString(x, y, f"{cl.nombre_completo.upper()}, DNI/CUIT {cl.dni_cuit or ''}, con domicilio en {cl.direccion or ''}")
         y -= 0.5*cm
 
-        # Firmas
         firma_y = y_bottom + 1.0*cm
         c.setStrokeColor(colors.black); c.setLineWidth(0.5)
-        # Firma deudor
         c.line(x, firma_y, x + w*0.35, firma_y)
         c.setFont("Helvetica", 6.5); c.setFillColor(colors.HexColor("#555555"))
         c.drawString(x, firma_y - 0.3*cm, "FIRMA DEL DEUDOR")
         c.drawString(x, firma_y - 0.55*cm, cl.nombre_completo.upper()[:35])
         c.drawString(x, firma_y - 0.78*cm, f"DNI: {cl.dni_cuit or ''}")
 
-        # Caja vencimiento
         vbw = 3*cm; vbh = 1.1*cm
         vbx = x + w/2 - vbw/2
         vby = y_bottom + 0.3*cm
@@ -574,7 +505,6 @@ def _generar_pdf_lote_pagares_3_por_hoja(pagares):
         c.setFont("Helvetica-Bold", 9); c.setFillColor(colors.black)
         c.drawCentredString(vbx + vbw/2, vby + 0.25*cm, venc_str)
 
-        # Aclaracion
         c.setStrokeColor(colors.black); c.setLineWidth(0.5)
         c.line(x + w*0.65, firma_y, x + w, firma_y)
         c.setFont("Helvetica", 6.5); c.setFillColor(colors.HexColor("#555555"))
@@ -588,11 +518,8 @@ def _generar_pdf_lote_pagares_3_por_hoja(pagares):
 
     i = 0
     while i < len(pagares):
-        # Pagare superior
         dibujar_pagare(c, pagares[i], alto, mitad_y)
-        # Linea de corte
         linea_corte(c, mitad_y)
-        # Pagare inferior
         if i + 1 < len(pagares):
             dibujar_pagare(c, pagares[i+1], mitad_y, 0)
         c.showPage()
@@ -782,20 +709,19 @@ def pagare_pdf(request, pagare_id):
     return HttpResponse(buffer.getvalue(), content_type="application/pdf")
 
 
-
-
 # ====================================
 # DESCARGAR PDF LOTE ON-DEMAND
 # ====================================
 def descargar_pdf_lote(request, lote_id):
     lote = get_object_or_404(PagareLote, id=lote_id)
     pagares = list(lote.pagares.all().order_by('numero'))
-    
+
     pdf_bytes = _generar_pdf_lote_pagares_3_por_hoja(pagares)
-    
+
     response = HttpResponse(pdf_bytes, content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="pagares_lote_{lote.id}.pdf"'
     return response
+
 
 # ====================================
 # VER LOTE DE PAGARÉS
