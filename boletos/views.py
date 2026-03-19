@@ -258,10 +258,7 @@ def ver_boleto(request, boleto_id):
         "dni": cliente.dni_cuit or "",
     }
 
-    # Unir líneas de la misma cláusula, separar solo por cláusula numerada
-    texto_limpio = re.sub(r'\n(?!\d+[°])', ' ', texto_boleto)
-    texto_limpio = re.sub(r' +', ' ', texto_limpio)
-    clausulas = [p.strip() for p in texto_limpio.split("\n") if p.strip()]
+    clausulas = [p.strip() for p in texto_boleto.split("\n") if p.strip()]
 
     return render(
         request,

@@ -24,7 +24,6 @@ class PlanPagoForm(forms.ModelForm):
             'cantidad_cuotas',
             'monto_cuota',
             'fecha_inicio',
-            # 🔹 Intereses
             'interes_financiacion',
             'interes_mora_mensual',
             'interes_descripcion',
@@ -83,41 +82,31 @@ class PlanPagoForm(forms.ModelForm):
             ),
         }
 
-    # ======================================================
-    # VALIDACIONES DE NEGOCIO
-    # ======================================================
     def clean(self):
-        cleaned_data = super().clean()
-
-        tipo_plan = cleaned_data.get('tipo_plan')
-        monto_financiado = cleaned_data.get('monto_financiado') or Decimal('0')
-        anticipo = cleaned_data.get('anticipo') or Decimal('0')
-        cantidad_cuotas = cleaned_data.get('cantidad_cuotas')
-        interes_financiacion = cleaned_data.get('interes_financiacion') or Decimal('0')
-        interes_mora = cleaned_data.get('interes_mora_mensual') or Decimal('0')
+        cleaned_data            = super().clean()
+        tipo_plan               = cleaned_data.get('tipo_plan')
+        monto_financiado        = cleaned_data.get('monto_financiado') or Decimal('0')
+        anticipo                = cleaned_data.get('anticipo') or Decimal('0')
+        cantidad_cuotas         = cleaned_data.get('cantidad_cuotas')
+        interes_financiacion    = cleaned_data.get('interes_financiacion') or Decimal('0')
+        interes_mora            = cleaned_data.get('interes_mora_mensual') or Decimal('0')
 
         if monto_financiado <= 0:
             self.add_error('monto_financiado', 'El monto financiado debe ser mayor a cero.')
-
         if anticipo < 0:
             self.add_error('anticipo', 'El anticipo no puede ser negativo.')
-
         if anticipo > monto_financiado:
             self.add_error('anticipo', 'El anticipo no puede ser mayor al monto financiado.')
-
         if interes_financiacion < 0:
             self.add_error('interes_financiacion', 'El interés no puede ser negativo.')
-
         if interes_mora < 0:
             self.add_error('interes_mora_mensual', 'El interés por mora no puede ser negativo.')
 
         if tipo_plan == 'cuotas':
             if not cantidad_cuotas or cantidad_cuotas <= 0:
                 self.add_error('cantidad_cuotas', 'Debe indicar la cantidad de cuotas.')
-
         elif tipo_plan == 'unico':
             cleaned_data['cantidad_cuotas'] = 1
-
         elif tipo_plan == 'cheques':
             cleaned_data['cantidad_cuotas'] = 0
             cleaned_data['monto_cuota'] = Decimal('0')
@@ -134,29 +123,26 @@ CuotaFechaFormSet = modelformset_factory(
     extra=0,
     widgets={
         'vencimiento': forms.DateInput(
-            attrs={
-                'type': 'date',
-                'class': 'form-control'
-            }
+            attrs={'type': 'date', 'class': 'form-control'}
         )
     }
 )
 
 
 # ==========================================================
-# FORMULARIO EDITAR CUOTA (POSTERIOR)
+# FORMULARIO EDITAR CUOTA — fecha Y monto
 # ==========================================================
 class EditarCuotaForm(forms.ModelForm):
     class Meta:
         model = CuotaPlan
-        fields = ['vencimiento']
+        fields = ['vencimiento', 'monto']
         widgets = {
             'vencimiento': forms.DateInput(
-                attrs={
-                    'type': 'date',
-                    'class': 'form-control'
-                }
-            )
+                attrs={'type': 'date', 'class': 'form-control'}
+            ),
+            'monto': forms.NumberInput(
+                attrs={'class': 'form-control', 'step': '0.01', 'min': '0.01'}
+            ),
         }
 
     def clean_vencimiento(self):
@@ -165,6 +151,16 @@ class EditarCuotaForm(forms.ModelForm):
                 "No se puede modificar la fecha de una cuota ya pagada."
             )
         return self.cleaned_data['vencimiento']
+
+    def clean_monto(self):
+        if self.instance.estado == 'pagada':
+            raise forms.ValidationError(
+                "No se puede modificar el monto de una cuota ya pagada."
+            )
+        monto = self.cleaned_data.get('monto')
+        if not monto or monto <= 0:
+            raise forms.ValidationError("El monto debe ser mayor a cero.")
+        return monto
 
 
 # ==========================================================
@@ -205,7 +201,6 @@ class PagoForm(forms.Form):
     def __init__(self, *args, **kwargs):
         self.cuenta = kwargs.pop('cuenta', None)
         super().__init__(*args, **kwargs)
-
         if self.cuenta:
             self.fields['cuota'].queryset = CuotaPlan.objects.filter(
                 plan__cuenta=self.cuenta,
@@ -213,13 +208,12 @@ class PagoForm(forms.Form):
             ).order_by('numero')
 
     def clean(self):
-        cleaned_data = super().clean()
-
-        forma_pago = cleaned_data.get('forma_pago')
-        banco = cleaned_data.get('banco')
+        cleaned_data  = super().clean()
+        forma_pago    = cleaned_data.get('forma_pago')
+        banco         = cleaned_data.get('banco')
         numero_cheque = cleaned_data.get('numero_cheque')
-        monto = cleaned_data.get('monto') or Decimal('0')
-        cuota = cleaned_data.get('cuota')
+        monto         = cleaned_data.get('monto') or Decimal('0')
+        cuota         = cleaned_data.get('cuota')
 
         if monto <= 0:
             self.add_error('monto', 'El monto debe ser mayor a cero.')
