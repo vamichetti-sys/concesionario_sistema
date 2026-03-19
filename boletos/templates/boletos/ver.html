@@ -1,3 +1,4 @@
+cat > boletos/templates/boletos/ver.html << 'HTMLEOF'
 {% extends "base.html" %}
 {% load static %}
 {% block title %}Boleto {{ boleto.numero }}{% endblock %}
@@ -18,9 +19,6 @@ html, body {
     color: #000;
 }
 
-/* ===============================
-   CONTENEDOR A4
-=============================== */
 .boleto-page {
     width: 210mm;
     min-height: 297mm;
@@ -34,93 +32,63 @@ html, body {
     flex-direction: column;
 }
 
-/* ===============================
-   ENCABEZADO
-=============================== */
 .header-top {
     text-align: center;
-    margin-bottom: 4mm;
+    margin-bottom: 3mm;
     border-bottom: 1.5px solid #000;
-    padding-bottom: 3mm;
+    padding-bottom: 2mm;
 }
 
-.empresa {
-    font-size: 14pt;
-    font-weight: bold;
-    letter-spacing: 1px;
-}
-
-.sub {
-    font-size: 9pt;
-    font-weight: bold;
-}
-
-.direccion {
-    font-size: 8.5pt;
-}
+.empresa { font-size: 14pt; font-weight: bold; letter-spacing: 1px; }
+.sub { font-size: 9pt; font-weight: bold; }
+.direccion { font-size: 8.5pt; }
 
 .titulo-boleto {
     font-size: 10pt;
     font-weight: bold;
     text-align: center;
-    margin: 3mm 0;
+    margin: 2mm 0;
     letter-spacing: 2px;
     text-decoration: underline;
 }
 
-/* ===============================
-   CUERPO
-=============================== */
 .boleto-body {
     flex: 1;
     font-family: "Times New Roman", Times, serif;
-    flex: 1;
     overflow: hidden;
     font-size: 9pt;
-    line-height: 1.25;
+    line-height: 1.2;
     text-align: justify;
 }
 
-.boleto-body p {
-    margin: 0 0 0.3mm 0;
-}
+.boleto-body p { margin: 0 0 0.8mm 0; }
 
-/* ===============================
-   NOTA
-=============================== */
 .nota-linea {
-    margin-top: 3mm;
+    margin-top: 2mm;
     border-bottom: 0.5px solid #000;
     font-size: 8pt;
 }
 
-/* ===============================
-   FIRMAS
-=============================== */
 .boleto-firmas {
     margin-top: auto;
-    transform: translateY(-8mm);
+    transform: translateY(-20mm);
     display: flex;
     justify-content: space-between;
     font-size: 8pt;
+    page-break-inside: avoid;
 }
 
-.firma-col {
-    width: 44%;
-}
+.firma-col { width: 44%; }
 
 .firma-linea {
     border-top: 1px solid #000;
-    margin-bottom: 1.5mm;
+    margin-bottom: 1.2mm;
     width: 100%;
 }
 
-/* ===============================
-   PIE DE PÁGINA
-=============================== */
 .boleto-pie {
-    margin-top: 4mm;
-    padding-top: 3mm;
+    margin-top: 3mm;
+    padding-top: 2mm;
     border-top: 1px solid #000;
     display: flex;
     justify-content: space-around;
@@ -128,9 +96,6 @@ html, body {
     text-align: center;
 }
 
-/* ===============================
-   BOTONES (NO IMPRIME)
-=============================== */
 .acciones-boleto {
     max-width: 210mm;
     margin: 20px auto;
@@ -140,26 +105,12 @@ html, body {
 }
 
 @media print {
-    .sidebar,
-    .topbar,
-    .acciones-boleto {
-        display: none !important;
-    }
-
-    .content {
-        margin: 0 !important;
-        padding: 0 !important;
-    }
-
-    .boleto-page {
-        box-shadow: none;
-        border-radius: 0;
-        width: 100%;
-    }
+    .sidebar, .topbar, .acciones-boleto { display: none !important; }
+    .content { margin: 0 !important; padding: 0 !important; }
+    .boleto-page { box-shadow: none; border-radius: 0; width: 100%; }
 }
 </style>
 
-<!-- BOTONES -->
 <div class="acciones-boleto">
     <button onclick="window.print()" class="btn btn-primary">
         <i data-lucide="printer" style="width:16px;height:16px;margin-right:6px;"></i>
@@ -177,10 +128,7 @@ html, body {
     </a>
 </div>
 
-<!-- HOJA A4 -->
 <div class="boleto-page">
-
-    <!-- ENCABEZADO -->
     <div class="header-top">
         <div class="empresa">HUGO AMICHETTI AUTOMOTORES</div>
         <div class="sub">AUTOMOTORES NUEVOS Y USADOS</div>
@@ -189,16 +137,14 @@ html, body {
 
     <div class="titulo-boleto">BOLETO DE COMPRA VENTA</div>
 
-    <!-- CUERPO -->
     <div class="boleto-body">
         {% for clausula in clausulas %}
             <p>{{ clausula }}</p>
         {% endfor %}
     </div>
 
-    <!-- NOTA -->
+    <div class="nota-linea">Nota: _______________________________________________________________________________________________________________</div>
 
-    <!-- FIRMAS -->
     <div class="boleto-firmas">
         <div class="firma-col">
             <div class="firma-linea"></div>
@@ -216,18 +162,14 @@ html, body {
         </div>
     </div>
 
-    <!-- PIE -->
     <div class="boleto-pie">
         <div>📞 2474660154 - 2475465115</div>
         <div>✉ HUGOAMICHETTIAUTOMOTORES@GMAIL.COM</div>
     </div>
-
 </div>
 
 <script>
-    if (typeof lucide !== 'undefined') {
-        lucide.createIcons();
-    }
+    if (typeof lucide !== 'undefined') { lucide.createIcons(); }
 </script>
 
 {% endblock %}
