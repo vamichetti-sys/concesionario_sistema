@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db import transaction
 from django.db.models import Sum, Count
-from datetime import timedelta
+from datetime import timedelta, datetime
 from decimal import Decimal, InvalidOperation
 from django.utils import timezone
 from django.http import HttpResponse
@@ -51,9 +51,9 @@ from .forms import (
 # ==========================================================
 # IDENTIDAD VISUAL – COLORES CORPORATIVOS
 # ==========================================================
-COLOR_AZUL    = colors.HexColor("#002855")
-COLOR_NARANJA = colors.HexColor("#FF6C1A")
-COLOR_GRIS    = colors.HexColor("#F4F6F8")
+COLOR_AZUL       = colors.HexColor("#002855")
+COLOR_NARANJA    = colors.HexColor("#FF6C1A")
+COLOR_GRIS       = colors.HexColor("#F4F6F8")
 COLOR_GRIS_TEXTO = colors.HexColor("#6c757d")
 
 
@@ -147,8 +147,8 @@ def crear_cuenta_corriente(request, cliente_id):
 def cuenta_corriente_detalle(request, cuenta_id):
     cuenta = get_object_or_404(CuentaCorriente, id=cuenta_id)
 
-    plan      = getattr(cuenta, "plan_pago", None)
-    cuotas    = plan.cuotas.all().order_by("numero") if plan else []
+    plan        = getattr(cuenta, "plan_pago", None)
+    cuotas      = plan.cuotas.all().order_by("numero") if plan else []
     movimientos = cuenta.movimientos.order_by("-fecha")
 
     vehiculos = Vehiculo.objects.all()
@@ -214,13 +214,12 @@ def crear_plan_pago(request, cuenta_id):
         form = PlanPagoForm(request.POST, instance=plan_existente)
 
         if form.is_valid():
-            plan         = form.save(commit=False)
-            plan.cuenta  = cuenta
-            plan.estado  = "activo"
-            es_edicion   = plan_existente is not None
+            plan        = form.save(commit=False)
+            plan.cuenta = cuenta
+            plan.estado = "activo"
+            es_edicion  = plan_existente is not None
 
             if es_edicion:
-                # Borrar el movimiento de deuda del plan anterior
                 cuenta.movimientos.filter(
                     tipo='debe',
                     descripcion__icontains='Plan de pago'
@@ -228,9 +227,6 @@ def crear_plan_pago(request, cuenta_id):
 
             plan.save()
 
-            # Si es edición el save() del modelo no crea el movimiento
-            # porque self.pk ya no es None. Lo creamos manualmente.
-            # ✅ Usamos total_con_interes para incluir el interés de financiación
             if es_edicion:
                 MovimientoCuenta.objects.create(
                     cuenta=cuenta,
@@ -240,16 +236,35 @@ def crear_plan_pago(request, cuenta_id):
                     origen='venta'
                 )
 
-            # Recrear cuotas
+            # ✅ Recrear cuotas leyendo fecha y monto individuales del POST
             plan.cuotas.all().delete()
             fecha = plan.fecha_inicio
 
             for i in range(1, int(plan.cantidad_cuotas) + 1):
+                # Índice 0-based en el formset del template
+                idx = i - 1
+
+                # Fecha de vencimiento individual (editada en el preview)
+                fecha_raw = request.POST.get(f"form-{idx}-vencimiento", "")
+                try:
+                    fecha_cuota = datetime.strptime(fecha_raw, "%Y-%m-%d").date() if fecha_raw else fecha
+                except ValueError:
+                    fecha_cuota = fecha
+
+                # Monto individual (editable en el preview)
+                monto_raw = request.POST.get(f"form-{idx}-monto", "")
+                try:
+                    monto_cuota = Decimal(monto_raw) if monto_raw else plan.monto_cuota
+                    if monto_cuota <= 0:
+                        monto_cuota = plan.monto_cuota
+                except Exception:
+                    monto_cuota = plan.monto_cuota
+
                 CuotaPlan.objects.create(
                     plan=plan,
                     numero=i,
-                    vencimiento=fecha,
-                    monto=plan.monto_cuota,
+                    vencimiento=fecha_cuota,
+                    monto=monto_cuota,
                     estado="pendiente"
                 )
                 fecha += timedelta(days=30)
@@ -491,7 +506,7 @@ def recibo_pago_pdf(request, pago_id):
         elements.append(Spacer(1, 12))
 
     # Saldo
-    plan_obj  = getattr(cuenta, "plan_pago", None)
+    plan_obj   = getattr(cuenta, "plan_pago", None)
     saldo_plan = Decimal("0")
     if plan_obj:
         saldo_plan = sum(

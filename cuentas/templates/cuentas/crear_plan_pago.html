@@ -145,7 +145,7 @@
             <hr class="my-4">
             <div class="d-flex align-items-center gap-2 mb-3">
                 <i data-lucide="list" style="width:20px;height:20px;color:#3b82f6;"></i>
-                <h6 class="fw-bold mb-0">Cuotas generadas <span class="text-muted fw-normal" style="font-size:13px;">— podés editar la fecha de cada una</span></h6>
+                <h6 class="fw-bold mb-0">Cuotas generadas <span class="text-muted fw-normal" style="font-size:13px;">— podés editar fecha y monto de cada una</span></h6>
             </div>
 
             <input type="hidden" name="form-TOTAL_FORMS" id="id_form-TOTAL_FORMS">
@@ -191,7 +191,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const fechaInicio       = document.getElementById('id_fecha_inicio');
     const anticipo          = document.getElementById('id_anticipo');
     const interesFinanc     = document.getElementById('id_interes_financiacion');
-    const interesMora       = document.getElementById('id_interes_mora_mensual');
 
     const preview           = document.getElementById('preview-cuotas');
     const lista             = document.getElementById('lista-cuotas');
@@ -278,10 +277,12 @@ document.addEventListener('DOMContentLoaded', function () {
                             <span class="badge bg-info">Cuota ${i + 1}</span>
                         </div>
                         <div class="col-md-5">
+                            <label style="font-size:12px;color:#6b7280;margin-bottom:4px;">Vencimiento</label>
                             <input type="date" name="form-${i}-vencimiento" class="form-control" value="${fechaStr}">
                         </div>
                         <div class="col-md-5">
-                            <input type="text" class="form-control" value="${formatPesos(parseFloat(montoUnitario))}" readonly style="color:#374151;background:#e9ecef;">
+                            <label style="font-size:12px;color:#6b7280;margin-bottom:4px;">Monto</label>
+                            <input type="number" name="form-${i}-monto" class="form-control" value="${montoUnitario}" step="0.01" min="0.01">
                         </div>
                     </div>
                 </div>
