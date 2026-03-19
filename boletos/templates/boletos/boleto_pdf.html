@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<style>
+@page {
+    size: A4 portrait;
+    margin: 10mm 12mm 10mm 12mm;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+    margin: 0;
+    padding: 0;
+    background: #fff;
+    font-family: "Times New Roman", Times, serif;
+    font-size: 8.8pt;
+    line-height: 1.25;
+    color: #000;
+}
+
+.boleto-page {
+    width: 100%;
+}
+
+/* ENCABEZADO */
+.header-top {
+    text-align: center;
+    border-bottom: 1.5px solid #000;
+    padding-bottom: 2.5mm;
+    margin-bottom: 3mm;
+}
+.empresa   { font-size: 13pt; font-weight: bold; letter-spacing: 0.5px; }
+.sub       { font-size: 8.5pt; font-weight: bold; }
+.direccion { font-size: 8pt; }
+
+/* TÍTULO */
+.titulo-boleto {
+    font-size: 9.5pt;
+    font-weight: bold;
+    text-align: center;
+    margin: 2.5mm 0;
+    letter-spacing: 2px;
+    text-decoration: underline;
+}
+
+/* CUERPO */
+.boleto-body {
+    text-align: justify;
+}
+.boleto-body p {
+    margin: 0 0 1.3mm 0;
+}
+
+/* NOTA */
+.nota-area {
+    margin-top: 3mm;
+    font-size: 8pt;
+    min-height: 7mm;
+    border-bottom: 0.5px solid #888;
+    padding-bottom: 2mm;
+}
+
+/* FIRMAS */
+.boleto-firmas {
+    margin-top: 8mm;
+    display: flex;
+    justify-content: space-between;
+}
+.firma-col {
+    width: 44%;
+    font-size: 8pt;
+}
+.firma-linea {
+    border-top: 1px solid #000;
+    margin-bottom: 1.5mm;
+    width: 100%;
+}
+
+/* PIE */
+.boleto-pie {
+    margin-top: 4mm;
+    padding-top: 2.5mm;
+    border-top: 1px solid #000;
+    display: flex;
+    justify-content: space-around;
+    font-size: 7.5pt;
+    text-align: center;
+}
+</style>
+</head>
+<body>
+<div class="boleto-page">
+
+    <div class="header-top">
+        <div class="empresa">HUGO AMICHETTI AUTOMOTORES</div>
+        <div class="sub">AUTOMOTORES NUEVOS Y USADOS</div>
+        <div class="direccion">LARREA 255, ROJAS BS AS (2705)</div>
+    </div>
+
+    <div class="titulo-boleto">BOLETO DE COMPRA VENTA</div>
+
+    <div class="boleto-body">
+        {% for clausula in clausulas %}
+            <p>{{ clausula }}</p>
+        {% endfor %}
+    </div>
+
+    <div class="nota-area">
+        <strong>Nota:</strong>{% if nota %} {{ nota }}{% endif %}
+    </div>
+
+    <div class="boleto-firmas">
+        <div class="firma-col">
+            <div class="firma-linea"></div>
+            <strong>APELLIDO:</strong> {{ vendedor.apellido }}<br>
+            <strong>NOMBRE:</strong> {{ vendedor.nombre }}<br>
+            <strong>DIRECCIÓN:</strong> {{ vendedor.direccion }}<br>
+            <strong>DNI:</strong> {{ vendedor.dni }}
+        </div>
+        <div class="firma-col">
+            <div class="firma-linea"></div>
+            <strong>APELLIDO:</strong> {{ comprador.apellido }}<br>
+            <strong>NOMBRE:</strong> {{ comprador.nombre }}<br>
+            <strong>DIRECCIÓN:</strong> {{ comprador.direccion }}<br>
+            <strong>DNI:</strong> {{ comprador.dni }}
+        </div>
+    </div>
+
+    <div class="boleto-pie">
+        <div>Tel: 2474660154 - 2475465115</div>
+        <div>HUGOAMICHETTIAUTOMOTORES@GMAIL.COM</div>
+    </div>
+
+</div>
+</body>
+</html>

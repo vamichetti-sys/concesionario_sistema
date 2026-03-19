@@ -36,6 +36,11 @@ urlpatterns = [
         views.editar_boleto,
         name="editar_boleto"
     ),
+    path(
+        "eliminar/<int:boleto_id>/",
+        views.eliminar_boleto,
+        name="eliminar_boleto"
+    ),
 
     # ===============================
     # 📝 PAGARÉS

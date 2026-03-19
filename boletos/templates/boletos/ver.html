@@ -1,87 +1,88 @@
 {% extends "base.html" %}
 {% load static %}
 {% block title %}Boleto {{ boleto.numero }}{% endblock %}
+
 {% block content %}
 <style>
-@page { size: A4; margin: 8mm; }
-
-html, body {
-    margin: 0; padding: 0;
-    background: #fff;
-    font-family: "Times New Roman", serif;
-    font-size: 9pt;
-    line-height: 1.25;
-    color: #000;
+/* =============================================
+   PANTALLA
+============================================= */
+.acciones-boleto {
+    max-width: 820px;
+    margin: 24px auto 16px;
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
 }
 
-.boleto-page {
-    width: 210mm;
-    min-height: 297mm;
-    margin: 0 auto;
+.boleto-wrapper {
+    max-width: 820px;
+    margin: 0 auto 40px;
     background: #fff;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-    border-radius: 4px;
-    padding: 8mm 10mm;
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
+    box-shadow: 0 2px 20px rgba(0,0,0,0.15);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+/* =============================================
+   CONTENIDO DEL BOLETO (vista en pantalla)
+============================================= */
+.boleto-inner {
+    padding: 14mm 16mm 10mm;
+    font-family: "Times New Roman", Times, serif;
+    font-size: 9.5pt;
+    line-height: 1.3;
+    color: #000;
+    background: #fff;
 }
 
 .header-top {
     text-align: center;
-    margin-bottom: 3mm;
+    margin-bottom: 4mm;
     border-bottom: 1.5px solid #000;
-    padding-bottom: 2mm;
+    padding-bottom: 3mm;
 }
-
-.empresa   { font-size: 14pt; font-weight: bold; letter-spacing: 1px; }
-.sub       { font-size: 9pt; font-weight: bold; }
+.empresa   { font-size: 13pt; font-weight: bold; letter-spacing: 0.5px; }
+.sub       { font-size: 9pt;  font-weight: bold; }
 .direccion { font-size: 8.5pt; }
 
 .titulo-boleto {
     font-size: 10pt;
     font-weight: bold;
     text-align: center;
-    margin: 2mm 0;
+    margin: 3mm 0;
     letter-spacing: 2px;
     text-decoration: underline;
 }
 
-.boleto-body {
-    flex: 1;
-    font-family: "Times New Roman", Times, serif;
-    font-size: 9pt;
-    line-height: 1.2;
-    text-align: justify;
-}
-
-.boleto-body p { margin: 0 0 0.8mm 0; }
+.boleto-body { text-align: justify; }
+.boleto-body p { margin: 0 0 1.5mm 0; }
 
 .nota-area {
-    margin-top: 2mm;
+    margin-top: 4mm;
     font-size: 8.5pt;
-    min-height: 10mm;
+    min-height: 8mm;
     border-bottom: 0.5px solid #888;
+    padding-bottom: 2mm;
 }
 
 .boleto-firmas {
-    margin-top: 8mm;
+    margin-top: 10mm;
     display: flex;
     justify-content: space-between;
     font-size: 8.5pt;
 }
-
 .firma-col { width: 44%; }
-
 .firma-linea {
     border-top: 1px solid #000;
-    margin-bottom: 1.2mm;
+    margin-bottom: 2mm;
     width: 100%;
 }
 
 .boleto-pie {
-    margin-top: 3mm;
-    padding-top: 2mm;
+    margin-top: 5mm;
+    padding-top: 3mm;
     border-top: 1px solid #000;
     display: flex;
     justify-content: space-around;
@@ -89,90 +90,216 @@ html, body {
     text-align: center;
 }
 
-.acciones-boleto {
-    max-width: 210mm;
-    margin: 20px auto;
-    display: flex;
-    gap: 12px;
-    justify-content: center;
-}
-
 @media print {
-    .sidebar, .topbar, .acciones-boleto { display: none !important; }
-    .content { margin: 0 !important; padding: 0 !important; }
-    .boleto-page { box-shadow: none; border-radius: 0; width: 100%; }
+    * { display: none !important; }
 }
 </style>
 
-<!-- BOTONES -->
+<!-- =============================================
+     BOTONES
+============================================= -->
 <div class="acciones-boleto">
-    <button onclick="window.print()" class="btn btn-primary">
+    <button onclick="imprimirBoleto()" class="btn btn-primary">
         <i data-lucide="printer" style="width:16px;height:16px;margin-right:6px;"></i>
         Imprimir en A4
     </button>
-    <a href="{% url 'boletos:editar_boleto' boleto.id %}" class="btn btn-secondary">
+    <a href="{% url 'boletos:editar_boleto' boleto.id %}" class="btn btn-outline-secondary">
         <i data-lucide="pencil" style="width:16px;height:16px;margin-right:6px;"></i>
         Editar
     </a>
     {% if boleto.pdf %}
-    <a href="{{ boleto.pdf.url }}" target="_blank" class="btn btn-success">
+    <a href="{{ boleto.pdf.url }}" target="_blank" class="btn btn-outline-success">
         <i data-lucide="file-down" style="width:16px;height:16px;margin-right:6px;"></i>
         Descargar PDF
     </a>
     {% endif %}
-    <a href="{% url 'boletos:lista' %}" class="btn btn-secondary">
+    <a href="{% url 'boletos:lista' %}" class="btn btn-outline-secondary">
         <i data-lucide="arrow-left" style="width:16px;height:16px;margin-right:6px;"></i>
         Volver
     </a>
+    <button type="button"
+            class="btn btn-outline-danger"
+            data-bs-toggle="modal"
+            data-bs-target="#modalEliminar">
+        <i data-lucide="trash-2" style="width:16px;height:16px;margin-right:6px;"></i>
+        Eliminar
+    </button>
 </div>
 
-<!-- HOJA A4 -->
-<div class="boleto-page">
+<!-- =============================================
+     PREVIEW EN PANTALLA
+============================================= -->
+<div class="boleto-wrapper" id="boleto-contenido">
+    <div class="boleto-inner">
 
-    <div class="header-top">
-        <div class="empresa">HUGO AMICHETTI AUTOMOTORES</div>
-        <div class="sub">AUTOMOTORES NUEVOS Y USADOS</div>
-        <div class="direccion">LARREA 255, ROJAS BS AS (2705)</div>
-    </div>
-
-    <div class="titulo-boleto">BOLETO DE COMPRA VENTA</div>
-
-    <div class="boleto-body">
-        {% for clausula in clausulas %}
-            <p>{{ clausula }}</p>
-        {% endfor %}
-    </div>
-
-    <div class="nota-area">
-        <strong>Nota:</strong>
-    </div>
-
-    <div class="boleto-firmas">
-        <div class="firma-col">
-            <div class="firma-linea"></div>
-            <strong>APELLIDO:</strong> {{ vendedor.apellido }}<br>
-            <strong>NOMBRE:</strong> {{ vendedor.nombre }}<br>
-            <strong>DIRECCIÓN:</strong> {{ vendedor.direccion }}<br>
-            <strong>DNI:</strong> {{ vendedor.dni }}
+        <div class="header-top">
+            <div class="empresa">HUGO AMICHETTI AUTOMOTORES</div>
+            <div class="sub">AUTOMOTORES NUEVOS Y USADOS</div>
+            <div class="direccion">LARREA 255, ROJAS BS AS (2705)</div>
         </div>
-        <div class="firma-col">
-            <div class="firma-linea"></div>
-            <strong>APELLIDO:</strong> {{ comprador.apellido }}<br>
-            <strong>NOMBRE:</strong> {{ comprador.nombre }}<br>
-            <strong>DIRECCIÓN:</strong> {{ comprador.direccion }}<br>
-            <strong>DNI:</strong> {{ comprador.dni }}
+
+        <div class="titulo-boleto">BOLETO DE COMPRA VENTA</div>
+
+        <div class="boleto-body">
+            {% for clausula in clausulas %}
+                <p>{{ clausula }}</p>
+            {% endfor %}
+        </div>
+
+        <div class="nota-area">
+            <strong>Nota:</strong>{% if boleto.nota %} {{ boleto.nota }}{% endif %}
+        </div>
+
+        <div class="boleto-firmas">
+            <div class="firma-col">
+                <div class="firma-linea"></div>
+                <strong>APELLIDO:</strong> {{ vendedor.apellido }}<br>
+                <strong>NOMBRE:</strong> {{ vendedor.nombre }}<br>
+                <strong>DIRECCIÓN:</strong> {{ vendedor.direccion }}<br>
+                <strong>DNI:</strong> {{ vendedor.dni }}
+            </div>
+            <div class="firma-col">
+                <div class="firma-linea"></div>
+                <strong>APELLIDO:</strong> {{ comprador.apellido }}<br>
+                <strong>NOMBRE:</strong> {{ comprador.nombre }}<br>
+                <strong>DIRECCIÓN:</strong> {{ comprador.direccion }}<br>
+                <strong>DNI:</strong> {{ comprador.dni }}
+            </div>
+        </div>
+
+        <div class="boleto-pie">
+            <div>Tel: 2474660154 - 2475465115</div>
+            <div>HUGOAMICHETTIAUTOMOTORES@GMAIL.COM</div>
+        </div>
+
+    </div>
+</div>
+
+<!-- =============================================
+     MODAL ELIMINAR
+============================================= -->
+<div class="modal fade" id="modalEliminar" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0 pb-0">
+                <div class="d-flex align-items-center gap-2">
+                    <div style="width:40px;height:40px;background:#fee2e2;border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                        <i data-lucide="trash-2" style="width:20px;height:20px;color:#dc2626;"></i>
+                    </div>
+                    <h5 class="modal-title fw-bold mb-0">Eliminar boleto</h5>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body pt-3">
+                <p class="text-muted mb-1">
+                    Vas a eliminar el <strong>Boleto #{{ boleto.numero }}</strong> de
+                    <strong>{{ boleto.cliente }}</strong>.
+                </p>
+                <p class="text-danger mb-0" style="font-size:13px;">
+                    <i data-lucide="alert-triangle" style="width:14px;height:14px;margin-right:4px;"></i>
+                    Esta acción no se puede deshacer.
+                </p>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">
+                    Cancelar
+                </button>
+                <form method="post" action="{% url 'boletos:eliminar_boleto' boleto.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger btn-sm">
+                        <i data-lucide="trash-2" style="width:14px;height:14px;margin-right:4px;"></i>
+                        Sí, eliminar
+                    </button>
+                </form>
+            </div>
         </div>
     </div>
-
-    <div class="boleto-pie">
-        <div>📞 2474660154 - 2475465115</div>
-        <div>✉ HUGOAMICHETTIAUTOMOTORES@GMAIL.COM</div>
-    </div>
-
 </div>
 
 <script>
-    if (typeof lucide !== 'undefined') lucide.createIcons();
+if (typeof lucide !== 'undefined') lucide.createIcons();
+
+function imprimirBoleto() {
+    const contenido = document.getElementById('boleto-contenido').innerHTML;
+    const ventana = window.open('', '_blank', 'width=900,height=750');
+    ventana.document.write(`
+        <!DOCTYPE html>
+        <html lang="es">
+        <head>
+            <meta charset="utf-8">
+            <title>Boleto #{{ boleto.numero }}</title>
+            <style>
+                @page { size: A4 portrait; margin: 0; }
+                * { box-sizing: border-box; }
+                html, body {
+                    margin: 0; padding: 0;
+                    background: #fff;
+                    font-family: "Times New Roman", Times, serif;
+                    font-size: 8.8pt;
+                    line-height: 1.25;
+                    color: #000;
+                }
+                .boleto-inner {
+                    width: 210mm;
+                    padding: 10mm 12mm 8mm;
+                }
+                .header-top {
+                    text-align: center;
+                    border-bottom: 1.5px solid #000;
+                    padding-bottom: 2.5mm;
+                    margin-bottom: 3mm;
+                }
+                .empresa   { font-size: 13pt; font-weight: bold; letter-spacing: 0.5px; }
+                .sub       { font-size: 8.5pt; font-weight: bold; }
+                .direccion { font-size: 8pt; }
+                .titulo-boleto {
+                    font-size: 9.5pt;
+                    font-weight: bold;
+                    text-align: center;
+                    margin: 2.5mm 0;
+                    letter-spacing: 2px;
+                    text-decoration: underline;
+                }
+                .boleto-body { text-align: justify; font-size: 8.8pt; line-height: 1.25; }
+                .boleto-body p { margin: 0 0 1.3mm 0; }
+                .nota-area {
+                    margin-top: 3mm;
+                    font-size: 8pt;
+                    min-height: 7mm;
+                    border-bottom: 0.5px solid #888;
+                    padding-bottom: 2mm;
+                }
+                .boleto-firmas {
+                    margin-top: 8mm;
+                    display: flex;
+                    justify-content: space-between;
+                }
+                .firma-col { width: 44%; font-size: 8pt; }
+                .firma-linea {
+                    border-top: 1px solid #000;
+                    margin-bottom: 1.5mm;
+                    width: 100%;
+                }
+                .boleto-pie {
+                    margin-top: 4mm;
+                    padding-top: 2.5mm;
+                    border-top: 1px solid #000;
+                    display: flex;
+                    justify-content: space-around;
+                    font-size: 7.5pt;
+                    text-align: center;
+                }
+            </style>
+        </head>
+        <body>
+            \${contenido}
+        </body>
+        </html>
+    `);
+    ventana.document.close();
+    ventana.focus();
+    setTimeout(() => { ventana.print(); }, 400);
+}
 </script>
 
 {% endblock %}

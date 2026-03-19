@@ -103,6 +103,7 @@ def lista_boletos(request):
 
 # ====================================
 # GENERAR PDF BOLETO DESDE HTML
+# — usa template separado (sin base.html)
 # ====================================
 def generar_boleto_pdf_desde_html(request, boleto):
     from weasyprint import HTML
@@ -114,11 +115,18 @@ def generar_boleto_pdf_desde_html(request, boleto):
     apellido_cliente = partes[0] if partes else ""
     nombre_cliente   = partes[1] if len(partes) > 1 else ""
 
+    texto_boleto = re.sub(
+        r"\n\s*\n+", "\n", (boleto.texto_final or "").strip()
+    )
+    clausulas = [p.strip() for p in texto_boleto.split("\n") if p.strip()]
+
     html_string = render_to_string(
-        "boletos/ver.html",
+        # ✅ Template limpio, sin base.html ni sidebar
+        "boletos/boleto_pdf.html",
         {
             "boleto": boleto,
-            "texto_boleto": boleto.texto_final,
+            "clausulas": clausulas,
+            "nota": boleto.texto_final.split("Nota:")[-1].strip() if "Nota:" in (boleto.texto_final or "") else "",
             "vendedor": {
                 "apellido": "AMICHETTI",
                 "nombre": "HUGO ALBERTO",
@@ -346,6 +354,23 @@ def editar_boleto(request, boleto_id):
             "boleto": boleto,
         }
     )
+
+
+# ====================================
+# ELIMINAR BOLETO
+# ====================================
+def eliminar_boleto(request, boleto_id):
+    boleto = get_object_or_404(BoletoCompraventa, id=boleto_id)
+    if request.method == "POST":
+        if boleto.pdf:
+            try:
+                boleto.pdf.delete(save=False)
+            except Exception:
+                pass
+        boleto.delete()
+        messages.success(request, "Boleto eliminado correctamente.")
+        return redirect("boletos:lista")
+    return redirect("boletos:ver_boleto", boleto_id=boleto_id)
 
 
 # ==========================================================
