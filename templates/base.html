@@ -75,7 +75,6 @@
             letter-spacing: 1px;
         }
 
-        /* Links normales */
         .sidebar a.nav-link {
             display: flex;
             align-items: center;
@@ -106,7 +105,6 @@
             stroke-width: 1.5;
         }
 
-        /* Categorías colapsables */
         .sidebar-category {
             margin-bottom: 8px;
         }
@@ -161,7 +159,18 @@
             height: 18px;
         }
 
-        /* Separador */
+        /* Badge "Próximo" para módulos en construcción */
+        .badge-soon {
+            font-size: 9px;
+            font-weight: 600;
+            background: rgba(245,158,11,0.2);
+            color: #f59e0b;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: auto;
+            letter-spacing: 0.3px;
+        }
+
         .sidebar-divider {
             height: 1px;
             background: rgba(255, 255, 255, 0.1);
@@ -428,21 +437,10 @@
         /* =========================
            TEXTOS
         ========================= */
-        .text-success {
-            color: #059669 !important;
-        }
-
-        .text-danger {
-            color: #dc2626 !important;
-        }
-
-        .text-muted {
-            color: #6b7280 !important;
-        }
-
-        .fw-bold {
-            font-weight: 600 !important;
-        }
+        .text-success { color: #059669 !important; }
+        .text-danger  { color: #dc2626 !important; }
+        .text-muted   { color: #6b7280 !important; }
+        .fw-bold      { font-weight: 600 !important; }
 
         /* =========================
            TÍTULOS
@@ -466,9 +464,7 @@
             padding: 20px 24px;
         }
 
-        .modal-body {
-            padding: 24px;
-        }
+        .modal-body   { padding: 24px; }
 
         .modal-footer {
             border-top: 1px solid #e5e7eb;
@@ -484,27 +480,14 @@
             padding: 14px 18px;
         }
 
-        .alert-success {
-            background: rgba(16, 185, 129, 0.1);
-            color: #059669;
-        }
-
-        .alert-danger {
-            background: rgba(239, 68, 68, 0.1);
-            color: #dc2626;
-        }
-
-        .alert-warning {
-            background: rgba(245, 158, 11, 0.1);
-            color: #d97706;
-        }
+        .alert-success { background: rgba(16, 185, 129, 0.1); color: #059669; }
+        .alert-danger  { background: rgba(239, 68, 68, 0.1);  color: #dc2626; }
+        .alert-warning { background: rgba(245, 158, 11, 0.1); color: #d97706; }
 
         /* =========================
            NAV TABS
         ========================= */
-        .nav-tabs {
-            border-bottom: 1px solid #e5e7eb;
-        }
+        .nav-tabs { border-bottom: 1px solid #e5e7eb; }
 
         .nav-tabs .nav-link {
             border: none;
@@ -516,10 +499,7 @@
             transition: all 0.2s ease;
         }
 
-        .nav-tabs .nav-link:hover {
-            color: #3b82f6;
-            border-color: transparent;
-        }
+        .nav-tabs .nav-link:hover { color: #3b82f6; border-color: transparent; }
 
         .nav-tabs .nav-link.active {
             color: #3b82f6;
@@ -530,42 +510,21 @@
         /* =========================
            SCROLLBAR
         ========================= */
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #a1a1a1; }
 
-        ::-webkit-scrollbar-track {
-            background: #f1f1f1;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: #c1c1c1;
-            border-radius: 4px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: #a1a1a1;
-        }
-
-        /* Scrollbar sidebar */
-        .sidebar::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        .sidebar::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        .sidebar::-webkit-scrollbar-thumb {
-            background: rgba(255,255,255,0.2);
-            border-radius: 3px;
-        }
+        .sidebar::-webkit-scrollbar { width: 6px; }
+        .sidebar::-webkit-scrollbar-track { background: transparent; }
+        .sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
     </style>
 </head>
 <body>
 
-<!-- SIDEBAR -->
+<!-- ===============================
+     SIDEBAR
+=============================== -->
 <div class="sidebar">
     <div class="sidebar-logo">
         <img src="{% static 'img/logo_amichetti.png' %}" alt="Logo">
@@ -575,7 +534,7 @@
         </div>
     </div>
 
-    <!-- INICIO (siempre visible) -->
+    <!-- INICIO -->
     <a href="/inicio/" class="nav-link {% if request.path == '/inicio/' %}active{% endif %}">
         <i data-lucide="layout-dashboard"></i>
         <span>Inicio</span>
@@ -589,7 +548,7 @@
             <span>Operaciones</span>
             <i data-lucide="chevron-down" class="chevron"></i>
         </div>
-        <div class="sidebar-category-items" style="max-height:300px;">
+        <div class="sidebar-category-items" style="max-height:400px;">
             <a href="/vehiculos/" class="nav-link {% if '/vehiculos/' in request.path %}active{% endif %}">
                 <i data-lucide="car"></i>
                 <span>Vehículos</span>
@@ -619,7 +578,7 @@
             <span>Clientes</span>
             <i data-lucide="chevron-down" class="chevron"></i>
         </div>
-        <div class="sidebar-category-items" style="max-height:300px;">
+        <div class="sidebar-category-items" style="max-height:400px;">
             <a href="/clientes/" class="nav-link {% if '/clientes/' in request.path %}active{% endif %}">
                 <i data-lucide="users"></i>
                 <span>Clientes</span>
@@ -628,9 +587,10 @@
                 <i data-lucide="credit-card"></i>
                 <span>Cuentas Corrientes</span>
             </a>
-            <a href="/deudas/" class="nav-link {% if '/deudas/' in request.path %}active{% endif %}">
-                <i data-lucide="alert-circle"></i>
-                <span>Deudas</span>
+            <a href="/crm/" class="nav-link {% if '/crm/' in request.path %}active{% endif %}">
+                <i data-lucide="target"></i>
+                <span>CRM</span>
+                <span class="badge-soon">Próximo</span>
             </a>
         </div>
     </div>
@@ -641,18 +601,18 @@
             <span>Documentación</span>
             <i data-lucide="chevron-down" class="chevron"></i>
         </div>
-        <div class="sidebar-category-items" style="max-height:300px;">
+        <div class="sidebar-category-items" style="max-height:400px;">
             <a href="/gestoria/" class="nav-link {% if '/gestoria/' in request.path %}active{% endif %}">
                 <i data-lucide="clipboard-list"></i>
                 <span>Gestoría</span>
             </a>
             <a href="{% url 'documentacion:home' %}" class="nav-link {% if '/documentacion/' in request.path %}active{% endif %}">
-                <i data-lucide="file-text"></i>
+                <i data-lucide="folder-open"></i>
                 <span>Documentación</span>
             </a>
-            <a href="/calendario/" class="nav-link {% if '/calendario/' in request.path %}active{% endif %}">
-                <i data-lucide="calendar"></i>
-                <span>Calendario</span>
+            <a href="/deudas/" class="nav-link {% if '/deudas/' in request.path %}active{% endif %}">
+                <i data-lucide="alert-circle"></i>
+                <span>Deudas</span>
             </a>
         </div>
     </div>
@@ -663,7 +623,7 @@
             <span>Administración</span>
             <i data-lucide="chevron-down" class="chevron"></i>
         </div>
-        <div class="sidebar-category-items" style="max-height:300px;">
+        <div class="sidebar-category-items" style="max-height:400px;">
             <a href="/facturacion/" class="nav-link {% if '/facturacion/' in request.path %}active{% endif %}">
                 <i data-lucide="receipt"></i>
                 <span>Facturación</span>
@@ -672,28 +632,33 @@
                 <i data-lucide="user-check"></i>
                 <span>Asistencia</span>
             </a>
+            <a href="/calendario/" class="nav-link {% if '/calendario/' in request.path %}active{% endif %}">
+                <i data-lucide="calendar"></i>
+                <span>Calendario</span>
+            </a>
         </div>
     </div>
 
     {% if user.username == 'Vamichetti' or user.username == 'Hamichetti' %}
-    <!-- GESTIÓN INTERNA (Solo Vamichetti y Hamichetti) -->
+    <!-- GESTIÓN INTERNA -->
     <div class="sidebar-category">
         <div class="sidebar-category-header" onclick="toggleCategory(this)">
             <span>Gestión Interna</span>
             <i data-lucide="chevron-down" class="chevron"></i>
         </div>
-        <div class="sidebar-category-items" style="max-height:300px;">
+        <div class="sidebar-category-items" style="max-height:400px;">
             <a href="/reportes/" class="nav-link {% if '/reportes/' in request.path %}active{% endif %}">
                 <i data-lucide="bar-chart-3"></i>
                 <span>Reportes</span>
             </a>
-            <a href="/cheques/" class="nav-link {% if '/cheques/' in request.path %}active{% endif %}">
-                <i data-lucide="banknote"></i>
-                <span>Gestión de Cheques</span>
-            </a>
             <a href="/cuentas-internas/" class="nav-link {% if '/cuentas-internas/' in request.path %}active{% endif %}">
                 <i data-lucide="wallet"></i>
                 <span>Cuentas Internas</span>
+            </a>
+            <a href="/gastos-mensuales/" class="nav-link {% if '/gastos-mensuales/' in request.path %}active{% endif %}">
+                <i data-lucide="trending-down"></i>
+                <span>Control de Gastos</span>
+                <span class="badge-soon">Próximo</span>
             </a>
         </div>
     </div>
@@ -730,14 +695,12 @@
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 <script>
-    // Inicializar íconos Lucide
     lucide.createIcons();
 
-    // Toggle categorías del sidebar
     function toggleCategory(header) {
-        const items = header.nextElementSibling;
+        const items   = header.nextElementSibling;
         const chevron = header.querySelector('.chevron');
-        
+
         if (items.classList.contains('collapsed')) {
             items.classList.remove('collapsed');
             items.style.maxHeight = items.scrollHeight + 'px';
@@ -749,8 +712,7 @@
         }
     }
 
-    // Mantener abierta la categoría del módulo activo
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
         const activeLink = document.querySelector('.sidebar-category-items a.nav-link.active');
         if (activeLink) {
             const categoryItems = activeLink.closest('.sidebar-category-items');
@@ -759,8 +721,7 @@
             }
         }
 
-        // Colapsar categorías sin elementos activos
-        document.querySelectorAll('.sidebar-category-items').forEach(function(items) {
+        document.querySelectorAll('.sidebar-category-items').forEach(function (items) {
             if (!items.querySelector('a.nav-link.active')) {
                 items.classList.add('collapsed');
                 items.style.maxHeight = '0';
@@ -768,7 +729,6 @@
             }
         });
 
-        // Reinicializar íconos después de manipular el DOM
         lucide.createIcons();
     });
 </script>
