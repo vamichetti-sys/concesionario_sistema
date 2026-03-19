@@ -5,7 +5,7 @@
 <style>
 @page {
     size: A4;
-    margin: 12.7mm 12.7mm 12.7mm 12.7mm;
+    margin: 8mm;
 }
 
 html, body {
@@ -13,8 +13,8 @@ html, body {
     padding: 0;
     background: #fff;
     font-family: "Times New Roman", serif;
-    font-size: 7.9pt;
-    line-height: 1.15;
+    font-size: 9pt;
+    line-height: 1.25;
     color: #000;
 }
 
@@ -23,12 +23,12 @@ html, body {
 =============================== */
 .boleto-page {
     width: 210mm;
-    height: 297mm;
+    min-height: 297mm;
     margin: 0 auto;
     background: #fff;
     box-shadow: 0 4px 20px rgba(0,0,0,0.1);
     border-radius: 4px;
-    padding: 12.7mm 12.7mm;
+    padding: 8mm 10mm;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
@@ -74,13 +74,14 @@ html, body {
 .boleto-body {
     flex: 1;
     font-family: "Times New Roman", Times, serif;
-    font-size: 7.9pt;
-    line-height: 1.15;
+    flex: 1;
+    font-size: 9pt;
+    line-height: 1.25;
     text-align: justify;
 }
 
 .boleto-body p {
-    margin: 0 0 0.6mm 0;
+    margin: 0 0 1mm 0;
 }
 
 /* ===============================
