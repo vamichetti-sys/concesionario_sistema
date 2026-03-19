@@ -5,7 +5,7 @@
 <style>
 @page {
     size: A4;
-    margin: 8mm 12mm 8mm 12mm;
+    margin: 10mm 14mm 10mm 14mm;
 }
 
 html, body {
@@ -14,10 +14,13 @@ html, body {
     background: #fff;
     font-family: "Times New Roman", serif;
     font-size: 9pt;
-    line-height: 1.2;
+    line-height: 1.3;
     color: #000;
 }
 
+/* ===============================
+   CONTENEDOR A4
+=============================== */
 .boleto-page {
     width: 210mm;
     height: 297mm;
@@ -25,65 +28,75 @@ html, body {
     background: #fff;
     box-shadow: 0 4px 20px rgba(0,0,0,0.1);
     border-radius: 4px;
-    padding: 8mm 12mm;
+    padding: 10mm 14mm;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
 }
 
+/* ===============================
+   ENCABEZADO
+=============================== */
 .header-top {
     text-align: center;
-    margin-bottom: 3mm;
+    margin-bottom: 4mm;
+    border-bottom: 1.5px solid #000;
+    padding-bottom: 3mm;
 }
 
-.header-top .empresa {
+.empresa {
     font-size: 14pt;
     font-weight: bold;
     letter-spacing: 1px;
 }
 
-.header-top .linea {
-    border-bottom: 2px solid #000;
-    width: 70%;
-    margin: 1.5mm auto;
-}
-
-.header-top .sub {
+.sub {
     font-size: 9pt;
     font-weight: bold;
 }
 
-.header-top .direccion {
+.direccion {
     font-size: 8.5pt;
 }
 
+.titulo-boleto {
+    font-size: 10pt;
+    font-weight: bold;
+    text-align: center;
+    margin: 3mm 0;
+    letter-spacing: 2px;
+    text-decoration: underline;
+}
+
+/* ===============================
+   CUERPO
+=============================== */
 .boleto-body {
+    flex: 1;
     font-family: "Times New Roman", Times, serif;
     font-size: 8.2pt;
-    line-height: 1.2;
+    line-height: 1.3;
     text-align: justify;
 }
 
-.clausula-intro {
-    margin-top: 0;
-    margin-bottom: 1mm;
+.boleto-body p {
+    margin: 0 0 1.8mm 0;
 }
 
-.clausula {
-    margin-top: 0;
-    margin-bottom: 1mm;
+/* ===============================
+   NOTA
+=============================== */
+.nota-linea {
+    margin-top: 3mm;
+    border-bottom: 0.5px solid #000;
+    font-size: 8pt;
 }
 
-.clausula-final {
-    margin-top: 2mm;
-    margin-bottom: 0;
-    font-weight: bold;
-    text-align: center;
-}
-
+/* ===============================
+   FIRMAS
+=============================== */
 .boleto-firmas {
-    margin-top: 0;
+    margin-top: 6mm;
     display: flex;
     justify-content: space-between;
     font-size: 8pt;
@@ -96,8 +109,25 @@ html, body {
 .firma-linea {
     border-top: 1px solid #000;
     margin-bottom: 1.5mm;
+    width: 100%;
 }
 
+/* ===============================
+   PIE DE PÁGINA
+=============================== */
+.boleto-pie {
+    margin-top: 4mm;
+    padding-top: 3mm;
+    border-top: 1px solid #000;
+    display: flex;
+    justify-content: space-around;
+    font-size: 8pt;
+    text-align: center;
+}
+
+/* ===============================
+   BOTONES (NO IMPRIME)
+=============================== */
 .acciones-boleto {
     max-width: 210mm;
     margin: 20px auto;
@@ -122,11 +152,11 @@ html, body {
         box-shadow: none;
         border-radius: 0;
         width: 100%;
-        padding: 0;
     }
 }
 </style>
 
+<!-- BOTONES -->
 <div class="acciones-boleto">
     <button onclick="window.print()" class="btn btn-primary">
         <i data-lucide="printer" style="width:16px;height:16px;margin-right:6px;"></i>
@@ -144,27 +174,29 @@ html, body {
     </a>
 </div>
 
+<!-- HOJA A4 -->
 <div class="boleto-page">
 
+    <!-- ENCABEZADO -->
     <div class="header-top">
         <div class="empresa">HUGO AMICHETTI AUTOMOTORES</div>
-        <div class="linea"></div>
         <div class="sub">AUTOMOTORES NUEVOS Y USADOS</div>
         <div class="direccion">LARREA 255, ROJAS BS AS (2705)</div>
     </div>
 
+    <div class="titulo-boleto">BOLETO DE COMPRA VENTA</div>
+
+    <!-- CUERPO -->
     <div class="boleto-body">
         {% for clausula in clausulas %}
-            {% if forloop.first %}
-                <p class="clausula-intro">{{ clausula }}</p>
-            {% elif forloop.last %}
-                <p class="clausula-final">{{ clausula }}</p>
-            {% else %}
-                <p class="clausula">{{ clausula }}</p>
-            {% endif %}
+            <p>{{ clausula }}</p>
         {% endfor %}
     </div>
 
+    <!-- NOTA -->
+    <div class="nota-linea">Nota: _______________________________________________________________________________________________________________</div>
+
+    <!-- FIRMAS -->
     <div class="boleto-firmas">
         <div class="firma-col">
             <div class="firma-linea"></div>
@@ -180,6 +212,12 @@ html, body {
             <strong>DIRECCIÓN:</strong> {{ comprador.direccion }}<br>
             <strong>DNI:</strong> {{ comprador.dni }}
         </div>
+    </div>
+
+    <!-- PIE -->
+    <div class="boleto-pie">
+        <div>📞 2474660154 - 2475465115</div>
+        <div>✉ HUGOAMICHETTIAUTOMOTORES@GMAIL.COM</div>
     </div>
 
 </div>
