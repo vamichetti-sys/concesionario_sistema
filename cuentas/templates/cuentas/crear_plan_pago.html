@@ -53,8 +53,44 @@
             <div class="col-md-6">
                 <label class="form-label fw-semibold">Anticipo</label>
                 {{ form.anticipo }}
+                <small class="text-muted">Si hay anticipo se genera un recibo automáticamente.</small>
             </div>
         </div>
+
+        <!-- ===============================
+             FORMA DE PAGO DEL ANTICIPO
+             Solo visible cuando anticipo > 0 y es plan nuevo
+        =============================== -->
+        {% if not plan %}
+        <div id="bloque-anticipo-pago" class="mt-4" style="display:none;">
+            <hr class="my-3">
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <i data-lucide="credit-card" style="width:18px;height:18px;color:#10b981;"></i>
+                <h6 class="fw-bold mb-0 text-success">Forma de pago del anticipo</h6>
+            </div>
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Forma de pago</label>
+                    <select name="forma_pago_anticipo" id="forma_pago_anticipo" class="form-select" onchange="toggleChequeAnticipo(this.value)">
+                        <option value="efectivo">Efectivo</option>
+                        <option value="cheque">Cheque</option>
+                    </select>
+                </div>
+                <div id="bloque-cheque-anticipo" class="col-md-8" style="display:none;">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Banco</label>
+                            <input type="text" name="banco_anticipo" class="form-control" placeholder="Nombre del banco">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">N° de cheque</label>
+                            <input type="text" name="numero_cheque_anticipo" class="form-control" placeholder="Número">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
 
         <!-- ===============================
              BLOQUE INTERESES
@@ -189,7 +225,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const cantidadCuotas    = document.getElementById('id_cantidad_cuotas');
     const montoCuota        = document.getElementById('id_monto_cuota');
     const fechaInicio       = document.getElementById('id_fecha_inicio');
-    const anticipo          = document.getElementById('id_anticipo');
+    const anticipoInput     = document.getElementById('id_anticipo');
     const interesFinanc     = document.getElementById('id_interes_financiacion');
 
     const preview           = document.getElementById('preview-cuotas');
@@ -198,12 +234,22 @@ document.addEventListener('DOMContentLoaded', function () {
     const errorBox          = document.getElementById('error-plan');
     const totalFormsInput   = document.getElementById('id_form-TOTAL_FORMS');
     const resumenInteres    = document.getElementById('resumen-interes');
+    const bloqueAnticipoPago = document.getElementById('bloque-anticipo-pago');
 
     // ==============================
     // HELPERS DE FORMATO
     // ==============================
     function formatPesos(valor) {
         return '$ ' + valor.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    }
+
+    // ==============================
+    // MOSTRAR/OCULTAR FORMA DE PAGO ANTICIPO
+    // ==============================
+    function toggleAnticipoPago() {
+        if (!bloqueAnticipoPago) return;
+        const anticipo = parseFloat(anticipoInput ? anticipoInput.value : 0) || 0;
+        bloqueAnticipoPago.style.display = anticipo > 0 ? 'block' : 'none';
     }
 
     // ==============================
@@ -306,7 +352,7 @@ document.addEventListener('DOMContentLoaded', function () {
         errorBox.innerText = '';
 
         const monto       = parseFloat(montoFinanciado.value);
-        const anticipoVal = parseFloat(anticipo.value) || 0;
+        const anticipoVal = parseFloat(anticipoInput ? anticipoInput.value : 0) || 0;
         const cuotas      = parseInt(cantidadCuotas.value);
         const interes     = parseFloat(interesFinanc.value) || 0;
 
@@ -338,6 +384,10 @@ document.addEventListener('DOMContentLoaded', function () {
     // ==============================
     tipoPlan.addEventListener('change', toggleCuotas);
 
+    if (anticipoInput) {
+        anticipoInput.addEventListener('input', toggleAnticipoPago);
+    }
+
     [montoFinanciado, interesFinanc].forEach(el => {
         el.addEventListener('input', () => {
             calcularMontoCuota();
@@ -357,9 +407,16 @@ document.addEventListener('DOMContentLoaded', function () {
     // ==============================
     toggleCuotas();
     calcularTotalConInteres();
+    toggleAnticipoPago();
 
     if (typeof lucide !== 'undefined') lucide.createIcons();
 });
+
+// Mostrar/ocultar datos de cheque en anticipo
+function toggleChequeAnticipo(valor) {
+    const bloque = document.getElementById('bloque-cheque-anticipo');
+    if (bloque) bloque.style.display = valor === 'cheque' ? 'block' : 'none';
+}
 </script>
 
 {% endblock %}

@@ -76,6 +76,144 @@ def _parse_monto_argentino(raw: str) -> Decimal:
     return Decimal(s)
 
 
+def _generar_pdf_recibo(pago, cuenta, concepto_extra=""):
+    """
+    Genera el PDF de recibo con ReportLab y devuelve un HttpResponse.
+    Se usa tanto para recibos normales como para anticipo.
+    """
+    cliente = cuenta.cliente
+
+    response = HttpResponse(content_type="application/pdf")
+    response["Content-Disposition"] = (
+        f'inline; filename="recibo_{pago.numero_recibo}.pdf"'
+    )
+
+    doc = SimpleDocTemplate(
+        response,
+        pagesize=A4,
+        topMargin=1.5 * cm,
+        bottomMargin=1.5 * cm,
+        leftMargin=2 * cm,
+        rightMargin=2 * cm,
+    )
+
+    styles = getSampleStyleSheet()
+    styles.add(ParagraphStyle(
+        name="Heading3Custom",
+        fontSize=12,
+        textColor=COLOR_AZUL,
+        spaceAfter=4,
+        fontName="Helvetica-Bold"
+    ))
+
+    elements = []
+
+    # ----------------------------------------------------------
+    # ENCABEZADO
+    # ----------------------------------------------------------
+    header_data = [[
+        Paragraph(
+            "<font color='white'><b>Amichetti Automotores</b></font><br/>"
+            "<font color='#cccccc' size=9>"
+            "Titular: Hugo Alberto Amichetti · CUIT: 20-13814200-1 · "
+            "Tel: 2474 660154"
+            "</font>",
+            ParagraphStyle("H", fontSize=14, textColor=colors.white,
+                           fontName="Helvetica-Bold", leading=18)
+        ),
+        Paragraph(
+            f"<font color='white'><b>RECIBO</b></font><br/>"
+            f"<font color='#cccccc' size=9>N° {pago.numero_recibo}</font>",
+            ParagraphStyle("R", fontSize=12, textColor=colors.white,
+                           fontName="Helvetica-Bold", alignment=2, leading=18)
+        )
+    ]]
+
+    titulo_table = Table(header_data, colWidths=[12 * cm, 5 * cm])
+    titulo_table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, -1), COLOR_AZUL),
+        ("ROWBACKGROUNDS", (0, 0), (-1, -1), [COLOR_AZUL]),
+        ("LINEBELOW", (0, 0), (-1, -1), 4, COLOR_NARANJA),
+        ("TOPPADDING", (0, 0), (-1, -1), 14),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 14),
+        ("LEFTPADDING", (0, 0), (0, -1), 14),
+        ("RIGHTPADDING", (-1, 0), (-1, -1), 14),
+    ]))
+
+    elements.append(titulo_table)
+    elements.append(Spacer(1, 18))
+
+    # ----------------------------------------------------------
+    # DATOS DEL CLIENTE
+    # ----------------------------------------------------------
+    documento = (
+        getattr(cliente, "cuit", None)
+        or getattr(cliente, "dni", None)
+        or "-"
+    )
+
+    elements.append(Paragraph("<b>Datos del cliente</b>", styles["Heading3Custom"]))
+    elements.append(Spacer(1, 6))
+    elements.append(Paragraph(f"Nombre: {cliente.nombre_completo}", styles["Normal"]))
+    elements.append(Paragraph(f"CUIT/DNI: {documento}", styles["Normal"]))
+    elements.append(Spacer(1, 16))
+
+    # ----------------------------------------------------------
+    # DETALLE DEL PAGO
+    # ----------------------------------------------------------
+    elements.append(Paragraph("<b>Detalle del pago</b>", styles["Heading3Custom"]))
+    elements.append(Spacer(1, 6))
+
+    concepto = concepto_extra or pago.observaciones or "Pago"
+    elements.append(Paragraph(f"Concepto: {concepto}", styles["Normal"]))
+    elements.append(Paragraph(
+        f"Método de pago: {pago.get_forma_pago_display()}",
+        styles["Normal"]
+    ))
+    if pago.banco:
+        elements.append(Paragraph(f"Banco: {pago.banco}", styles["Normal"]))
+    if pago.numero_cheque:
+        elements.append(Paragraph(f"N° cheque: {pago.numero_cheque}", styles["Normal"]))
+    elements.append(Paragraph(
+        f"Monto abonado: $ {pago.monto_total:,.2f}",
+        styles["Normal"]
+    ))
+    elements.append(Spacer(1, 12))
+
+    # ----------------------------------------------------------
+    # SALDO PENDIENTE DEL PLAN
+    # ----------------------------------------------------------
+    plan_obj   = getattr(cuenta, "plan_pago", None)
+    saldo_plan = Decimal("0")
+    if plan_obj:
+        saldo_plan = sum(
+            (cuota.saldo_pendiente for cuota in plan_obj.cuotas.all()),
+            Decimal("0")
+        )
+
+    elements.append(Paragraph(
+        f"<b>Saldo pendiente del plan de pago:</b> "
+        f"<font color='red'><b>$ {saldo_plan:,.2f}</b></font>",
+        styles["Normal"]
+    ))
+    elements.append(Spacer(1, 50))
+
+    # ----------------------------------------------------------
+    # FIRMA
+    # ----------------------------------------------------------
+    elements.append(Paragraph(
+        "<para alignment='right'>"
+        "<font color='#666666'>"
+        "_____________________________<br/>"
+        "Firma y aclaración"
+        "</font></para>",
+        styles["Normal"]
+    ))
+
+    doc.build(elements)
+    return response
+
+
 # ==========================================================
 # LISTA DE CUENTAS CORRIENTES
 # ==========================================================
@@ -129,7 +267,7 @@ def lista_cuentas_corrientes(request):
 
 # ==========================================================
 # CREAR CUENTA CORRIENTE
-# (DESHABILITADO: SE CREA AUTOMÁTICAMENTE AL ADJUDICAR VENTA)
+# (SE CREA AUTOMÁTICAMENTE AL ADJUDICAR VENTA)
 # ==========================================================
 @login_required
 def crear_cuenta_corriente(request, cliente_id):
@@ -179,6 +317,15 @@ def cuenta_corriente_detalle(request, cuenta_id):
         cuenta.venta.vehiculo if cuenta.venta else None
     )
 
+    # Deuda real = suma de saldos pendientes de cuotas
+    # (refleja lo que falta pagar independientemente de los movimientos contables)
+    deuda_cuotas = Decimal("0")
+    if plan and plan.estado == "activo":
+        deuda_cuotas = sum(
+            (c.saldo_pendiente for c in cuotas),
+            Decimal("0")
+        )
+
     return render(
         request,
         "cuentas/cuenta_corriente_detalle.html",
@@ -192,6 +339,7 @@ def cuenta_corriente_detalle(request, cuenta_id):
             "total_gestoria": total_gestoria,
             "vehiculo_permuta": vehiculo_permuta,
             "vehiculo_gastos": vehiculo_gastos,
+            "deuda_cuotas": deuda_cuotas,
         }
     )
 
@@ -220,6 +368,7 @@ def crear_plan_pago(request, cuenta_id):
             es_edicion  = plan_existente is not None
 
             if es_edicion:
+                # Limpiar movimientos de deuda anteriores del plan
                 cuenta.movimientos.filter(
                     tipo='debe',
                     descripcion__icontains='Plan de pago'
@@ -236,22 +385,19 @@ def crear_plan_pago(request, cuenta_id):
                     origen='venta'
                 )
 
-            # ✅ Recrear cuotas leyendo fecha y monto individuales del POST
+            # Recrear cuotas con fecha y monto individuales del POST
             plan.cuotas.all().delete()
             fecha = plan.fecha_inicio
 
             for i in range(1, int(plan.cantidad_cuotas) + 1):
-                # Índice 0-based en el formset del template
                 idx = i - 1
 
-                # Fecha de vencimiento individual (editada en el preview)
                 fecha_raw = request.POST.get(f"form-{idx}-vencimiento", "")
                 try:
                     fecha_cuota = datetime.strptime(fecha_raw, "%Y-%m-%d").date() if fecha_raw else fecha
                 except ValueError:
                     fecha_cuota = fecha
 
-                # Monto individual (editable en el preview)
                 monto_raw = request.POST.get(f"form-{idx}-monto", "")
                 try:
                     monto_cuota = Decimal(monto_raw) if monto_raw else plan.monto_cuota
@@ -270,7 +416,45 @@ def crear_plan_pago(request, cuenta_id):
                 fecha += timedelta(days=30)
 
             cuenta.recalcular_saldo()
-            messages.success(request, "Plan de pago guardado.")
+
+            # --------------------------------------------------
+            # ANTICIPO: si hay anticipo > 0 crear recibo automático
+            # --------------------------------------------------
+            anticipo = plan.anticipo or Decimal("0")
+            if anticipo > 0 and not es_edicion:
+                forma_pago_anticipo = request.POST.get("forma_pago_anticipo", "efectivo")
+                banco_anticipo      = request.POST.get("banco_anticipo", "")
+                cheque_anticipo     = request.POST.get("numero_cheque_anticipo", "")
+
+                # Registrar el haber del anticipo en la cuenta
+                MovimientoCuenta.objects.create(
+                    cuenta=cuenta,
+                    descripcion=f"Anticipo plan de pago #{plan.pk} - {plan.descripcion}",
+                    tipo="haber",
+                    monto=anticipo,
+                    origen="venta"
+                )
+                cuenta.recalcular_saldo()
+
+                # Crear objeto Pago para el recibo
+                pago_anticipo = Pago.objects.create(
+                    cuenta=cuenta,
+                    forma_pago=forma_pago_anticipo,
+                    banco=banco_anticipo,
+                    numero_cheque=cheque_anticipo,
+                    monto_total=anticipo,
+                    observaciones=f"Anticipo plan de pago - {plan.descripcion}",
+                    saldo_anterior=cuenta.saldo + anticipo,
+                    saldo_posterior=cuenta.saldo,
+                )
+
+                messages.success(
+                    request,
+                    f"Plan guardado. Anticipo de $ {anticipo:,.0f} registrado. Redirigiendo al recibo..."
+                )
+                return redirect("cuentas:recibo_pago_pdf", pago_id=pago_anticipo.id)
+
+            messages.success(request, "Plan de pago guardado correctamente.")
             return redirect("cuentas:cuenta_corriente_detalle", cuenta.id)
 
     else:
@@ -399,140 +583,9 @@ def registrar_pago_gestoria(request, cuenta_id):
 # ==========================================================
 @login_required
 def recibo_pago_pdf(request, pago_id):
-    pago    = get_object_or_404(Pago, id=pago_id)
-    cuenta  = pago.cuenta
-    cliente = cuenta.cliente
-
-    response = HttpResponse(content_type="application/pdf")
-    response["Content-Disposition"] = (
-        f'inline; filename="recibo_{pago.numero_recibo}.pdf"'
-    )
-
-    doc = SimpleDocTemplate(
-        response,
-        pagesize=A4,
-        topMargin=1.5 * cm,
-        bottomMargin=1.5 * cm,
-        leftMargin=2 * cm,
-        rightMargin=2 * cm,
-    )
-
-    styles = getSampleStyleSheet()
-    styles.add(ParagraphStyle(
-        name="Heading3",
-        fontSize=12,
-        textColor=COLOR_AZUL,
-        spaceAfter=4,
-        fontName="Helvetica-Bold"
-    ))
-
-    elements = []
-
-    # Encabezado
-    header_data = [[
-        Paragraph(
-            "<font color='white'><b>Amichetti Automotores</b></font><br/>"
-            "<font color='#cccccc' size=9>"
-            "Titular: Hugo Alberto Amichetti · CUIT: 20-13814200-1 · "
-            "Tel: 2474 660154"
-            "</font>",
-            ParagraphStyle("H", fontSize=14, textColor=colors.white,
-                           fontName="Helvetica-Bold", leading=18)
-        ),
-        Paragraph(
-            f"<font color='white'><b>RECIBO</b></font><br/>"
-            f"<font color='#cccccc' size=9>N° {pago.numero_recibo}</font>",
-            ParagraphStyle("R", fontSize=12, textColor=colors.white,
-                           fontName="Helvetica-Bold", alignment=2, leading=18)
-        )
-    ]]
-
-    titulo_table = Table(header_data, colWidths=[12 * cm, 5 * cm])
-    titulo_table.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, -1), COLOR_AZUL),
-        ("ROWBACKGROUNDS", (0, 0), (-1, -1), [COLOR_AZUL]),
-        ("LINEBELOW", (0, 0), (-1, -1), 4, COLOR_NARANJA),
-        ("TOPPADDING", (0, 0), (-1, -1), 14),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 14),
-        ("LEFTPADDING", (0, 0), (0, -1), 14),
-        ("RIGHTPADDING", (-1, 0), (-1, -1), 14),
-    ]))
-
-    elements.append(titulo_table)
-    elements.append(Spacer(1, 18))
-
-    # Datos cliente
-    documento = (
-        getattr(cliente, "cuit", None)
-        or getattr(cliente, "dni", None)
-        or "-"
-    )
-
-    elements.append(Paragraph("<b>Datos del cliente</b>", styles["Heading3"]))
-    elements.append(Spacer(1, 6))
-    elements.append(Paragraph(f"Nombre: {cliente.nombre_completo}", styles["Normal"]))
-    elements.append(Paragraph(f"CUIT/DNI: {documento}", styles["Normal"]))
-    elements.append(Spacer(1, 16))
-
-    # Detalle del pago
-    elements.append(Paragraph("<b>Detalle del pago</b>", styles["Heading3"]))
-    elements.append(Spacer(1, 6))
-    elements.append(Paragraph(
-        f"Método de pago: {pago.get_forma_pago_display()}",
-        styles["Normal"]
-    ))
-    elements.append(Paragraph(
-        f"Monto abonado: $ {pago.monto_total:,.2f}",
-        styles["Normal"]
-    ))
-    elements.append(Paragraph(
-        f"Observación: {pago.observaciones or '-'}",
-        styles["Normal"]
-    ))
-    elements.append(Spacer(1, 12))
-
-    # Concepto
-    ultimo_mov = (
-        cuenta.movimientos
-        .filter(tipo__in=["haber", "pago"])
-        .order_by("-fecha")
-        .first()
-    )
-    if ultimo_mov:
-        elements.append(Paragraph(
-            f"Concepto del pago: {ultimo_mov.descripcion}",
-            styles["Normal"]
-        ))
-        elements.append(Spacer(1, 12))
-
-    # Saldo
-    plan_obj   = getattr(cuenta, "plan_pago", None)
-    saldo_plan = Decimal("0")
-    if plan_obj:
-        saldo_plan = sum(
-            (cuota.saldo_pendiente for cuota in plan_obj.cuotas.all()),
-            Decimal("0")
-        )
-
-    elements.append(Paragraph(
-        f"<b>Saldo pendiente del plan de pago:</b> "
-        f"<font color='red'><b>$ {saldo_plan:,.2f}</b></font>",
-        styles["Normal"]
-    ))
-    elements.append(Spacer(1, 50))
-
-    # Firma
-    elements.append(Paragraph(
-        "<para alignment='right'>"
-        "<font color='#666666'>"
-        "_____________________________<br/>"
-        "Firma y aclaración"
-        "</font></para>",
-        styles["Normal"]
-    ))
-
-    doc.build(elements)
-    return response
+    pago   = get_object_or_404(Pago, id=pago_id)
+    cuenta = pago.cuenta
+    return _generar_pdf_recibo(pago, cuenta)
 
 
 # ==========================================================
@@ -576,6 +629,8 @@ def conectar_vehiculo_permuta(request, cuenta_id, vehiculo_id):
 
 # ==========================================================
 # ELIMINAR PLAN DE PAGO
+# Borra el plan, todas sus cuotas, los pagos asociados
+# y los movimientos contables que generó.
 # ==========================================================
 @login_required
 @transaction.atomic
@@ -587,12 +642,35 @@ def eliminar_plan_pago(request, cuenta_id):
         messages.error(request, "La cuenta no tiene plan de pago.")
         return redirect("cuentas:cuenta_corriente_detalle", cuenta_id=cuenta.id)
 
-    plan.estado = "anulado"
-    plan.save(update_fields=["estado"])
-    plan.cuotas.update(estado="anulada")
+    # 1. Borrar movimientos de DEBE generados por este plan
+    cuenta.movimientos.filter(
+        tipo="debe",
+        descripcion__icontains="Plan de pago"
+    ).delete()
+
+    # 2. Borrar movimientos de HABER de pagos de cuotas (origen venta)
+    cuenta.movimientos.filter(
+        tipo="haber",
+        origen="venta"
+    ).delete()
+
+    # 3. Borrar movimientos de anticipo si los hubiera
+    cuenta.movimientos.filter(
+        tipo="haber",
+        descripcion__icontains="Anticipo plan"
+    ).delete()
+
+    # 4. Borrar objetos Pago vinculados a la cuenta
+    #    (PagoCuota se borra por CASCADE desde Pago)
+    Pago.objects.filter(cuenta=cuenta).delete()
+
+    # 5. Borrar el plan — las CuotaPlan se borran por CASCADE
+    plan.delete()
+
+    # 6. Recalcular saldo limpio
     cuenta.recalcular_saldo()
 
-    messages.success(request, "Plan de pago anulado correctamente.")
+    messages.success(request, "Plan de pago eliminado correctamente.")
     return redirect("cuentas:cuenta_corriente_detalle", cuenta_id=cuenta.id)
 
 

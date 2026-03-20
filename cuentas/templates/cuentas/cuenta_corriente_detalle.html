@@ -46,24 +46,44 @@
 </div>
 
 <!-- ===============================
-     RESUMEN
+     RESUMEN — ESTADO Y DEUDA
+     deuda_cuotas = suma real de cuotas pendientes (viene de la view)
+     Se muestra en vez de cuenta.saldo cuando hay plan activo
 =============================== -->
 <div class="row g-4 mb-4">
     <div class="col-md-6">
         <div class="card p-4 h-100">
             <div class="d-flex align-items-center gap-3">
-                <div style="width:50px;height:50px;background:{% if cuenta.estado == 'al_dia' %}rgba(16,185,129,0.1){% elif cuenta.estado == 'deuda' %}rgba(245,158,11,0.1){% else %}rgba(107,114,128,0.1){% endif %};border-radius:12px;display:flex;align-items:center;justify-content:center;">
-                    <i data-lucide="{% if cuenta.estado == 'al_dia' %}check-circle{% elif cuenta.estado == 'deuda' %}alert-circle{% else %}lock{% endif %}" style="width:24px;height:24px;color:{% if cuenta.estado == 'al_dia' %}#10b981{% elif cuenta.estado == 'deuda' %}#f59e0b{% else %}#6b7280{% endif %};"></i>
+                <div style="width:50px;height:50px;background:
+                    {% if plan and plan.estado == 'activo' and deuda_cuotas > 0 %}rgba(245,158,11,0.1)
+                    {% elif cuenta.estado == 'deuda' %}rgba(245,158,11,0.1)
+                    {% elif cuenta.estado == 'cerrada' %}rgba(107,114,128,0.1)
+                    {% else %}rgba(16,185,129,0.1){% endif %};
+                    border-radius:12px;display:flex;align-items:center;justify-content:center;">
+                    <i data-lucide="
+                        {% if plan and plan.estado == 'activo' and deuda_cuotas > 0 %}alert-circle
+                        {% elif cuenta.estado == 'deuda' %}alert-circle
+                        {% elif cuenta.estado == 'cerrada' %}lock
+                        {% else %}check-circle{% endif %}"
+                        style="width:24px;height:24px;color:
+                        {% if plan and plan.estado == 'activo' and deuda_cuotas > 0 %}#f59e0b
+                        {% elif cuenta.estado == 'deuda' %}#f59e0b
+                        {% elif cuenta.estado == 'cerrada' %}#6b7280
+                        {% else %}#10b981{% endif %};"></i>
                 </div>
                 <div>
                     <small class="text-muted">Estado de la cuenta</small>
                     <div>
-                        {% if cuenta.estado == 'al_dia' %}
-                        <span class="badge bg-success">Al día</span>
+                        {% if cuenta.estado == 'cerrada' %}
+                            <span class="badge bg-secondary">Cerrada</span>
+                        {% elif plan and plan.estado == 'activo' and deuda_cuotas > 0 %}
+                            <span class="badge bg-warning">Con deuda</span>
+                        {% elif plan and plan.estado == 'activo' and deuda_cuotas == 0 %}
+                            <span class="badge bg-success">Al día</span>
                         {% elif cuenta.estado == 'deuda' %}
-                        <span class="badge bg-warning">Con deuda</span>
-                        {% elif cuenta.estado == 'cerrada' %}
-                        <span class="badge bg-secondary">Cerrada</span>
+                            <span class="badge bg-warning">Con deuda</span>
+                        {% else %}
+                            <span class="badge bg-success">Al día</span>
                         {% endif %}
                     </div>
                 </div>
@@ -74,14 +94,24 @@
     <div class="col-md-6">
         <div class="card p-4 h-100">
             <div class="d-flex align-items-center gap-3">
-                <div style="width:50px;height:50px;background:{% if cuenta.saldo > 0 %}rgba(239,68,68,0.1){% else %}rgba(16,185,129,0.1){% endif %};border-radius:12px;display:flex;align-items:center;justify-content:center;">
-                    <i data-lucide="wallet" style="width:24px;height:24px;color:{% if cuenta.saldo > 0 %}#ef4444{% else %}#10b981{% endif %};"></i>
+                <div style="width:50px;height:50px;background:
+                    {% if deuda_cuotas > 0 or cuenta.saldo > 0 %}rgba(239,68,68,0.1){% else %}rgba(16,185,129,0.1){% endif %};
+                    border-radius:12px;display:flex;align-items:center;justify-content:center;">
+                    <i data-lucide="wallet" style="width:24px;height:24px;color:
+                        {% if deuda_cuotas > 0 or cuenta.saldo > 0 %}#ef4444{% else %}#10b981{% endif %};"></i>
                 </div>
                 <div>
                     <small class="text-muted">Deuda total</small>
-                    <div class="fw-bold {% if cuenta.saldo > 0 %}text-danger{% else %}text-success{% endif %}" style="font-size:24px;">
-                        $ {{ cuenta.saldo|floatformat:0 }}
+                    <div class="fw-bold {% if deuda_cuotas > 0 or cuenta.saldo > 0 %}text-danger{% else %}text-success{% endif %}" style="font-size:24px;">
+                        {% if plan and plan.estado == 'activo' %}
+                            $ {{ deuda_cuotas|floatformat:0 }}
+                        {% else %}
+                            $ {{ cuenta.saldo|floatformat:0 }}
+                        {% endif %}
                     </div>
+                    {% if plan and plan.estado == 'activo' %}
+                    <small class="text-muted">Saldo pendiente de cuotas</small>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -100,17 +130,17 @@
         </a>
 
         {% if plan and plan.estado == "activo" %}
-        <!-- Plan activo: mostrar Editar y Anular -->
         <a href="{% url 'cuentas:crear_plan_pago' cuenta.id %}" class="btn btn-secondary">
             <i data-lucide="pencil" style="width:16px;height:16px;margin-right:6px;"></i>
             Editar plan
         </a>
-        <a href="{% url 'cuentas:eliminar_plan_pago' cuenta.id %}" class="btn btn-outline-danger" onclick="return confirm('¿Anular el plan de pago?');">
+        <a href="{% url 'cuentas:eliminar_plan_pago' cuenta.id %}"
+           class="btn btn-outline-danger"
+           onclick="return confirm('¿Eliminar el plan de pago?\n\nSe borrarán todas las cuotas y los pagos registrados del plan.\nEsta acción no se puede deshacer.');">
             <i data-lucide="x" style="width:16px;height:16px;margin-right:6px;"></i>
-            Anular plan
+            Eliminar plan
         </a>
         {% else %}
-        <!-- Sin plan activo: mostrar Crear -->
         <a href="{% url 'cuentas:crear_plan_pago' cuenta.id %}" class="btn btn-secondary">
             <i data-lucide="calendar" style="width:16px;height:16px;margin-right:6px;"></i>
             Crear plan de pago
@@ -127,9 +157,50 @@
     <div class="d-flex align-items-center gap-2 mb-4">
         <i data-lucide="list-ordered" style="width:20px;height:20px;color:#3b82f6;"></i>
         <h5 class="fw-bold mb-0">Plan de pago</h5>
+        {% if plan %}
+        <span class="badge {% if plan.estado == 'activo' %}bg-success{% else %}bg-secondary{% endif %} ms-2">
+            {{ plan.get_estado_display }}
+        </span>
+        {% endif %}
     </div>
 
-    {% if cuenta.plan_pago %}
+    {% if plan %}
+    <!-- Resumen del plan -->
+    <div class="row g-3 mb-4 p-3" style="background:#f8f9fa;border-radius:12px;">
+        <div class="col-md-3">
+            <small class="text-muted d-block">Descripción</small>
+            <span class="fw-semibold">{{ plan.descripcion }}</span>
+        </div>
+        <div class="col-md-2">
+            <small class="text-muted d-block">Tipo</small>
+            <span class="fw-semibold">{{ plan.get_tipo_plan_display }}</span>
+        </div>
+        <div class="col-md-2">
+            <small class="text-muted d-block">Monto financiado</small>
+            <span class="fw-semibold">$ {{ plan.monto_financiado|floatformat:0 }}</span>
+        </div>
+        {% if plan.anticipo %}
+        <div class="col-md-2">
+            <small class="text-muted d-block">Anticipo</small>
+            <span class="fw-semibold text-success">$ {{ plan.anticipo|floatformat:0 }}</span>
+        </div>
+        {% endif %}
+        {% if plan.interes_financiacion %}
+        <div class="col-md-2">
+            <small class="text-muted d-block">Interés</small>
+            <span class="fw-semibold text-warning">{{ plan.interes_financiacion }}%</span>
+        </div>
+        {% endif %}
+        {% if plan.interes_mora_mensual %}
+        <div class="col-md-1">
+            <small class="text-muted d-block">Mora</small>
+            <span class="fw-semibold text-danger">{{ plan.interes_mora_mensual }}%</span>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Tabla de cuotas -->
+    {% if cuotas %}
     <div class="table-responsive">
         <table class="table align-middle mb-0">
             <thead>
@@ -144,7 +215,7 @@
                 </tr>
             </thead>
             <tbody>
-                {% for cuota in cuenta.plan_pago.cuotas.all %}
+                {% for cuota in cuotas %}
                 <tr>
                     <td><span class="badge bg-info">{{ cuota.numero }}</span></td>
                     <td>
@@ -164,7 +235,7 @@
                         {% elif cuota.esta_vencida %}
                         <span class="badge bg-danger">Vencida</span>
                         {% else %}
-                        <span class="badge bg-secondary">{{ cuota.get_estado_display }}</span>
+                        <span class="badge bg-secondary">Pendiente</span>
                         {% endif %}
                     </td>
                     <td>
@@ -179,6 +250,10 @@
             </tbody>
         </table>
     </div>
+    {% else %}
+    <p class="text-muted mb-0">No hay cuotas registradas.</p>
+    {% endif %}
+
     {% else %}
     <div class="p-4 text-center" style="background:#f8f9fa;border-radius:12px;">
         <i data-lucide="calendar-x" style="width:32px;height:32px;color:#9ca3af;margin-bottom:8px;"></i>
@@ -203,6 +278,9 @@
             <div>
                 <span class="fw-semibold">{{ pago.fecha|date:"d/m/Y H:i" }}</span>
                 <span class="text-muted ms-2">Recibo Nº {{ pago.numero_recibo }}</span>
+                {% if pago.observaciones %}
+                <span class="text-muted ms-2" style="font-size:13px;">· {{ pago.observaciones }}</span>
+                {% endif %}
             </div>
             <span class="badge {% if pago.forma_pago == 'efectivo' %}bg-success{% else %}bg-info{% endif %}">
                 {{ pago.get_forma_pago_display }}
@@ -287,14 +365,16 @@
 </div>
 
 <!-- ===============================
-     ZONA PELIGRO
+     ZONA DE PELIGRO
 =============================== -->
 <div class="card p-4" style="border:1px solid #fecaca;">
     <div class="d-flex align-items-center gap-2 mb-3">
         <i data-lucide="alert-triangle" style="width:20px;height:20px;color:#ef4444;"></i>
         <h6 class="fw-bold mb-0 text-danger">Zona de peligro</h6>
     </div>
-    <a href="{% url 'cuentas:eliminar_cuenta_corriente' cuenta.id %}" class="btn btn-outline-danger" onclick="return confirm('¿Eliminar la cuenta corriente?\n\nSe eliminarán todos los movimientos, pagos y planes asociados.\nEsta acción no se puede deshacer.');">
+    <a href="{% url 'cuentas:eliminar_cuenta_corriente' cuenta.id %}"
+       class="btn btn-outline-danger"
+       onclick="return confirm('¿Eliminar la cuenta corriente?\n\nSe eliminarán todos los movimientos, pagos y planes asociados.\nEsta acción no se puede deshacer.');">
         <i data-lucide="trash-2" style="width:16px;height:16px;margin-right:6px;"></i>
         Eliminar cuenta corriente
     </a>
@@ -311,7 +391,11 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
 
-            <form method="post" data-url-base="{% url 'cuentas:conectar_vehiculo_permuta' cuenta.id 9999 %}" action="" id="formVincularVehiculo" onsubmit="return validarVinculacionVehiculo();">
+            <form method="post"
+                  data-url-base="{% url 'cuentas:conectar_vehiculo_permuta' cuenta.id 9999 %}"
+                  action=""
+                  id="formVincularVehiculo"
+                  onsubmit="return validarVinculacionVehiculo();">
                 {% csrf_token %}
                 <div class="modal-body">
                     <label class="form-label">Seleccioná el vehículo</label>
