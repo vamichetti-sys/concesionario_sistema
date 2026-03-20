@@ -17,8 +17,8 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import cm
 from reportlab.lib import colors
 
-from .models import BoletoCompraventa, Pagare, PagareLote
-from .forms import CrearBoletoForm, CrearPagareLoteForm
+from .models import BoletoCompraventa, Pagare, PagareLote, Reserva
+from .forms import CrearBoletoForm, CrearPagareLoteForm, ReservaForm
 from clientes.models import Cliente
 from cuentas.models import CuentaCorriente
 
@@ -605,3 +605,330 @@ def eliminar_lote(request, lote_id):
         messages.success(request, 'Lote de pagarés eliminado correctamente.')
         return redirect('boletos:lista_pagares')
     return render(request, 'boletos/pagare/eliminar_lote.html', {'lote': lote})
+
+
+# ==========================================================
+# ====================  RESERVAS  ==========================
+# ==========================================================
+
+# ────────────────────────────────────────────────────────
+# HELPER: generar PDF de reserva con ReportLab
+# (mismo estilo visual que los boletos)
+# ────────────────────────────────────────────────────────
+def _fmt_moneda(valor):
+    if valor is None:
+        return ""
+    return f"$ {valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+
+def _generar_pdf_reserva(reserva):
+    buf = BytesIO()
+    page_w, page_h = A4
+    c = canvas.Canvas(buf, pagesize=A4)
+
+    ML = 2 * cm          # margen izquierdo
+    MR = 2 * cm          # margen derecho
+    CW = page_w - ML - MR  # ancho útil
+    GRIS = colors.HexColor("#CCCCCC")
+    NEGRO = colors.black
+
+    y = page_h - 1.5 * cm
+
+    # ── Encabezado ──────────────────────────────────────
+    c.setFont("Helvetica-Bold", 13)
+    c.drawString(ML, y, "AMICHETTI HUGO")
+    c.setFont("Helvetica-Bold", 9)
+    c.drawRightString(page_w - MR, y, f"RESERVA N° {reserva.numero_reserva}")
+    y -= 0.42 * cm
+    c.setFont("Helvetica", 8)
+    c.drawString(ML, y, "Av. Larrea n 255 · (2705) Rojas (B)  ·  Tel: 02475-465115  ·  hugoamichetti@speedy.com.ar")
+    fecha_str = reserva.fecha_reserva.strftime("%d/%m/%Y") if reserva.fecha_reserva else date.today().strftime("%d/%m/%Y")
+    c.drawRightString(page_w - MR, y, f"Fecha: {fecha_str}")
+    y -= 0.5 * cm
+
+    c.setStrokeColor(NEGRO); c.setLineWidth(1)
+    c.line(ML, y, page_w - MR, y)
+    y -= 0.4 * cm
+    c.setFont("Helvetica-Bold", 11)
+    c.drawCentredString(page_w / 2, y, "FORMULARIO DE RESERVA DE VEHÍCULO")
+    y -= 0.65 * cm
+
+    # ── Helpers locales ──────────────────────────────────
+    def sec_header(titulo):
+        nonlocal y
+        c.setFillColor(NEGRO)
+        c.rect(ML, y - 0.08 * cm, CW, 0.48 * cm, fill=1, stroke=0)
+        c.setFillColor(colors.white)
+        c.setFont("Helvetica-Bold", 7.5)
+        c.drawString(ML + 0.2 * cm, y, titulo)
+        c.setFillColor(NEGRO)
+        y -= 0.62 * cm
+
+    def linea_punt(x1, x2, yy):
+        c.setStrokeColor(GRIS); c.setLineWidth(0.4); c.setDash(2, 3)
+        c.line(x1, yy - 0.04 * cm, x2, yy - 0.04 * cm)
+        c.setDash(); c.setStrokeColor(NEGRO)
+
+    def campo(label, valor, x, ancho_label=3.5 * cm, ancho_total=None):
+        nonlocal y
+        at = ancho_total or CW
+        c.setFont("Helvetica", 7.5)
+        c.drawString(x, y, label)
+        lx = x + ancho_label
+        linea_punt(lx, x + at, y)
+        if valor:
+            c.setFont("Helvetica-Bold", 8)
+            c.drawString(lx + 0.12 * cm, y, str(valor))
+
+    def monto_box(label, valor):
+        nonlocal y
+        bw = 4 * cm
+        bx = page_w - MR - bw
+        c.setFont("Helvetica", 7.5)
+        c.drawString(ML, y, label)
+        c.setStrokeColor(GRIS); c.setLineWidth(0.5)
+        c.rect(bx, y - 0.24 * cm, bw, 0.44 * cm, stroke=1, fill=0)
+        c.setStrokeColor(NEGRO)
+        if valor:
+            c.setFont("Helvetica-Bold", 8)
+            c.drawRightString(page_w - MR - 0.18 * cm, y, _fmt_moneda(valor))
+        y -= 0.5 * cm
+
+    # ── Datos del Solicitante ────────────────────────────
+    sec_header("DATOS DEL SOLICITANTE")
+    y -= 0.15 * cm
+    campo("Apellido y Nombre o Razón Social:", reserva.apellido_nombre, ML, ancho_label=5.8 * cm)
+    y -= 0.52 * cm
+    campo("DNI:", reserva.dni, ML, ancho_label=0.8 * cm, ancho_total=4.2 * cm)
+    campo("Domicilio:", reserva.domicilio, ML + 4.7 * cm, ancho_label=1.9 * cm, ancho_total=CW - 4.7 * cm)
+    y -= 0.52 * cm
+    campo("Teléfono:", reserva.telefono, ML, ancho_label=1.8 * cm, ancho_total=3.8 * cm)
+    campo("CUIT:", reserva.cuit, ML + 4.3 * cm, ancho_label=1 * cm, ancho_total=3.5 * cm)
+    campo("I.V.A.:", reserva.iva, ML + 8.5 * cm, ancho_label=1.1 * cm, ancho_total=CW - 8.5 * cm)
+    y -= 0.7 * cm
+
+    # ── Datos del Vehículo ───────────────────────────────
+    sec_header("DATOS DEL VEHÍCULO QUE SOLICITA RESERVA")
+    y -= 0.15 * cm
+    campo("Marca:", reserva.marca, ML, ancho_label=1.2 * cm, ancho_total=3.8 * cm)
+    campo("Modelo:", reserva.modelo, ML + 4.3 * cm, ancho_label=1.5 * cm, ancho_total=4.2 * cm)
+    campo("Año:", reserva.anio, ML + 9.8 * cm, ancho_label=0.8 * cm, ancho_total=2 * cm)
+    campo("Dominio:", reserva.dominio, ML + 12.4 * cm, ancho_label=1.6 * cm, ancho_total=CW - 12.4 * cm)
+    y -= 0.52 * cm
+    campo("Motor N°:", reserva.motor_nro, ML, ancho_label=1.7 * cm, ancho_total=5.5 * cm)
+    campo("Chasis N°:", reserva.chasis_nro, ML + 6.5 * cm, ancho_label=1.8 * cm, ancho_total=CW - 6.5 * cm)
+    y -= 0.7 * cm
+
+    # ── Detalle de la Operación ──────────────────────────
+    sec_header("DETALLE DE LA OPERACIÓN")
+    y -= 0.15 * cm
+    monto_box("Precio de Vehículo", reserva.precio_vehiculo)
+    monto_box("Opcionales / Otros gastos", reserva.opcionales)
+    c.setStrokeColor(NEGRO); c.setLineWidth(0.5)
+    c.line(page_w - MR - 4 * cm, y + 0.1 * cm, page_w - MR, y + 0.1 * cm)
+    y -= 0.1 * cm
+    monto_box("TOTAL A PAGAR:", reserva.total_a_pagar)
+    monto_box("SEÑA:", reserva.senia)
+    y -= 0.2 * cm
+
+    # ── Propuesta de Pago ────────────────────────────────
+    sec_header("PROPUESTA DE PAGO")
+    y -= 0.15 * cm
+    monto_box("- Contado Efectivo:", reserva.contado_efectivo)
+    monto_box("- A pagar contra la entrega de la unidad en efectivo:", reserva.pago_entrega)
+
+    # Cheques
+    c.setFont("Helvetica", 7.5); c.drawString(ML, y, "- CHEQUES:")
+    if reserva.cheques:
+        c.setFont("Helvetica-Bold", 7.5)
+        c.drawString(ML + 2 * cm, y, str(reserva.cheques)[:90])
+    linea_punt(ML + 2 * cm, page_w - MR, y)
+    y -= 0.45 * cm
+    linea_punt(ML, page_w - MR, y)
+    y -= 0.42 * cm
+
+    # Total propuesta
+    bw = 4 * cm; bx = page_w - MR - bw
+    c.setFont("Helvetica", 7.5); c.drawString(ML, y, "TOTAL:")
+    c.setStrokeColor(GRIS); c.setLineWidth(0.5)
+    c.rect(bx, y - 0.24 * cm, bw, 0.44 * cm, stroke=1, fill=0)
+    c.setStrokeColor(NEGRO)
+    if reserva.total_propuesta:
+        c.setFont("Helvetica-Bold", 8)
+        c.drawRightString(page_w - MR - 0.18 * cm, y, _fmt_moneda(reserva.total_propuesta))
+    y -= 0.55 * cm
+
+    # Crédito prendario
+    check = "☑" if reserva.credito_prendario else "☐"
+    c.setFont("Helvetica", 7.5)
+    c.drawString(ML, y, f"{check}  Crédito prendario que autorizo a gestionar en la Entidad Financiera que determinen")
+    y -= 0.45 * cm
+
+    campo("- Otro concepto:", reserva.otro_concepto, ML, ancho_label=2.8 * cm)
+    y -= 0.5 * cm
+
+    # Cuotas
+    c.setFont("Helvetica", 7.5)
+    c.drawString(ML, y, "- En")
+    linea_punt(ML + 0.5 * cm, ML + 2 * cm, y)
+    if reserva.cant_cuotas:
+        c.setFont("Helvetica-Bold", 8)
+        c.drawString(ML + 0.6 * cm, y, str(reserva.cant_cuotas))
+    c.setFont("Helvetica", 7.5)
+    c.drawString(ML + 2.1 * cm, y, "cuotas de Pesos")
+    linea_punt(ML + 4.6 * cm, ML + 8.5 * cm, y)
+    if reserva.valor_cuota:
+        c.setFont("Helvetica-Bold", 8)
+        c.drawString(ML + 4.7 * cm, y, _fmt_moneda(reserva.valor_cuota))
+    c.setFont("Helvetica", 7.5)
+    c.drawString(ML + 8.6 * cm, y, "al día")
+    linea_punt(ML + 9.5 * cm, ML + 11.5 * cm, y)
+    if reserva.dia_cuota:
+        c.setFont("Helvetica-Bold", 8)
+        c.drawString(ML + 9.6 * cm, y, reserva.dia_cuota)
+    # caja monto cuota derecha
+    c.setStrokeColor(GRIS); c.setLineWidth(0.5)
+    c.rect(page_w - MR - 4 * cm, y - 0.24 * cm, 4 * cm, 0.44 * cm, stroke=1, fill=0)
+    c.setStrokeColor(NEGRO)
+    y -= 0.7 * cm
+
+    # ── Vehículo Usado en Parte de Pago ─────────────────
+    sec_header("VEHÍCULO USADO QUE PROPONGO ENTREGAR EN PARTE DE PAGO")
+    y -= 0.15 * cm
+    campo("Marca:", reserva.permuta_marca, ML, ancho_label=1.2 * cm, ancho_total=5.8 * cm)
+    campo("Patente N°:", reserva.permuta_patente, ML + 6.5 * cm, ancho_label=2 * cm, ancho_total=CW - 6.5 * cm)
+    y -= 0.52 * cm
+    monto_box("En la suma de:", reserva.permuta_suma)
+    monto_box("TOTAL:", reserva.permuta_total)
+    y -= 0.2 * cm
+
+    # ── Observaciones ────────────────────────────────────
+    sec_header("OBSERVACIONES")
+    y -= 0.15 * cm
+    if reserva.observaciones:
+        c.setFont("Helvetica", 8)
+        c.drawString(ML, y, str(reserva.observaciones)[:200])
+        y -= 0.42 * cm
+    linea_punt(ML, page_w - MR, y); y -= 0.42 * cm
+    linea_punt(ML, page_w - MR, y); y -= 0.6 * cm
+
+    # ── Cláusula legal ───────────────────────────────────
+    clausula = (
+        "Sin perjuicio de las Condiciones Generales obrantes al dorso de la presente, que el solicitante declara conocer "
+        "firmando de conformidad, se deja expresamente establecido, que esta reserva de compra no es vinculante para el "
+        "Concesionario hasta tanto no sea aprobada y firmada por el representante legal; en consecuencia, hasta dicho "
+        "momento, podrá ser rechazada en su totalidad y sin ninguna limitación, no otorgando dicho rechazo, derecho a "
+        "reclamo y/o indemnización alguna por parte del Solicitante."
+    )
+    c.setFont("Helvetica", 6.5)
+    linea_actual = ""
+    for palabra in clausula.split():
+        prueba = linea_actual + " " + palabra if linea_actual else palabra
+        if c.stringWidth(prueba, "Helvetica", 6.5) < CW:
+            linea_actual = prueba
+        else:
+            c.drawString(ML, y, linea_actual); y -= 0.3 * cm
+            linea_actual = palabra
+    if linea_actual:
+        c.drawString(ML, y, linea_actual); y -= 0.3 * cm
+    y -= 0.6 * cm
+
+    # ── Firmas ───────────────────────────────────────────
+    firma_y = max(y, 2.2 * cm)
+    mitad = page_w / 2
+    c.setStrokeColor(NEGRO); c.setLineWidth(0.5)
+    c.line(ML, firma_y, mitad - 1 * cm, firma_y)
+    c.setFont("Helvetica", 7.5)
+    c.drawCentredString((ML + mitad - 1 * cm) / 2, firma_y - 0.38 * cm, "REPRESENTANTE")
+    c.line(mitad + 1 * cm, firma_y, page_w - MR, firma_y)
+    c.drawCentredString((mitad + 1 * cm + page_w - MR) / 2, firma_y - 0.38 * cm, "FIRMA DE CONFORMIDAD DEL SOLICITANTE")
+
+    c.save(); buf.seek(0)
+    return buf.read()
+
+
+# ────────────────────────────────────────────────────────
+# LISTA DE RESERVAS
+# ────────────────────────────────────────────────────────
+def lista_reservas(request):
+    q = request.GET.get("q", "").strip()
+    reservas = Reserva.objects.all()
+    if q:
+        reservas = reservas.filter(
+            Q(apellido_nombre__icontains=q) |
+            Q(marca__icontains=q) |
+            Q(modelo__icontains=q) |
+            Q(numero_reserva__icontains=q) |
+            Q(dni__icontains=q)
+        )
+    return render(request, "boletos/reservas/lista.html", {"reservas": reservas, "query": q})
+
+
+# ────────────────────────────────────────────────────────
+# CREAR RESERVA
+# ────────────────────────────────────────────────────────
+def crear_reserva(request):
+    if request.method == "POST":
+        form = ReservaForm(request.POST)
+        if form.is_valid():
+            reserva = form.save()
+            messages.success(request, f"✅ Reserva {reserva.numero_reserva} creada correctamente.")
+            return redirect("boletos:ver_reserva", reserva_id=reserva.pk)
+    else:
+        form = ReservaForm()
+    return render(request, "boletos/reservas/form.html", {
+        "form": form,
+        "titulo": "Nueva Reserva",
+    })
+
+
+# ────────────────────────────────────────────────────────
+# VER RESERVA
+# ────────────────────────────────────────────────────────
+def ver_reserva(request, reserva_id):
+    reserva = get_object_or_404(Reserva, id=reserva_id)
+    return render(request, "boletos/reservas/ver.html", {"reserva": reserva})
+
+
+# ────────────────────────────────────────────────────────
+# EDITAR RESERVA
+# ────────────────────────────────────────────────────────
+def editar_reserva(request, reserva_id):
+    reserva = get_object_or_404(Reserva, id=reserva_id)
+    if request.method == "POST":
+        form = ReservaForm(request.POST, instance=reserva)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"✅ Reserva {reserva.numero_reserva} actualizada.")
+            return redirect("boletos:ver_reserva", reserva_id=reserva.pk)
+    else:
+        form = ReservaForm(instance=reserva)
+    return render(request, "boletos/reservas/form.html", {
+        "form": form,
+        "titulo": f"Editar Reserva {reserva.numero_reserva}",
+        "reserva": reserva,
+    })
+
+
+# ────────────────────────────────────────────────────────
+# ELIMINAR RESERVA
+# ────────────────────────────────────────────────────────
+def eliminar_reserva(request, reserva_id):
+    reserva = get_object_or_404(Reserva, id=reserva_id)
+    if request.method == "POST":
+        numero = reserva.numero_reserva
+        reserva.delete()
+        messages.success(request, f"Reserva {numero} eliminada.")
+        return redirect("boletos:lista_reservas")
+    return render(request, "boletos/reservas/confirmar_eliminar.html", {"reserva": reserva})
+
+
+# ────────────────────────────────────────────────────────
+# PDF RESERVA
+# ────────────────────────────────────────────────────────
+def reserva_pdf(request, reserva_id):
+    reserva = get_object_or_404(Reserva, id=reserva_id)
+    pdf_bytes = _generar_pdf_reserva(reserva)
+    response = HttpResponse(pdf_bytes, content_type="application/pdf")
+    response["Content-Disposition"] = f'inline; filename="reserva_{reserva.numero_reserva}.pdf"'
+    return response

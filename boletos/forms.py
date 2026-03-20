@@ -4,7 +4,7 @@ from datetime import date
 
 from clientes.models import Cliente
 from vehiculos.models import Vehiculo
-from .models import BoletoCompraventa, Pagare
+from .models import BoletoCompraventa, Pagare, Reserva
 
 
 # ==========================================================
@@ -263,3 +263,57 @@ class EditarPagareForm(forms.ModelForm):
         if monto is None or monto <= 0:
             raise forms.ValidationError("El monto debe ser mayor a 0.")
         return monto
+
+
+# ==========================================================
+# RESERVA DE VEHÍCULO
+# ==========================================================
+W = {"class": "form-control"}   # shortcut widget attrs
+WS = {"class": "form-select"}
+
+
+class ReservaForm(forms.ModelForm):
+
+    class Meta:
+        model = Reserva
+        exclude = ["numero_reserva", "creado"]
+        widgets = {
+            # Solicitante
+            "apellido_nombre": forms.TextInput(attrs={**W, "placeholder": "Apellido y Nombre o Razón Social"}),
+            "dni":             forms.TextInput(attrs={**W, "placeholder": "DNI"}),
+            "domicilio":       forms.TextInput(attrs={**W, "placeholder": "Domicilio"}),
+            "telefono":        forms.TextInput(attrs={**W, "placeholder": "Teléfono"}),
+            "cuit":            forms.TextInput(attrs={**W, "placeholder": "CUIT"}),
+            "iva":             forms.TextInput(attrs={**W, "placeholder": "Condición IVA"}),
+            # Vehículo
+            "vehiculo": forms.Select(attrs={**WS}),
+            "marca":    forms.TextInput(attrs={**W, "placeholder": "Marca"}),
+            "modelo":   forms.TextInput(attrs={**W, "placeholder": "Modelo"}),
+            "anio":     forms.TextInput(attrs={**W, "placeholder": "Año"}),
+            "dominio":  forms.TextInput(attrs={**W, "placeholder": "Dominio / Patente"}),
+            "motor_nro":  forms.TextInput(attrs={**W, "placeholder": "N° Motor"}),
+            "chasis_nro": forms.TextInput(attrs={**W, "placeholder": "N° Chasis"}),
+            # Detalle operación
+            "precio_vehiculo": forms.NumberInput(attrs={**W, "step": "0.01"}),
+            "opcionales":      forms.NumberInput(attrs={**W, "step": "0.01"}),
+            "total_a_pagar":   forms.NumberInput(attrs={**W, "step": "0.01"}),
+            "senia":           forms.NumberInput(attrs={**W, "step": "0.01"}),
+            # Propuesta pago
+            "contado_efectivo":  forms.NumberInput(attrs={**W, "step": "0.01"}),
+            "pago_entrega":      forms.NumberInput(attrs={**W, "step": "0.01"}),
+            "cheques":           forms.Textarea(attrs={**W, "rows": 2}),
+            "total_propuesta":   forms.NumberInput(attrs={**W, "step": "0.01"}),
+            "credito_prendario": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+            "otro_concepto":     forms.TextInput(attrs={**W}),
+            "cant_cuotas":       forms.NumberInput(attrs={**W}),
+            "valor_cuota":       forms.NumberInput(attrs={**W, "step": "0.01"}),
+            "dia_cuota":         forms.TextInput(attrs={**W, "placeholder": "Ej: 10"}),
+            # Permuta
+            "permuta_marca":   forms.TextInput(attrs={**W}),
+            "permuta_patente": forms.TextInput(attrs={**W}),
+            "permuta_suma":    forms.NumberInput(attrs={**W, "step": "0.01"}),
+            "permuta_total":   forms.NumberInput(attrs={**W, "step": "0.01"}),
+            # Otros
+            "observaciones": forms.Textarea(attrs={**W, "rows": 3}),
+            "fecha_reserva": forms.DateInput(attrs={**W, "type": "date"}),
+        }

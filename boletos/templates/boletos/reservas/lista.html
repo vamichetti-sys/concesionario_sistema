@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Reservas{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h4 class="fw-bold mb-0">Reservas de Vehículos</h4>
+      <small class="text-muted">Amichetti Automotores</small>
+    </div>
+    <a href="{% url 'boletos:crear_reserva' %}" class="btn btn-dark btn-sm fw-semibold">
+      <i data-lucide="plus" style="width:14px;height:14px;" class="me-1"></i> Nueva Reserva
+    </a>
+  </div>
+
+  <form method="get" class="mb-3">
+    <div class="input-group" style="max-width:400px;">
+      <input type="text" name="q" value="{{ query }}" class="form-control form-control-sm"
+             placeholder="Buscar por nombre, marca, N° reserva...">
+      <button class="btn btn-outline-secondary btn-sm" type="submit">
+        <i data-lucide="search" style="width:13px;height:13px;"></i>
+      </button>
+      {% if query %}<a href="{% url 'boletos:lista_reservas' %}" class="btn btn-outline-danger btn-sm">✕</a>{% endif %}
+    </div>
+  </form>
+
+  {% if reservas %}
+  <div class="table-responsive">
+    <table class="table table-hover table-bordered align-middle small">
+      <thead class="table-dark">
+        <tr>
+          <th>N° Reserva</th><th>Fecha</th><th>Solicitante</th><th>Vehículo</th>
+          <th>Total</th><th>Seña</th><th class="text-center">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in reservas %}
+        <tr>
+          <td><span class="badge bg-dark">{{ r.numero_reserva }}</span></td>
+          <td>{{ r.fecha_reserva|date:"d/m/Y" }}</td>
+          <td>{{ r.apellido_nombre }}</td>
+          <td>{{ r.marca }} {{ r.modelo }}{% if r.anio %} <span class="text-muted">({{ r.anio }})</span>{% endif %}</td>
+          <td>{% if r.total_a_pagar %}<strong>$ {{ r.total_a_pagar|floatformat:0 }}</strong>{% else %}-{% endif %}</td>
+          <td>{% if r.senia %}$ {{ r.senia|floatformat:0 }}{% else %}-{% endif %}</td>
+          <td class="text-center">
+            <div class="btn-group btn-group-sm">
+              <a href="{% url 'boletos:ver_reserva' r.pk %}" class="btn btn-outline-secondary" title="Ver"><i data-lucide="eye" style="width:13px;height:13px;"></i></a>
+              <a href="{% url 'boletos:editar_reserva' r.pk %}" class="btn btn-outline-primary" title="Editar"><i data-lucide="edit-2" style="width:13px;height:13px;"></i></a>
+              <a href="{% url 'boletos:reserva_pdf' r.pk %}" class="btn btn-outline-dark" title="PDF" target="_blank"><i data-lucide="file-text" style="width:13px;height:13px;"></i></a>
+              <a href="{% url 'boletos:eliminar_reserva' r.pk %}" class="btn btn-outline-danger" title="Eliminar"><i data-lucide="trash-2" style="width:13px;height:13px;"></i></a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="text-center text-muted py-5">
+    <i data-lucide="clipboard" style="width:48px;height:48px;" class="mb-3 d-block mx-auto opacity-25"></i>
+    <p class="mb-2">No hay reservas{% if query %} para "{{ query }}"{% endif %}.</p>
+    <a href="{% url 'boletos:crear_reserva' %}" class="btn btn-dark btn-sm">Nueva Reserva</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

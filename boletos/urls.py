@@ -23,4 +23,12 @@ urlpatterns = [
     path("pagare/lote/<int:lote_id>/pdf/", views.descargar_pdf_lote, name="descargar_pdf_lote"),
     path("pagare/lote/<int:lote_id>/", views.ver_lote, name="ver_lote"),
     path("pagare/eliminar/<int:lote_id>/", views.eliminar_lote, name="eliminar_lote"),
+
+    # RESERVAS
+    path("reservas/", views.lista_reservas, name="lista_reservas"),
+    path("reservas/nueva/", views.crear_reserva, name="crear_reserva"),
+    path("reservas/ver/<int:reserva_id>/", views.ver_reserva, name="ver_reserva"),
+    path("reservas/editar/<int:reserva_id>/", views.editar_reserva, name="editar_reserva"),
+    path("reservas/eliminar/<int:reserva_id>/", views.eliminar_reserva, name="eliminar_reserva"),
+    path("reservas/pdf/<int:reserva_id>/", views.reserva_pdf, name="reserva_pdf"),
 ]

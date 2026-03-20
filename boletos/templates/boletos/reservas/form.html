@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h4 class="fw-bold mb-0">{{ titulo }}</h4>
+      <small class="text-muted">Amichetti Automotores</small>
+    </div>
+    <a href="{% url 'boletos:lista_reservas' %}" class="btn btn-outline-secondary btn-sm">
+      <i data-lucide="arrow-left" style="width:14px;height:14px;" class="me-1"></i> Volver
+    </a>
+  </div>
+
+  <form method="post" autocomplete="off">
+    {% csrf_token %}
+
+    <!-- DATOS DEL SOLICITANTE -->
+    <div class="card mb-3 shadow-sm">
+      <div class="card-header bg-dark text-white fw-bold py-2 small">
+        <i data-lucide="user" style="width:13px;height:13px;" class="me-1"></i> Datos del Solicitante
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label small fw-semibold mb-1">Apellido y Nombre o Razón Social</label>
+            {{ form.apellido_nombre }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small fw-semibold mb-1">DNI</label>{{ form.dni }}
+          </div>
+          <div class="col-md-8">
+            <label class="form-label small fw-semibold mb-1">Domicilio</label>{{ form.domicilio }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small fw-semibold mb-1">Teléfono</label>{{ form.telefono }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small fw-semibold mb-1">CUIT</label>{{ form.cuit }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small fw-semibold mb-1">I.V.A.</label>{{ form.iva }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DATOS DEL VEHÍCULO -->
+    <div class="card mb-3 shadow-sm">
+      <div class="card-header bg-dark text-white fw-bold py-2 small">
+        <i data-lucide="car" style="width:13px;height:13px;" class="me-1"></i> Datos del Vehículo que Solicita Reserva
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <!-- Selector de stock (opcional) -->
+          <div class="col-12">
+            <label class="form-label small fw-semibold mb-1">
+              Vínculo con Stock <span class="text-muted fw-normal">(opcional – auto-completa los datos)</span>
+            </label>
+            {{ form.vehiculo }}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small fw-semibold mb-1">Marca</label>{{ form.marca }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small fw-semibold mb-1">Modelo</label>{{ form.modelo }}
+          </div>
+          <div class="col-md-2">
+            <label class="form-label small fw-semibold mb-1">Año</label>{{ form.anio }}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small fw-semibold mb-1">Dominio / Patente</label>{{ form.dominio }}
+          </div>
+          <div class="col-md-5">
+            <label class="form-label small fw-semibold mb-1">Motor N°</label>{{ form.motor_nro }}
+          </div>
+          <div class="col-md-5">
+            <label class="form-label small fw-semibold mb-1">Chasis N°</label>{{ form.chasis_nro }}
+          </div>
+          <div class="col-md-2">
+            <label class="form-label small fw-semibold mb-1">Fecha de Reserva</label>{{ form.fecha_reserva }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DETALLE DE LA OPERACIÓN -->
+    <div class="card mb-3 shadow-sm">
+      <div class="card-header bg-dark text-white fw-bold py-2 small">
+        <i data-lucide="file-text" style="width:13px;height:13px;" class="me-1"></i> Detalle de la Operación
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label small fw-semibold mb-1">Precio del Vehículo ($)</label>{{ form.precio_vehiculo }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small fw-semibold mb-1">Opcionales / Otros gastos ($)</label>{{ form.opcionales }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small fw-semibold mb-1">Total a Pagar ($)</label>{{ form.total_a_pagar }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small fw-semibold mb-1">Seña ($)</label>{{ form.senia }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROPUESTA DE PAGO -->
+    <div class="card mb-3 shadow-sm">
+      <div class="card-header bg-dark text-white fw-bold py-2 small">
+        <i data-lucide="credit-card" style="width:13px;height:13px;" class="me-1"></i> Propuesta de Pago
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label small fw-semibold mb-1">Contado Efectivo ($)</label>{{ form.contado_efectivo }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small fw-semibold mb-1">A pagar contra entrega (efectivo) ($)</label>{{ form.pago_entrega }}
+          </div>
+          <div class="col-12">
+            <label class="form-label small fw-semibold mb-1">Cheques (detalle)</label>{{ form.cheques }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small fw-semibold mb-1">Total Propuesta ($)</label>{{ form.total_propuesta }}
+          </div>
+          <div class="col-md-6 d-flex align-items-end pb-1">
+            <div class="form-check">
+              {{ form.credito_prendario }}
+              <label class="form-check-label small" for="{{ form.credito_prendario.id_for_label }}">
+                Crédito Prendario (autoriza gestión en Entidad Financiera)
+              </label>
+            </div>
+          </div>
+          <div class="col-12">
+            <label class="form-label small fw-semibold mb-1">Otro concepto</label>{{ form.otro_concepto }}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small fw-semibold mb-1">Cantidad de Cuotas</label>{{ form.cant_cuotas }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small fw-semibold mb-1">Valor de Cuota ($)</label>{{ form.valor_cuota }}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small fw-semibold mb-1">Día de Vencimiento</label>{{ form.dia_cuota }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VEHÍCULO USADO EN PARTE DE PAGO -->
+    <div class="card mb-3 shadow-sm">
+      <div class="card-header bg-dark text-white fw-bold py-2 small">
+        <i data-lucide="repeat" style="width:13px;height:13px;" class="me-1"></i> Vehículo Usado en Parte de Pago (Permuta)
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label small fw-semibold mb-1">Marca</label>{{ form.permuta_marca }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small fw-semibold mb-1">Patente</label>{{ form.permuta_patente }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small fw-semibold mb-1">En la suma de ($)</label>{{ form.permuta_suma }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small fw-semibold mb-1">Total ($)</label>{{ form.permuta_total }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- OBSERVACIONES -->
+    <div class="card mb-4 shadow-sm">
+      <div class="card-header bg-dark text-white fw-bold py-2 small">
+        <i data-lucide="message-square" style="width:13px;height:13px;" class="me-1"></i> Observaciones
+      </div>
+      <div class="card-body">
+        {{ form.observaciones }}
+      </div>
+    </div>
+
+    <!-- BOTONES -->
+    <div class="d-flex gap-2 justify-content-end">
+      <a href="{% url 'boletos:lista_reservas' %}" class="btn btn-outline-secondary">Cancelar</a>
+      <button type="submit" class="btn btn-dark fw-semibold">
+        <i data-lucide="save" style="width:14px;height:14px;" class="me-1"></i>
+        {% if reserva %}Actualizar Reserva{% else %}Guardar Reserva{% endif %}
+      </button>
+    </div>
+
+  </form>
+</div>
+
+<!-- Auto-populate desde selector de vehículo (igual que en boleto) -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const selectVehiculo = document.getElementById("id_vehiculo");
+  if (!selectVehiculo) return;
+
+  selectVehiculo.addEventListener("change", function () {
+    const vid = this.value;
+    if (!vid) return;
+
+    fetch(`/vehiculos/ajax/datos/?id=${vid}`)
+      .then(r => r.json())
+      .then(data => {
+        const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ""; };
+        set("id_marca",      data.marca);
+        set("id_modelo",     data.modelo);
+        set("id_anio",       data.anio);
+        set("id_dominio",    data.dominio || data.patente);
+        set("id_motor_nro",  data.motor);
+        set("id_chasis_nro", data.chasis);
+      })
+      .catch(() => {});
+  });
+});
+</script>
+{% endblock %}
