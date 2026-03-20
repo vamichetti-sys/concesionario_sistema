@@ -565,9 +565,13 @@
                 <i data-lucide="file-text"></i>
                 <span>Presupuestos</span>
             </a>
-            <a href="/boletos/" class="nav-link {% if '/boletos/' in request.path %}active{% endif %}">
+            <a href="/boletos/" class="nav-link {% if request.path == '/boletos/' %}active{% endif %}">
                 <i data-lucide="ticket"></i>
                 <span>Boletos</span>
+            </a>
+            <a href="/boletos/reservas/" class="nav-link {% if '/boletos/reservas/' in request.path %}active{% endif %}">
+                 <i data-lucide="clipboard-list"></i>
+                 <span>Reservas</span>
             </a>
         </div>
     </div>
