@@ -73,6 +73,7 @@
                     <label class="form-label fw-semibold">Forma de pago</label>
                     <select name="forma_pago_anticipo" id="forma_pago_anticipo" class="form-select" onchange="toggleChequeAnticipo(this.value)">
                         <option value="efectivo">Efectivo</option>
+                        <option value="transferencia">Transferencia</option>
                         <option value="cheque">Cheque</option>
                     </select>
                 </div>
@@ -220,20 +221,20 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
 
-    const tipoPlan          = document.getElementById('id_tipo_plan');
-    const montoFinanciado   = document.getElementById('id_monto_financiado');
-    const cantidadCuotas    = document.getElementById('id_cantidad_cuotas');
-    const montoCuota        = document.getElementById('id_monto_cuota');
-    const fechaInicio       = document.getElementById('id_fecha_inicio');
-    const anticipoInput     = document.getElementById('id_anticipo');
-    const interesFinanc     = document.getElementById('id_interes_financiacion');
+    const tipoPlan           = document.getElementById('id_tipo_plan');
+    const montoFinanciado    = document.getElementById('id_monto_financiado');
+    const cantidadCuotas     = document.getElementById('id_cantidad_cuotas');
+    const montoCuota         = document.getElementById('id_monto_cuota');
+    const fechaInicio        = document.getElementById('id_fecha_inicio');
+    const anticipoInput      = document.getElementById('id_anticipo');
+    const interesFinanc      = document.getElementById('id_interes_financiacion');
 
-    const preview           = document.getElementById('preview-cuotas');
-    const lista             = document.getElementById('lista-cuotas');
-    const bloqueCuotas      = document.getElementById('bloque-cuotas');
-    const errorBox          = document.getElementById('error-plan');
-    const totalFormsInput   = document.getElementById('id_form-TOTAL_FORMS');
-    const resumenInteres    = document.getElementById('resumen-interes');
+    const preview            = document.getElementById('preview-cuotas');
+    const lista              = document.getElementById('lista-cuotas');
+    const bloqueCuotas       = document.getElementById('bloque-cuotas');
+    const errorBox           = document.getElementById('error-plan');
+    const totalFormsInput    = document.getElementById('id_form-TOTAL_FORMS');
+    const resumenInteres     = document.getElementById('resumen-interes');
     const bloqueAnticipoPago = document.getElementById('bloque-anticipo-pago');
 
     // ==============================
