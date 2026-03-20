@@ -345,6 +345,7 @@ class CuotaPlan(models.Model):
 class Pago(models.Model):
     FORMAS_PAGO = (
         ('efectivo', 'Efectivo'),
+        ('transferencia', 'Transferencia'),  # ✅ agregado
         ('cheque', 'Cheque'),
     )
 
