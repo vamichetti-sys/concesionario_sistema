@@ -569,10 +569,6 @@
                 <i data-lucide="ticket"></i>
                 <span>Boletos</span>
             </a>
-            <a href="/boletos/reservas/" class="nav-link {% if '/boletos/reservas/' in request.path %}active{% endif %}">
-                 <i data-lucide="clipboard-list"></i>
-                 <span>Reservas</span>
-            </a>
         </div>
     </div>
 
@@ -617,6 +613,11 @@
             <a href="/deudas/" class="nav-link {% if '/deudas/' in request.path %}active{% endif %}">
                 <i data-lucide="alert-circle"></i>
                 <span>Deudas</span>
+            </a>
+            <a href="/boletos/reservas/" class="nav-link {% if '/boletos/reservas/' in request.path %}active{% endif %}">
+                <i data-lucide="clipboard-check"></i>
+                <span>Reservas</span>
+            </a>
             </a>
         </div>
     </div>
