@@ -403,7 +403,7 @@ def crear_plan_pago(request, cuenta_id):
                     monto_cuota = Decimal(monto_raw) if monto_raw else plan.monto_cuota
                     if monto_cuota <= 0:
                         monto_cuota = plan.monto_cuota
-                except Exception:
+                except (ValueError, ArithmeticError):
                     monto_cuota = plan.monto_cuota
 
                 CuotaPlan.objects.create(
@@ -486,7 +486,7 @@ def registrar_movimiento(request, cuenta_id):
 
         try:
             monto = _parse_monto_argentino(monto_raw)
-        except Exception:
+        except (ValueError, InvalidOperation):
             messages.error(request, "Monto inválido.")
             return redirect("cuentas:registrar_movimiento", cuenta_id=cuenta.id)
 
@@ -551,7 +551,7 @@ def registrar_pago_gestoria(request, cuenta_id):
 
         try:
             monto = _parse_monto_argentino(monto_raw)
-        except Exception:
+        except (ValueError, InvalidOperation):
             messages.error(request, "Monto inválido.")
             return redirect("cuentas:registrar_pago_gestoria", cuenta_id=cuenta.id)
 

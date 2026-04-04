@@ -101,6 +101,7 @@ urlpatterns = [
     # ===============================
     path('cheques/', include('cheques.urls')),
     path('cuentas-internas/', include('cuentas_internas.urls')),
+    path('reventa/', include('reventa.urls')),
 ]
 
 # ==========================================================

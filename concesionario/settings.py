@@ -20,10 +20,10 @@ except Exception:
 # ==========================================================
 SECRET_KEY = os.getenv(
     "SECRET_KEY",
-    "django-insecure-concesionario-local-dev"
+    "django-insecure-concesionario-local-dev"  # Solo para desarrollo local
 )
 
-DEBUG = os.getenv("DEBUG", "True") == "True"
+DEBUG = os.getenv("DEBUG", "False") == "True"
 
 # ==========================================================
 # ALLOWED HOSTS (RENDER + LOCAL)
@@ -46,7 +46,6 @@ CSRF_TRUSTED_ORIGINS = [
     "http://127.0.0.1:8000",
     "http://localhost:8000",
     "https://concesionario-k516.onrender.com",
-    "https://*.onrender.com",
 ]
 
 
@@ -203,7 +202,6 @@ TEMPLATES = [
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
-                "django.template.context_processors.debug",
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
@@ -235,4 +233,13 @@ SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SAMESITE = "Lax"
 SESSION_COOKIE_SAMESITE = "Lax"
 
-print("LOGIN_URL ACTUAL:", LOGIN_URL)
+# ==========================================================
+# SEGURIDAD HTTPS (PRODUCCIÓN)
+# ==========================================================
+if not DEBUG:
+    SECURE_SSL_REDIRECT = True
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+
+X_FRAME_OPTIONS = "DENY"

@@ -8,7 +8,7 @@ from .forms import CuentaInternaForm, MovimientoInternoForm
 
 
 def usuario_autorizado(user):
-    return user.username in ['Vamichetti', 'Hamichetti']
+    return user.is_staff or user.has_perm('cuentas_internas.view_cuentainterna')
 
 
 @login_required

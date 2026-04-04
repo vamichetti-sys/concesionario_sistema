@@ -24,12 +24,12 @@ class Gestoria(models.Model):
 
     vehiculo = models.ForeignKey(
         Vehiculo,
-        on_delete=models.CASCADE
+        on_delete=models.PROTECT
     )
 
     cliente = models.ForeignKey(
         Cliente,
-        on_delete=models.CASCADE
+        on_delete=models.PROTECT
     )
 
     monto_transferencia = models.DecimalField(

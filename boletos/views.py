@@ -470,10 +470,13 @@ def crear_pagares(request):
             cliente = get_object_or_404(Cliente, id=request.POST.get("cliente"))
             beneficiario  = request.POST.get("beneficiario") or "AMICHETTI HUGO ALBERTO"
             lugar_emision = request.POST.get("lugar_emision") or "Rojas"
-            fecha_emision = (
-                date.fromisoformat(request.POST.get("fecha_emision"))
-                if request.POST.get("fecha_emision") else date.today()
-            )
+            try:
+                fecha_emision = (
+                    date.fromisoformat(request.POST.get("fecha_emision"))
+                    if request.POST.get("fecha_emision") else date.today()
+                )
+            except ValueError:
+                fecha_emision = date.today()
             cantidad = int(request.POST.get("cantidad", 1))
 
             lote = PagareLote.objects.create(
@@ -489,7 +492,10 @@ def crear_pagares(request):
             for i in range(1, cantidad + 1):
                 monto   = Decimal(request.POST.get(f"monto_{i}", "0"))
                 fecha_v = request.POST.get(f"fecha_vencimiento_{i}")
-                fecha_v = date.fromisoformat(fecha_v) if fecha_v else None
+                try:
+                    fecha_v = date.fromisoformat(fecha_v) if fecha_v else None
+                except ValueError:
+                    fecha_v = None
                 pagare  = Pagare.objects.create(
                     lote=lote, cliente=cliente, numero=ultimo + i,
                     beneficiario=beneficiario, monto=monto,

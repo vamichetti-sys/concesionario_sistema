@@ -1,4 +1,4 @@
-from django.db import models
+from django.db import models, transaction
 from decimal import Decimal
 from django.utils.timezone import now
 
@@ -242,6 +242,9 @@ class Reserva(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.numero_reserva:
-            ultimo = Reserva.objects.aggregate(mx=models.Max("id"))["mx"] or 0
-            self.numero_reserva = f"RES-{(ultimo + 1):04d}"
+            with transaction.atomic():
+                ultimo = Reserva.objects.select_for_update().aggregate(mx=models.Max("id"))["mx"] or 0
+                self.numero_reserva = f"RES-{(ultimo + 1):04d}"
+                super().save(*args, **kwargs)
+                return
         super().save(*args, **kwargs)

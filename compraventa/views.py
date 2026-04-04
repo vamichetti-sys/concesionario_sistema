@@ -327,11 +327,11 @@ def deuda_editar(request, deuda_id):
         monto_total = request.POST.get("monto_total", "").replace(".", "").replace(",", ".")
         
         try:
-            from decimal import Decimal
+            from decimal import Decimal, InvalidOperation
             deuda.monto_total = Decimal(monto_total)
             deuda.save()
             messages.success(request, "Precio de compra actualizado correctamente.")
-        except:
+        except (ValueError, InvalidOperation):
             messages.error(request, "El monto ingresado no es válido.")
         
         return redirect(

@@ -96,17 +96,6 @@ class FichaVehicular(models.Model):
         null=True
     )
 
-    color = models.CharField(
-        max_length=50,
-        blank=True,
-        null=True
-    )
-
-    numero_motor = models.CharField(
-        max_length=100,
-        blank=True,
-        null=True
-    )
     fecha_inscripcion_inicial = models.DateField(
         null=True,
         blank=True,

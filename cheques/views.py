@@ -9,7 +9,7 @@ from .forms import ChequeForm
 
 
 def usuario_autorizado(user):
-    return user.username in ['Vamichetti', 'Hamichetti']
+    return user.is_staff or user.has_perm('cheques.view_cheque')
 
 
 @login_required
