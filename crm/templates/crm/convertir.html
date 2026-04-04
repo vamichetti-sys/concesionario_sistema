@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Convertir a cliente{% endblock %}
+{% block content %}
+
+<div class="mb-4">
+    <a href="{% url 'crm:detalle' pk=prospecto.pk %}" class="text-muted text-decoration-none d-inline-flex align-items-center mb-2" style="font-size:14px;">
+        <i data-lucide="arrow-left" style="width:16px;height:16px;margin-right:6px;"></i>
+        Volver al prospecto
+    </a>
+    <h3 class="fw-bold mb-1">Convertir a cliente</h3>
+    <p class="text-muted mb-0">Se crear&aacute; un nuevo cliente con los datos del prospecto</p>
+</div>
+
+<div class="card p-4" style="max-width:600px;">
+    <div class="mb-4">
+        <table class="table table-borderless mb-0" style="font-size:14px;">
+            <tr>
+                <td class="text-muted" style="width:120px;">Nombre</td>
+                <td><strong>{{ prospecto.nombre_completo }}</strong></td>
+            </tr>
+            <tr>
+                <td class="text-muted">Tel&eacute;fono</td>
+                <td>{{ prospecto.telefono|default:"-" }}</td>
+            </tr>
+            <tr>
+                <td class="text-muted">Email</td>
+                <td>{{ prospecto.email|default:"-" }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="alert alert-info" style="border-radius:10px;">
+        <i data-lucide="info" style="width:16px;height:16px;margin-right:6px;"></i>
+        El prospecto pasar&aacute; a etapa <strong>"Ganado"</strong> y se crear&aacute; un cliente nuevo.
+    </div>
+
+    <form method="post" class="d-flex gap-3">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-success">
+            <i data-lucide="user-check" style="width:16px;height:16px;margin-right:6px;"></i>
+            Confirmar conversi&oacute;n
+        </button>
+        <a href="{% url 'crm:detalle' pk=prospecto.pk %}" class="btn btn-secondary">Cancelar</a>
+    </form>
+</div>
+
+<script>lucide.createIcons();</script>
+{% endblock %}

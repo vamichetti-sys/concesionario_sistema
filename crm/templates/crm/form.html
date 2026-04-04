@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}{{ titulo }}{% endblock %}
+{% block content %}
+
+<div class="mb-4">
+    <a href="{% url 'crm:lista' %}" class="text-muted text-decoration-none d-inline-flex align-items-center mb-2" style="font-size:14px;">
+        <i data-lucide="arrow-left" style="width:16px;height:16px;margin-right:6px;"></i>
+        Volver a prospectos
+    </a>
+    <h3 class="fw-bold mb-1">{{ titulo }}</h3>
+    <p class="text-muted mb-0">Complet&aacute; los datos del prospecto</p>
+</div>
+
+<div class="card p-4" style="max-width: 800px;">
+    <form method="post">
+        {% csrf_token %}
+
+        <h6 class="fw-bold mb-3">Datos de contacto</h6>
+        <div class="row g-3 mb-4">
+            <div class="col-md-6">
+                <label class="form-label">Nombre completo *</label>
+                {{ form.nombre_completo }}
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Tel&eacute;fono</label>
+                {{ form.telefono }}
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Email</label>
+                {{ form.email }}
+            </div>
+        </div>
+
+        <h6 class="fw-bold mb-3">Clasificaci&oacute;n</h6>
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <label class="form-label">Origen</label>
+                {{ form.origen }}
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Etapa</label>
+                {{ form.etapa }}
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Prioridad</label>
+                {{ form.prioridad }}
+            </div>
+        </div>
+
+        <h6 class="fw-bold mb-3">Veh&iacute;culo de inter&eacute;s</h6>
+        <div class="row g-3 mb-4">
+            <div class="col-md-6">
+                <label class="form-label">Veh&iacute;culo en stock</label>
+                {{ form.vehiculo_interes }}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">O descripci&oacute;n libre</label>
+                {{ form.vehiculo_interes_texto }}
+            </div>
+        </div>
+
+        <h6 class="fw-bold mb-3">Seguimiento</h6>
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <label class="form-label">Asignado a</label>
+                {{ form.asignado_a }}
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Pr&oacute;ximo contacto</label>
+                {{ form.fecha_proximo_contacto }}
+            </div>
+        </div>
+
+        <div class="mb-4">
+            <label class="form-label">Observaciones</label>
+            {{ form.observaciones }}
+        </div>
+
+        {% if form.errors %}
+        <div class="alert alert-danger mb-4" style="border-radius:10px;">
+            <ul class="mb-0">
+                {% for field, errors in form.errors.items %}
+                    {% for error in errors %}
+                    <li>{{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <hr class="my-4">
+        <div class="d-flex gap-3">
+            <button type="submit" class="btn btn-primary">
+                <i data-lucide="save" style="width:16px;height:16px;margin-right:6px;"></i>
+                Guardar
+            </button>
+            <a href="{% url 'crm:lista' %}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
+
+<script>lucide.createIcons();</script>
+{% endblock %}

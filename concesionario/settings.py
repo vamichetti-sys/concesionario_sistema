@@ -82,6 +82,7 @@ INSTALLED_APPS = [
     "presupuestos",
     "cheques",
     "cuentas_internas",
+    "crm",
 ]
 
 # ==========================================================

@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+{% block title %}CRM – Prospectos{% endblock %}
+{% block content %}
+
+<!-- ENCABEZADO -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-bold mb-1">CRM – Prospectos</h3>
+        <p class="text-muted mb-0">Seguimiento de oportunidades de venta</p>
+    </div>
+    <a href="{% url 'crm:crear' %}" class="btn btn-primary">
+        <i data-lucide="plus" style="width:16px;height:16px;margin-right:6px;"></i>
+        Nuevo Prospecto
+    </a>
+</div>
+
+<!-- INDICADORES -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-2">
+        <div class="card p-3 text-center">
+            <div class="fw-bold fs-4">{{ contadores.nuevo|default:"0" }}</div>
+            <small class="text-muted">Nuevos</small>
+        </div>
+    </div>
+    <div class="col-6 col-md-2">
+        <div class="card p-3 text-center">
+            <div class="fw-bold fs-4">{{ contadores.contactado|default:"0" }}</div>
+            <small class="text-muted">Contactados</small>
+        </div>
+    </div>
+    <div class="col-6 col-md-2">
+        <div class="card p-3 text-center">
+            <div class="fw-bold fs-4">{{ contadores.en_negociacion|default:"0" }}</div>
+            <small class="text-muted">En negociaci&oacute;n</small>
+        </div>
+    </div>
+    <div class="col-6 col-md-2">
+        <div class="card p-3 text-center">
+            <div class="fw-bold fs-4">{{ contadores.presupuestado|default:"0" }}</div>
+            <small class="text-muted">Presupuestados</small>
+        </div>
+    </div>
+    <div class="col-6 col-md-2">
+        <div class="card p-3 text-center">
+            <div class="fw-bold fs-4 text-success">{{ contadores.ganado|default:"0" }}</div>
+            <small class="text-muted">Ganados</small>
+        </div>
+    </div>
+    <div class="col-6 col-md-2">
+        <div class="card p-3 text-center">
+            <div class="fw-bold fs-4 text-danger">{{ contadores.perdido|default:"0" }}</div>
+            <small class="text-muted">Perdidos</small>
+        </div>
+    </div>
+</div>
+
+{% if pendientes_hoy > 0 %}
+<div class="alert alert-warning d-flex align-items-center mb-4" style="border-radius:10px;">
+    <i data-lucide="bell" style="width:20px;height:20px;margin-right:10px;"></i>
+    <span>Ten&eacute;s <strong>{{ pendientes_hoy }}</strong> prospecto{{ pendientes_hoy|pluralize:"s" }} con contacto pendiente para hoy o atrasado.</span>
+</div>
+{% endif %}
+
+<!-- BUSQUEDA Y FILTROS -->
+<div class="card p-3 mb-4">
+    <form method="GET" class="row g-2 align-items-end">
+        <div class="col-md-4">
+            <div class="input-group">
+                <span class="input-group-text" style="background:#fff;border-right:none;">
+                    <i data-lucide="search" style="width:18px;height:18px;color:#9ca3af;"></i>
+                </span>
+                <input type="text" name="q" class="form-control" style="border-left:none;"
+                       placeholder="Buscar por nombre, tel&eacute;fono o email..." value="{{ query }}">
+            </div>
+        </div>
+        <div class="col-md-2">
+            <select name="etapa" class="form-select">
+                <option value="">Todas las etapas</option>
+                {% for value, label in etapas %}
+                <option value="{{ value }}" {% if etapa_filtro == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <select name="origen" class="form-select">
+                <option value="">Todos los or&iacute;genes</option>
+                {% for value, label in origenes %}
+                <option value="{{ value }}" {% if origen_filtro == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <select name="prioridad" class="form-select">
+                <option value="">Todas las prioridades</option>
+                {% for value, label in prioridades %}
+                <option value="{{ value }}" {% if prioridad_filtro == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2 d-flex gap-2">
+            <button type="submit" class="btn btn-primary flex-grow-1">Filtrar</button>
+            <a href="{% url 'crm:lista' %}" class="btn btn-secondary">
+                <i data-lucide="x" style="width:16px;height:16px;"></i>
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- TABLA -->
+<div class="card p-0">
+    {% if prospectos %}
+    <div class="table-responsive">
+        <table class="table align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Tel&eacute;fono</th>
+                    <th>Origen</th>
+                    <th>Etapa</th>
+                    <th>Prioridad</th>
+                    <th>Pr&oacute;ximo contacto</th>
+                    <th class="text-end">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in prospectos %}
+                <tr>
+                    <td>
+                        <strong>{{ p.nombre_completo }}</strong>
+                        {% if p.vehiculo_interes %}
+                        <br><small class="text-muted">{{ p.vehiculo_interes }}</small>
+                        {% elif p.vehiculo_interes_texto %}
+                        <br><small class="text-muted">{{ p.vehiculo_interes_texto }}</small>
+                        {% endif %}
+                    </td>
+                    <td>{{ p.telefono|default:"-" }}</td>
+                    <td>
+                        <span class="badge" style="background:rgba(59,130,246,0.1);color:#2563eb;">
+                            {{ p.get_origen_display }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if p.etapa == "nuevo" %}
+                            <span class="badge" style="background:rgba(59,130,246,0.1);color:#2563eb;">{{ p.get_etapa_display }}</span>
+                        {% elif p.etapa == "contactado" %}
+                            <span class="badge" style="background:rgba(139,92,246,0.1);color:#7c3aed;">{{ p.get_etapa_display }}</span>
+                        {% elif p.etapa == "en_negociacion" %}
+                            <span class="badge" style="background:rgba(245,158,11,0.1);color:#d97706;">{{ p.get_etapa_display }}</span>
+                        {% elif p.etapa == "presupuestado" %}
+                            <span class="badge" style="background:rgba(14,165,233,0.1);color:#0284c7;">{{ p.get_etapa_display }}</span>
+                        {% elif p.etapa == "ganado" %}
+                            <span class="badge" style="background:rgba(16,185,129,0.1);color:#059669;">{{ p.get_etapa_display }}</span>
+                        {% elif p.etapa == "perdido" %}
+                            <span class="badge" style="background:rgba(239,68,68,0.1);color:#dc2626;">{{ p.get_etapa_display }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if p.prioridad == "alta" %}
+                            <span class="badge" style="background:rgba(239,68,68,0.1);color:#dc2626;">Alta</span>
+                        {% elif p.prioridad == "media" %}
+                            <span class="badge" style="background:rgba(245,158,11,0.1);color:#d97706;">Media</span>
+                        {% else %}
+                            <span class="badge" style="background:rgba(156,163,175,0.1);color:#6b7280;">Baja</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if p.fecha_proximo_contacto %}
+                            {% if p.fecha_proximo_contacto < today %}
+                                <span class="text-danger fw-bold">{{ p.fecha_proximo_contacto|date:"d/m/Y" }}</span>
+                            {% else %}
+                                {{ p.fecha_proximo_contacto|date:"d/m/Y" }}
+                            {% endif %}
+                        {% else %}
+                            <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end">
+                        <a href="{% url 'crm:detalle' pk=p.pk %}" class="btn btn-secondary btn-sm">
+                            <i data-lucide="eye" style="width:14px;height:14px;margin-right:4px;"></i>
+                            Ver
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="p-5 text-center">
+        <i data-lucide="target" style="width:48px;height:48px;color:#9ca3af;margin-bottom:12px;"></i>
+        <p class="text-muted mb-3">No hay prospectos registrados</p>
+        <a href="{% url 'crm:crear' %}" class="btn btn-primary">
+            <i data-lucide="plus" style="width:16px;height:16px;margin-right:6px;"></i>
+            Agregar primer prospecto
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<script>lucide.createIcons();</script>
+{% endblock %}

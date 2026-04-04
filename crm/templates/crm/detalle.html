@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+{% block title %}Prospecto – {{ prospecto.nombre_completo }}{% endblock %}
+{% block content %}
+
+<!-- ENCABEZADO -->
+<div class="mb-4">
+    <a href="{% url 'crm:lista' %}" class="text-muted text-decoration-none d-inline-flex align-items-center mb-2" style="font-size:14px;">
+        <i data-lucide="arrow-left" style="width:16px;height:16px;margin-right:6px;"></i>
+        Volver a prospectos
+    </a>
+    <div class="d-flex justify-content-between align-items-start">
+        <div>
+            <h3 class="fw-bold mb-1">{{ prospecto.nombre_completo }}</h3>
+            <p class="text-muted mb-0">
+                Creado el {{ prospecto.fecha_creacion|date:"d/m/Y H:i" }}
+                {% if prospecto.asignado_a %}
+                    &middot; Asignado a {{ prospecto.asignado_a.get_full_name|default:prospecto.asignado_a.username }}
+                {% endif %}
+            </p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'crm:editar' pk=prospecto.pk %}" class="btn btn-secondary">
+                <i data-lucide="edit" style="width:16px;height:16px;margin-right:6px;"></i>
+                Editar
+            </a>
+            {% if not prospecto.cliente %}
+            <a href="{% url 'crm:convertir' pk=prospecto.pk %}" class="btn btn-success">
+                <i data-lucide="user-check" style="width:16px;height:16px;margin-right:6px;"></i>
+                Convertir a cliente
+            </a>
+            {% endif %}
+            <a href="{% url 'crm:eliminar' pk=prospecto.pk %}" class="btn btn-outline-danger btn-sm">
+                <i data-lucide="trash-2" style="width:16px;height:16px;"></i>
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- COLUMNA IZQUIERDA: DATOS -->
+    <div class="col-md-5">
+
+        <!-- DATOS DE CONTACTO -->
+        <div class="card p-4 mb-4">
+            <h6 class="fw-bold mb-3">
+                <i data-lucide="user" style="width:16px;height:16px;margin-right:6px;"></i>
+                Datos de contacto
+            </h6>
+            <table class="table table-borderless mb-0" style="font-size:14px;">
+                <tr>
+                    <td class="text-muted" style="width:120px;">Tel&eacute;fono</td>
+                    <td>{{ prospecto.telefono|default:"-" }}</td>
+                </tr>
+                <tr>
+                    <td class="text-muted">Email</td>
+                    <td>{{ prospecto.email|default:"-" }}</td>
+                </tr>
+                <tr>
+                    <td class="text-muted">Origen</td>
+                    <td>
+                        <span class="badge" style="background:rgba(59,130,246,0.1);color:#2563eb;">
+                            {{ prospecto.get_origen_display }}
+                        </span>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- ESTADO -->
+        <div class="card p-4 mb-4">
+            <h6 class="fw-bold mb-3">
+                <i data-lucide="git-branch" style="width:16px;height:16px;margin-right:6px;"></i>
+                Estado
+            </h6>
+            <table class="table table-borderless mb-3" style="font-size:14px;">
+                <tr>
+                    <td class="text-muted" style="width:120px;">Etapa</td>
+                    <td>
+                        {% if prospecto.etapa == "nuevo" %}
+                            <span class="badge" style="background:rgba(59,130,246,0.1);color:#2563eb;">{{ prospecto.get_etapa_display }}</span>
+                        {% elif prospecto.etapa == "contactado" %}
+                            <span class="badge" style="background:rgba(139,92,246,0.1);color:#7c3aed;">{{ prospecto.get_etapa_display }}</span>
+                        {% elif prospecto.etapa == "en_negociacion" %}
+                            <span class="badge" style="background:rgba(245,158,11,0.1);color:#d97706;">{{ prospecto.get_etapa_display }}</span>
+                        {% elif prospecto.etapa == "presupuestado" %}
+                            <span class="badge" style="background:rgba(14,165,233,0.1);color:#0284c7;">{{ prospecto.get_etapa_display }}</span>
+                        {% elif prospecto.etapa == "ganado" %}
+                            <span class="badge" style="background:rgba(16,185,129,0.1);color:#059669;">{{ prospecto.get_etapa_display }}</span>
+                        {% elif prospecto.etapa == "perdido" %}
+                            <span class="badge" style="background:rgba(239,68,68,0.1);color:#dc2626;">{{ prospecto.get_etapa_display }}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td class="text-muted">Prioridad</td>
+                    <td>
+                        {% if prospecto.prioridad == "alta" %}
+                            <span class="badge" style="background:rgba(239,68,68,0.1);color:#dc2626;">Alta</span>
+                        {% elif prospecto.prioridad == "media" %}
+                            <span class="badge" style="background:rgba(245,158,11,0.1);color:#d97706;">Media</span>
+                        {% else %}
+                            <span class="badge" style="background:rgba(156,163,175,0.1);color:#6b7280;">Baja</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td class="text-muted">Pr&oacute;x. contacto</td>
+                    <td>{{ prospecto.fecha_proximo_contacto|date:"d/m/Y"|default:"-" }}</td>
+                </tr>
+            </table>
+
+            <!-- Cambiar etapa rapido -->
+            {% if prospecto.es_activo %}
+            <form method="post" action="{% url 'crm:cambiar_etapa' pk=prospecto.pk %}" class="d-flex gap-2 flex-wrap">
+                {% csrf_token %}
+                <select name="etapa" class="form-select form-select-sm" style="width:auto;">
+                    <option value="nuevo" {% if prospecto.etapa == "nuevo" %}selected{% endif %}>Nuevo</option>
+                    <option value="contactado" {% if prospecto.etapa == "contactado" %}selected{% endif %}>Contactado</option>
+                    <option value="en_negociacion" {% if prospecto.etapa == "en_negociacion" %}selected{% endif %}>En negociaci&oacute;n</option>
+                    <option value="presupuestado" {% if prospecto.etapa == "presupuestado" %}selected{% endif %}>Presupuestado</option>
+                    <option value="ganado">Ganado</option>
+                    <option value="perdido">Perdido</option>
+                </select>
+                <button type="submit" class="btn btn-primary btn-sm">Cambiar etapa</button>
+            </form>
+            {% endif %}
+        </div>
+
+        <!-- VEHICULO DE INTERES -->
+        <div class="card p-4 mb-4">
+            <h6 class="fw-bold mb-3">
+                <i data-lucide="car" style="width:16px;height:16px;margin-right:6px;"></i>
+                Veh&iacute;culo de inter&eacute;s
+            </h6>
+            {% if prospecto.vehiculo_interes %}
+                <p class="mb-1"><strong>{{ prospecto.vehiculo_interes }}</strong></p>
+                <p class="text-muted mb-0">${{ prospecto.vehiculo_interes.precio|floatformat:0 }}</p>
+            {% elif prospecto.vehiculo_interes_texto %}
+                <p class="mb-0">{{ prospecto.vehiculo_interes_texto }}</p>
+            {% else %}
+                <p class="text-muted mb-0">Sin especificar</p>
+            {% endif %}
+        </div>
+
+        <!-- CLIENTE CONVERTIDO -->
+        {% if prospecto.cliente %}
+        <div class="card p-4 mb-4" style="border-left:4px solid #059669;">
+            <h6 class="fw-bold mb-2">
+                <i data-lucide="user-check" style="width:16px;height:16px;margin-right:6px;color:#059669;"></i>
+                Convertido a cliente
+            </h6>
+            <p class="mb-0">
+                <a href="{% url 'clientes:detalle_cliente' cliente_id=prospecto.cliente.pk %}">
+                    {{ prospecto.cliente.nombre_completo }}
+                </a>
+            </p>
+        </div>
+        {% endif %}
+
+        {% if prospecto.observaciones %}
+        <div class="card p-4 mb-4">
+            <h6 class="fw-bold mb-2">Observaciones</h6>
+            <p class="mb-0" style="white-space:pre-line;">{{ prospecto.observaciones }}</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- COLUMNA DERECHA: SEGUIMIENTOS -->
+    <div class="col-md-7">
+        <div class="card p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="fw-bold mb-0">
+                    <i data-lucide="message-circle" style="width:16px;height:16px;margin-right:6px;"></i>
+                    Seguimientos ({{ seguimientos|length }})
+                </h6>
+            </div>
+
+            <!-- Formulario para agregar -->
+            <form method="post" action="{% url 'crm:agregar_seguimiento' pk=prospecto.pk %}" class="mb-4">
+                {% csrf_token %}
+                <div class="row g-2">
+                    <div class="col-md-3">
+                        {{ form_seguimiento.tipo }}
+                    </div>
+                    <div class="col-md-7">
+                        {{ form_seguimiento.descripcion }}
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary w-100" style="height:100%;">
+                            <i data-lucide="send" style="width:16px;height:16px;"></i>
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+            <!-- Timeline -->
+            {% if seguimientos %}
+            <div class="timeline">
+                {% for s in seguimientos %}
+                <div class="d-flex mb-3 pb-3 {% if not forloop.last %}border-bottom{% endif %}">
+                    <div class="me-3">
+                        {% if s.tipo == "llamada" %}
+                            <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:36px;height:36px;background:rgba(59,130,246,0.1);">
+                                <i data-lucide="phone" style="width:16px;height:16px;color:#2563eb;"></i>
+                            </div>
+                        {% elif s.tipo == "whatsapp" %}
+                            <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:36px;height:36px;background:rgba(16,185,129,0.1);">
+                                <i data-lucide="message-circle" style="width:16px;height:16px;color:#059669;"></i>
+                            </div>
+                        {% elif s.tipo == "visita" %}
+                            <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:36px;height:36px;background:rgba(245,158,11,0.1);">
+                                <i data-lucide="map-pin" style="width:16px;height:16px;color:#d97706;"></i>
+                            </div>
+                        {% elif s.tipo == "email" %}
+                            <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:36px;height:36px;background:rgba(139,92,246,0.1);">
+                                <i data-lucide="mail" style="width:16px;height:16px;color:#7c3aed;"></i>
+                            </div>
+                        {% else %}
+                            <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:36px;height:36px;background:rgba(156,163,175,0.1);">
+                                <i data-lucide="sticky-note" style="width:16px;height:16px;color:#6b7280;"></i>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <strong style="font-size:13px;">{{ s.get_tipo_display }}</strong>
+                            <small class="text-muted">{{ s.fecha|date:"d/m/Y H:i" }}</small>
+                        </div>
+                        <p class="mb-1" style="font-size:14px;white-space:pre-line;">{{ s.descripcion }}</p>
+                        {% if s.creado_por %}
+                        <small class="text-muted">Por {{ s.creado_por.get_full_name|default:s.creado_por.username }}</small>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <i data-lucide="message-circle" style="width:36px;height:36px;color:#d1d5db;margin-bottom:8px;"></i>
+                <p class="text-muted mb-0">Sin seguimientos a&uacute;n</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>lucide.createIcons();</script>
+{% endblock %}
