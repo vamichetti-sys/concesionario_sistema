@@ -10,6 +10,7 @@ from cuentas.models import CuentaCorriente, MovimientoCuenta
 from gestoria.models import Gestoria
 from ventas.models import Venta
 from vehiculos.models import Vehiculo, FichaVehicular
+from crm.models import Prospecto
 
 
 # ==========================================================
@@ -141,6 +142,24 @@ def inicio(request):
     ).count()
 
     # =============================
+    # CRM – RECORDATORIOS
+    # =============================
+    crm_contactos_pendientes = Prospecto.objects.filter(
+        fecha_proximo_contacto__lte=hoy,
+        etapa__in=["nuevo", "contactado", "en_negociacion", "presupuestado"],
+    ).select_related("vehiculo_interes").order_by("fecha_proximo_contacto")[:5]
+
+    crm_nuevos = Prospecto.objects.filter(etapa="nuevo").count()
+
+    crm_en_negociacion = Prospecto.objects.filter(
+        etapa__in=["contactado", "en_negociacion", "presupuestado"],
+    ).count()
+
+    crm_total_activos = Prospecto.objects.exclude(
+        etapa__in=["ganado", "perdido"],
+    ).count()
+
+    # =============================
     # CONTEXTO FINAL
     # =============================
     context = {
@@ -174,7 +193,13 @@ def inicio(request):
         
         # Cuotas
         "cuotas_vencidas_count": cuotas_vencidas_count,
-        
+
+        # CRM
+        "crm_contactos_pendientes": crm_contactos_pendientes,
+        "crm_nuevos": crm_nuevos,
+        "crm_en_negociacion": crm_en_negociacion,
+        "crm_total_activos": crm_total_activos,
+
         # Fecha
         "hoy": hoy,
     }
