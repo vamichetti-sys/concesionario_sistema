@@ -12,4 +12,5 @@ urlpatterns = [
     path("<int:pk>/etapa/", views.cambiar_etapa, name="cambiar_etapa"),
     path("<int:pk>/seguimiento/", views.agregar_seguimiento, name="agregar_seguimiento"),
     path("<int:pk>/convertir/", views.convertir_a_cliente, name="convertir"),
+    path("notificacion/<int:pk>/leida/", views.marcar_notificacion_leida, name="marcar_leida"),
 ]

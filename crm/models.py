@@ -165,3 +165,33 @@ class Seguimiento(models.Model):
 
     def __str__(self):
         return f"{self.get_tipo_display()} – {self.prospecto.nombre_completo}"
+
+
+# ============================================================
+# NOTIFICACION CRM (MATCHES VEHICULO-PROSPECTO)
+# ============================================================
+class NotificacionCRM(models.Model):
+
+    prospecto = models.ForeignKey(
+        Prospecto,
+        on_delete=models.CASCADE,
+        related_name="notificaciones",
+    )
+
+    vehiculo = models.ForeignKey(
+        Vehiculo,
+        on_delete=models.CASCADE,
+        related_name="notificaciones_crm",
+    )
+
+    mensaje = models.CharField(max_length=300)
+    leida = models.BooleanField(default=False)
+    fecha = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-fecha"]
+        verbose_name = "Notificacion CRM"
+        verbose_name_plural = "Notificaciones CRM"
+
+    def __str__(self):
+        return f"{self.prospecto.nombre_completo} ← {self.vehiculo}"

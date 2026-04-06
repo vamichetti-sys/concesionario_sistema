@@ -49,6 +49,34 @@
 </div>
 {% endif %}
 
+{% if crm_notificaciones %}
+<div class="alert mb-4" style="border-radius:10px;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);">
+    <div class="d-flex align-items-center gap-2 mb-2">
+        <i data-lucide="sparkles" style="width:20px;height:20px;color:#059669;"></i>
+        <strong style="color:#059669;">Coincidencias CRM &ndash; Veh&iacute;culos que buscan tus prospectos</strong>
+    </div>
+    {% for n in crm_notificaciones %}
+    <div class="d-flex justify-content-between align-items-center {% if not forloop.last %}mb-2 pb-2 border-bottom{% endif %}">
+        <div>
+            <span class="fw-semibold">{{ n.prospecto.nombre_completo }}</span>
+            <span class="text-muted">busca &ldquo;{{ n.prospecto.vehiculo_interes_texto }}&rdquo;</span>
+            <span class="mx-1">&rarr;</span>
+            <span class="fw-semibold text-success">{{ n.vehiculo.marca }} {{ n.vehiculo.modelo }} ({{ n.vehiculo.dominio }})</span>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'crm:detalle' pk=n.prospecto.pk %}" class="btn btn-success btn-sm">
+                <i data-lucide="eye" style="width:14px;height:14px;margin-right:4px;"></i>
+                Ver prospecto
+            </a>
+            <a href="{% url 'crm:marcar_leida' pk=n.pk %}" class="btn btn-outline-secondary btn-sm" title="Descartar">
+                <i data-lucide="x" style="width:14px;height:14px;"></i>
+            </a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
 <!-- ===============================
      RESUMEN CLAVE
 =============================== -->

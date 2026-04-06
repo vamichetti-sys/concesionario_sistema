@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Prospecto, Seguimiento
+from .models import Prospecto, Seguimiento, NotificacionCRM
 
 
 @admin.register(Prospecto)
@@ -13,3 +13,9 @@ class ProspectoAdmin(admin.ModelAdmin):
 class SeguimientoAdmin(admin.ModelAdmin):
     list_display = ("prospecto", "tipo", "creado_por", "fecha")
     list_filter = ("tipo",)
+
+
+@admin.register(NotificacionCRM)
+class NotificacionCRMAdmin(admin.ModelAdmin):
+    list_display = ("prospecto", "vehiculo", "leida", "fecha")
+    list_filter = ("leida",)

@@ -82,7 +82,7 @@ INSTALLED_APPS = [
     "presupuestos",
     "cheques",
     "cuentas_internas",
-    "crm",
+    "crm.apps.CrmConfig",
 ]
 
 # ==========================================================

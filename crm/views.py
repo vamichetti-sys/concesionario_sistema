@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.db.models import Q, Count
 from datetime import date
 
-from .models import Prospecto, Seguimiento
+from .models import Prospecto, Seguimiento, NotificacionCRM
 from .forms import ProspectoForm, SeguimientoForm
 from clientes.models import Cliente
 
@@ -219,3 +219,14 @@ def eliminar_prospecto(request, pk):
         return redirect("crm:lista")
 
     return render(request, "crm/eliminar.html", {"prospecto": prospecto})
+
+
+# ==========================================================
+# MARCAR NOTIFICACION COMO LEIDA
+# ==========================================================
+@login_required
+def marcar_notificacion_leida(request, pk):
+    notificacion = get_object_or_404(NotificacionCRM, pk=pk)
+    notificacion.leida = True
+    notificacion.save(update_fields=["leida"])
+    return redirect("inicio")

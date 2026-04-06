@@ -10,7 +10,7 @@ from cuentas.models import CuentaCorriente, MovimientoCuenta
 from gestoria.models import Gestoria
 from ventas.models import Venta
 from vehiculos.models import Vehiculo, FichaVehicular
-from crm.models import Prospecto
+from crm.models import Prospecto, NotificacionCRM
 
 
 # ==========================================================
@@ -159,6 +159,10 @@ def inicio(request):
         etapa__in=["ganado", "perdido"],
     ).count()
 
+    crm_notificaciones = NotificacionCRM.objects.filter(
+        leida=False,
+    ).select_related("prospecto", "vehiculo")[:5]
+
     # =============================
     # CONTEXTO FINAL
     # =============================
@@ -199,6 +203,7 @@ def inicio(request):
         "crm_nuevos": crm_nuevos,
         "crm_en_negociacion": crm_en_negociacion,
         "crm_total_activos": crm_total_activos,
+        "crm_notificaciones": crm_notificaciones,
 
         # Fecha
         "hoy": hoy,
