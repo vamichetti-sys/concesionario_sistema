@@ -1,4 +1,5 @@
 from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpResponse
 
 from vehiculos.models import FichaVehicular
@@ -13,6 +14,7 @@ from reportlab.lib import colors
 # ==========================================================
 # 📅 VISTA CALENDARIO
 # ==========================================================
+@login_required
 def calendario_vencimientos(request):
     return render(request, "calendario/calendario_vencimientos.html")
 
@@ -22,6 +24,7 @@ def calendario_vencimientos(request):
 # 👉 Vencimientos: FichaVehicular
 # 👉 Turnos: Modelo Evento
 # ==========================================================
+@login_required
 def api_calendario_vencimientos(request):
     eventos = {}
 
@@ -130,6 +133,7 @@ def api_calendario_vencimientos(request):
 # ==========================================================
 # 📄 PDF MENSUAL DEL CALENDARIO
 # ==========================================================
+@login_required
 def calendario_pdf_mensual(request, anio, mes):
     # 🆕 VALIDACIÓN DEL AÑO Y MES
     try:

@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse
 from django.db.models import Q
@@ -134,7 +135,11 @@ def asignar_cliente_venta(request, vehiculo_id):
     clientes = Cliente.objects.all().order_by("nombre_completo")
 
     if request.method == "POST":
-        cliente = get_object_or_404(Cliente, id=request.POST.get("cliente"))
+        cliente_id = request.POST.get("cliente")
+        if not cliente_id:
+            messages.error(request, "Debes seleccionar un cliente.")
+            return redirect("ventas:asignar_cliente", vehiculo_id=vehiculo.id)
+        cliente = get_object_or_404(Cliente, id=cliente_id)
 
         # ==================================================
         # 🔑 ASIGNACIÓN CORRECTA (CENTRALIZADA)
@@ -250,6 +255,7 @@ def crear_venta(request, venta_id):
 # ==========================================================
 # REVERTIR VENTA
 # ==========================================================
+@login_required
 @transaction.atomic
 def revertir_venta(request, venta_id):
     venta = get_object_or_404(Venta, id=venta_id)

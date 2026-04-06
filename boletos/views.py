@@ -1,9 +1,14 @@
+import logging
+
 from django.shortcuts import render, get_object_or_404, redirect
 from django.db.models import Max, Q
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.http import HttpResponse
 from django.conf import settings
+
+logger = logging.getLogger(__name__)
 import re
 from decimal import Decimal
 from datetime import date
@@ -115,6 +120,7 @@ def _contexto_boleto(boleto):
 # ====================================
 # PANEL DE BOLETOS
 # ====================================
+@login_required
 def panel_boletos(request):
     return render(request, "boletos/panel.html")
 
@@ -122,6 +128,7 @@ def panel_boletos(request):
 # ====================================
 # LISTA + BUSCADOR DE BOLETOS
 # ====================================
+@login_required
 def lista_boletos(request):
     q = request.GET.get("q", "")
     boletos = BoletoCompraventa.objects.all()
@@ -133,6 +140,7 @@ def lista_boletos(request):
 # ====================================
 # GENERAR PDF CON WEASYPRINT
 # ====================================
+@login_required
 def generar_boleto_pdf_desde_html(request, boleto):
     from weasyprint import HTML
     ctx = _contexto_boleto(boleto)
@@ -146,6 +154,7 @@ def generar_boleto_pdf_desde_html(request, boleto):
 # ====================================
 # VER BOLETO (pantalla)
 # ====================================
+@login_required
 def ver_boleto(request, boleto_id):
     boleto = get_object_or_404(BoletoCompraventa, id=boleto_id)
     ctx = _contexto_boleto(boleto)
@@ -156,6 +165,7 @@ def ver_boleto(request, boleto_id):
 # IMPRIMIR BOLETO (página limpia, sin base.html)
 # — soluciona el blanco en Safari y Chrome
 # ====================================
+@login_required
 def imprimir_boleto(request, boleto_id):
     boleto = get_object_or_404(BoletoCompraventa, id=boleto_id)
     ctx = _contexto_boleto(boleto)
@@ -165,6 +175,7 @@ def imprimir_boleto(request, boleto_id):
 # ====================================
 # ELIMINAR BOLETO
 # ====================================
+@login_required
 def eliminar_boleto(request, boleto_id):
     boleto = get_object_or_404(BoletoCompraventa, id=boleto_id)
     if request.method == "POST":
@@ -182,6 +193,7 @@ def eliminar_boleto(request, boleto_id):
 # ====================================
 # CREAR BOLETO
 # ====================================
+@login_required
 def crear_boleto_manual(request):
     ultimo = BoletoCompraventa.objects.aggregate(numero_max=Max("numero"))["numero_max"] or 0
     numero = ultimo + 1
@@ -228,7 +240,7 @@ def crear_boleto_manual(request):
                 pdf_file = generar_boleto_pdf_desde_html(request, boleto)
                 boleto.pdf.save(f"boleto_{boleto.numero}.pdf", pdf_file, save=True)
             except Exception as e:
-                print("❌ ERROR PDF BOLETO:", e)
+                logger.error("Error generando PDF boleto: %s", e)
                 messages.warning(request, "⚠️ El boleto se creó, pero el PDF no pudo generarse.")
 
             messages.success(request, "✅ Boleto generado correctamente")
@@ -240,6 +252,7 @@ def crear_boleto_manual(request):
 # ====================================
 # EDITAR BOLETO
 # ====================================
+@login_required
 def editar_boleto(request, boleto_id):
     boleto = get_object_or_404(BoletoCompraventa, id=boleto_id)
     from .forms import EditarBoletoForm
@@ -278,7 +291,7 @@ def editar_boleto(request, boleto_id):
                 boleto.pdf.save(f"boleto_{boleto.numero}.pdf", pdf_file, save=True)
                 messages.success(request, "✅ Boleto actualizado y PDF regenerado correctamente.")
             except Exception as e:
-                print("❌ ERROR PDF BOLETO (edición):", e)
+                logger.error("Error regenerando PDF boleto (edicion): %s", e)
                 messages.warning(request, "⚠️ Boleto actualizado, pero el PDF no pudo regenerarse.")
             return redirect("boletos:ver_boleto", boleto.id)
     else:
@@ -299,6 +312,7 @@ def editar_boleto(request, boleto_id):
 # =======================  PAGARÉ  =========================
 # ==========================================================
 
+@login_required
 def lista_pagares(request):
     q = request.GET.get("q", "").strip()
     lotes = PagareLote.objects.select_related("cliente").order_by("-fecha_emision")
@@ -462,6 +476,7 @@ def _generar_pdf_lote_pagares_3_por_hoja(pagares):
 # ====================================
 # CREAR PAGARÉS + PDF
 # ====================================
+@login_required
 def crear_pagares(request):
     if request.method == "POST":
         request.session.pop("generando_pagares", None)
@@ -529,6 +544,7 @@ def crear_pagares(request):
 # ====================================
 # VER PAGARÉ
 # ====================================
+@login_required
 def ver_pagare(request, pagare_id):
     pagare = get_object_or_404(Pagare, id=pagare_id)
     return render(request, "boletos/pagare/ver.html", {"pagare": pagare})
@@ -537,6 +553,7 @@ def ver_pagare(request, pagare_id):
 # ====================================
 # PDF PAGARÉ INDIVIDUAL
 # ====================================
+@login_required
 def pagare_pdf(request, pagare_id):
     pagare = get_object_or_404(Pagare, id=pagare_id)
     buffer = BytesIO()
@@ -570,6 +587,7 @@ def pagare_pdf(request, pagare_id):
 # ====================================
 # DESCARGAR PDF LOTE ON-DEMAND
 # ====================================
+@login_required
 def descargar_pdf_lote(request, lote_id):
     lote = get_object_or_404(PagareLote, id=lote_id)
     pagares = list(lote.pagares.all().order_by('numero'))
@@ -582,6 +600,7 @@ def descargar_pdf_lote(request, lote_id):
 # ====================================
 # VER LOTE DE PAGARÉS
 # ====================================
+@login_required
 def ver_lote(request, lote_id):
     lote = get_object_or_404(PagareLote, id=lote_id)
     pagares = lote.pagares.all().order_by('numero')
@@ -599,6 +618,7 @@ def ver_lote(request, lote_id):
 # ====================================
 # ELIMINAR LOTE DE PAGARÉS
 # ====================================
+@login_required
 def eliminar_lote(request, lote_id):
     lote = get_object_or_404(PagareLote, id=lote_id)
     if request.method == 'POST':
@@ -856,6 +876,7 @@ def _generar_pdf_reserva(reserva):
 # ────────────────────────────────────────────────────────
 # LISTA DE RESERVAS
 # ────────────────────────────────────────────────────────
+@login_required
 def lista_reservas(request):
     q = request.GET.get("q", "").strip()
     reservas = Reserva.objects.all()
@@ -873,6 +894,7 @@ def lista_reservas(request):
 # ────────────────────────────────────────────────────────
 # CREAR RESERVA
 # ────────────────────────────────────────────────────────
+@login_required
 def crear_reserva(request):
     if request.method == "POST":
         form = ReservaForm(request.POST)
@@ -891,6 +913,7 @@ def crear_reserva(request):
 # ────────────────────────────────────────────────────────
 # VER RESERVA
 # ────────────────────────────────────────────────────────
+@login_required
 def ver_reserva(request, reserva_id):
     reserva = get_object_or_404(Reserva, id=reserva_id)
     return render(request, "boletos/reservas/ver.html", {"reserva": reserva})
@@ -899,6 +922,7 @@ def ver_reserva(request, reserva_id):
 # ────────────────────────────────────────────────────────
 # EDITAR RESERVA
 # ────────────────────────────────────────────────────────
+@login_required
 def editar_reserva(request, reserva_id):
     reserva = get_object_or_404(Reserva, id=reserva_id)
     if request.method == "POST":
@@ -919,6 +943,7 @@ def editar_reserva(request, reserva_id):
 # ────────────────────────────────────────────────────────
 # ELIMINAR RESERVA
 # ────────────────────────────────────────────────────────
+@login_required
 def eliminar_reserva(request, reserva_id):
     reserva = get_object_or_404(Reserva, id=reserva_id)
     if request.method == "POST":
@@ -932,6 +957,7 @@ def eliminar_reserva(request, reserva_id):
 # ────────────────────────────────────────────────────────
 # PDF RESERVA
 # ────────────────────────────────────────────────────────
+@login_required
 def reserva_pdf(request, reserva_id):
     reserva = get_object_or_404(Reserva, id=reserva_id)
     pdf_bytes = _generar_pdf_reserva(reserva)

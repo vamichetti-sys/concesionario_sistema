@@ -1,9 +1,11 @@
 from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
 from django.db.models import Q, Sum
 from cuentas.models import CuentaCorriente
 from vehiculos.models import Vehiculo, FichaVehicular, PagoGastoIngreso
 
 
+@login_required
 def listado_deudas(request):
     """
     Vehículos con deuda (GASTOS).

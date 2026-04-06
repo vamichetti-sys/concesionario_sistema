@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.urls import reverse
 from django.db.models import Sum, Q
 from django.utils import timezone
 from decimal import Decimal
@@ -157,7 +158,7 @@ def eliminar_gasto(request, pk):
     if request.method == "POST":
         gasto.delete()
         messages.success(request, "Gasto eliminado.")
-        return redirect(f"/gastos-mensuales/?mes={mes}&anio={anio}")
+        return redirect(f"{reverse('gastos_mensuales:resumen')}?mes={mes}&anio={anio}")
 
     return render(request, "gastos_mensuales/eliminar.html", {"gasto": gasto})
 
@@ -176,7 +177,7 @@ def marcar_pagado(request, pk):
         estado = "pagado" if gasto.pagado else "pendiente"
         messages.success(request, f"Gasto marcado como {estado}.")
 
-    return redirect(f"/gastos-mensuales/?mes={gasto.mes}&anio={gasto.anio}")
+    return redirect(f"{reverse('gastos_mensuales:resumen')}?mes={gasto.mes}&anio={gasto.anio}")
 
 
 # ==========================================================
@@ -252,7 +253,7 @@ def duplicar_fijos(request):
 
         if not fijos_origen.exists():
             messages.warning(request, f"No hay gastos fijos en {mes_origen}/{anio_origen}.")
-            return redirect(f"/gastos-mensuales/?mes={mes}&anio={anio}")
+            return redirect(f"{reverse('gastos_mensuales:resumen')}?mes={mes}&anio={anio}")
 
         # Verificar que no existan ya
         existentes = GastoMensual.objects.filter(
@@ -261,7 +262,7 @@ def duplicar_fijos(request):
 
         if existentes > 0:
             messages.info(request, "Ya existen gastos fijos para este mes.")
-            return redirect(f"/gastos-mensuales/?mes={mes}&anio={anio}")
+            return redirect(f"{reverse('gastos_mensuales:resumen')}?mes={mes}&anio={anio}")
 
         creados = 0
         for gasto in fijos_origen:
@@ -278,6 +279,6 @@ def duplicar_fijos(request):
             creados += 1
 
         messages.success(request, f"{creados} gasto(s) fijo(s) copiados a {MESES[mes]} {anio}.")
-        return redirect(f"/gastos-mensuales/?mes={mes}&anio={anio}")
+        return redirect(f"{reverse('gastos_mensuales:resumen')}?mes={mes}&anio={anio}")
 
     return redirect("gastos_mensuales:resumen")
