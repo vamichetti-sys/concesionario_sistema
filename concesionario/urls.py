@@ -103,6 +103,7 @@ urlpatterns = [
     path('cuentas-internas/', include('cuentas_internas.urls')),
     path('reventa/', include('reventa.urls')),
     path('crm/', include('crm.urls')),
+    path('gastos-mensuales/', include('gastos_mensuales.urls')),
 ]
 
 # ==========================================================

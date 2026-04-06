@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}{{ titulo }}{% endblock %}
+{% block content %}
+
+<div class="mb-4">
+    <a href="{% url 'gastos_mensuales:categorias' %}" class="text-muted text-decoration-none d-inline-flex align-items-center mb-2" style="font-size:14px;">
+        <i data-lucide="arrow-left" style="width:16px;height:16px;margin-right:6px;"></i>
+        Volver a categorias
+    </a>
+    <h3 class="fw-bold mb-1">{{ titulo }}</h3>
+</div>
+
+<div class="card p-4" style="max-width:500px;">
+    <form method="post">
+        {% csrf_token %}
+
+        <div class="mb-3">
+            <label class="form-label">Nombre *</label>
+            {{ form.nombre }}
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Descripcion</label>
+            {{ form.descripcion }}
+        </div>
+
+        <div class="mb-3">
+            <div class="form-check">
+                {{ form.es_fijo }}
+                <label class="form-check-label">Es gasto fijo (se repite cada mes)</label>
+            </div>
+        </div>
+
+        {% if form.errors %}
+        <div class="alert alert-danger mb-3" style="border-radius:10px;">
+            <ul class="mb-0">
+                {% for field, errors in form.errors.items %}
+                    {% for error in errors %}
+                    <li>{{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <hr class="my-4">
+        <div class="d-flex gap-3">
+            <button type="submit" class="btn btn-primary">
+                <i data-lucide="save" style="width:16px;height:16px;margin-right:6px;"></i>
+                Guardar
+            </button>
+            <a href="{% url 'gastos_mensuales:categorias' %}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
+
+<script>lucide.createIcons();</script>
+{% endblock %}
