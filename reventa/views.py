@@ -42,6 +42,8 @@ def lista_reventas(request):
 # ==========================================================
 @login_required
 def asignar_reventa(request, vehiculo_id):
+    from .models import CuentaRevendedor
+
     vehiculo = get_object_or_404(Vehiculo, id=vehiculo_id)
     reventa = get_object_or_404(Reventa, vehiculo=vehiculo)
 
@@ -49,21 +51,34 @@ def asignar_reventa(request, vehiculo_id):
         messages.info(request, "Esta reventa ya tiene agencia asignada y esta confirmada.")
         return redirect("reventa:lista")
 
+    cuentas = CuentaRevendedor.objects.filter(activa=True).order_by("nombre")
+
     if request.method == "POST":
-        agencia = request.POST.get("agencia", "").strip()
-        contacto = request.POST.get("contacto", "").strip()
-        telefono = request.POST.get("telefono", "").strip()
+        cuenta_id = request.POST.get("cuenta_id", "")
+        nueva_cuenta = request.POST.get("nueva_cuenta", "").strip()
         precio = request.POST.get("precio_reventa", "").replace(",", ".")
         comision = request.POST.get("comision", "0").replace(",", ".")
         observaciones = request.POST.get("observaciones", "").strip()
 
-        if not agencia:
-            messages.error(request, "La agencia/comprador es obligatoria.")
+        # Seleccionar o crear cuenta
+        cuenta = None
+        if cuenta_id:
+            cuenta = CuentaRevendedor.objects.filter(pk=cuenta_id).first()
+        elif nueva_cuenta:
+            cuenta = CuentaRevendedor.objects.create(
+                nombre=nueva_cuenta,
+                contacto=request.POST.get("contacto", "").strip(),
+                telefono=request.POST.get("telefono", "").strip(),
+            )
+
+        if not cuenta:
+            messages.error(request, "Selecciona un revendedor o crea uno nuevo.")
             return redirect("reventa:asignar", vehiculo_id=vehiculo.id)
 
-        reventa.agencia = agencia
-        reventa.contacto = contacto
-        reventa.telefono = telefono
+        reventa.cuenta = cuenta
+        reventa.agencia = cuenta.nombre
+        reventa.contacto = cuenta.contacto
+        reventa.telefono = cuenta.telefono
         reventa.observaciones = observaciones
 
         try:
@@ -79,13 +94,14 @@ def asignar_reventa(request, vehiculo_id):
 
         messages.success(
             request,
-            f"Reventa asignada a \"{agencia}\" y confirmada.",
+            f"Reventa asignada a \"{cuenta.nombre}\".",
         )
         return redirect("reventa:lista")
 
     return render(request, "reventa/asignar.html", {
         "vehiculo": vehiculo,
         "reventa": reventa,
+        "cuentas": cuentas,
     })
 
 

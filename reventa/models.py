@@ -79,19 +79,7 @@ class Reventa(models.Model):
         self.fecha_confirmacion = date.today()
         self.save()
 
-        # Auto-crear/vincular cuenta corriente del revendedor
-        if self.agencia and not self.cuenta:
-            cuenta, _ = CuentaRevendedor.objects.get_or_create(
-                nombre=self.agencia,
-                defaults={
-                    "contacto": self.contacto or "",
-                    "telefono": self.telefono or "",
-                },
-            )
-            self.cuenta = cuenta
-            self.save(update_fields=["cuenta"])
-
-        # Crear movimiento "debe" en la cuenta
+        # Crear movimiento "debe" en la cuenta del revendedor
         if self.cuenta and self.precio_reventa and self.precio_reventa > 0:
             vehiculo_str = f"{self.vehiculo}" if self.vehiculo else "Vehiculo"
             ya_existe = MovimientoRevendedor.objects.filter(

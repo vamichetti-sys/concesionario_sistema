@@ -15,29 +15,47 @@
     <form method="post">
         {% csrf_token %}
 
+        <!-- SELECCIONAR REVENDEDOR EXISTENTE -->
         <h6 class="fw-bold mb-3">
             <i data-lucide="building" style="width:16px;height:16px;margin-right:6px;"></i>
-            Agencia / Comprador
+            Revendedor
         </h6>
 
-        <div class="row g-3 mb-4">
-            <div class="col-md-6">
-                <label class="form-label">Agencia o comprador *</label>
-                <input type="text" name="agencia" class="form-control" placeholder="Nombre de la agencia" required
-                       value="{{ reventa.agencia|default:'' }}">
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">Contacto</label>
-                <input type="text" name="contacto" class="form-control" placeholder="Nombre"
-                       value="{{ reventa.contacto|default:'' }}">
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">Telefono</label>
-                <input type="text" name="telefono" class="form-control" placeholder="Telefono"
-                       value="{{ reventa.telefono|default:'' }}">
+        {% if cuentas %}
+        <div class="mb-3">
+            <label class="form-label">Seleccionar revendedor existente</label>
+            <select name="cuenta_id" class="form-select" id="select_cuenta">
+                <option value="">-- Seleccionar --</option>
+                {% for c in cuentas %}
+                <option value="{{ c.pk }}">{{ c.nombre }}{% if c.saldo > 0 %} (Saldo: ${{ c.saldo|floatformat:0 }}){% endif %}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="text-center text-muted mb-3">o crear uno nuevo</div>
+        {% endif %}
+
+        <div id="nueva_cuenta_fields">
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <label class="form-label">Nombre del nuevo revendedor</label>
+                    <input type="text" name="nueva_cuenta" class="form-control" id="input_nueva"
+                           placeholder="Nombre de la agencia o persona">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Contacto</label>
+                    <input type="text" name="contacto" class="form-control" placeholder="Persona">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Telefono</label>
+                    <input type="text" name="telefono" class="form-control" placeholder="Telefono">
+                </div>
             </div>
         </div>
 
+        <hr class="my-3">
+
+        <!-- OPERACION -->
         <h6 class="fw-bold mb-3">
             <i data-lucide="dollar-sign" style="width:16px;height:16px;margin-right:6px;"></i>
             Operacion
@@ -72,5 +90,24 @@
     </form>
 </div>
 
-<script>lucide.createIcons();</script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const select = document.getElementById('select_cuenta');
+    const inputNueva = document.getElementById('input_nueva');
+    const fieldsNueva = document.getElementById('nueva_cuenta_fields');
+
+    if (select) {
+        select.addEventListener('change', function() {
+            if (this.value) {
+                fieldsNueva.style.opacity = '0.4';
+                inputNueva.value = '';
+            } else {
+                fieldsNueva.style.opacity = '1';
+            }
+        });
+    }
+
+    lucide.createIcons();
+});
+</script>
 {% endblock %}
