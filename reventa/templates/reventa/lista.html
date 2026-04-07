@@ -87,7 +87,7 @@
                     <th>Vehiculo</th>
                     <th>Dominio</th>
                     <th>Agencia / Comprador</th>
-                    <th>Contacto</th>
+                    <th>Documentacion</th>
                     <th class="text-end">Precio</th>
                     <th class="text-end">Comision</th>
                     <th>Fecha</th>
@@ -107,7 +107,13 @@
                         </a>
                         {% endif %}
                     </td>
-                    <td><small class="text-muted">{{ r.telefono|default:"-" }}</small></td>
+                    <td>
+                        {% if r.documentacion_entregada %}
+                        <small style="white-space:pre-line;">{{ r.documentacion_entregada }}</small>
+                        {% else %}
+                        <small class="text-muted">Sin especificar</small>
+                        {% endif %}
+                    </td>
                     <td class="text-end fw-bold">${{ r.precio_reventa|floatformat:0|default:"-" }}</td>
                     <td class="text-end text-success">${{ r.comision|floatformat:0 }}</td>
                     <td class="text-muted">{{ r.fecha_confirmacion|date:"d/m/Y"|default:"-" }}</td>

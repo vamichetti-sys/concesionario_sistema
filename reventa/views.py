@@ -80,6 +80,7 @@ def asignar_reventa(request, vehiculo_id):
         reventa.contacto = cuenta.contacto
         reventa.telefono = cuenta.telefono
         reventa.observaciones = observaciones
+        reventa.documentacion_entregada = request.POST.get("documentacion_entregada", "").strip()
 
         try:
             from decimal import Decimal
@@ -120,6 +121,7 @@ def editar_reventa(request, reventa_id):
         reventa.contacto = request.POST.get("contacto", "").strip()
         reventa.telefono = request.POST.get("telefono", "").strip()
         reventa.observaciones = request.POST.get("observaciones", "").strip()
+        reventa.documentacion_entregada = request.POST.get("documentacion_entregada", "").strip()
 
         precio = request.POST.get("precio_reventa", "").replace(",", ".")
         comision = request.POST.get("comision", "0").replace(",", ".")

@@ -85,7 +85,12 @@
                 {% for m in movimientos %}
                 <tr>
                     <td class="text-muted">{{ m.fecha|date:"d/m/Y" }}</td>
-                    <td>{{ m.descripcion }}</td>
+                    <td>
+                        {{ m.descripcion }}
+                        {% if m.reventa and m.reventa.documentacion_entregada %}
+                        <br><small class="text-muted" style="white-space:pre-line;">Doc: {{ m.reventa.documentacion_entregada }}</small>
+                        {% endif %}
+                    </td>
                     <td class="text-end">
                         {% if m.tipo == "debe" %}
                         <span class="text-danger fw-semibold">${{ m.monto|floatformat:0 }}</span>

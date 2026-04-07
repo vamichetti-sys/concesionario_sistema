@@ -52,6 +52,13 @@ class Reventa(models.Model):
 
     observaciones = models.TextField(blank=True, null=True)
 
+    documentacion_entregada = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name="Documentacion entregada",
+        help_text="Detalle de documentacion entregada con el vehiculo",
+    )
+
     # Cuenta corriente del revendedor
     cuenta = models.ForeignKey(
         "CuentaRevendedor",

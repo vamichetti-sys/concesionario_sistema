@@ -79,6 +79,15 @@
             <textarea name="observaciones" class="form-control" rows="2" placeholder="Notas...">{{ reventa.observaciones|default:'' }}</textarea>
         </div>
 
+        <h6 class="fw-bold mb-3">
+            <i data-lucide="folder-open" style="width:16px;height:16px;margin-right:6px;"></i>
+            Documentacion entregada
+        </h6>
+        <div class="mb-3">
+            <textarea name="documentacion_entregada" class="form-control" rows="3"
+                      placeholder="Ej: Titulo, Cedula verde, F08, Verificacion policial, Informe de dominio...">{{ reventa.documentacion_entregada|default:'' }}</textarea>
+        </div>
+
         <hr class="my-4">
         <div class="d-flex gap-3">
             <button type="submit" class="btn btn-primary">
