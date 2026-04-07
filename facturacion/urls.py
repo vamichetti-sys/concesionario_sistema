@@ -16,6 +16,7 @@ urlpatterns = [
 
     # IVA
     path("iva/", views.posicion_iva, name="iva"),
+    path("iva/pdf/", views.iva_pdf, name="iva_pdf"),
 
     # Exportaciones
     path("exportar/excel/mensual/", views.exportar_excel_mensual, name="excel_mensual"),

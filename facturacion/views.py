@@ -541,6 +541,20 @@ def posicion_iva(request):
 
     saldo_iva = iva_debito - iva_credito
 
+    # IVA a favor acumulado de meses anteriores
+    iva_debito_anterior = FacturaRegistrada.objects.filter(
+        estado="valida", fecha__year=anio, fecha__month__lt=mes,
+    ).aggregate(t=Sum("monto_iva"))["t"] or Decimal("0")
+
+    iva_credito_anterior = CompraRegistrada.objects.filter(
+        fecha__year=anio, fecha__month__lt=mes,
+    ).aggregate(t=Sum("monto_iva"))["t"] or Decimal("0")
+
+    saldo_anterior = iva_debito_anterior - iva_credito_anterior
+    iva_a_favor_acumulado = min(saldo_anterior, Decimal("0"))  # negativo = a favor
+
+    saldo_final = saldo_iva + iva_a_favor_acumulado
+
     MESES = [
         "", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
         "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
@@ -554,10 +568,153 @@ def posicion_iva(request):
         "iva_debito": iva_debito,
         "neto_ventas": neto_ventas,
         "total_ventas": total_ventas,
+        "facturas": facturas,
         "facturas_count": facturas.count(),
         "iva_credito": iva_credito,
         "neto_compras": neto_compras,
         "total_compras": total_compras,
+        "compras": compras,
         "compras_count": compras.count(),
         "saldo_iva": saldo_iva,
+        "iva_a_favor_acumulado": iva_a_favor_acumulado,
+        "saldo_final": saldo_final,
     })
+
+
+# ==========================================================
+# IVA - EXPORTAR PDF POSICION MENSUAL
+# ==========================================================
+@login_required
+def iva_pdf(request):
+    hoy = date.today()
+    mes = int(request.GET.get("mes", hoy.month))
+    anio = int(request.GET.get("anio", hoy.year))
+
+    facturas = FacturaRegistrada.objects.filter(
+        estado="valida", fecha__year=anio, fecha__month=mes,
+    )
+    compras = CompraRegistrada.objects.filter(
+        fecha__year=anio, fecha__month=mes,
+    )
+
+    iva_debito = facturas.aggregate(t=Sum("monto_iva"))["t"] or Decimal("0")
+    neto_ventas = facturas.aggregate(t=Sum("monto_neto"))["t"] or Decimal("0")
+    total_ventas = facturas.aggregate(t=Sum("monto"))["t"] or Decimal("0")
+
+    iva_credito = compras.aggregate(t=Sum("monto_iva"))["t"] or Decimal("0")
+    neto_compras = compras.aggregate(t=Sum("monto_neto"))["t"] or Decimal("0")
+    total_compras = compras.aggregate(t=Sum("monto"))["t"] or Decimal("0")
+
+    saldo_iva = iva_debito - iva_credito
+
+    MESES = [
+        "", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+        "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
+    ]
+    mes_nombre = MESES[mes] if 1 <= mes <= 12 else ""
+
+    response = HttpResponse(content_type="application/pdf")
+    response["Content-Disposition"] = f'inline; filename="iva_{mes}_{anio}.pdf"'
+
+    doc = SimpleDocTemplate(response, pagesize=A4, rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=40)
+    elementos = []
+
+    # Header
+    header = Table(
+        [[
+            Paragraph(
+                f"<b>AMICHETTI AUTOMOTORES</b><br/>Posicion IVA - {mes_nombre} {anio}",
+                ParagraphStyle("h1", fontSize=14, textColor=colors.white)
+            ),
+            Paragraph(
+                f"Generado el {hoy.strftime('%d/%m/%Y')}",
+                ParagraphStyle("h2", fontSize=10, textColor=colors.white, alignment=2)
+            ),
+        ]],
+        colWidths=[340, 180]
+    )
+    header.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, -1), COLOR_AZUL),
+        ("PADDING", (0, 0), (-1, -1), 14),
+    ]))
+    elementos.append(header)
+    elementos.append(Spacer(1, 20))
+
+    # Ventas
+    elementos.append(Paragraph("<b>IVA DEBITO FISCAL (VENTAS)</b>", ParagraphStyle("s", fontSize=11, textColor=COLOR_AZUL)))
+    elementos.append(Spacer(1, 8))
+
+    data_v = [["N° Factura", "Fecha", "Neto", "IVA", "Total"]]
+    for f in facturas:
+        neto = f.monto_neto if f.monto_neto else f.monto
+        iva = f.monto_iva if f.monto_iva else Decimal("0")
+        data_v.append([f.numero, f.fecha.strftime("%d/%m/%Y"), f"$ {neto:,.2f}", f"$ {iva:,.2f}", f"$ {f.monto:,.2f}"])
+
+    if not facturas.exists():
+        data_v.append(["—", "—", "—", "—", "Sin facturas"])
+
+    tabla_v = Table(data_v, colWidths=[90, 80, 110, 110, 110])
+    tabla_v.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), COLOR_GRIS),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("ALIGN", (2, 1), (-1, -1), "RIGHT"),
+        ("GRID", (0, 0), (-1, -1), 0.5, colors.lightgrey),
+        ("PADDING", (0, 0), (-1, -1), 6),
+    ]))
+    elementos.append(tabla_v)
+    elementos.append(Spacer(1, 6))
+    elementos.append(Paragraph(f"<b>Total IVA Debito: $ {iva_debito:,.2f}</b>", ParagraphStyle("td", fontSize=10, alignment=2)))
+    elementos.append(Spacer(1, 16))
+
+    # Compras
+    elementos.append(Paragraph("<b>IVA CREDITO FISCAL (COMPRAS)</b>", ParagraphStyle("s2", fontSize=11, textColor=COLOR_AZUL)))
+    elementos.append(Spacer(1, 8))
+
+    data_c = [["N° Factura", "Proveedor", "Neto", "IVA", "Total"]]
+    for c in compras:
+        neto = c.monto_neto if c.monto_neto else c.monto
+        iva = c.monto_iva if c.monto_iva else Decimal("0")
+        data_c.append([c.numero, (c.proveedor or "-")[:20], f"$ {neto:,.2f}", f"$ {iva:,.2f}", f"$ {c.monto:,.2f}"])
+
+    if not compras.exists():
+        data_c.append(["—", "—", "—", "—", "Sin compras"])
+
+    tabla_c = Table(data_c, colWidths=[90, 100, 100, 100, 110])
+    tabla_c.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), COLOR_GRIS),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("ALIGN", (2, 1), (-1, -1), "RIGHT"),
+        ("GRID", (0, 0), (-1, -1), 0.5, colors.lightgrey),
+        ("PADDING", (0, 0), (-1, -1), 6),
+    ]))
+    elementos.append(tabla_c)
+    elementos.append(Spacer(1, 6))
+    elementos.append(Paragraph(f"<b>Total IVA Credito: $ {iva_credito:,.2f}</b>", ParagraphStyle("tc", fontSize=10, alignment=2)))
+    elementos.append(Spacer(1, 20))
+
+    # Resultado
+    resultado_texto = "A PAGAR" if saldo_iva > 0 else "A FAVOR" if saldo_iva < 0 else "NEUTRO"
+    resultado_color = COLOR_NARANJA if saldo_iva > 0 else colors.HexColor("#10b981")
+
+    total_box = Table(
+        [[f"SALDO IVA ({resultado_texto})", f"$ {saldo_iva:,.2f}"]],
+        colWidths=[390, 110]
+    )
+    total_box.setStyle(TableStyle([
+        ("FONTNAME", (0, 0), (-1, -1), "Helvetica-Bold"),
+        ("FONTSIZE", (0, 0), (-1, -1), 13),
+        ("TEXTCOLOR", (1, 0), (1, 0), resultado_color),
+        ("ALIGN", (1, 0), (1, 0), "RIGHT"),
+        ("LINEABOVE", (0, 0), (-1, 0), 1, colors.lightgrey),
+        ("TOPPADDING", (0, 0), (-1, -1), 10),
+    ]))
+    elementos.append(total_box)
+    elementos.append(Spacer(1, 30))
+
+    elementos.append(Paragraph(
+        "Amichetti Automotores - Rojas, Buenos Aires",
+        ParagraphStyle("footer", fontSize=8, textColor=colors.grey, alignment=1)
+    ))
+
+    doc.build(elementos)
+    return response

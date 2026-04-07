@@ -53,11 +53,15 @@
         </div>
 
         <div class="row g-3 mb-3">
-            <div class="col-md-6">
+            <div class="col-md-4">
                 <label class="form-label">IVA calculado</label>
                 {{ form.monto_iva }}
             </div>
-            <div class="col-md-6">
+            <div class="col-md-4">
+                <label class="form-label">Tasas + Impuestos</label>
+                {{ form.otros_impuestos }}
+            </div>
+            <div class="col-md-4">
                 <label class="form-label">Total</label>
                 {{ form.monto }}
             </div>
@@ -91,19 +95,22 @@ document.addEventListener('DOMContentLoaded', function() {
     const neto = document.getElementById('id_monto_neto');
     const iva_pct = document.getElementById('id_iva_porcentaje');
     const iva_calc = document.getElementById('id_monto_iva');
+    const otros = document.getElementById('id_otros_impuestos');
     const total = document.getElementById('id_monto');
 
     function calcular() {
         const n = parseFloat(neto.value) || 0;
         const p = parseFloat(iva_pct.value) || 0;
+        const o = parseFloat(otros.value) || 0;
         const i = (n * p) / 100;
         iva_calc.value = i.toFixed(2);
-        total.value = (n + i).toFixed(2);
+        total.value = (n + i + o).toFixed(2);
     }
 
     if (neto && iva_pct) {
         neto.addEventListener('input', calcular);
         iva_pct.addEventListener('input', calcular);
+        if (otros) otros.addEventListener('input', calcular);
     }
 
     lucide.createIcons();

@@ -8,6 +8,10 @@
         <h3 class="fw-bold mb-1">Facturacion</h3>
         <p class="text-muted mb-0">Posicion de IVA mensual</p>
     </div>
+    <a href="{% url 'facturacion:iva_pdf' %}?mes={{ mes }}&anio={{ anio }}" class="btn btn-danger" target="_blank">
+        <i data-lucide="file-text" style="width:16px;height:16px;margin-right:6px;"></i>
+        Imprimir PDF
+    </a>
 </div>
 
 <!-- TABS -->
@@ -51,9 +55,9 @@
     </form>
 </div>
 
-<!-- RESULTADO IVA -->
+<!-- INDICADORES -->
 <div class="row g-4 mb-4">
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="card p-4" style="position:relative;">
             <div class="d-flex justify-content-between align-items-start mb-2">
                 <span class="text-muted" style="font-size:13px;">IVA Debito Fiscal</span>
@@ -66,7 +70,7 @@
             <div style="position:absolute;top:0;left:0;width:4px;height:100%;background:#ef4444;border-radius:14px 0 0 14px;"></div>
         </div>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="card p-4" style="position:relative;">
             <div class="d-flex justify-content-between align-items-start mb-2">
                 <span class="text-muted" style="font-size:13px;">IVA Credito Fiscal</span>
@@ -79,10 +83,10 @@
             <div style="position:absolute;top:0;left:0;width:4px;height:100%;background:#10b981;border-radius:14px 0 0 14px;"></div>
         </div>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="card p-4" style="position:relative;">
             <div class="d-flex justify-content-between align-items-start mb-2">
-                <span class="text-muted" style="font-size:13px;">Saldo IVA</span>
+                <span class="text-muted" style="font-size:13px;">Saldo del mes</span>
                 <div style="width:36px;height:36px;background:rgba(59,130,246,0.1);border-radius:8px;display:flex;align-items:center;justify-content:center;">
                     <i data-lucide="scale" style="width:18px;height:18px;color:#3b82f6;"></i>
                 </div>
@@ -90,75 +94,136 @@
             <h4 class="fw-bold mb-0 {% if saldo_iva > 0 %}text-danger{% elif saldo_iva < 0 %}text-success{% endif %}">
                 ${{ saldo_iva|floatformat:2 }}
             </h4>
-            <small class="text-muted">
-                {% if saldo_iva > 0 %}A pagar{% elif saldo_iva < 0 %}A favor{% else %}Neutro{% endif %}
-            </small>
+            <small class="text-muted">{% if saldo_iva > 0 %}A pagar{% elif saldo_iva < 0 %}A favor{% else %}Neutro{% endif %}</small>
             <div style="position:absolute;top:0;left:0;width:4px;height:100%;background:#3b82f6;border-radius:14px 0 0 14px;"></div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card p-4" style="position:relative;">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <span class="text-muted" style="font-size:13px;">IVA a favor acumulado</span>
+                <div style="width:36px;height:36px;background:rgba(139,92,246,0.1);border-radius:8px;display:flex;align-items:center;justify-content:center;">
+                    <i data-lucide="piggy-bank" style="width:18px;height:18px;color:#8b5cf6;"></i>
+                </div>
+            </div>
+            <h4 class="fw-bold mb-0 {% if iva_a_favor_acumulado < 0 %}text-success{% endif %}">
+                ${{ iva_a_favor_acumulado|floatformat:2 }}
+            </h4>
+            <small class="text-muted">Meses anteriores {{ anio }}</small>
+            <div style="position:absolute;top:0;left:0;width:4px;height:100%;background:#8b5cf6;border-radius:14px 0 0 14px;"></div>
         </div>
     </div>
 </div>
 
-<!-- DETALLE -->
-<div class="row g-4">
+<!-- RESULTADO FINAL -->
+<div class="card p-4 mb-4" style="{% if saldo_final > 0 %}border-left:4px solid #ef4444;{% elif saldo_final < 0 %}border-left:4px solid #10b981;{% endif %}">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h6 class="fw-bold mb-1">Posicion IVA final {{ mes_nombre }} {{ anio }}</h6>
+            <p class="text-muted mb-0" style="font-size:13px;">
+                Saldo del mes ${{ saldo_iva|floatformat:2 }}
+                {% if iva_a_favor_acumulado < 0 %}
+                + IVA a favor acumulado ${{ iva_a_favor_acumulado|floatformat:2 }}
+                {% endif %}
+            </p>
+        </div>
+        <div class="text-end">
+            <div style="font-size:28px;" class="fw-bold {% if saldo_final > 0 %}text-danger{% elif saldo_final < 0 %}text-success{% endif %}">
+                ${{ saldo_final|floatformat:2 }}
+            </div>
+            <small class="{% if saldo_final > 0 %}text-danger{% elif saldo_final < 0 %}text-success{% else %}text-muted{% endif %}">
+                {% if saldo_final > 0 %}Saldo a pagar a AFIP{% elif saldo_final < 0 %}Saldo a favor{% else %}Sin saldo{% endif %}
+            </small>
+        </div>
+    </div>
+</div>
+
+<!-- DETALLE VENTAS -->
+<div class="row g-4 mb-4">
     <div class="col-md-6">
         <div class="card p-4">
             <h6 class="fw-bold mb-3">
                 <i data-lucide="receipt" style="width:16px;height:16px;margin-right:6px;color:#ef4444;"></i>
-                Ventas (Debito Fiscal)
+                Detalle Ventas (Debito Fiscal)
             </h6>
-            <table class="table table-borderless mb-0" style="font-size:14px;">
-                <tr>
-                    <td class="text-muted">Neto</td>
-                    <td class="text-end fw-semibold">${{ neto_ventas|floatformat:2 }}</td>
-                </tr>
-                <tr>
-                    <td class="text-muted">IVA</td>
-                    <td class="text-end fw-semibold">${{ iva_debito|floatformat:2 }}</td>
-                </tr>
-                <tr class="border-top">
-                    <td class="fw-bold">Total facturado</td>
-                    <td class="text-end fw-bold">${{ total_ventas|floatformat:2 }}</td>
-                </tr>
-            </table>
+
+            {% if facturas %}
+            <div class="table-responsive">
+                <table class="table align-middle mb-0" style="font-size:13px;">
+                    <thead>
+                        <tr>
+                            <th>Factura</th>
+                            <th>Fecha</th>
+                            <th class="text-end">Neto</th>
+                            <th class="text-end">IVA</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for f in facturas %}
+                        <tr>
+                            <td class="fw-semibold">{{ f.numero }}</td>
+                            <td class="text-muted">{{ f.fecha|date:"d/m/Y" }}</td>
+                            <td class="text-end">${{ f.monto_neto|floatformat:2|default:"-" }}</td>
+                            <td class="text-end fw-semibold">${{ f.monto_iva|floatformat:2|default:"-" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr class="border-top">
+                            <td colspan="2" class="fw-bold">Total</td>
+                            <td class="text-end fw-bold">${{ neto_ventas|floatformat:2 }}</td>
+                            <td class="text-end fw-bold">${{ iva_debito|floatformat:2 }}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted text-center mb-0">Sin facturas en este mes</p>
+            {% endif %}
         </div>
     </div>
+
+    <!-- DETALLE COMPRAS -->
     <div class="col-md-6">
         <div class="card p-4">
             <h6 class="fw-bold mb-3">
                 <i data-lucide="shopping-bag" style="width:16px;height:16px;margin-right:6px;color:#10b981;"></i>
-                Compras (Credito Fiscal)
+                Detalle Compras (Credito Fiscal)
             </h6>
-            <table class="table table-borderless mb-0" style="font-size:14px;">
-                <tr>
-                    <td class="text-muted">Neto</td>
-                    <td class="text-end fw-semibold">${{ neto_compras|floatformat:2 }}</td>
-                </tr>
-                <tr>
-                    <td class="text-muted">IVA</td>
-                    <td class="text-end fw-semibold">${{ iva_credito|floatformat:2 }}</td>
-                </tr>
-                <tr class="border-top">
-                    <td class="fw-bold">Total compras</td>
-                    <td class="text-end fw-bold">${{ total_compras|floatformat:2 }}</td>
-                </tr>
-            </table>
-        </div>
-    </div>
-</div>
 
-<div class="card p-4 mt-4">
-    <div class="d-flex justify-content-between align-items-center">
-        <div>
-            <h6 class="fw-bold mb-1">Posicion IVA {{ mes_nombre }} {{ anio }}</h6>
-            <p class="text-muted mb-0">Debito Fiscal ${{ iva_debito|floatformat:2 }} &minus; Credito Fiscal ${{ iva_credito|floatformat:2 }}</p>
-        </div>
-        <div class="text-end">
-            <div style="font-size:28px;" class="fw-bold {% if saldo_iva > 0 %}text-danger{% elif saldo_iva < 0 %}text-success{% endif %}">
-                ${{ saldo_iva|floatformat:2 }}
+            {% if compras %}
+            <div class="table-responsive">
+                <table class="table align-middle mb-0" style="font-size:13px;">
+                    <thead>
+                        <tr>
+                            <th>Factura</th>
+                            <th>Proveedor</th>
+                            <th class="text-end">Neto</th>
+                            <th class="text-end">IVA</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for c in compras %}
+                        <tr>
+                            <td class="fw-semibold">{{ c.numero }}</td>
+                            <td class="text-muted">{{ c.proveedor|default:"-" }}</td>
+                            <td class="text-end">${{ c.monto_neto|floatformat:2|default:"-" }}</td>
+                            <td class="text-end fw-semibold">${{ c.monto_iva|floatformat:2|default:"-" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr class="border-top">
+                            <td colspan="2" class="fw-bold">Total</td>
+                            <td class="text-end fw-bold">${{ neto_compras|floatformat:2 }}</td>
+                            <td class="text-end fw-bold">${{ iva_credito|floatformat:2 }}</td>
+                        </tr>
+                    </tfoot>
+                </table>
             </div>
-            <small class="{% if saldo_iva > 0 %}text-danger{% elif saldo_iva < 0 %}text-success{% else %}text-muted{% endif %}">
-                {% if saldo_iva > 0 %}Saldo a pagar a AFIP{% elif saldo_iva < 0 %}Saldo a favor{% else %}Sin saldo{% endif %}
-            </small>
+            {% else %}
+            <p class="text-muted text-center mb-0">Sin compras en este mes</p>
+            {% endif %}
         </div>
     </div>
 </div>

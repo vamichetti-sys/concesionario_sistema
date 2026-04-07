@@ -153,7 +153,13 @@ class CompraRegistrada(models.Model):
     )
     monto = models.DecimalField(
         max_digits=14, decimal_places=2,
-        help_text="Monto total (neto + IVA)",
+        help_text="Monto total (neto + IVA + otros impuestos)",
+    )
+
+    otros_impuestos = models.DecimalField(
+        max_digits=14, decimal_places=2,
+        default=0,
+        help_text="Tasas, percepciones, imp. internos, etc.",
     )
 
     descripcion = models.CharField(max_length=200, blank=True, null=True)
@@ -171,4 +177,5 @@ class CompraRegistrada(models.Model):
         if self.monto_neto is not None:
             iva = (self.monto_neto * self.iva_porcentaje) / Decimal("100")
             self.monto_iva = iva.quantize(Decimal("0.01"))
-            self.monto = (self.monto_neto + self.monto_iva).quantize(Decimal("0.01"))
+            otros = self.otros_impuestos or Decimal("0")
+            self.monto = (self.monto_neto + self.monto_iva + otros).quantize(Decimal("0.01"))
