@@ -1,18 +1,34 @@
 from django.db import models
+from django.contrib.auth.models import User
 
-class Vehiculo(models.Model):
-    ESTADOS = [
-        ('stock', 'En stock'),
-        ('vendido', 'Vendido'),
+
+class RecordatorioDashboard(models.Model):
+    PRIORIDAD_CHOICES = [
+        ("alta", "Alta"),
+        ("normal", "Normal"),
+        ("baja", "Baja"),
     ]
 
-    marca = models.CharField(max_length=100)
-    modelo = models.CharField(max_length=100)
-    dominio = models.CharField(max_length=10, unique=True)
-    anio = models.PositiveIntegerField()
-    kilometros = models.PositiveIntegerField(null=True, blank=True)
-    precio = models.DecimalField(max_digits=12, decimal_places=2)
-    estado = models.CharField(max_length=10, choices=ESTADOS, default='stock')
+    texto = models.CharField(max_length=300)
+    prioridad = models.CharField(
+        max_length=10,
+        choices=PRIORIDAD_CHOICES,
+        default="normal",
+    )
+    completado = models.BooleanField(default=False)
+    creado_por = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="recordatorios",
+    )
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["completado", "-prioridad", "-fecha_creacion"]
+        verbose_name = "Recordatorio"
+        verbose_name_plural = "Recordatorios"
 
     def __str__(self):
-        return f"{self.marca} {self.modelo} ({self.dominio})"
+        return self.texto[:50]

@@ -28,6 +28,13 @@ urlpatterns = [
     path('logout/', inicio_views.cerrar_sesion, name='logout'),
 
     # ===============================
+    # RECORDATORIOS
+    # ===============================
+    path('recordatorio/agregar/', inicio_views.agregar_recordatorio, name='agregar_recordatorio'),
+    path('recordatorio/<int:pk>/completar/', inicio_views.completar_recordatorio, name='completar_recordatorio'),
+    path('recordatorio/<int:pk>/eliminar/', inicio_views.eliminar_recordatorio, name='eliminar_recordatorio'),
+
+    # ===============================
     # 🔁 RECUPERAR CONTRASEÑA
     # ===============================
     path(

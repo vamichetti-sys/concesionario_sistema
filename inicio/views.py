@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -11,6 +11,7 @@ from gestoria.models import Gestoria
 from ventas.models import Venta
 from vehiculos.models import Vehiculo, FichaVehicular
 from crm.models import Prospecto, NotificacionCRM
+from inicio.models import RecordatorioDashboard
 
 
 # ==========================================================
@@ -205,6 +206,9 @@ def inicio(request):
         "crm_total_activos": crm_total_activos,
         "crm_notificaciones": crm_notificaciones,
 
+        # Recordatorios
+        "recordatorios": RecordatorioDashboard.objects.all()[:20],
+
         # Fecha
         "hoy": hoy,
     }
@@ -213,7 +217,41 @@ def inicio(request):
 
 
 # ==========================================================
-# 🚪 CERRAR SESIÓN
+# RECORDATORIOS
+# ==========================================================
+@login_required
+def agregar_recordatorio(request):
+    if request.method == "POST":
+        texto = request.POST.get("texto", "").strip()
+        prioridad = request.POST.get("prioridad", "normal")
+        if texto:
+            RecordatorioDashboard.objects.create(
+                texto=texto,
+                prioridad=prioridad,
+                creado_por=request.user,
+            )
+    return redirect("inicio")
+
+
+@login_required
+def completar_recordatorio(request, pk):
+    rec = get_object_or_404(RecordatorioDashboard, pk=pk)
+    if request.method == "POST":
+        rec.completado = not rec.completado
+        rec.save(update_fields=["completado"])
+    return redirect("inicio")
+
+
+@login_required
+def eliminar_recordatorio(request, pk):
+    rec = get_object_or_404(RecordatorioDashboard, pk=pk)
+    if request.method == "POST":
+        rec.delete()
+    return redirect("inicio")
+
+
+# ==========================================================
+# CERRAR SESION
 # ==========================================================
 def cerrar_sesion(request):
     logout(request)
