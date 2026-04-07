@@ -198,6 +198,29 @@ def cambiar_estado_vehiculo(request, vehiculo_id):
             return redirect("ventas:lista_unidades_vendidas")
 
         # ===============================
+        # MARCAR COMO REVENTA
+        # ===============================
+        if nuevo_estado == "reventa":
+            from reventa.models import Reventa
+
+            reventa, creada = Reventa.objects.get_or_create(
+                vehiculo=vehiculo,
+                defaults={
+                    "estado": "pendiente",
+                    "precio_reventa": vehiculo.precio,
+                }
+            )
+
+            vehiculo.estado = "reventa"
+            vehiculo.save(update_fields=["estado"])
+
+            messages.warning(
+                request,
+                "Unidad enviada a reventa. Asigna la agencia/comprador para completar."
+            )
+            return redirect("reventa:lista")
+
+        # ===============================
         # REVERTIR VENTA / VOLVER A STOCK
         # ===============================
         vehiculo.estado = nuevo_estado

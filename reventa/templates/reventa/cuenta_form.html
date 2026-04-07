@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}{{ titulo }}{% endblock %}
+{% block content %}
+
+<div class="mb-4">
+    <a href="{% url 'reventa:cuentas' %}" class="text-muted text-decoration-none d-inline-flex align-items-center mb-2" style="font-size:14px;">
+        <i data-lucide="arrow-left" style="width:16px;height:16px;margin-right:6px;"></i>
+        Volver a cuentas
+    </a>
+    <h3 class="fw-bold mb-1">{{ titulo }}</h3>
+</div>
+
+<div class="card p-4" style="max-width:600px;">
+    <form method="post">
+        {% csrf_token %}
+        <div class="row g-3 mb-3">
+            <div class="col-md-6">
+                <label class="form-label">Agencia / Revendedor *</label>
+                <input type="text" name="nombre" class="form-control" placeholder="Nombre" required>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Contacto</label>
+                <input type="text" name="contacto" class="form-control" placeholder="Persona de contacto">
+            </div>
+        </div>
+        <div class="row g-3 mb-3">
+            <div class="col-md-6">
+                <label class="form-label">Telefono</label>
+                <input type="text" name="telefono" class="form-control" placeholder="Telefono">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Direccion</label>
+                <input type="text" name="direccion" class="form-control" placeholder="Direccion">
+            </div>
+        </div>
+
+        <hr class="my-4">
+        <div class="d-flex gap-3">
+            <button type="submit" class="btn btn-primary">
+                <i data-lucide="save" style="width:16px;height:16px;margin-right:6px;"></i>
+                Guardar
+            </button>
+            <a href="{% url 'reventa:cuentas' %}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
+
+<script>lucide.createIcons();</script>
+{% endblock %}

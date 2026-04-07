@@ -11,6 +11,7 @@ class Vehiculo(models.Model):
         ('stock', 'En stock'),
         ('temporal', 'Temporalmente no disponible'),
         ('vendido', 'Vendido'),
+        ('reventa', 'En reventa'),
     ]
 
     UNIDAD_CHOICES = [

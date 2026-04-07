@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}{{ cuenta.nombre }}{% endblock %}
+{% block content %}
+
+<div class="mb-4">
+    <a href="{% url 'reventa:cuentas' %}" class="text-muted text-decoration-none d-inline-flex align-items-center mb-2" style="font-size:14px;">
+        <i data-lucide="arrow-left" style="width:16px;height:16px;margin-right:6px;"></i>
+        Volver a cuentas
+    </a>
+    <h3 class="fw-bold mb-1">{{ cuenta.nombre }}</h3>
+    <p class="text-muted mb-0">
+        {{ cuenta.contacto|default:"" }}
+        {% if cuenta.telefono %} &middot; {{ cuenta.telefono }}{% endif %}
+    </p>
+</div>
+
+<!-- SALDO -->
+<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <div class="card p-4" style="position:relative;">
+            <span class="text-muted" style="font-size:13px;">Saldo</span>
+            <h3 class="fw-bold mb-0 {% if cuenta.saldo > 0 %}text-danger{% elif cuenta.saldo < 0 %}text-success{% endif %}">
+                ${{ cuenta.saldo|floatformat:0 }}
+            </h3>
+            <small class="text-muted">
+                {% if cuenta.saldo > 0 %}Nos deben{% elif cuenta.saldo < 0 %}A favor{% else %}Sin saldo{% endif %}
+            </small>
+            <div style="position:absolute;top:0;left:0;width:4px;height:100%;background:{% if cuenta.saldo > 0 %}#ef4444{% elif cuenta.saldo < 0 %}#10b981{% else %}#3b82f6{% endif %};border-radius:14px 0 0 14px;"></div>
+        </div>
+    </div>
+</div>
+
+<!-- AGREGAR MOVIMIENTO -->
+<div class="card p-4 mb-4">
+    <h6 class="fw-bold mb-3">
+        <i data-lucide="plus-circle" style="width:16px;height:16px;margin-right:6px;"></i>
+        Registrar movimiento
+    </h6>
+    <form method="post" action="{% url 'reventa:agregar_movimiento' pk=cuenta.pk %}" class="row g-2 align-items-end">
+        {% csrf_token %}
+        <div class="col-md-2">
+            <label class="form-label" style="font-size:12px;">Tipo</label>
+            <select name="tipo" class="form-select">
+                <option value="debe">Debe (cargo)</option>
+                <option value="haber">Haber (pago)</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label" style="font-size:12px;">Monto</label>
+            <input type="number" name="monto" class="form-control" step="0.01" required placeholder="0.00">
+        </div>
+        <div class="col-md-5">
+            <label class="form-label" style="font-size:12px;">Descripcion *</label>
+            <input type="text" name="descripcion" class="form-control" required placeholder="Ej: Reventa Gol Trend, Pago transferencia...">
+        </div>
+        <div class="col-md-3">
+            <button type="submit" class="btn btn-primary w-100">
+                <i data-lucide="plus" style="width:14px;height:14px;margin-right:4px;"></i>
+                Registrar
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- MOVIMIENTOS -->
+<div class="card p-4">
+    <h6 class="fw-bold mb-3">
+        <i data-lucide="list" style="width:16px;height:16px;margin-right:6px;"></i>
+        Movimientos
+    </h6>
+
+    {% if movimientos %}
+    <div class="table-responsive">
+        <table class="table align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Descripcion</th>
+                    <th class="text-end">Debe</th>
+                    <th class="text-end">Haber</th>
+                    <th class="text-end"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in movimientos %}
+                <tr>
+                    <td class="text-muted">{{ m.fecha|date:"d/m/Y" }}</td>
+                    <td>{{ m.descripcion }}</td>
+                    <td class="text-end">
+                        {% if m.tipo == "debe" %}
+                        <span class="text-danger fw-semibold">${{ m.monto|floatformat:0 }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end">
+                        {% if m.tipo == "haber" %}
+                        <span class="text-success fw-semibold">${{ m.monto|floatformat:0 }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end">
+                        <form method="post" action="{% url 'reventa:eliminar_movimiento' pk=m.pk %}" style="display:inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline-danger btn-sm">
+                                <i data-lucide="trash-2" style="width:14px;height:14px;"></i>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="text-muted text-center mb-0">Sin movimientos registrados</p>
+    {% endif %}
+</div>
+
+<script>lucide.createIcons();</script>
+{% endblock %}
