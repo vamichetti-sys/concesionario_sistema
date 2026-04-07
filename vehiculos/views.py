@@ -78,6 +78,7 @@ def lista_vehiculos(request):
     total_stock = Vehiculo.objects.filter(estado='stock').count()
     total_temporal = Vehiculo.objects.filter(estado='temporal').count()
     total_vendido = Vehiculo.objects.filter(estado='vendido').count()
+    total_reventa = Vehiculo.objects.filter(estado='reventa').count()
 
     return render(
         request,
@@ -89,6 +90,7 @@ def lista_vehiculos(request):
             "total_stock": total_stock,
             "total_temporal": total_temporal,
             "total_vendido": total_vendido,
+            "total_reventa": total_reventa,
         },
     )
 

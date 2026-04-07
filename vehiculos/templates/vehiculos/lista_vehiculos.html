@@ -47,11 +47,17 @@
             Temporal
             <span class="badge bg-white text-warning ms-2">{{ total_temporal }}</span>
         </a>
-        <a href="{% url 'vehiculos:lista_vehiculos' %}?estado=vendido{% if query %}&q={{ query }}{% endif %}" 
+        <a href="{% url 'vehiculos:lista_vehiculos' %}?estado=vendido{% if query %}&q={{ query }}{% endif %}"
            class="btn {% if estado_filtro == 'vendido' %}btn-success{% else %}btn-secondary{% endif %}">
             <i data-lucide="check-circle" style="width:16px;height:16px;margin-right:6px;"></i>
             Vendidos
             <span class="badge bg-white text-success ms-2">{{ total_vendido }}</span>
+        </a>
+        <a href="{% url 'vehiculos:lista_vehiculos' %}?estado=reventa{% if query %}&q={{ query }}{% endif %}"
+           class="btn {% if estado_filtro == 'reventa' %}btn-info{% else %}btn-secondary{% endif %}">
+            <i data-lucide="repeat" style="width:16px;height:16px;margin-right:6px;"></i>
+            Reventa
+            <span class="badge bg-white text-info ms-2">{{ total_reventa }}</span>
         </a>
     </div>
 </div>
@@ -153,6 +159,7 @@
                                 <option value="stock" {% if v.estado == 'stock' %}selected{% endif %}>En stock</option>
                                 <option value="temporal" {% if v.estado == 'temporal' %}selected{% endif %}>Temporal</option>
                                 <option value="vendido" {% if v.estado == 'vendido' %}selected{% endif %}>Vendido</option>
+                                <option value="reventa" {% if v.estado == 'reventa' %}selected{% endif %}>Reventa</option>
                             </select>
                             <button type="submit" class="btn btn-secondary btn-sm">
                                 <i data-lucide="check" style="width:14px;height:14px;"></i>
