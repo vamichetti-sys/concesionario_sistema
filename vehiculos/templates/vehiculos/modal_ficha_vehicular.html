@@ -82,6 +82,12 @@
             </li>
             <li class="nav-item">
               <button class="nav-link" data-bs-toggle="tab"
+                      data-bs-target="#tab-gastos-conc" type="button">
+                Gastos concesionario
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link" data-bs-toggle="tab"
                       data-bs-target="#tab-observaciones" type="button">
                 Observaciones
               </button>
@@ -480,6 +486,81 @@
 </div>
 
 <!-- ================= TAB 7: OBSERVACIONES ================= -->
+<!-- ================= TAB: GASTOS CONCESIONARIO ================= -->
+<div class="tab-pane fade" id="tab-gastos-conc">
+  <h4 class="fw-bold mb-3" style="color:#002855;">Gastos de Concesionario</h4>
+
+  <!-- RESUMEN -->
+  <div class="p-3 mb-4" style="background:rgba(245,158,11,0.08);border-radius:12px;">
+    <div class="d-flex justify-content-between align-items-center">
+      <span class="fw-semibold">Total gastos concesionario</span>
+      <span class="fw-bold" style="font-size:20px;color:#d97706;">
+        ${{ total_gastos_conc|floatformat:0 }}
+      </span>
+    </div>
+  </div>
+
+  <!-- ITEMS FIJOS EDITABLES -->
+  <div class="row g-3 mb-4">
+    {% for item in gastos_conc_items %}
+    <div class="col-md-3">
+      <label class="fw-bold" style="font-size:12px;">{{ item.label }}</label>
+      <input type="number" name="{{ item.campo }}" value="{{ item.monto }}"
+             class="form-control" step="0.01" min="0" placeholder="0">
+    </div>
+    {% endfor %}
+  </div>
+
+  <hr class="my-3">
+
+  <!-- GASTOS EXTRAS -->
+  <h5 class="fw-bold mb-3">Gastos adicionales</h5>
+
+  {% if gastos_extras %}
+  <div class="table-responsive mb-3">
+    <table class="table align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Concepto</th>
+          <th class="text-end">Monto</th>
+          <th>Obs.</th>
+          <th>Fecha</th>
+          <th class="text-end"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for g in gastos_extras %}
+        <tr>
+          <td class="fw-semibold">{{ g.concepto }}</td>
+          <td class="text-end">${{ g.monto|floatformat:2 }}</td>
+          <td><small class="text-muted">{{ g.observaciones|default:"-" }}</small></td>
+          <td><small class="text-muted">{{ g.fecha|date:"d/m/Y" }}</small></td>
+          <td class="text-end">
+            <form method="post" action="{% url 'vehiculos:eliminar_gasto_extra' pk=g.pk %}" style="display:inline;">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-outline-danger btn-sm">
+                <i data-lucide="trash-2" style="width:14px;height:14px;"></i>
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="text-muted mb-3">No hay gastos adicionales registrados.</p>
+  {% endif %}
+
+  <!-- NOTA: Los gastos extras se agregan desde la ficha completa -->
+  <div class="d-flex gap-2">
+    <a href="{% url 'vehiculos:ficha_completa' vehiculo.id %}" class="btn btn-secondary btn-sm">
+      <i data-lucide="external-link" style="width:14px;height:14px;margin-right:4px;"></i>
+      Abrir ficha completa para agregar gastos extras
+    </a>
+  </div>
+</div>
+
 <div class="tab-pane fade" id="tab-observaciones">
   <div class="row g-3">
 

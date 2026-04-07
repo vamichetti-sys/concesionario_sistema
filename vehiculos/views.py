@@ -289,6 +289,33 @@ def ficha_vehicular_ajax(request, vehiculo_id):
         Decimal("0")
     )
 
+    # Gastos concesionario
+    GASTOS_CONC_CAMPOS = [
+        ("gc_service", "Service"),
+        ("gc_mecanica", "Mecanica"),
+        ("gc_chapa_pintura", "Chapa y pintura"),
+        ("gc_tapizado", "Tapizado"),
+        ("gc_neumaticos", "Neumaticos"),
+        ("gc_vidrios", "Vidrios"),
+        ("gc_cerrajeria", "Cerrajeria"),
+        ("gc_lavado", "Lavado / Pulido"),
+        ("gc_gnc", "GNC"),
+        ("gc_grabado_autopartes", "Grabado autopartes"),
+        ("gc_vtv", "VTV"),
+        ("gc_verificacion", "Verificacion policial"),
+        ("gc_otros", "Otros"),
+    ]
+    gastos_conc_items = []
+    total_gastos_conc = Decimal("0")
+    for campo, label in GASTOS_CONC_CAMPOS:
+        monto = getattr(ficha, campo, None) or Decimal("0")
+        gastos_conc_items.append({"campo": campo, "label": label, "monto": monto})
+        total_gastos_conc += Decimal(monto)
+
+    gastos_extras = GastoConcesionario.objects.filter(vehiculo=vehiculo)
+    total_extras = gastos_extras.aggregate(t=Sum("monto"))["t"] or Decimal("0")
+    total_gastos_conc += total_extras
+
     html = render_to_string(
         "vehiculos/modal_ficha_vehicular.html",
         {
@@ -298,6 +325,9 @@ def ficha_vehicular_ajax(request, vehiculo_id):
             "ficha_form": ficha_form,
             "gastos_ingreso": gastos_ingreso,
             "total_pendiente": total_pendiente,
+            "gastos_conc_items": gastos_conc_items,
+            "gastos_extras": gastos_extras,
+            "total_gastos_conc": total_gastos_conc,
         },
         request=request,
     )
@@ -344,6 +374,20 @@ def guardar_ficha_vehicular(request, vehiculo_id):
             ficha.cedula_check_obs = request.POST.get("cedula_check_obs") or ficha.cedula_check_obs
             ficha.prenda_estado = request.POST.get("prenda_estado") or ficha.prenda_estado
             ficha.prenda_obs = request.POST.get("prenda_obs") or ficha.prenda_obs
+
+            # Gastos concesionario
+            campos_gc = [
+                "gc_service", "gc_mecanica", "gc_chapa_pintura", "gc_tapizado",
+                "gc_neumaticos", "gc_vidrios", "gc_cerrajeria", "gc_lavado",
+                "gc_gnc", "gc_grabado_autopartes", "gc_vtv", "gc_verificacion", "gc_otros",
+            ]
+            for campo in campos_gc:
+                valor = request.POST.get(campo, "").replace(",", ".")
+                if valor:
+                    try:
+                        setattr(ficha, campo, Decimal(valor))
+                    except Exception:
+                        pass
 
             ficha.save()
 
