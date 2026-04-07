@@ -192,7 +192,24 @@ class FichaVehicular(models.Model):
 
     total_gastos = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
 
-    observaciones = models.TextField(blank=True, null=True)    
+    # ======================================================
+    # GASTOS DE CONCESIONARIO (POST-INGRESO)
+    # ======================================================
+    gc_service = models.DecimalField("Service", max_digits=12, decimal_places=2, default=0)
+    gc_mecanica = models.DecimalField("Mecanica", max_digits=12, decimal_places=2, default=0)
+    gc_chapa_pintura = models.DecimalField("Chapa y pintura", max_digits=12, decimal_places=2, default=0)
+    gc_tapizado = models.DecimalField("Tapizado", max_digits=12, decimal_places=2, default=0)
+    gc_neumaticos = models.DecimalField("Neumaticos", max_digits=12, decimal_places=2, default=0)
+    gc_vidrios = models.DecimalField("Vidrios", max_digits=12, decimal_places=2, default=0)
+    gc_cerrajeria = models.DecimalField("Cerrajeria", max_digits=12, decimal_places=2, default=0)
+    gc_lavado = models.DecimalField("Lavado / Pulido", max_digits=12, decimal_places=2, default=0)
+    gc_gnc = models.DecimalField("GNC", max_digits=12, decimal_places=2, default=0)
+    gc_grabado_autopartes = models.DecimalField("Grabado autopartes", max_digits=12, decimal_places=2, default=0)
+    gc_vtv = models.DecimalField("VTV", max_digits=12, decimal_places=2, default=0)
+    gc_verificacion = models.DecimalField("Verificacion policial", max_digits=12, decimal_places=2, default=0)
+    gc_otros = models.DecimalField("Otros", max_digits=12, decimal_places=2, default=0)
+
+    observaciones = models.TextField(blank=True, null=True)
     # ======================================================
     # ACCESORIOS / CHECKLIST
     # ======================================================
@@ -418,3 +435,26 @@ class ConfiguracionGastosIngreso(models.Model):
 
     def __str__(self):
         return "Configuración global de gastos de ingreso"
+
+
+# ============================================================
+# GASTO CONCESIONARIO (GASTOS POST-INGRESO POR VEHICULO)
+# ============================================================
+class GastoConcesionario(models.Model):
+    vehiculo = models.ForeignKey(
+        Vehiculo,
+        on_delete=models.CASCADE,
+        related_name="gastos_concesionario",
+    )
+    concepto = models.CharField(max_length=150)
+    monto = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    fecha = models.DateField(auto_now_add=True)
+    observaciones = models.CharField(max_length=200, blank=True, null=True)
+
+    class Meta:
+        ordering = ["fecha"]
+        verbose_name = "Gasto de concesionario"
+        verbose_name_plural = "Gastos de concesionario"
+
+    def __str__(self):
+        return f"{self.concepto} – ${self.monto} – {self.vehiculo}"

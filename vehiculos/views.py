@@ -14,7 +14,8 @@ from .models import (
     Vehiculo,
     FichaVehicular,
     PagoGastoIngreso,
-    ConfiguracionGastosIngreso
+    ConfiguracionGastosIngreso,
+    GastoConcesionario,
 )
 
 from .forms import VehiculoBasicoForm, VehiculoForm, FichaVehicularForm
@@ -448,6 +449,37 @@ def ficha_completa(request, vehiculo_id):
         Decimal("0")
     )
 
+    # =============================
+    # GASTOS DE CONCESIONARIO
+    # =============================
+    GASTOS_CONC_CAMPOS = [
+        ("gc_service", "Service"),
+        ("gc_mecanica", "Mecanica"),
+        ("gc_chapa_pintura", "Chapa y pintura"),
+        ("gc_tapizado", "Tapizado"),
+        ("gc_neumaticos", "Neumaticos"),
+        ("gc_vidrios", "Vidrios"),
+        ("gc_cerrajeria", "Cerrajeria"),
+        ("gc_lavado", "Lavado / Pulido"),
+        ("gc_gnc", "GNC"),
+        ("gc_grabado_autopartes", "Grabado autopartes"),
+        ("gc_vtv", "VTV"),
+        ("gc_verificacion", "Verificacion policial"),
+        ("gc_otros", "Otros"),
+    ]
+
+    gastos_conc_items = []
+    total_gastos_conc = Decimal("0")
+    for campo, label in GASTOS_CONC_CAMPOS:
+        monto = getattr(ficha, campo, None) or Decimal("0")
+        gastos_conc_items.append({"campo": campo, "label": label, "monto": monto})
+        total_gastos_conc += Decimal(monto)
+
+    # Gastos extras (modelo GastoConcesionario)
+    gastos_extras = GastoConcesionario.objects.filter(vehiculo=vehiculo)
+    total_extras = gastos_extras.aggregate(t=Sum("monto"))["t"] or Decimal("0")
+    total_gastos_conc += total_extras
+
     return render(
         request,
         "vehiculos/ficha_completa.html",
@@ -458,8 +490,87 @@ def ficha_completa(request, vehiculo_id):
             "ficha_form": ficha_form,
             "gastos_ingreso": gastos_ingreso,
             "total_pendiente": total_pendiente,
+            "gastos_conc_items": gastos_conc_items,
+            "gastos_extras": gastos_extras,
+            "total_gastos_conc": total_gastos_conc,
+            "total_extras": total_extras,
         },
     )
+
+
+# ==========================================================
+# GUARDAR GASTOS DE CONCESIONARIO (CAMPOS FIJOS)
+# ==========================================================
+@login_required
+def guardar_gastos_concesionario(request, vehiculo_id):
+    vehiculo = get_object_or_404(Vehiculo, id=vehiculo_id)
+    ficha, _ = FichaVehicular.objects.get_or_create(vehiculo=vehiculo)
+
+    if request.method == "POST":
+        campos_gc = [
+            "gc_service", "gc_mecanica", "gc_chapa_pintura", "gc_tapizado",
+            "gc_neumaticos", "gc_vidrios", "gc_cerrajeria", "gc_lavado",
+            "gc_gnc", "gc_grabado_autopartes", "gc_vtv", "gc_verificacion", "gc_otros",
+        ]
+        for campo in campos_gc:
+            valor = request.POST.get(campo, "0").replace(",", ".")
+            try:
+                setattr(ficha, campo, Decimal(valor) if valor else Decimal("0"))
+            except Exception:
+                setattr(ficha, campo, Decimal("0"))
+
+        ficha.save(update_fields=campos_gc)
+        messages.success(request, "Gastos de concesionario actualizados.")
+
+    return redirect("vehiculos:ficha_completa", vehiculo_id=vehiculo.id)
+
+
+# ==========================================================
+# AGREGAR GASTO EXTRA DE CONCESIONARIO
+# ==========================================================
+@login_required
+def agregar_gasto_extra(request, vehiculo_id):
+    vehiculo = get_object_or_404(Vehiculo, id=vehiculo_id)
+
+    if request.method == "POST":
+        concepto = request.POST.get("concepto", "").strip()
+        monto_raw = request.POST.get("monto", "0").replace(",", ".")
+        observaciones = request.POST.get("observaciones", "").strip()
+
+        if not concepto:
+            messages.error(request, "El concepto es obligatorio.")
+            return redirect("vehiculos:ficha_completa", vehiculo_id=vehiculo.id)
+
+        try:
+            monto = Decimal(monto_raw)
+        except Exception:
+            messages.error(request, "Monto invalido.")
+            return redirect("vehiculos:ficha_completa", vehiculo_id=vehiculo.id)
+
+        GastoConcesionario.objects.create(
+            vehiculo=vehiculo,
+            concepto=concepto,
+            monto=monto,
+            observaciones=observaciones,
+        )
+        messages.success(request, f"Gasto \"{concepto}\" agregado.")
+
+    return redirect("vehiculos:ficha_completa", vehiculo_id=vehiculo.id)
+
+
+# ==========================================================
+# ELIMINAR GASTO EXTRA DE CONCESIONARIO
+# ==========================================================
+@login_required
+def eliminar_gasto_extra(request, pk):
+    gasto = get_object_or_404(GastoConcesionario, pk=pk)
+    vehiculo_id = gasto.vehiculo_id
+
+    if request.method == "POST":
+        gasto.delete()
+        messages.success(request, "Gasto eliminado.")
+
+    return redirect("vehiculos:ficha_completa", vehiculo_id=vehiculo_id)
 
 
 # ==========================================================

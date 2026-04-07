@@ -119,6 +119,24 @@ urlpatterns = [
         name="registrar_pago_gasto"
     ),
     # ==================================================
+    # GASTOS CONCESIONARIO
+    # ==================================================
+    path(
+        "gastos-concesionario/<int:vehiculo_id>/",
+        views.guardar_gastos_concesionario,
+        name="guardar_gastos_concesionario"
+    ),
+    path(
+        "gasto-extra/<int:vehiculo_id>/",
+        views.agregar_gasto_extra,
+        name="agregar_gasto_extra"
+    ),
+    path(
+        "gasto-extra/eliminar/<int:pk>/",
+        views.eliminar_gasto_extra,
+        name="eliminar_gasto_extra"
+    ),
+    # ==================================================
     # GASTOS – CONFIGURACIÓN GLOBAL
     # ==================================================
     path(
