@@ -566,205 +566,600 @@
 
 <!-- ================= TAB: FICHA TÉCNICA ================= -->
 <div class="tab-pane fade" id="tab-ficha-tecnica">
-  <h4 class="fw-bold mb-3" style="color:#002855;">Ficha Técnica</h4>
 
-  <!-- ESPECIFICACIONES -->
-  <h6 class="fw-bold mb-3">
-    <i data-lucide="gauge" style="width:16px;height:16px;margin-right:6px;"></i>
-    Especificaciones
-  </h6>
-  <div class="row g-3 mb-4">
-    <div class="col-md-3">
-      <label class="fw-bold" style="font-size:12px;">Tipo de vehículo</label>
-      {{ ficha_tecnica_form.tipo_vehiculo }}
+  <style>
+    /* ── Spec Ring Badges ─────────────────────── */
+    .ft-spec-ring {
+      width: 110px; height: 110px;
+      border-radius: 50%;
+      border: 4px solid #00c9a7;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      margin: 0 auto 6px;
+      background: #fff;
+      transition: border-color .2s;
+    }
+    .ft-spec-ring:hover { border-color: #002855; }
+    .ft-spec-ring .ft-val {
+      font-size: 22px; font-weight: 800; color: #002855; line-height: 1;
+    }
+    .ft-spec-ring .ft-unit {
+      font-size: 10px; font-weight: 700; color: #6c757d; text-transform: uppercase; letter-spacing: .5px;
+    }
+    .ft-spec-ring input {
+      position: absolute; width: 70px; height: 26px;
+      opacity: 0; text-align: center; z-index: 2; cursor: pointer;
+    }
+    .ft-spec-ring input:focus { opacity: 1; border-radius: 6px; border: 2px solid #00c9a7; background: #fff; font-weight: 700; font-size: 16px; color: #002855; }
+    .ft-spec-ring:has(input:focus) .ft-val { display: none; }
+    .ft-spec-label {
+      font-size: 11px; font-weight: 700; text-transform: uppercase; color: #6c757d;
+      text-align: center; letter-spacing: .3px;
+    }
+
+    /* ── Vehicle Silhouette + Dimensions ──────── */
+    .ft-medidas-box {
+      background: #f8f9fa; border-radius: 16px; padding: 20px; position: relative;
+      display: flex; align-items: center; justify-content: center; min-height: 200px;
+    }
+    .ft-dim-label {
+      font-size: 12px; font-weight: 700; color: #002855; white-space: nowrap;
+    }
+    .ft-dim-label span { font-weight: 400; color: #6c757d; }
+    .ft-dim-input {
+      width: 60px; border: none; border-bottom: 2px solid #00c9a7;
+      background: transparent; font-weight: 700; font-size: 13px;
+      color: #002855; text-align: center; padding: 2px 0;
+    }
+    .ft-dim-input:focus { outline: none; border-bottom-color: #002855; }
+
+    /* ── Toggle Pills (SI / NO) ──────────────── */
+    .ft-toggle-wrap {
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 0; border-bottom: 1px solid #f0f0f0;
+    }
+    .ft-toggle-wrap:last-child { border-bottom: none; }
+    .ft-toggle-label {
+      flex: 1; font-size: 13px; font-weight: 600; color: #333;
+    }
+    .ft-toggle-pill {
+      display: inline-flex; border-radius: 20px; overflow: hidden;
+      border: 2px solid #dee2e6; background: #fff;
+    }
+    .ft-toggle-pill .ft-pill-opt {
+      padding: 3px 12px; font-size: 11px; font-weight: 700;
+      cursor: pointer; transition: all .15s; user-select: none;
+      color: #999; background: #fff;
+    }
+    .ft-toggle-pill .ft-pill-opt.active-no {
+      background: #dc3545; color: #fff; border-color: #dc3545;
+    }
+    .ft-toggle-pill .ft-pill-opt.active-si {
+      background: #00c9a7; color: #fff; border-color: #00c9a7;
+    }
+    .ft-toggle-pill select { display: none; }
+
+    /* ── Status Badges ────────────────────────── */
+    .ft-status-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 0; border-bottom: 1px solid #f0f0f0;
+    }
+    .ft-status-row:last-child { border-bottom: none; }
+    .ft-status-label { flex: 1; font-size: 13px; font-weight: 600; color: #333; }
+    .ft-status-pills { display: flex; gap: 4px; }
+    .ft-status-pills .ft-st-opt {
+      padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 700;
+      cursor: pointer; transition: all .15s; border: 2px solid #dee2e6; color: #999; background: #fff;
+    }
+    .ft-status-pills .ft-st-opt.active-ok { background: #00c9a7; color: #fff; border-color: #00c9a7; }
+    .ft-status-pills .ft-st-opt.active-regular { background: #ffc107; color: #333; border-color: #ffc107; }
+    .ft-status-pills .ft-st-opt.active-malo { background: #dc3545; color: #fff; border-color: #dc3545; }
+    .ft-status-pills .ft-st-opt.active-na { background: #6c757d; color: #fff; border-color: #6c757d; }
+    .ft-status-pills select { display: none; }
+
+    /* ── Specs detail row ─────────────────────── */
+    .ft-detail-row {
+      display: flex; align-items: center; padding: 8px 0;
+      border-bottom: 1px solid #f0f0f0; gap: 10px;
+    }
+    .ft-detail-row:last-child { border-bottom: none; }
+    .ft-detail-icon { color: #00c9a7; flex-shrink: 0; }
+    .ft-detail-name { font-size: 13px; font-weight: 600; color: #333; flex: 1; }
+    .ft-detail-val { font-size: 13px; font-weight: 700; color: #002855; text-align: right; }
+    .ft-detail-val input {
+      border: none; border-bottom: 2px solid transparent; background: transparent;
+      font-weight: 700; font-size: 13px; color: #002855; text-align: right; width: 120px; padding: 2px 4px;
+    }
+    .ft-detail-val input:focus { outline: none; border-bottom-color: #00c9a7; }
+  </style>
+
+  <!-- ═══════════ ESPECIFICACIONES PRINCIPALES (Anillos) ═══════════ -->
+  <div class="row mb-4">
+    <div class="col-md-7">
+      <div class="d-flex flex-wrap justify-content-center gap-4 py-3">
+        <!-- Potencia -->
+        <div class="text-center" style="position:relative;">
+          <div class="ft-spec-ring">
+            {{ ficha_tecnica_form.potencia }}
+            <span class="ft-val" data-mirror="id_potencia">{{ ficha_tecnica_form.potencia.value|default:"—" }}</span>
+            <span class="ft-unit">HP</span>
+          </div>
+          <div class="ft-spec-label">Potencia</div>
+        </div>
+        <!-- Cilindrada -->
+        <div class="text-center" style="position:relative;">
+          <div class="ft-spec-ring">
+            {{ ficha_tecnica_form.cilindrada }}
+            <span class="ft-val" data-mirror="id_cilindrada">{{ ficha_tecnica_form.cilindrada.value|default:"—" }}</span>
+            <span class="ft-unit">CC</span>
+          </div>
+          <div class="ft-spec-label">Cilindrada</div>
+        </div>
+        <!-- Tanque -->
+        <div class="text-center" style="position:relative;">
+          <div class="ft-spec-ring">
+            {{ ficha_tecnica_form.capacidad_tanque }}
+            <span class="ft-val" data-mirror="id_capacidad_tanque">{{ ficha_tecnica_form.capacidad_tanque.value|default:"—" }}</span>
+            <span class="ft-unit">Litros</span>
+          </div>
+          <div class="ft-spec-label">Tanque</div>
+        </div>
+        <!-- Baúl -->
+        <div class="text-center" style="position:relative;">
+          <div class="ft-spec-ring">
+            {{ ficha_tecnica_form.capacidad_baul }}
+            <span class="ft-val" data-mirror="id_capacidad_baul">{{ ficha_tecnica_form.capacidad_baul.value|default:"—" }}</span>
+            <span class="ft-unit">Litros</span>
+          </div>
+          <div class="ft-spec-label">Baúl</div>
+        </div>
+      </div>
     </div>
-    <div class="col-md-3">
-      <label class="fw-bold" style="font-size:12px;">Potencia</label>
-      {{ ficha_tecnica_form.potencia }}
-    </div>
-    <div class="col-md-3">
-      <label class="fw-bold" style="font-size:12px;">Cilindrada</label>
-      {{ ficha_tecnica_form.cilindrada }}
-    </div>
-    <div class="col-md-3">
-      <label class="fw-bold" style="font-size:12px;">Dirección</label>
-      {{ ficha_tecnica_form.direccion }}
-    </div>
-    <div class="col-md-3">
-      <label class="fw-bold" style="font-size:12px;">Tanque combustible (L)</label>
-      {{ ficha_tecnica_form.capacidad_tanque }}
-    </div>
-    <div class="col-md-3">
-      <label class="fw-bold" style="font-size:12px;">Capacidad baúl (L)</label>
-      {{ ficha_tecnica_form.capacidad_baul }}
-    </div>
-    <div class="col-md-3">
-      <label class="fw-bold" style="font-size:12px;">Puertas</label>
-      {{ ficha_tecnica_form.puertas }}
+
+    <!-- Especificaciones detalle -->
+    <div class="col-md-5">
+      <div class="bg-light rounded-4 p-3 h-100">
+        <h6 class="fw-bold mb-2" style="color:#002855; font-size:14px;">
+          <i data-lucide="gauge" style="width:15px;height:15px;margin-right:4px;"></i> Especificaciones
+        </h6>
+        <div class="ft-detail-row">
+          <span class="ft-detail-icon"><i data-lucide="car" style="width:16px;height:16px;"></i></span>
+          <span class="ft-detail-name">Tipo de vehículo</span>
+          <span class="ft-detail-val">{{ ficha_tecnica_form.tipo_vehiculo }}</span>
+        </div>
+        <div class="ft-detail-row">
+          <span class="ft-detail-icon"><i data-lucide="navigation" style="width:16px;height:16px;"></i></span>
+          <span class="ft-detail-name">Dirección</span>
+          <span class="ft-detail-val">{{ ficha_tecnica_form.direccion }}</span>
+        </div>
+        <div class="ft-detail-row">
+          <span class="ft-detail-icon"><i data-lucide="door-open" style="width:16px;height:16px;"></i></span>
+          <span class="ft-detail-name">Puertas</span>
+          <span class="ft-detail-val">{{ ficha_tecnica_form.puertas }}</span>
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- MEDIDAS -->
-  <h6 class="fw-bold mb-3">
-    <i data-lucide="ruler" style="width:16px;height:16px;margin-right:6px;"></i>
-    Medidas
-  </h6>
-  <div class="row g-3 mb-4">
-    <div class="col-md-3">
-      <label class="fw-bold" style="font-size:12px;">Largo (m)</label>
-      {{ ficha_tecnica_form.largo }}
+  <!-- ═══════════ MEDIDAS (Silueta del vehículo) ═══════════ -->
+  <div class="ft-medidas-box mb-4">
+    <div class="row w-100 align-items-center">
+      <div class="col-md-7 text-center position-relative" style="min-height:160px;">
+        <!-- Silueta SVG -->
+        <svg viewBox="0 0 500 180" style="width:100%;max-width:440px;opacity:.15;" fill="#002855">
+          <path d="M60,130 Q30,130 25,110 L20,100 Q15,85 30,80 L100,65 Q130,45 180,35 L280,30 Q340,30 380,45 L430,65 Q470,75 475,90 L478,100 Q480,115 465,130 L440,130 Q435,105 410,105 Q385,105 380,130 L150,130 Q145,105 120,105 Q95,105 90,130 Z"/>
+          <circle cx="120" cy="130" r="22"/>
+          <circle cx="410" cy="130" r="22"/>
+        </svg>
+
+        <!-- Largo (arriba) -->
+        <div style="position:absolute; top:0; left:50%; transform:translateX(-50%); display:flex; align-items:center; gap:6px;">
+          <span class="ft-dim-label">LARGO</span>
+          {{ ficha_tecnica_form.largo }}
+          <span class="ft-dim-label"><span>M</span></span>
+        </div>
+
+        <!-- Alto (derecha) -->
+        <div style="position:absolute; right:10px; top:50%; transform:translateY(-50%) rotate(90deg); display:flex; align-items:center; gap:6px;">
+          <span class="ft-dim-label">ALTO</span>
+          {{ ficha_tecnica_form.alto }}
+          <span class="ft-dim-label"><span>M</span></span>
+        </div>
+
+        <!-- Ancho (abajo) -->
+        <div style="position:absolute; bottom:0; left:50%; transform:translateX(-50%); display:flex; align-items:center; gap:6px;">
+          <span class="ft-dim-label">ANCHO</span>
+          {{ ficha_tecnica_form.ancho }}
+          <span class="ft-dim-label"><span>M</span></span>
+        </div>
+      </div>
+
+      <!-- Peso -->
+      <div class="col-md-5">
+        <div class="d-flex align-items-center gap-3 justify-content-center">
+          <div class="text-center">
+            <div style="font-size:11px; font-weight:700; color:#6c757d; text-transform:uppercase; letter-spacing:.5px;">PESO</div>
+            <div class="d-flex align-items-baseline gap-1 justify-content-center">
+              {{ ficha_tecnica_form.peso }}
+              <span style="font-size:14px; font-weight:700; color:#6c757d;">KG</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="col-md-3">
-      <label class="fw-bold" style="font-size:12px;">Ancho (m)</label>
-      {{ ficha_tecnica_form.ancho }}
+  </div>
+
+  <!-- ═══════════ EQUIPAMIENTO (Toggles SI/NO) ═══════════ -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <h6 class="fw-bold mb-3" style="color:#002855; font-size:14px;">
+        <i data-lucide="check-square" style="width:15px;height:15px;margin-right:4px;"></i> Equipamiento
+      </h6>
     </div>
-    <div class="col-md-3">
-      <label class="fw-bold" style="font-size:12px;">Alto (m)</label>
-      {{ ficha_tecnica_form.alto }}
+    <div class="col-md-6">
+      {% with items="abs_frenos:ABS,airbag:Airbag,airbags_laterales:Airbags Laterales,aire_acondicionado:Aire Acondicionado,cierre_centralizado:Cierre Centralizado,alzacristales:Alzacristales Eléctricos,alarma:Alarma,sensor_estacionamiento:Sensor Estacionamiento,camara_retroceso:Cámara Retroceso" %}
+      {% for item in items|cut:" " %}
+      {% endfor %}
+      {% endwith %}
+
+      <div class="ft-toggle-wrap" data-field="id_abs_frenos">
+        <span class="ft-toggle-label">ABS</span>
+        <div class="ft-toggle-pill">
+          <span class="ft-pill-opt" data-val="no">NO</span>
+          <span class="ft-pill-opt" data-val="si">SI</span>
+          <div style="display:none">{{ ficha_tecnica_form.abs_frenos }}</div>
+        </div>
+      </div>
+      <div class="ft-toggle-wrap" data-field="id_airbag">
+        <span class="ft-toggle-label">Airbag</span>
+        <div class="ft-toggle-pill">
+          <span class="ft-pill-opt" data-val="no">NO</span>
+          <span class="ft-pill-opt" data-val="si">SI</span>
+          <div style="display:none">{{ ficha_tecnica_form.airbag }}</div>
+        </div>
+      </div>
+      <div class="ft-toggle-wrap" data-field="id_airbags_laterales">
+        <span class="ft-toggle-label">Airbags Laterales</span>
+        <div class="ft-toggle-pill">
+          <span class="ft-pill-opt" data-val="no">NO</span>
+          <span class="ft-pill-opt" data-val="si">SI</span>
+          <div style="display:none">{{ ficha_tecnica_form.airbags_laterales }}</div>
+        </div>
+      </div>
+      <div class="ft-toggle-wrap" data-field="id_aire_acondicionado">
+        <span class="ft-toggle-label">Aire Acondicionado</span>
+        <div class="ft-toggle-pill">
+          <span class="ft-pill-opt" data-val="no">NO</span>
+          <span class="ft-pill-opt" data-val="si">SI</span>
+          <div style="display:none">{{ ficha_tecnica_form.aire_acondicionado }}</div>
+        </div>
+      </div>
+      <div class="ft-toggle-wrap" data-field="id_cierre_centralizado">
+        <span class="ft-toggle-label">Cierre Centralizado</span>
+        <div class="ft-toggle-pill">
+          <span class="ft-pill-opt" data-val="no">NO</span>
+          <span class="ft-pill-opt" data-val="si">SI</span>
+          <div style="display:none">{{ ficha_tecnica_form.cierre_centralizado }}</div>
+        </div>
+      </div>
+      <div class="ft-toggle-wrap" data-field="id_alzacristales">
+        <span class="ft-toggle-label">Alzacristales Eléctricos</span>
+        <div class="ft-toggle-pill">
+          <span class="ft-pill-opt" data-val="no">NO</span>
+          <span class="ft-pill-opt" data-val="si">SI</span>
+          <div style="display:none">{{ ficha_tecnica_form.alzacristales }}</div>
+        </div>
+      </div>
+      <div class="ft-toggle-wrap" data-field="id_alarma">
+        <span class="ft-toggle-label">Alarma</span>
+        <div class="ft-toggle-pill">
+          <span class="ft-pill-opt" data-val="no">NO</span>
+          <span class="ft-pill-opt" data-val="si">SI</span>
+          <div style="display:none">{{ ficha_tecnica_form.alarma }}</div>
+        </div>
+      </div>
+      <div class="ft-toggle-wrap" data-field="id_sensor_estacionamiento">
+        <span class="ft-toggle-label">Sensor Estacionamiento</span>
+        <div class="ft-toggle-pill">
+          <span class="ft-pill-opt" data-val="no">NO</span>
+          <span class="ft-pill-opt" data-val="si">SI</span>
+          <div style="display:none">{{ ficha_tecnica_form.sensor_estacionamiento }}</div>
+        </div>
+      </div>
+      <div class="ft-toggle-wrap" data-field="id_camara_retroceso">
+        <span class="ft-toggle-label">Cámara Retroceso</span>
+        <div class="ft-toggle-pill">
+          <span class="ft-pill-opt" data-val="no">NO</span>
+          <span class="ft-pill-opt" data-val="si">SI</span>
+          <div style="display:none">{{ ficha_tecnica_form.camara_retroceso }}</div>
+        </div>
+      </div>
     </div>
-    <div class="col-md-3">
-      <label class="fw-bold" style="font-size:12px;">Peso (kg)</label>
-      {{ ficha_tecnica_form.peso }}
+    <div class="col-md-6">
+      <div class="ft-toggle-wrap" data-field="id_pantalla">
+        <span class="ft-toggle-label">Pantalla / Multimedia</span>
+        <div class="ft-toggle-pill">
+          <span class="ft-pill-opt" data-val="no">NO</span>
+          <span class="ft-pill-opt" data-val="si">SI</span>
+          <div style="display:none">{{ ficha_tecnica_form.pantalla }}</div>
+        </div>
+      </div>
+      <div class="ft-toggle-wrap" data-field="id_gps">
+        <span class="ft-toggle-label">GPS</span>
+        <div class="ft-toggle-pill">
+          <span class="ft-pill-opt" data-val="no">NO</span>
+          <span class="ft-pill-opt" data-val="si">SI</span>
+          <div style="display:none">{{ ficha_tecnica_form.gps }}</div>
+        </div>
+      </div>
+      <div class="ft-toggle-wrap" data-field="id_isofix">
+        <span class="ft-toggle-label">ISOFIX</span>
+        <div class="ft-toggle-pill">
+          <span class="ft-pill-opt" data-val="no">NO</span>
+          <span class="ft-pill-opt" data-val="si">SI</span>
+          <div style="display:none">{{ ficha_tecnica_form.isofix }}</div>
+        </div>
+      </div>
+      <div class="ft-toggle-wrap" data-field="id_techo_solar">
+        <span class="ft-toggle-label">Techo Solar / Panorámico</span>
+        <div class="ft-toggle-pill">
+          <span class="ft-pill-opt" data-val="no">NO</span>
+          <span class="ft-pill-opt" data-val="si">SI</span>
+          <div style="display:none">{{ ficha_tecnica_form.techo_solar }}</div>
+        </div>
+      </div>
+      <div class="ft-toggle-wrap" data-field="id_llantas_aleacion">
+        <span class="ft-toggle-label">Llantas de Aleación</span>
+        <div class="ft-toggle-pill">
+          <span class="ft-pill-opt" data-val="no">NO</span>
+          <span class="ft-pill-opt" data-val="si">SI</span>
+          <div style="display:none">{{ ficha_tecnica_form.llantas_aleacion }}</div>
+        </div>
+      </div>
+      <div class="ft-toggle-wrap" data-field="id_control_crucero">
+        <span class="ft-toggle-label">Control Crucero</span>
+        <div class="ft-toggle-pill">
+          <span class="ft-pill-opt" data-val="no">NO</span>
+          <span class="ft-pill-opt" data-val="si">SI</span>
+          <div style="display:none">{{ ficha_tecnica_form.control_crucero }}</div>
+        </div>
+      </div>
+      <div class="ft-toggle-wrap" data-field="id_control_traccion">
+        <span class="ft-toggle-label">Control de Tracción</span>
+        <div class="ft-toggle-pill">
+          <span class="ft-pill-opt" data-val="no">NO</span>
+          <span class="ft-pill-opt" data-val="si">SI</span>
+          <div style="display:none">{{ ficha_tecnica_form.control_traccion }}</div>
+        </div>
+      </div>
+      <div class="ft-toggle-wrap" data-field="id_asientos_cuero">
+        <span class="ft-toggle-label">Asientos de Cuero</span>
+        <div class="ft-toggle-pill">
+          <span class="ft-pill-opt" data-val="no">NO</span>
+          <span class="ft-pill-opt" data-val="si">SI</span>
+          <div style="display:none">{{ ficha_tecnica_form.asientos_cuero }}</div>
+        </div>
+      </div>
+      <div class="ft-toggle-wrap" data-field="id_bluetooth">
+        <span class="ft-toggle-label">Bluetooth</span>
+        <div class="ft-toggle-pill">
+          <span class="ft-pill-opt" data-val="no">NO</span>
+          <span class="ft-pill-opt" data-val="si">SI</span>
+          <div style="display:none">{{ ficha_tecnica_form.bluetooth }}</div>
+        </div>
+      </div>
     </div>
   </div>
 
   <hr class="my-3">
 
-  <!-- EQUIPAMIENTO -->
-  <h6 class="fw-bold mb-3">
-    <i data-lucide="check-square" style="width:16px;height:16px;margin-right:6px;"></i>
-    Equipamiento
+  <!-- ═══════════ ESTADO DE COMPONENTES ═══════════ -->
+  <h6 class="fw-bold mb-3" style="color:#002855; font-size:14px;">
+    <i data-lucide="clipboard-check" style="width:15px;height:15px;margin-right:4px;"></i> Estado de Componentes
   </h6>
-  <div class="row g-3 mb-4">
-    <div class="col-md-3">
-      <label class="fw-bold" style="font-size:12px;">ABS</label>
-      {{ ficha_tecnica_form.abs_frenos }}
+  <div class="row mb-4">
+    <div class="col-md-6">
+      <div class="ft-status-row" data-field="id_est_neumaticos">
+        <span class="ft-status-label">Neumáticos</span>
+        <div class="ft-status-pills">
+          <span class="ft-st-opt" data-val="ok">OK</span>
+          <span class="ft-st-opt" data-val="regular">Regular</span>
+          <span class="ft-st-opt" data-val="malo">Malo</span>
+          <span class="ft-st-opt" data-val="na">N/A</span>
+          <div style="display:none">{{ ficha_tecnica_form.est_neumaticos }}</div>
+        </div>
+      </div>
+      <div class="ft-status-row" data-field="id_est_frenos">
+        <span class="ft-status-label">Frenos</span>
+        <div class="ft-status-pills">
+          <span class="ft-st-opt" data-val="ok">OK</span>
+          <span class="ft-st-opt" data-val="regular">Regular</span>
+          <span class="ft-st-opt" data-val="malo">Malo</span>
+          <span class="ft-st-opt" data-val="na">N/A</span>
+          <div style="display:none">{{ ficha_tecnica_form.est_frenos }}</div>
+        </div>
+      </div>
+      <div class="ft-status-row" data-field="id_est_amortiguadores">
+        <span class="ft-status-label">Amortiguadores</span>
+        <div class="ft-status-pills">
+          <span class="ft-st-opt" data-val="ok">OK</span>
+          <span class="ft-st-opt" data-val="regular">Regular</span>
+          <span class="ft-st-opt" data-val="malo">Malo</span>
+          <span class="ft-st-opt" data-val="na">N/A</span>
+          <div style="display:none">{{ ficha_tecnica_form.est_amortiguadores }}</div>
+        </div>
+      </div>
+      <div class="ft-status-row" data-field="id_est_bateria">
+        <span class="ft-status-label">Batería</span>
+        <div class="ft-status-pills">
+          <span class="ft-st-opt" data-val="ok">OK</span>
+          <span class="ft-st-opt" data-val="regular">Regular</span>
+          <span class="ft-st-opt" data-val="malo">Malo</span>
+          <span class="ft-st-opt" data-val="na">N/A</span>
+          <div style="display:none">{{ ficha_tecnica_form.est_bateria }}</div>
+        </div>
+      </div>
+      <div class="ft-status-row" data-field="id_est_escape">
+        <span class="ft-status-label">Escape / Silenciador</span>
+        <div class="ft-status-pills">
+          <span class="ft-st-opt" data-val="ok">OK</span>
+          <span class="ft-st-opt" data-val="regular">Regular</span>
+          <span class="ft-st-opt" data-val="malo">Malo</span>
+          <span class="ft-st-opt" data-val="na">N/A</span>
+          <div style="display:none">{{ ficha_tecnica_form.est_escape }}</div>
+        </div>
+      </div>
     </div>
-    <div class="col-md-3">
-      <label class="fw-bold" style="font-size:12px;">Airbag</label>
-      {{ ficha_tecnica_form.airbag }}
-    </div>
-    <div class="col-md-3">
-      <label class="fw-bold" style="font-size:12px;">Airbags laterales</label>
-      {{ ficha_tecnica_form.airbags_laterales }}
-    </div>
-    <div class="col-md-3">
-      <label class="fw-bold" style="font-size:12px;">Aire acondicionado</label>
-      {{ ficha_tecnica_form.aire_acondicionado }}
-    </div>
-    <div class="col-md-3">
-      <label class="fw-bold" style="font-size:12px;">Cierre centralizado</label>
-      {{ ficha_tecnica_form.cierre_centralizado }}
-    </div>
-    <div class="col-md-3">
-      <label class="fw-bold" style="font-size:12px;">Alzacristales eléctricos</label>
-      {{ ficha_tecnica_form.alzacristales }}
-    </div>
-    <div class="col-md-3">
-      <label class="fw-bold" style="font-size:12px;">Alarma</label>
-      {{ ficha_tecnica_form.alarma }}
-    </div>
-    <div class="col-md-3">
-      <label class="fw-bold" style="font-size:12px;">Sensor estacionamiento</label>
-      {{ ficha_tecnica_form.sensor_estacionamiento }}
-    </div>
-    <div class="col-md-3">
-      <label class="fw-bold" style="font-size:12px;">Cámara retroceso</label>
-      {{ ficha_tecnica_form.camara_retroceso }}
-    </div>
-    <div class="col-md-3">
-      <label class="fw-bold" style="font-size:12px;">Pantalla / Multimedia</label>
-      {{ ficha_tecnica_form.pantalla }}
-    </div>
-    <div class="col-md-3">
-      <label class="fw-bold" style="font-size:12px;">GPS</label>
-      {{ ficha_tecnica_form.gps }}
-    </div>
-    <div class="col-md-3">
-      <label class="fw-bold" style="font-size:12px;">ISOFIX</label>
-      {{ ficha_tecnica_form.isofix }}
-    </div>
-    <div class="col-md-3">
-      <label class="fw-bold" style="font-size:12px;">Techo solar / panorámico</label>
-      {{ ficha_tecnica_form.techo_solar }}
-    </div>
-    <div class="col-md-3">
-      <label class="fw-bold" style="font-size:12px;">Llantas de aleación</label>
-      {{ ficha_tecnica_form.llantas_aleacion }}
-    </div>
-    <div class="col-md-3">
-      <label class="fw-bold" style="font-size:12px;">Control crucero</label>
-      {{ ficha_tecnica_form.control_crucero }}
-    </div>
-    <div class="col-md-3">
-      <label class="fw-bold" style="font-size:12px;">Control de tracción</label>
-      {{ ficha_tecnica_form.control_traccion }}
-    </div>
-    <div class="col-md-3">
-      <label class="fw-bold" style="font-size:12px;">Asientos de cuero</label>
-      {{ ficha_tecnica_form.asientos_cuero }}
-    </div>
-    <div class="col-md-3">
-      <label class="fw-bold" style="font-size:12px;">Bluetooth</label>
-      {{ ficha_tecnica_form.bluetooth }}
-    </div>
-  </div>
-
-  <hr class="my-3">
-
-  <!-- ESTADO DE COMPONENTES -->
-  <h6 class="fw-bold mb-3">
-    <i data-lucide="clipboard-check" style="width:16px;height:16px;margin-right:6px;"></i>
-    Estado de componentes
-  </h6>
-  <div class="row g-3 mb-4">
-    <div class="col-md-3">
-      <label class="fw-bold" style="font-size:12px;">Neumáticos</label>
-      {{ ficha_tecnica_form.est_neumaticos }}
-    </div>
-    <div class="col-md-3">
-      <label class="fw-bold" style="font-size:12px;">Frenos</label>
-      {{ ficha_tecnica_form.est_frenos }}
-    </div>
-    <div class="col-md-3">
-      <label class="fw-bold" style="font-size:12px;">Amortiguadores</label>
-      {{ ficha_tecnica_form.est_amortiguadores }}
-    </div>
-    <div class="col-md-3">
-      <label class="fw-bold" style="font-size:12px;">Batería</label>
-      {{ ficha_tecnica_form.est_bateria }}
-    </div>
-    <div class="col-md-3">
-      <label class="fw-bold" style="font-size:12px;">Escape / Silenciador</label>
-      {{ ficha_tecnica_form.est_escape }}
-    </div>
-    <div class="col-md-3">
-      <label class="fw-bold" style="font-size:12px;">Chapa y pintura</label>
-      {{ ficha_tecnica_form.est_chapa_pintura }}
-    </div>
-    <div class="col-md-3">
-      <label class="fw-bold" style="font-size:12px;">Tapizado</label>
-      {{ ficha_tecnica_form.est_tapizado }}
-    </div>
-    <div class="col-md-3">
-      <label class="fw-bold" style="font-size:12px;">Vidrios / Cristales</label>
-      {{ ficha_tecnica_form.est_vidrios }}
-    </div>
-    <div class="col-md-3">
-      <label class="fw-bold" style="font-size:12px;">Luces</label>
-      {{ ficha_tecnica_form.est_luces }}
-    </div>
-    <div class="col-md-3">
-      <label class="fw-bold" style="font-size:12px;">Motor</label>
-      {{ ficha_tecnica_form.est_motor }}
+    <div class="col-md-6">
+      <div class="ft-status-row" data-field="id_est_chapa_pintura">
+        <span class="ft-status-label">Chapa y Pintura</span>
+        <div class="ft-status-pills">
+          <span class="ft-st-opt" data-val="ok">OK</span>
+          <span class="ft-st-opt" data-val="regular">Regular</span>
+          <span class="ft-st-opt" data-val="malo">Malo</span>
+          <span class="ft-st-opt" data-val="na">N/A</span>
+          <div style="display:none">{{ ficha_tecnica_form.est_chapa_pintura }}</div>
+        </div>
+      </div>
+      <div class="ft-status-row" data-field="id_est_tapizado">
+        <span class="ft-status-label">Tapizado</span>
+        <div class="ft-status-pills">
+          <span class="ft-st-opt" data-val="ok">OK</span>
+          <span class="ft-st-opt" data-val="regular">Regular</span>
+          <span class="ft-st-opt" data-val="malo">Malo</span>
+          <span class="ft-st-opt" data-val="na">N/A</span>
+          <div style="display:none">{{ ficha_tecnica_form.est_tapizado }}</div>
+        </div>
+      </div>
+      <div class="ft-status-row" data-field="id_est_vidrios">
+        <span class="ft-status-label">Vidrios / Cristales</span>
+        <div class="ft-status-pills">
+          <span class="ft-st-opt" data-val="ok">OK</span>
+          <span class="ft-st-opt" data-val="regular">Regular</span>
+          <span class="ft-st-opt" data-val="malo">Malo</span>
+          <span class="ft-st-opt" data-val="na">N/A</span>
+          <div style="display:none">{{ ficha_tecnica_form.est_vidrios }}</div>
+        </div>
+      </div>
+      <div class="ft-status-row" data-field="id_est_luces">
+        <span class="ft-status-label">Luces</span>
+        <div class="ft-status-pills">
+          <span class="ft-st-opt" data-val="ok">OK</span>
+          <span class="ft-st-opt" data-val="regular">Regular</span>
+          <span class="ft-st-opt" data-val="malo">Malo</span>
+          <span class="ft-st-opt" data-val="na">N/A</span>
+          <div style="display:none">{{ ficha_tecnica_form.est_luces }}</div>
+        </div>
+      </div>
+      <div class="ft-status-row" data-field="id_est_motor">
+        <span class="ft-status-label">Motor</span>
+        <div class="ft-status-pills">
+          <span class="ft-st-opt" data-val="ok">OK</span>
+          <span class="ft-st-opt" data-val="regular">Regular</span>
+          <span class="ft-st-opt" data-val="malo">Malo</span>
+          <span class="ft-st-opt" data-val="na">N/A</span>
+          <div style="display:none">{{ ficha_tecnica_form.est_motor }}</div>
+        </div>
+      </div>
     </div>
   </div>
 
   <!-- OBSERVACIONES TÉCNICAS -->
   <div class="mb-3">
-    <label class="fw-bold">Observaciones técnicas</label>
+    <label class="fw-bold" style="color:#002855;">Observaciones técnicas</label>
     {{ ficha_tecnica_form.observaciones_tecnicas }}
   </div>
+
+  <!-- ═══════════ JAVASCRIPT ═══════════ -->
+  <script>
+  (function(){
+    /* ── Mirror inputs inside rings ── */
+    document.querySelectorAll('.ft-spec-ring input').forEach(function(inp){
+      var mirror = inp.closest('.ft-spec-ring').querySelector('.ft-val');
+      if(mirror){
+        inp.addEventListener('input', function(){
+          mirror.textContent = inp.value || '—';
+        });
+        inp.addEventListener('blur', function(){
+          mirror.textContent = inp.value || '—';
+        });
+      }
+    });
+
+    /* ── Style dimension inputs ── */
+    document.querySelectorAll('.ft-medidas-box input[type="text"], .ft-medidas-box input[type="number"]').forEach(function(inp){
+      inp.classList.remove('form-control');
+      inp.classList.add('ft-dim-input');
+    });
+
+    /* ── Style peso input ── */
+    var pesoWrap = document.querySelector('.ft-medidas-box .col-md-5');
+    if(pesoWrap){
+      pesoWrap.querySelectorAll('input').forEach(function(inp){
+        inp.classList.remove('form-control');
+        inp.style.cssText = 'border:none;border-bottom:2px solid #00c9a7;background:transparent;font-weight:800;font-size:28px;color:#002855;text-align:center;width:100px;padding:2px 0;';
+      });
+    }
+
+    /* ── Style detail inputs ── */
+    document.querySelectorAll('.ft-detail-val input').forEach(function(inp){
+      inp.classList.remove('form-control');
+    });
+
+    /* ── Style ring inputs ── */
+    document.querySelectorAll('.ft-spec-ring input').forEach(function(inp){
+      inp.classList.remove('form-control');
+    });
+
+    /* ── Toggle pills (SI/NO) ── */
+    document.querySelectorAll('.ft-toggle-pill').forEach(function(pill){
+      var sel = pill.querySelector('select');
+      if(!sel) return;
+      var opts = pill.querySelectorAll('.ft-pill-opt');
+
+      function sync(){
+        opts.forEach(function(o){ o.classList.remove('active-si','active-no'); });
+        opts.forEach(function(o){
+          if(o.dataset.val === sel.value){
+            o.classList.add(sel.value === 'si' ? 'active-si' : 'active-no');
+          }
+        });
+      }
+      sync();
+
+      opts.forEach(function(o){
+        o.addEventListener('click', function(){
+          sel.value = o.dataset.val;
+          sync();
+        });
+      });
+    });
+
+    /* ── Status pills ── */
+    document.querySelectorAll('.ft-status-pills').forEach(function(wrap){
+      var sel = wrap.querySelector('select');
+      if(!sel) return;
+      var opts = wrap.querySelectorAll('.ft-st-opt');
+
+      function sync(){
+        opts.forEach(function(o){ o.classList.remove('active-ok','active-regular','active-malo','active-na'); });
+        opts.forEach(function(o){
+          if(o.dataset.val === sel.value){
+            o.classList.add('active-' + sel.value);
+          }
+        });
+      }
+      sync();
+
+      opts.forEach(function(o){
+        o.addEventListener('click', function(){
+          sel.value = o.dataset.val;
+          sync();
+        });
+      });
+    });
+  })();
+  </script>
 </div>
 
 <div class="tab-pane fade" id="tab-observaciones">
