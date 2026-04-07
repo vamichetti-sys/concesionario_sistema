@@ -236,9 +236,15 @@ def cambiar_estado_vehiculo(request, vehiculo_id):
         vehiculo.estado = nuevo_estado
         vehiculo.save(update_fields=["estado"])
 
-        # 🔑 CLAVE: ELIMINAR LA VENTA SI EXISTE
+        # ELIMINAR LA VENTA SI EXISTE
         if hasattr(vehiculo, "venta"):
-            vehiculo.venta.delete()
+            venta = vehiculo.venta
+            # Desvincular cuenta corriente (no se borra, queda el historial)
+            from cuentas.models import CuentaCorriente
+            CuentaCorriente.objects.filter(venta=venta).update(
+                venta=None, estado="cerrada"
+            )
+            venta.delete()
 
         from gestoria.models import Gestoria
         Gestoria.objects.filter(vehiculo=vehiculo).delete()

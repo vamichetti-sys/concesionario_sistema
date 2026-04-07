@@ -26,8 +26,10 @@ class CuentaCorriente(models.Model):
 
     venta = models.OneToOneField(
         Venta,
-        on_delete=models.PROTECT,
-        related_name='cuenta_corriente'
+        on_delete=models.SET_NULL,
+        related_name='cuenta_corriente',
+        null=True,
+        blank=True,
     )
 
     saldo = models.DecimalField(
