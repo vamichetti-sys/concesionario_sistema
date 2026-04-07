@@ -17,7 +17,7 @@ def lista_reventas(request):
 
     reventas = Reventa.objects.filter(
         estado__in=["pendiente", "confirmada"],
-    ).select_related("vehiculo")
+    ).select_related("vehiculo", "cuenta")
 
     if q:
         reventas = reventas.filter(

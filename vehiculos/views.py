@@ -205,6 +205,9 @@ def cambiar_estado_vehiculo(request, vehiculo_id):
         if nuevo_estado == "reventa":
             from reventa.models import Reventa
 
+            # Si ya tiene una reventa revertida, la eliminamos primero
+            Reventa.objects.filter(vehiculo=vehiculo, estado="revertida").delete()
+
             reventa, creada = Reventa.objects.get_or_create(
                 vehiculo=vehiculo,
                 defaults={
@@ -212,6 +215,11 @@ def cambiar_estado_vehiculo(request, vehiculo_id):
                     "precio_reventa": vehiculo.precio,
                 }
             )
+
+            if not creada and reventa.estado != "pendiente":
+                reventa.estado = "pendiente"
+                reventa.precio_reventa = vehiculo.precio
+                reventa.save(update_fields=["estado", "precio_reventa"])
 
             vehiculo.estado = "reventa"
             vehiculo.save(update_fields=["estado"])
