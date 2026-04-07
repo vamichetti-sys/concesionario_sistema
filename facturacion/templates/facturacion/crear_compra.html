@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}{{ titulo }}{% endblock %}
+{% block content %}
+
+<div class="mb-4">
+    <a href="{% url 'facturacion:compras' %}" class="text-muted text-decoration-none d-inline-flex align-items-center mb-2" style="font-size:14px;">
+        <i data-lucide="arrow-left" style="width:16px;height:16px;margin-right:6px;"></i>
+        Volver a compras
+    </a>
+    <h3 class="fw-bold mb-1">{{ titulo }}</h3>
+</div>
+
+<div class="card p-4" style="max-width:600px;">
+    <form method="post">
+        {% csrf_token %}
+
+        <div class="row g-3 mb-3">
+            <div class="col-md-4">
+                <label class="form-label">Numero *</label>
+                {{ form.numero }}
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Fecha *</label>
+                {{ form.fecha }}
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Proveedor</label>
+                {{ form.proveedor }}
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Descripcion</label>
+            {{ form.descripcion }}
+        </div>
+
+        <hr class="my-3">
+
+        <h6 class="fw-bold mb-3">
+            <i data-lucide="calculator" style="width:16px;height:16px;margin-right:6px;"></i>
+            Montos
+        </h6>
+
+        <div class="row g-3 mb-3">
+            <div class="col-md-6">
+                <label class="form-label">Monto neto (sin IVA) *</label>
+                {{ form.monto_neto }}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">IVA %</label>
+                {{ form.iva_porcentaje }}
+            </div>
+        </div>
+
+        <div class="row g-3 mb-3">
+            <div class="col-md-6">
+                <label class="form-label">IVA calculado</label>
+                {{ form.monto_iva }}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Total</label>
+                {{ form.monto }}
+            </div>
+        </div>
+
+        {% if form.errors %}
+        <div class="alert alert-danger mb-3" style="border-radius:10px;">
+            <ul class="mb-0">
+                {% for field, errors in form.errors.items %}
+                    {% for error in errors %}
+                    <li>{{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <hr class="my-4">
+        <div class="d-flex gap-3">
+            <button type="submit" class="btn btn-primary">
+                <i data-lucide="save" style="width:16px;height:16px;margin-right:6px;"></i>
+                Guardar
+            </button>
+            <a href="{% url 'facturacion:compras' %}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const neto = document.getElementById('id_monto_neto');
+    const iva_pct = document.getElementById('id_iva_porcentaje');
+    const iva_calc = document.getElementById('id_monto_iva');
+    const total = document.getElementById('id_monto');
+
+    function calcular() {
+        const n = parseFloat(neto.value) || 0;
+        const p = parseFloat(iva_pct.value) || 0;
+        const i = (n * p) / 100;
+        iva_calc.value = i.toFixed(2);
+        total.value = (n + i).toFixed(2);
+    }
+
+    if (neto && iva_pct) {
+        neto.addEventListener('input', calcular);
+        iva_pct.addEventListener('input', calcular);
+    }
+
+    lucide.createIcons();
+});
+</script>
+{% endblock %}

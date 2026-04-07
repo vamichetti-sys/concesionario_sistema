@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+{% block title %}Posicion IVA – {{ mes_nombre }} {{ anio }}{% endblock %}
+{% block content %}
+
+<!-- ENCABEZADO -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-bold mb-1">Facturacion</h3>
+        <p class="text-muted mb-0">Posicion de IVA mensual</p>
+    </div>
+</div>
+
+<!-- TABS -->
+<ul class="nav nav-tabs mb-4">
+    <li class="nav-item">
+        <a class="nav-link" href="{% url 'facturacion:lista' %}">
+            <i data-lucide="receipt" style="width:16px;height:16px;margin-right:4px;"></i>
+            Facturas
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="{% url 'facturacion:compras' %}">
+            <i data-lucide="shopping-bag" style="width:16px;height:16px;margin-right:4px;"></i>
+            Compras
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link active" href="{% url 'facturacion:iva' %}">
+            <i data-lucide="percent" style="width:16px;height:16px;margin-right:4px;"></i>
+            IVA
+        </a>
+    </li>
+</ul>
+
+<!-- FILTRO MES -->
+<div class="card p-3 mb-4">
+    <form method="GET" class="row g-2 align-items-end">
+        <div class="col-md-3">
+            <select name="mes" class="form-select">
+                {% for num, nombre in meses_choices %}
+                <option value="{{ num }}" {% if num == mes %}selected{% endif %}>{{ nombre }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <input type="number" name="anio" class="form-control" value="{{ anio }}">
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-primary w-100">Ver mes</button>
+        </div>
+    </form>
+</div>
+
+<!-- RESULTADO IVA -->
+<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <div class="card p-4" style="position:relative;">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <span class="text-muted" style="font-size:13px;">IVA Debito Fiscal</span>
+                <div style="width:36px;height:36px;background:rgba(239,68,68,0.1);border-radius:8px;display:flex;align-items:center;justify-content:center;">
+                    <i data-lucide="arrow-up" style="width:18px;height:18px;color:#ef4444;"></i>
+                </div>
+            </div>
+            <h4 class="fw-bold mb-0">${{ iva_debito|floatformat:2 }}</h4>
+            <small class="text-muted">{{ facturas_count }} factura{{ facturas_count|pluralize:"s" }}</small>
+            <div style="position:absolute;top:0;left:0;width:4px;height:100%;background:#ef4444;border-radius:14px 0 0 14px;"></div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card p-4" style="position:relative;">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <span class="text-muted" style="font-size:13px;">IVA Credito Fiscal</span>
+                <div style="width:36px;height:36px;background:rgba(16,185,129,0.1);border-radius:8px;display:flex;align-items:center;justify-content:center;">
+                    <i data-lucide="arrow-down" style="width:18px;height:18px;color:#10b981;"></i>
+                </div>
+            </div>
+            <h4 class="fw-bold mb-0">${{ iva_credito|floatformat:2 }}</h4>
+            <small class="text-muted">{{ compras_count }} compra{{ compras_count|pluralize:"s" }}</small>
+            <div style="position:absolute;top:0;left:0;width:4px;height:100%;background:#10b981;border-radius:14px 0 0 14px;"></div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card p-4" style="position:relative;">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <span class="text-muted" style="font-size:13px;">Saldo IVA</span>
+                <div style="width:36px;height:36px;background:rgba(59,130,246,0.1);border-radius:8px;display:flex;align-items:center;justify-content:center;">
+                    <i data-lucide="scale" style="width:18px;height:18px;color:#3b82f6;"></i>
+                </div>
+            </div>
+            <h4 class="fw-bold mb-0 {% if saldo_iva > 0 %}text-danger{% elif saldo_iva < 0 %}text-success{% endif %}">
+                ${{ saldo_iva|floatformat:2 }}
+            </h4>
+            <small class="text-muted">
+                {% if saldo_iva > 0 %}A pagar{% elif saldo_iva < 0 %}A favor{% else %}Neutro{% endif %}
+            </small>
+            <div style="position:absolute;top:0;left:0;width:4px;height:100%;background:#3b82f6;border-radius:14px 0 0 14px;"></div>
+        </div>
+    </div>
+</div>
+
+<!-- DETALLE -->
+<div class="row g-4">
+    <div class="col-md-6">
+        <div class="card p-4">
+            <h6 class="fw-bold mb-3">
+                <i data-lucide="receipt" style="width:16px;height:16px;margin-right:6px;color:#ef4444;"></i>
+                Ventas (Debito Fiscal)
+            </h6>
+            <table class="table table-borderless mb-0" style="font-size:14px;">
+                <tr>
+                    <td class="text-muted">Neto</td>
+                    <td class="text-end fw-semibold">${{ neto_ventas|floatformat:2 }}</td>
+                </tr>
+                <tr>
+                    <td class="text-muted">IVA</td>
+                    <td class="text-end fw-semibold">${{ iva_debito|floatformat:2 }}</td>
+                </tr>
+                <tr class="border-top">
+                    <td class="fw-bold">Total facturado</td>
+                    <td class="text-end fw-bold">${{ total_ventas|floatformat:2 }}</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card p-4">
+            <h6 class="fw-bold mb-3">
+                <i data-lucide="shopping-bag" style="width:16px;height:16px;margin-right:6px;color:#10b981;"></i>
+                Compras (Credito Fiscal)
+            </h6>
+            <table class="table table-borderless mb-0" style="font-size:14px;">
+                <tr>
+                    <td class="text-muted">Neto</td>
+                    <td class="text-end fw-semibold">${{ neto_compras|floatformat:2 }}</td>
+                </tr>
+                <tr>
+                    <td class="text-muted">IVA</td>
+                    <td class="text-end fw-semibold">${{ iva_credito|floatformat:2 }}</td>
+                </tr>
+                <tr class="border-top">
+                    <td class="fw-bold">Total compras</td>
+                    <td class="text-end fw-bold">${{ total_compras|floatformat:2 }}</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="card p-4 mt-4">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h6 class="fw-bold mb-1">Posicion IVA {{ mes_nombre }} {{ anio }}</h6>
+            <p class="text-muted mb-0">Debito Fiscal ${{ iva_debito|floatformat:2 }} &minus; Credito Fiscal ${{ iva_credito|floatformat:2 }}</p>
+        </div>
+        <div class="text-end">
+            <div style="font-size:28px;" class="fw-bold {% if saldo_iva > 0 %}text-danger{% elif saldo_iva < 0 %}text-success{% endif %}">
+                ${{ saldo_iva|floatformat:2 }}
+            </div>
+            <small class="{% if saldo_iva > 0 %}text-danger{% elif saldo_iva < 0 %}text-success{% else %}text-muted{% endif %}">
+                {% if saldo_iva > 0 %}Saldo a pagar a AFIP{% elif saldo_iva < 0 %}Saldo a favor{% else %}Sin saldo{% endif %}
+            </small>
+        </div>
+    </div>
+</div>
+
+<script>if (typeof lucide !== 'undefined') lucide.createIcons();</script>
+{% endblock %}

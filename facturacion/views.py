@@ -1,12 +1,13 @@
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
 from django.db.models import Sum
 from django.http import HttpResponse
 from datetime import date
 from decimal import Decimal
 
-from .models import FacturaRegistrada
-from .forms import FacturaRegistradaForm
+from .models import FacturaRegistrada, CompraRegistrada
+from .forms import FacturaRegistradaForm, CompraRegistradaForm
 
 # EXCEL
 from openpyxl import Workbook
@@ -428,3 +429,135 @@ def exportar_pdf_anual(request):
 
     doc.build(elementos)
     return response
+
+# ==========================================================
+# ELIMINAR FACTURA
+# ==========================================================
+@login_required
+def eliminar_factura(request, pk):
+    factura = get_object_or_404(FacturaRegistrada, pk=pk)
+
+    if request.method == "POST":
+        numero = factura.numero
+        factura.delete()
+        messages.success(request, f"Factura #{numero} eliminada.")
+        return redirect("facturacion:lista")
+
+    return render(request, "facturacion/eliminar.html", {"factura": factura})
+
+
+# ==========================================================
+# COMPRAS - LISTA
+# ==========================================================
+@login_required
+def lista_compras(request):
+    hoy = date.today()
+    mes = int(request.GET.get("mes", hoy.month))
+    anio = int(request.GET.get("anio", hoy.year))
+
+    compras = CompraRegistrada.objects.filter(
+        fecha__year=anio, fecha__month=mes,
+    ).order_by("-fecha")
+
+    total_mes = compras.aggregate(t=Sum("monto"))["t"] or Decimal("0")
+    total_iva_mes = compras.aggregate(t=Sum("monto_iva"))["t"] or Decimal("0")
+
+    MESES = [
+        "", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+        "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
+    ]
+
+    return render(request, "facturacion/compras.html", {
+        "compras": compras,
+        "mes": mes,
+        "anio": anio,
+        "mes_nombre": MESES[mes] if 1 <= mes <= 12 else "",
+        "total_mes": total_mes,
+        "total_iva_mes": total_iva_mes,
+        "meses_choices": list(enumerate(MESES))[1:],
+    })
+
+
+# ==========================================================
+# COMPRAS - CREAR
+# ==========================================================
+@login_required
+def crear_compra(request):
+    if request.method == "POST":
+        form = CompraRegistradaForm(request.POST)
+        if form.is_valid():
+            compra = form.save(commit=False)
+            compra.calcular_iva()
+            compra.save()
+            messages.success(request, f"Compra #{compra.numero} registrada.")
+            return redirect("facturacion:compras")
+    else:
+        form = CompraRegistradaForm()
+
+    return render(request, "facturacion/crear_compra.html", {
+        "form": form,
+        "titulo": "Registrar Compra",
+    })
+
+
+# ==========================================================
+# COMPRAS - ELIMINAR
+# ==========================================================
+@login_required
+def eliminar_compra(request, pk):
+    compra = get_object_or_404(CompraRegistrada, pk=pk)
+
+    if request.method == "POST":
+        numero = compra.numero
+        compra.delete()
+        messages.success(request, f"Compra #{numero} eliminada.")
+        return redirect("facturacion:compras")
+
+    return render(request, "facturacion/eliminar_compra.html", {"compra": compra})
+
+
+# ==========================================================
+# IVA - POSICION MENSUAL
+# ==========================================================
+@login_required
+def posicion_iva(request):
+    hoy = date.today()
+    mes = int(request.GET.get("mes", hoy.month))
+    anio = int(request.GET.get("anio", hoy.year))
+
+    facturas = FacturaRegistrada.objects.filter(
+        estado="valida", fecha__year=anio, fecha__month=mes,
+    )
+    iva_debito = facturas.aggregate(t=Sum("monto_iva"))["t"] or Decimal("0")
+    neto_ventas = facturas.aggregate(t=Sum("monto_neto"))["t"] or Decimal("0")
+    total_ventas = facturas.aggregate(t=Sum("monto"))["t"] or Decimal("0")
+
+    compras = CompraRegistrada.objects.filter(
+        fecha__year=anio, fecha__month=mes,
+    )
+    iva_credito = compras.aggregate(t=Sum("monto_iva"))["t"] or Decimal("0")
+    neto_compras = compras.aggregate(t=Sum("monto_neto"))["t"] or Decimal("0")
+    total_compras = compras.aggregate(t=Sum("monto"))["t"] or Decimal("0")
+
+    saldo_iva = iva_debito - iva_credito
+
+    MESES = [
+        "", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+        "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
+    ]
+
+    return render(request, "facturacion/iva.html", {
+        "mes": mes,
+        "anio": anio,
+        "mes_nombre": MESES[mes] if 1 <= mes <= 12 else "",
+        "meses_choices": list(enumerate(MESES))[1:],
+        "iva_debito": iva_debito,
+        "neto_ventas": neto_ventas,
+        "total_ventas": total_ventas,
+        "facturas_count": facturas.count(),
+        "iva_credito": iva_credito,
+        "neto_compras": neto_compras,
+        "total_compras": total_compras,
+        "compras_count": compras.count(),
+        "saldo_iva": saldo_iva,
+    })

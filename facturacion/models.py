@@ -126,3 +126,49 @@ class FacturaRegistrada(models.Model):
             iva = (self.monto_neto * self.iva_porcentaje) / Decimal("100")
             self.monto_iva = iva.quantize(Decimal("0.01"))
             self.monto = (self.monto_neto + self.monto_iva).quantize(Decimal("0.01"))
+
+
+# ==========================================================
+# COMPRA REGISTRADA (FACTURAS DE COMPRA)
+# ==========================================================
+class CompraRegistrada(models.Model):
+    numero = models.CharField(
+        max_length=50,
+        help_text="Numero de factura de compra",
+    )
+    proveedor = models.CharField(max_length=150, blank=True, null=True)
+    fecha = models.DateField()
+
+    monto_neto = models.DecimalField(
+        max_digits=14, decimal_places=2,
+        null=True, blank=True,
+    )
+    iva_porcentaje = models.DecimalField(
+        max_digits=5, decimal_places=2,
+        default=Decimal("21.00"),
+    )
+    monto_iva = models.DecimalField(
+        max_digits=14, decimal_places=2,
+        null=True, blank=True,
+    )
+    monto = models.DecimalField(
+        max_digits=14, decimal_places=2,
+        help_text="Monto total (neto + IVA)",
+    )
+
+    descripcion = models.CharField(max_length=200, blank=True, null=True)
+    creada = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-fecha"]
+        verbose_name = "Compra registrada"
+        verbose_name_plural = "Compras registradas"
+
+    def __str__(self):
+        return f"Compra {self.numero} – {self.proveedor or 'Sin proveedor'}"
+
+    def calcular_iva(self):
+        if self.monto_neto is not None:
+            iva = (self.monto_neto * self.iva_porcentaje) / Decimal("100")
+            self.monto_iva = iva.quantize(Decimal("0.01"))
+            self.monto = (self.monto_neto + self.monto_iva).quantize(Decimal("0.01"))
