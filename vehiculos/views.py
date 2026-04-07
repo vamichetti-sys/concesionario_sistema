@@ -303,6 +303,7 @@ def ficha_vehicular_ajax(request, vehiculo_id):
         ("gc_grabado_autopartes", "Grabado autopartes"),
         ("gc_vtv", "VTV"),
         ("gc_verificacion", "Verificacion policial"),
+        ("gc_patentes", "Patentes"),
         ("gc_otros", "Otros"),
     ]
     gastos_conc_items = []
@@ -379,7 +380,7 @@ def guardar_ficha_vehicular(request, vehiculo_id):
             campos_gc = [
                 "gc_service", "gc_mecanica", "gc_chapa_pintura", "gc_tapizado",
                 "gc_neumaticos", "gc_vidrios", "gc_cerrajeria", "gc_lavado",
-                "gc_gnc", "gc_grabado_autopartes", "gc_vtv", "gc_verificacion", "gc_otros",
+                "gc_gnc", "gc_grabado_autopartes", "gc_vtv", "gc_verificacion", "gc_patentes", "gc_otros",
             ]
             for campo in campos_gc:
                 valor = request.POST.get(campo, "").replace(",", ".")
@@ -509,6 +510,7 @@ def ficha_completa(request, vehiculo_id):
         ("gc_grabado_autopartes", "Grabado autopartes"),
         ("gc_vtv", "VTV"),
         ("gc_verificacion", "Verificacion policial"),
+        ("gc_patentes", "Patentes"),
         ("gc_otros", "Otros"),
     ]
 
@@ -554,7 +556,7 @@ def guardar_gastos_concesionario(request, vehiculo_id):
         campos_gc = [
             "gc_service", "gc_mecanica", "gc_chapa_pintura", "gc_tapizado",
             "gc_neumaticos", "gc_vidrios", "gc_cerrajeria", "gc_lavado",
-            "gc_gnc", "gc_grabado_autopartes", "gc_vtv", "gc_verificacion", "gc_otros",
+            "gc_gnc", "gc_grabado_autopartes", "gc_vtv", "gc_verificacion", "gc_patentes", "gc_otros",
         ]
         for campo in campos_gc:
             valor = request.POST.get(campo, "0").replace(",", ".")

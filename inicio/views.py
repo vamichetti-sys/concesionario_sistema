@@ -12,6 +12,7 @@ from ventas.models import Venta
 from vehiculos.models import Vehiculo, FichaVehicular
 from crm.models import Prospecto, NotificacionCRM
 from inicio.models import RecordatorioDashboard
+from vehiculos.services import actualizar_gastos_por_vencimientos
 
 
 # ==========================================================
@@ -44,6 +45,11 @@ def ingreso(request):
 def inicio(request):
     hoy = timezone.now().date()
     proximos_30_dias = hoy + timedelta(days=30)
+
+    # =============================
+    # AUTO-ACTUALIZAR GASTOS POR VENCIMIENTOS
+    # =============================
+    actualizar_gastos_por_vencimientos()
 
     # =============================
     # CUENTAS CON DEUDA

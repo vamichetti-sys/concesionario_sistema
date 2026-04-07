@@ -82,6 +82,7 @@ CAMPOS_GC = [
     ("gc_grabado_autopartes", "Grabado autopartes"),
     ("gc_vtv", "VTV"),
     ("gc_verificacion", "Verificacion policial"),
+    ("gc_patentes", "Patentes"),
     ("gc_otros", "Otros"),
 ]
 

@@ -207,6 +207,7 @@ class FichaVehicular(models.Model):
     gc_grabado_autopartes = models.DecimalField("Grabado autopartes", max_digits=12, decimal_places=2, default=0)
     gc_vtv = models.DecimalField("VTV", max_digits=12, decimal_places=2, default=0)
     gc_verificacion = models.DecimalField("Verificacion policial", max_digits=12, decimal_places=2, default=0)
+    gc_patentes = models.DecimalField("Patentes", max_digits=12, decimal_places=2, default=0)
     gc_otros = models.DecimalField("Otros", max_digits=12, decimal_places=2, default=0)
 
     observaciones = models.TextField(blank=True, null=True)
