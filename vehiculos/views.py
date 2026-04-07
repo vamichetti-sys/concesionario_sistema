@@ -17,6 +17,7 @@ from .models import (
     PagoGastoIngreso,
     ConfiguracionGastosIngreso,
     GastoConcesionario,
+    Mantenimiento,
 )
 
 from .forms import VehiculoBasicoForm, VehiculoForm, FichaVehicularForm, FichaTecnicaForm
@@ -372,6 +373,7 @@ def ficha_vehicular_ajax(request, vehiculo_id):
             "gastos_extras": gastos_extras,
             "total_gastos_conc": total_gastos_conc,
             "ficha_tecnica_form": ficha_tecnica_form,
+            "mantenimientos": vehiculo.mantenimientos.all(),
         },
         request=request,
     )
@@ -1457,3 +1459,40 @@ def guardar_ficha_parcial(request, vehiculo_id):
             messages.error(request, "Error al guardar los cambios.")
 
     return redirect("vehiculos:ficha_completa", vehiculo_id=vehiculo.id)
+
+
+# ==========================================================
+# MANTENIMIENTOS
+# ==========================================================
+@csrf_exempt
+def agregar_mantenimiento(request, vehiculo_id):
+    vehiculo = get_object_or_404(Vehiculo, id=vehiculo_id)
+
+    if request.method == "POST":
+        nombre = request.POST.get("nombre", "").strip()
+        fecha = request.POST.get("fecha", "").strip()
+        observacion = request.POST.get("observacion", "").strip()
+
+        if nombre and fecha:
+            mant = Mantenimiento.objects.create(
+                vehiculo=vehiculo,
+                nombre=nombre,
+                fecha=fecha,
+                observacion=observacion,
+            )
+            return JsonResponse({
+                "ok": True,
+                "id": mant.id,
+                "nombre": mant.nombre,
+                "fecha": mant.fecha.strftime("%d/%m/%Y"),
+                "observacion": mant.observacion or "",
+            })
+
+    return JsonResponse({"ok": False}, status=400)
+
+
+@csrf_exempt
+def eliminar_mantenimiento(request, pk):
+    mant = get_object_or_404(Mantenimiento, pk=pk)
+    mant.delete()
+    return JsonResponse({"ok": True})

@@ -1070,6 +1070,89 @@
     {{ ficha_tecnica_form.observaciones_tecnicas }}
   </div>
 
+  <hr class="my-3">
+
+  <!-- ═══════════ MANTENIMIENTOS ═══════════ -->
+  <style>
+    .mant-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+    .mant-table th {
+      background: #002855; color: #fff; font-size: 12px; font-weight: 700;
+      padding: 8px 12px; text-transform: uppercase; letter-spacing: .3px;
+    }
+    .mant-table th:first-child { border-radius: 8px 0 0 0; }
+    .mant-table th:last-child { border-radius: 0 8px 0 0; }
+    .mant-table td {
+      padding: 8px 12px; font-size: 13px; border-bottom: 1px solid #eee; vertical-align: middle;
+    }
+    .mant-table tr:hover td { background: #f8f9fa; }
+    .mant-add-row input, .mant-add-row textarea {
+      border: 1px solid #dee2e6; border-radius: 6px; padding: 5px 8px; font-size: 13px; width: 100%;
+    }
+    .mant-add-row input:focus, .mant-add-row textarea:focus { outline: none; border-color: #00c9a7; }
+    .btn-mant-add {
+      background: #00c9a7; color: #fff; border: none; border-radius: 6px;
+      padding: 6px 14px; font-size: 12px; font-weight: 700; cursor: pointer;
+    }
+    .btn-mant-add:hover { background: #00b396; }
+    .btn-mant-del {
+      background: none; border: none; color: #dc3545; cursor: pointer; padding: 2px 6px; font-size: 16px;
+    }
+    .btn-mant-del:hover { color: #a71d2a; }
+    .mant-empty { text-align: center; color: #999; padding: 20px; font-size: 13px; }
+  </style>
+
+  <h6 class="fw-bold mb-3" style="color:#002855; font-size:14px;">
+    <i data-lucide="wrench" style="width:15px;height:15px;margin-right:4px;"></i> Historial de Mantenimientos
+  </h6>
+
+  <div id="mant-container" data-url-agregar="{% url 'vehiculos:agregar_mantenimiento' vehiculo.id %}" data-url-eliminar="{% url 'vehiculos:eliminar_mantenimiento' 0 %}">
+    <table class="mant-table">
+      <thead>
+        <tr>
+          <th style="width:30%;">Mantenimiento</th>
+          <th style="width:18%;">Fecha</th>
+          <th>Observación</th>
+          <th style="width:40px;"></th>
+        </tr>
+      </thead>
+      <tbody id="mant-body">
+        {% for m in mantenimientos %}
+        <tr data-id="{{ m.id }}">
+          <td><strong>{{ m.nombre }}</strong></td>
+          <td>{{ m.fecha|date:"d/m/Y" }}</td>
+          <td>{{ m.observacion|default:"—" }}</td>
+          <td><button type="button" class="btn-mant-del" onclick="eliminarMant({{ m.id }}, this)">&times;</button></td>
+        </tr>
+        {% empty %}
+        <tr id="mant-empty-row"><td colspan="4" class="mant-empty">No hay mantenimientos registrados</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <!-- Formulario inline para agregar -->
+    <div class="mant-add-row mt-2 p-2 rounded" style="background:#f8f9fa;">
+      <div class="row g-2 align-items-end">
+        <div class="col-md-3">
+          <label style="font-size:11px; font-weight:700; color:#6c757d;">Mantenimiento</label>
+          <input type="text" id="mant-nombre" placeholder="Ej: Cambio de aceite">
+        </div>
+        <div class="col-md-2">
+          <label style="font-size:11px; font-weight:700; color:#6c757d;">Fecha</label>
+          <input type="date" id="mant-fecha">
+        </div>
+        <div class="col-md-5">
+          <label style="font-size:11px; font-weight:700; color:#6c757d;">Observación</label>
+          <input type="text" id="mant-obs" placeholder="Opcional...">
+        </div>
+        <div class="col-md-2">
+          <button type="button" class="btn-mant-add w-100" onclick="agregarMant()">
+            + Agregar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ═══════════ JAVASCRIPT ═══════════ -->
   <script>
   (function(){
@@ -1159,6 +1242,61 @@
       });
     });
   })();
+
+  /* ── Mantenimientos AJAX ── */
+  function agregarMant(){
+    var nombre = document.getElementById('mant-nombre').value.trim();
+    var fecha = document.getElementById('mant-fecha').value;
+    var obs = document.getElementById('mant-obs').value.trim();
+    if(!nombre || !fecha){ alert('Completá el nombre y la fecha'); return; }
+
+    var container = document.getElementById('mant-container');
+    var url = container.dataset.urlAgregar;
+    var fd = new FormData();
+    fd.append('nombre', nombre);
+    fd.append('fecha', fecha);
+    fd.append('observacion', obs);
+
+    fetch(url, {method:'POST', body: fd})
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        if(!data.ok) return;
+        var empty = document.getElementById('mant-empty-row');
+        if(empty) empty.remove();
+
+        var tr = document.createElement('tr');
+        tr.dataset.id = data.id;
+        tr.innerHTML = '<td><strong>'+data.nombre+'</strong></td>'
+          +'<td>'+data.fecha+'</td>'
+          +'<td>'+(data.observacion || '—')+'</td>'
+          +'<td><button type="button" class="btn-mant-del" onclick="eliminarMant('+data.id+', this)">&times;</button></td>';
+        document.getElementById('mant-body').appendChild(tr);
+
+        document.getElementById('mant-nombre').value = '';
+        document.getElementById('mant-fecha').value = '';
+        document.getElementById('mant-obs').value = '';
+      });
+  }
+
+  function eliminarMant(id, btn){
+    if(!confirm('¿Eliminar este mantenimiento?')) return;
+    var container = document.getElementById('mant-container');
+    var url = container.dataset.urlEliminar.replace('/0/', '/'+id+'/');
+
+    fetch(url, {method:'POST'})
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        if(!data.ok) return;
+        var tr = btn.closest('tr');
+        tr.remove();
+        if(document.getElementById('mant-body').children.length === 0){
+          var emptyTr = document.createElement('tr');
+          emptyTr.id = 'mant-empty-row';
+          emptyTr.innerHTML = '<td colspan="4" class="mant-empty">No hay mantenimientos registrados</td>';
+          document.getElementById('mant-body').appendChild(emptyTr);
+        }
+      });
+  }
   </script>
 </div>
 

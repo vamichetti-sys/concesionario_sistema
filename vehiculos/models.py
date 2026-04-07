@@ -537,3 +537,25 @@ class FichaTecnica(models.Model):
 
     def __str__(self):
         return f"Ficha técnica – {self.vehiculo}"
+
+
+# ============================================================
+# MANTENIMIENTOS DEL VEHÍCULO
+# ============================================================
+class Mantenimiento(models.Model):
+    vehiculo = models.ForeignKey(
+        Vehiculo,
+        on_delete=models.CASCADE,
+        related_name="mantenimientos",
+    )
+    nombre = models.CharField(max_length=100, verbose_name="Tipo de mantenimiento")
+    fecha = models.DateField(verbose_name="Fecha")
+    observacion = models.TextField(blank=True, null=True, verbose_name="Observación")
+
+    class Meta:
+        verbose_name = "Mantenimiento"
+        verbose_name_plural = "Mantenimientos"
+        ordering = ["-fecha"]
+
+    def __str__(self):
+        return f"{self.nombre} – {self.fecha} – {self.vehiculo}"

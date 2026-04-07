@@ -152,4 +152,17 @@ urlpatterns = [
         views.test_guardado_gastos,
         name="test_guardado_gastos"
     ),
+    # ==================================================
+    # MANTENIMIENTOS
+    # ==================================================
+    path(
+        "mantenimiento/<int:vehiculo_id>/agregar/",
+        views.agregar_mantenimiento,
+        name="agregar_mantenimiento"
+    ),
+    path(
+        "mantenimiento/eliminar/<int:pk>/",
+        views.eliminar_mantenimiento,
+        name="eliminar_mantenimiento"
+    ),
 ]
