@@ -31,15 +31,35 @@ def notificar_prospectos_match(sender, instance, **kwargs):
     for prospecto in prospectos:
         texto = prospecto.vehiculo_interes_texto.lower().strip()
 
-        # Verificar si alguna palabra clave del interes matchea con marca o modelo
-        palabras = texto.split()
-        match = any(
-            p in marca or p in modelo or marca in p or modelo in p
+        # Verificar que MARCA coincida Y al menos una palabra del modelo también
+        palabras = [p for p in texto.split() if len(p) >= 2]
+
+        # Paso 1: la marca del vehículo debe aparecer en el texto del prospecto
+        marca_match = any(
+            marca in p or p in marca
             for p in palabras
-            if len(p) >= 3  # Ignorar palabras muy cortas
+            if len(p) >= 3
         )
 
-        if not match:
+        if not marca_match:
+            continue
+
+        # Paso 2: al menos una palabra del texto (excluyendo marca y años)
+        # debe coincidir con el modelo del vehículo
+        palabras_sin_marca = [
+            p for p in palabras
+            if p not in marca and marca not in p and not p.replace("/", "").isdigit()
+        ]
+
+        modelo_match = any(
+            p in modelo or modelo in p
+            for p in palabras_sin_marca
+            if len(p) >= 2
+        )
+
+        # Si no hay palabras de modelo para comparar (ej: solo puso "Chevrolet"),
+        # aceptar el match por marca solamente
+        if palabras_sin_marca and not modelo_match:
             continue
 
         # No duplicar: verificar si ya existe notificacion para este par
