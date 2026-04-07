@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Editar Reventa{% endblock %}
+{% block content %}
+
+<div class="mb-4">
+    <a href="{% url 'reventa:lista' %}" class="text-muted text-decoration-none d-inline-flex align-items-center mb-2" style="font-size:14px;">
+        <i data-lucide="arrow-left" style="width:16px;height:16px;margin-right:6px;"></i>
+        Volver a reventas
+    </a>
+    <h3 class="fw-bold mb-1">Editar Reventa</h3>
+    <p class="text-muted mb-0">
+        {% if vehiculo %}{{ vehiculo.marca }} {{ vehiculo.modelo }} ({{ vehiculo.dominio }}){% endif %}
+        {% if reventa.cuenta %} &middot; Cuenta: <a href="{% url 'reventa:detalle_cuenta' pk=reventa.cuenta.pk %}">{{ reventa.cuenta.nombre }}</a>{% endif %}
+    </p>
+</div>
+
+<div class="card p-4" style="max-width:700px;">
+    <form method="post">
+        {% csrf_token %}
+
+        <h6 class="fw-bold mb-3">
+            <i data-lucide="building" style="width:16px;height:16px;margin-right:6px;"></i>
+            Agencia / Comprador
+        </h6>
+
+        <div class="row g-3 mb-4">
+            <div class="col-md-6">
+                <label class="form-label">Agencia o comprador *</label>
+                <input type="text" name="agencia" class="form-control" value="{{ reventa.agencia|default:'' }}" required>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Contacto</label>
+                <input type="text" name="contacto" class="form-control" value="{{ reventa.contacto|default:'' }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Telefono</label>
+                <input type="text" name="telefono" class="form-control" value="{{ reventa.telefono|default:'' }}">
+            </div>
+        </div>
+
+        <h6 class="fw-bold mb-3">
+            <i data-lucide="dollar-sign" style="width:16px;height:16px;margin-right:6px;"></i>
+            Operacion
+        </h6>
+
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <label class="form-label">Precio de reventa</label>
+                <input type="number" name="precio_reventa" class="form-control" step="0.01"
+                       value="{{ reventa.precio_reventa|default:'' }}">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Comision / Ganancia</label>
+                <input type="number" name="comision" class="form-control" step="0.01"
+                       value="{{ reventa.comision|default:'0' }}">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Estado</label>
+                <input type="text" class="form-control" value="{{ reventa.get_estado_display }}" readonly>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Observaciones</label>
+            <textarea name="observaciones" class="form-control" rows="2">{{ reventa.observaciones|default:'' }}</textarea>
+        </div>
+
+        <hr class="my-4">
+        <div class="d-flex gap-3">
+            <button type="submit" class="btn btn-primary">
+                <i data-lucide="save" style="width:16px;height:16px;margin-right:6px;"></i>
+                Guardar
+            </button>
+            <a href="{% url 'reventa:lista' %}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
+
+<script>lucide.createIcons();</script>
+{% endblock %}

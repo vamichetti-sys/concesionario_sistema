@@ -52,6 +52,15 @@ class Reventa(models.Model):
 
     observaciones = models.TextField(blank=True, null=True)
 
+    # Cuenta corriente del revendedor
+    cuenta = models.ForeignKey(
+        "CuentaRevendedor",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="reventas",
+    )
+
     fecha_reventa = models.DateField(auto_now_add=True)
     fecha_confirmacion = models.DateField(null=True, blank=True)
 
@@ -68,12 +77,46 @@ class Reventa(models.Model):
         from datetime import date
         self.estado = "confirmada"
         self.fecha_confirmacion = date.today()
-        self.save(update_fields=["estado", "fecha_confirmacion"])
+        self.save()
+
+        # Auto-crear/vincular cuenta corriente del revendedor
+        if self.agencia and not self.cuenta:
+            cuenta, _ = CuentaRevendedor.objects.get_or_create(
+                nombre=self.agencia,
+                defaults={
+                    "contacto": self.contacto or "",
+                    "telefono": self.telefono or "",
+                },
+            )
+            self.cuenta = cuenta
+            self.save(update_fields=["cuenta"])
+
+        # Crear movimiento "debe" en la cuenta
+        if self.cuenta and self.precio_reventa and self.precio_reventa > 0:
+            vehiculo_str = f"{self.vehiculo}" if self.vehiculo else "Vehiculo"
+            ya_existe = MovimientoRevendedor.objects.filter(
+                cuenta=self.cuenta,
+                reventa=self,
+                tipo="debe",
+            ).exists()
+            if not ya_existe:
+                MovimientoRevendedor.objects.create(
+                    cuenta=self.cuenta,
+                    tipo="debe",
+                    monto=self.precio_reventa,
+                    descripcion=f"Reventa – {vehiculo_str}",
+                    reventa=self,
+                )
 
     def revertir(self):
+        # Eliminar movimientos asociados
+        if self.cuenta:
+            MovimientoRevendedor.objects.filter(reventa=self).delete()
+
         self.estado = "revertida"
         self.agencia = None
-        self.save(update_fields=["estado", "agencia"])
+        self.cuenta = None
+        self.save(update_fields=["estado", "agencia", "cuenta"])
         if self.vehiculo:
             self.vehiculo.estado = "stock"
             self.vehiculo.save(update_fields=["estado"])

@@ -92,6 +92,41 @@ def asignar_reventa(request, vehiculo_id):
 # ==========================================================
 # REVERTIR REVENTA (VOLVER A STOCK)
 # ==========================================================
+# ==========================================================
+# EDITAR REVENTA
+# ==========================================================
+@login_required
+def editar_reventa(request, reventa_id):
+    reventa = get_object_or_404(Reventa, id=reventa_id)
+
+    if request.method == "POST":
+        reventa.agencia = request.POST.get("agencia", "").strip()
+        reventa.contacto = request.POST.get("contacto", "").strip()
+        reventa.telefono = request.POST.get("telefono", "").strip()
+        reventa.observaciones = request.POST.get("observaciones", "").strip()
+
+        precio = request.POST.get("precio_reventa", "").replace(",", ".")
+        comision = request.POST.get("comision", "0").replace(",", ".")
+
+        try:
+            from decimal import Decimal
+            if precio:
+                reventa.precio_reventa = Decimal(precio)
+            if comision:
+                reventa.comision = Decimal(comision)
+        except Exception:
+            pass
+
+        reventa.save()
+        messages.success(request, "Reventa actualizada.")
+        return redirect("reventa:lista")
+
+    return render(request, "reventa/editar.html", {
+        "reventa": reventa,
+        "vehiculo": reventa.vehiculo,
+    })
+
+
 @login_required
 @transaction.atomic
 def revertir_reventa(request, reventa_id):

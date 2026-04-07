@@ -7,6 +7,10 @@
         <h3 class="fw-bold mb-1">Reventa</h3>
         <p class="text-muted mb-0">Vehiculos en proceso de reventa a agencias</p>
     </div>
+    <a href="{% url 'reventa:cuentas' %}" class="btn btn-secondary">
+        <i data-lucide="credit-card" style="width:16px;height:16px;margin-right:6px;"></i>
+        Cuentas Corrientes
+    </a>
 </div>
 
 <!-- BUSQUEDA -->
@@ -95,18 +99,30 @@
                 <tr>
                     <td><strong>{{ r.vehiculo.marca }} {{ r.vehiculo.modelo }}</strong></td>
                     <td><span class="badge bg-secondary">{{ r.vehiculo.dominio }}</span></td>
-                    <td>{{ r.agencia }}</td>
+                    <td>
+                        {{ r.agencia }}
+                        {% if r.cuenta %}
+                        <br><a href="{% url 'reventa:detalle_cuenta' pk=r.cuenta.pk %}" class="text-decoration-none" style="font-size:12px;">
+                            <i data-lucide="credit-card" style="width:12px;height:12px;margin-right:2px;"></i>Ver cuenta
+                        </a>
+                        {% endif %}
+                    </td>
                     <td><small class="text-muted">{{ r.telefono|default:"-" }}</small></td>
                     <td class="text-end fw-bold">${{ r.precio_reventa|floatformat:0|default:"-" }}</td>
                     <td class="text-end text-success">${{ r.comision|floatformat:0 }}</td>
                     <td class="text-muted">{{ r.fecha_confirmacion|date:"d/m/Y"|default:"-" }}</td>
                     <td class="text-end">
-                        <form method="post" action="{% url 'reventa:revertir' reventa_id=r.pk %}" style="display:inline;">
-                            {% csrf_token %}
-                            <button type="submit" class="btn btn-outline-warning btn-sm" title="Revertir a stock">
-                                <i data-lucide="undo-2" style="width:14px;height:14px;"></i>
-                            </button>
-                        </form>
+                        <div class="d-flex gap-1 justify-content-end">
+                            <a href="{% url 'reventa:editar' reventa_id=r.pk %}" class="btn btn-secondary btn-sm" title="Editar">
+                                <i data-lucide="edit" style="width:14px;height:14px;"></i>
+                            </a>
+                            <form method="post" action="{% url 'reventa:revertir' reventa_id=r.pk %}" style="display:inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-outline-warning btn-sm" title="Revertir a stock">
+                                    <i data-lucide="undo-2" style="width:14px;height:14px;"></i>
+                                </button>
+                            </form>
+                        </div>
                     </td>
                 </tr>
                 {% endfor %}

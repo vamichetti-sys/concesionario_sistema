@@ -7,6 +7,7 @@ urlpatterns = [
     # Reventas
     path("", views.lista_reventas, name="lista"),
     path("asignar/<int:vehiculo_id>/", views.asignar_reventa, name="asignar"),
+    path("editar/<int:reventa_id>/", views.editar_reventa, name="editar"),
     path("revertir/<int:reventa_id>/", views.revertir_reventa, name="revertir"),
     path("eliminar/<int:reventa_id>/", views.eliminar_reventa, name="eliminar"),
 
