@@ -14,7 +14,9 @@
         <p class="text-muted mb-0">Gestión de inventario del concesionario</p>
     </div>
     <div class="d-flex gap-2">
-        <a href="{% url 'vehiculos:stock_pdf' %}{% if estado_filtro %}?estado={{ estado_filtro }}{% endif %}{% if query %}&q={{ query }}{% endif %}" class="btn btn-outline-secondary" target="_blank"><i data-lucide="file-down" style="width:16px;height:16px;margin-right:6px;"></i> Imprimir PDF</a>
+        <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modalPdfOpciones">
+            <i data-lucide="file-down" style="width:16px;height:16px;margin-right:6px;"></i> Imprimir PDF
+        </button>
         <a href="/vehiculos/gastos/" class="btn btn-secondary">
             <i data-lucide="settings" style="width:16px;height:16px;margin-right:6px;"></i>
             Gastos
@@ -231,5 +233,109 @@ function abrirFicha(id) {
 
 if (typeof lucide !== 'undefined') lucide.createIcons();
 </script>
+
+<!-- MODAL PDF OPCIONES -->
+<div class="modal fade" id="modalPdfOpciones" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="GET" action="{% url 'vehiculos:stock_pdf' %}" target="_blank">
+                {% if estado_filtro %}
+                <input type="hidden" name="estado" value="{{ estado_filtro }}">
+                {% endif %}
+                {% if query %}
+                <input type="hidden" name="q" value="{{ query }}">
+                {% endif %}
+
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">
+                        <i data-lucide="file-down" style="width:18px;height:18px;margin-right:8px;"></i>
+                        Opciones de PDF
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+                    <!-- FILTROS -->
+                    <h6 class="fw-bold mb-3">Filtros</h6>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label" style="font-size:12px;">Marca</label>
+                            <input type="text" name="marca" class="form-control form-control-sm" placeholder="Ej: Volkswagen">
+                        </div>
+                        <div class="col-3">
+                            <label class="form-label" style="font-size:12px;">Año desde</label>
+                            <input type="number" name="anio_min" class="form-control form-control-sm" placeholder="2015">
+                        </div>
+                        <div class="col-3">
+                            <label class="form-label" style="font-size:12px;">Año hasta</label>
+                            <input type="number" name="anio_max" class="form-control form-control-sm" placeholder="2025">
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-4">
+                        <div class="col-6">
+                            <label class="form-label" style="font-size:12px;">Precio desde</label>
+                            <input type="number" name="precio_min" class="form-control form-control-sm" placeholder="0">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label" style="font-size:12px;">Precio hasta</label>
+                            <input type="number" name="precio_max" class="form-control form-control-sm" placeholder="50000000">
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <!-- COLUMNAS -->
+                    <h6 class="fw-bold mb-3">Columnas a incluir</h6>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="col_dominio" value="1" checked id="chk_dominio">
+                                <label class="form-check-label" for="chk_dominio">Dominio</label>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="col_anio" value="1" checked id="chk_anio">
+                                <label class="form-check-label" for="chk_anio">Año</label>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="col_km" value="1" checked id="chk_km">
+                                <label class="form-check-label" for="chk_km">Kilómetros</label>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="col_precio" value="1" checked id="chk_precio">
+                                <label class="form-check-label" for="chk_precio">Precio</label>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="col_dias" value="1" id="chk_dias">
+                                <label class="form-check-label" for="chk_dias">Días en concesionaria</label>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="col_carpeta" value="1" id="chk_carpeta">
+                                <label class="form-check-label" for="chk_carpeta">Nº Carpeta</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i data-lucide="download" style="width:16px;height:16px;margin-right:6px;"></i>
+                        Generar PDF
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
 {% endblock %}

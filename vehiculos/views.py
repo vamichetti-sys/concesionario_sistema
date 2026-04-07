@@ -13,12 +13,13 @@ from django.views.decorators.csrf import csrf_exempt
 from .models import (
     Vehiculo,
     FichaVehicular,
+    FichaTecnica,
     PagoGastoIngreso,
     ConfiguracionGastosIngreso,
     GastoConcesionario,
 )
 
-from .forms import VehiculoBasicoForm, VehiculoForm, FichaVehicularForm
+from .forms import VehiculoBasicoForm, VehiculoForm, FichaVehicularForm, FichaTecnicaForm
 
 # ===============================
 # REPORTLAB – PDF (SIN DEPENDENCIAS NATIVAS)
@@ -263,9 +264,11 @@ def cambiar_estado_vehiculo(request, vehiculo_id):
 def ficha_vehicular_ajax(request, vehiculo_id):
     vehiculo = get_object_or_404(Vehiculo, id=vehiculo_id)
     ficha, _ = FichaVehicular.objects.get_or_create(vehiculo=vehiculo)
+    ficha_tec, _ = FichaTecnica.objects.get_or_create(vehiculo=vehiculo)
 
     vehiculo_form = VehiculoForm(instance=vehiculo)
     ficha_form = FichaVehicularForm(instance=ficha)
+    ficha_tecnica_form = FichaTecnicaForm(instance=ficha_tec)
 
     CONCEPTOS = {
         "f08": "Formulario 08",
@@ -368,6 +371,7 @@ def ficha_vehicular_ajax(request, vehiculo_id):
             "gastos_conc_items": gastos_conc_items,
             "gastos_extras": gastos_extras,
             "total_gastos_conc": total_gastos_conc,
+            "ficha_tecnica_form": ficha_tecnica_form,
         },
         request=request,
     )
@@ -382,11 +386,13 @@ def ficha_vehicular_ajax(request, vehiculo_id):
 def guardar_ficha_vehicular(request, vehiculo_id):
     vehiculo = get_object_or_404(Vehiculo, id=vehiculo_id)
     ficha, _ = FichaVehicular.objects.get_or_create(vehiculo=vehiculo)
+    ficha_tec, _ = FichaTecnica.objects.get_or_create(vehiculo=vehiculo)
 
     if request.method == "POST":
 
         vehiculo_form = VehiculoForm(request.POST, instance=vehiculo)
         ficha_form = FichaVehicularForm(request.POST, instance=ficha)
+        ficha_tecnica_form = FichaTecnicaForm(request.POST, instance=ficha_tec)
 
         if vehiculo_form.is_valid() and ficha_form.is_valid():
 
@@ -432,6 +438,12 @@ def guardar_ficha_vehicular(request, vehiculo_id):
             ficha.save()
 
             # ===============================
+            # GUARDAR FICHA TÉCNICA
+            # ===============================
+            if ficha_tecnica_form.is_valid():
+                ficha_tecnica_form.save()
+
+            # ===============================
             # POST-GUARDADO
             # ===============================
             calcular_total_gastos(ficha)
@@ -460,10 +472,12 @@ def guardar_ficha_vehicular(request, vehiculo_id):
 def ficha_completa(request, vehiculo_id):
     vehiculo = get_object_or_404(Vehiculo, id=vehiculo_id)
     ficha, _ = FichaVehicular.objects.get_or_create(vehiculo=vehiculo)
+    ficha_tec, _ = FichaTecnica.objects.get_or_create(vehiculo=vehiculo)
 
     # 🔴 AGREGADO MÍNIMO PARA QUE SE RENDERICEN LAS FECHAS
     ficha_form = FichaVehicularForm(instance=ficha)
     vehiculo_form = VehiculoForm(instance=vehiculo)
+    ficha_tecnica_form = FichaTecnicaForm(instance=ficha_tec)
 
     CONCEPTOS = {
         "f08": "Formulario 08",
@@ -579,6 +593,7 @@ def ficha_completa(request, vehiculo_id):
             "gastos_extras": gastos_extras,
             "total_gastos_conc": total_gastos_conc,
             "total_extras": total_extras,
+            "ficha_tecnica_form": ficha_tecnica_form,
         },
     )
 
@@ -1028,14 +1043,28 @@ def sincronizar_turnos_calendario(vehiculo, ficha):
 # ==========================================================
 def stock_pdf(request):
     """
-    Genera un PDF con la tabla de vehículos en stock:
-    Marca, Modelo, Año, Kilómetros y Precio.
-    Acepta filtros por ?estado= y ?q= igual que lista_vehiculos.
+    Genera un PDF con la tabla de vehículos.
+    Acepta filtros: estado, q, marca, anio_min, anio_max, precio_min, precio_max.
+    Acepta columnas opcionales: col_dominio, col_anio, col_km, col_precio, col_dias, col_carpeta.
     """
     from io import BytesIO
+    from datetime import date as _date
 
     query = request.GET.get("q", "")
     estado_filtro = request.GET.get("estado", "stock")
+    marca_filtro = request.GET.get("marca", "").strip()
+    anio_min = request.GET.get("anio_min", "")
+    anio_max = request.GET.get("anio_max", "")
+    precio_min = request.GET.get("precio_min", "")
+    precio_max = request.GET.get("precio_max", "")
+
+    # Columnas seleccionadas
+    col_dominio = request.GET.get("col_dominio")
+    col_anio = request.GET.get("col_anio")
+    col_km = request.GET.get("col_km")
+    col_precio = request.GET.get("col_precio")
+    col_dias = request.GET.get("col_dias")
+    col_carpeta = request.GET.get("col_carpeta")
 
     vehiculos = Vehiculo.objects.all().order_by("-id")
 
@@ -1049,7 +1078,100 @@ def stock_pdf(request):
     if estado_filtro:
         vehiculos = vehiculos.filter(estado=estado_filtro)
 
-    # ── Respuesta ──────────────────────────────────────────
+    if marca_filtro:
+        vehiculos = vehiculos.filter(marca__icontains=marca_filtro)
+
+    if anio_min:
+        try:
+            vehiculos = vehiculos.filter(anio__gte=int(anio_min))
+        except ValueError:
+            pass
+
+    if anio_max:
+        try:
+            vehiculos = vehiculos.filter(anio__lte=int(anio_max))
+        except ValueError:
+            pass
+
+    if precio_min:
+        try:
+            from decimal import Decimal
+            vehiculos = vehiculos.filter(precio__gte=Decimal(precio_min))
+        except Exception:
+            pass
+
+    if precio_max:
+        try:
+            from decimal import Decimal
+            vehiculos = vehiculos.filter(precio__lte=Decimal(precio_max))
+        except Exception:
+            pass
+
+    # Calcular días en stock
+    hoy = _date.today()
+    vehiculos_data = []
+    for v in vehiculos:
+        dias = None
+        if hasattr(v, 'ficha_reporte') and v.ficha_reporte and v.ficha_reporte.fecha_compra:
+            dias = (hoy - v.ficha_reporte.fecha_compra).days
+        vehiculos_data.append((v, dias))
+
+    # ── Construir columnas dinámicas ──────────────────────
+    columnas = [("Marca / Modelo", 0.30)]  # siempre presente
+
+    if col_carpeta:
+        columnas.append(("Carpeta", 0.10))
+    if col_dominio:
+        columnas.append(("Dominio", 0.12))
+    if col_anio:
+        columnas.append(("Año", 0.08))
+    if col_km:
+        columnas.append(("Kilómetros", 0.14))
+    if col_precio:
+        columnas.append(("Precio", 0.16))
+    if col_dias:
+        columnas.append(("Días", 0.10))
+
+    # Si no eligió ninguna columna extra, mostrar todas por defecto
+    if len(columnas) == 1:
+        columnas = [
+            ("Marca / Modelo", 0.30),
+            ("Dominio", 0.12),
+            ("Año", 0.08),
+            ("Kilómetros", 0.14),
+            ("Precio", 0.16),
+            ("Días", 0.10),
+            ("Carpeta", 0.10),
+        ]
+
+    # Ajustar anchos proporcionalmente
+    total_w = sum(c[1] for c in columnas)
+    columnas = [(name, w / total_w) for name, w in columnas]
+
+    encabezado = [c[0] for c in columnas]
+    filas = [encabezado]
+
+    for v, dias in vehiculos_data:
+        fila = [f"{v.marca} {v.modelo}"]
+        for col_name, _ in columnas[1:]:
+            if col_name == "Carpeta":
+                fila.append(v.numero_carpeta or "–")
+            elif col_name == "Dominio":
+                fila.append(v.dominio or "–")
+            elif col_name == "Año":
+                fila.append(str(v.anio))
+            elif col_name == "Kilómetros":
+                fila.append(f"{v.kilometros:,}".replace(",", ".") if v.kilometros else "–")
+            elif col_name == "Precio":
+                fila.append(f"$ {v.precio:,.0f}".replace(",", "."))
+            elif col_name == "Días":
+                fila.append(f"{dias}d" if dias is not None else "–")
+        filas.append(fila)
+
+    if len(filas) == 1:
+        filas.append(["Sin vehículos"] + [""] * (len(columnas) - 1))
+
+    # ── Respuesta PDF ─────────────────────────────────────
     buffer = BytesIO()
 
     doc = SimpleDocTemplate(
@@ -1061,9 +1183,6 @@ def stock_pdf(request):
         bottomMargin=30,
     )
 
-    styles = getSampleStyleSheet()
-
-    # ── Estilos ────────────────────────────────────────────
     title_style = ParagraphStyle(
         "title",
         fontSize=18,
@@ -1083,68 +1202,47 @@ def stock_pdf(request):
     AZUL = colors.HexColor("#002855")
     AZUL_CLARO = colors.HexColor("#dce9f7")
 
-    # ── Contenido ──────────────────────────────────────────
     elements = []
-
     elements.append(Paragraph("AMICHETTI AUTOMOTORES", title_style))
 
-    from datetime import date as _date
     label_estado = {
         "stock": "En stock",
         "temporal": "Temporalmente no disponibles",
         "vendido": "Vendidos",
+        "reventa": "En reventa",
     }.get(estado_filtro, "Todos los vehículos")
 
-    elements.append(
-        Paragraph(
-            f"Listado de vehículos – {label_estado} &nbsp;|&nbsp; {_date.today().strftime('%d/%m/%Y')}",
-            subtitle_style,
-        )
-    )
+    # Subtítulo con filtros aplicados
+    filtros_txt = []
+    if marca_filtro:
+        filtros_txt.append(f"Marca: {marca_filtro}")
+    if anio_min or anio_max:
+        filtros_txt.append(f"Año: {anio_min or '...'} – {anio_max or '...'}")
+    if precio_min or precio_max:
+        filtros_txt.append(f"Precio: ${precio_min or '...'} – ${precio_max or '...'}")
+    filtros_str = (" &nbsp;|&nbsp; ".join(filtros_txt)) if filtros_txt else ""
+
+    sub = f"Listado de vehículos – {label_estado} &nbsp;|&nbsp; {hoy.strftime('%d/%m/%Y')}"
+    if filtros_str:
+        sub += f"<br/><font size='8'>{filtros_str}</font>"
+
+    elements.append(Paragraph(sub, subtitle_style))
 
     # ── Tabla ─────────────────────────────────────────────
-    encabezado = ["Marca / Modelo", "Dominio", "Año", "Kilómetros", "Precio"]
-
-    filas = [encabezado]
-    for v in vehiculos:
-        km = f"{v.kilometros:,}".replace(",", ".") if v.kilometros else "–"
-        precio = f"$ {v.precio:,.0f}".replace(",", ".")
-        filas.append([
-            f"{v.marca} {v.modelo}",
-            v.dominio or "–",
-            str(v.anio),
-            km,
-            precio,
-        ])
-
-    if len(filas) == 1:
-        filas.append(["Sin vehículos", "", "", "", ""])
-
-    col_widths = [
-        doc.width * 0.42,
-        doc.width * 0.13,
-        doc.width * 0.08,
-        doc.width * 0.16,
-        doc.width * 0.21,
-    ]
+    col_widths = [doc.width * w for _, w in columnas]
 
     tabla = Table(filas, colWidths=col_widths, repeatRows=1)
 
     tabla.setStyle(TableStyle([
-        # Encabezado
         ("BACKGROUND", (0, 0), (-1, 0), AZUL),
         ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
         ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
         ("FONTSIZE", (0, 0), (-1, 0), 10),
         ("ALIGN", (0, 0), (-1, 0), "CENTER"),
-
-        # Filas
         ("FONTSIZE", (0, 1), (-1, -1), 9),
         ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, AZUL_CLARO]),
-        ("ALIGN", (2, 1), (-1, -1), "CENTER"),   # Año, Km, Precio centrados
-        ("ALIGN", (-1, 1), (-1, -1), "RIGHT"),    # Precio alineado derecha
-
-        # General
+        ("ALIGN", (1, 1), (-1, -1), "CENTER"),
+        ("ALIGN", (-1, 1), (-1, -1), "RIGHT"),
         ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#aaaaaa")),
         ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
         ("LEFTPADDING", (0, 0), (-1, -1), 6),

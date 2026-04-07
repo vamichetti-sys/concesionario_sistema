@@ -88,6 +88,12 @@
             </li>
             <li class="nav-item">
               <button class="nav-link" data-bs-toggle="tab"
+                      data-bs-target="#tab-ficha-tecnica" type="button">
+                Ficha técnica
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link" data-bs-toggle="tab"
                       data-bs-target="#tab-observaciones" type="button">
                 Observaciones
               </button>
@@ -417,9 +423,6 @@
   </div>
 </div>
 
-<!-- 🔴 CIERRO ACÁ EL FORM PRINCIPAL DE LA FICHA -->
-</form>
-
 <!-- ================= TAB 6B: PAGO DE GASTOS ================= -->
 <div class="tab-pane fade" id="tab-pago-gastos">
 
@@ -561,6 +564,209 @@
   </div>
 </div>
 
+<!-- ================= TAB: FICHA TÉCNICA ================= -->
+<div class="tab-pane fade" id="tab-ficha-tecnica">
+  <h4 class="fw-bold mb-3" style="color:#002855;">Ficha Técnica</h4>
+
+  <!-- ESPECIFICACIONES -->
+  <h6 class="fw-bold mb-3">
+    <i data-lucide="gauge" style="width:16px;height:16px;margin-right:6px;"></i>
+    Especificaciones
+  </h6>
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <label class="fw-bold" style="font-size:12px;">Tipo de vehículo</label>
+      {{ ficha_tecnica_form.tipo_vehiculo }}
+    </div>
+    <div class="col-md-3">
+      <label class="fw-bold" style="font-size:12px;">Potencia</label>
+      {{ ficha_tecnica_form.potencia }}
+    </div>
+    <div class="col-md-3">
+      <label class="fw-bold" style="font-size:12px;">Cilindrada</label>
+      {{ ficha_tecnica_form.cilindrada }}
+    </div>
+    <div class="col-md-3">
+      <label class="fw-bold" style="font-size:12px;">Dirección</label>
+      {{ ficha_tecnica_form.direccion }}
+    </div>
+    <div class="col-md-3">
+      <label class="fw-bold" style="font-size:12px;">Tanque combustible (L)</label>
+      {{ ficha_tecnica_form.capacidad_tanque }}
+    </div>
+    <div class="col-md-3">
+      <label class="fw-bold" style="font-size:12px;">Capacidad baúl (L)</label>
+      {{ ficha_tecnica_form.capacidad_baul }}
+    </div>
+    <div class="col-md-3">
+      <label class="fw-bold" style="font-size:12px;">Puertas</label>
+      {{ ficha_tecnica_form.puertas }}
+    </div>
+  </div>
+
+  <!-- MEDIDAS -->
+  <h6 class="fw-bold mb-3">
+    <i data-lucide="ruler" style="width:16px;height:16px;margin-right:6px;"></i>
+    Medidas
+  </h6>
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <label class="fw-bold" style="font-size:12px;">Largo (m)</label>
+      {{ ficha_tecnica_form.largo }}
+    </div>
+    <div class="col-md-3">
+      <label class="fw-bold" style="font-size:12px;">Ancho (m)</label>
+      {{ ficha_tecnica_form.ancho }}
+    </div>
+    <div class="col-md-3">
+      <label class="fw-bold" style="font-size:12px;">Alto (m)</label>
+      {{ ficha_tecnica_form.alto }}
+    </div>
+    <div class="col-md-3">
+      <label class="fw-bold" style="font-size:12px;">Peso (kg)</label>
+      {{ ficha_tecnica_form.peso }}
+    </div>
+  </div>
+
+  <hr class="my-3">
+
+  <!-- EQUIPAMIENTO -->
+  <h6 class="fw-bold mb-3">
+    <i data-lucide="check-square" style="width:16px;height:16px;margin-right:6px;"></i>
+    Equipamiento
+  </h6>
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <label class="fw-bold" style="font-size:12px;">ABS</label>
+      {{ ficha_tecnica_form.abs_frenos }}
+    </div>
+    <div class="col-md-3">
+      <label class="fw-bold" style="font-size:12px;">Airbag</label>
+      {{ ficha_tecnica_form.airbag }}
+    </div>
+    <div class="col-md-3">
+      <label class="fw-bold" style="font-size:12px;">Airbags laterales</label>
+      {{ ficha_tecnica_form.airbags_laterales }}
+    </div>
+    <div class="col-md-3">
+      <label class="fw-bold" style="font-size:12px;">Aire acondicionado</label>
+      {{ ficha_tecnica_form.aire_acondicionado }}
+    </div>
+    <div class="col-md-3">
+      <label class="fw-bold" style="font-size:12px;">Cierre centralizado</label>
+      {{ ficha_tecnica_form.cierre_centralizado }}
+    </div>
+    <div class="col-md-3">
+      <label class="fw-bold" style="font-size:12px;">Alzacristales eléctricos</label>
+      {{ ficha_tecnica_form.alzacristales }}
+    </div>
+    <div class="col-md-3">
+      <label class="fw-bold" style="font-size:12px;">Alarma</label>
+      {{ ficha_tecnica_form.alarma }}
+    </div>
+    <div class="col-md-3">
+      <label class="fw-bold" style="font-size:12px;">Sensor estacionamiento</label>
+      {{ ficha_tecnica_form.sensor_estacionamiento }}
+    </div>
+    <div class="col-md-3">
+      <label class="fw-bold" style="font-size:12px;">Cámara retroceso</label>
+      {{ ficha_tecnica_form.camara_retroceso }}
+    </div>
+    <div class="col-md-3">
+      <label class="fw-bold" style="font-size:12px;">Pantalla / Multimedia</label>
+      {{ ficha_tecnica_form.pantalla }}
+    </div>
+    <div class="col-md-3">
+      <label class="fw-bold" style="font-size:12px;">GPS</label>
+      {{ ficha_tecnica_form.gps }}
+    </div>
+    <div class="col-md-3">
+      <label class="fw-bold" style="font-size:12px;">ISOFIX</label>
+      {{ ficha_tecnica_form.isofix }}
+    </div>
+    <div class="col-md-3">
+      <label class="fw-bold" style="font-size:12px;">Techo solar / panorámico</label>
+      {{ ficha_tecnica_form.techo_solar }}
+    </div>
+    <div class="col-md-3">
+      <label class="fw-bold" style="font-size:12px;">Llantas de aleación</label>
+      {{ ficha_tecnica_form.llantas_aleacion }}
+    </div>
+    <div class="col-md-3">
+      <label class="fw-bold" style="font-size:12px;">Control crucero</label>
+      {{ ficha_tecnica_form.control_crucero }}
+    </div>
+    <div class="col-md-3">
+      <label class="fw-bold" style="font-size:12px;">Control de tracción</label>
+      {{ ficha_tecnica_form.control_traccion }}
+    </div>
+    <div class="col-md-3">
+      <label class="fw-bold" style="font-size:12px;">Asientos de cuero</label>
+      {{ ficha_tecnica_form.asientos_cuero }}
+    </div>
+    <div class="col-md-3">
+      <label class="fw-bold" style="font-size:12px;">Bluetooth</label>
+      {{ ficha_tecnica_form.bluetooth }}
+    </div>
+  </div>
+
+  <hr class="my-3">
+
+  <!-- ESTADO DE COMPONENTES -->
+  <h6 class="fw-bold mb-3">
+    <i data-lucide="clipboard-check" style="width:16px;height:16px;margin-right:6px;"></i>
+    Estado de componentes
+  </h6>
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <label class="fw-bold" style="font-size:12px;">Neumáticos</label>
+      {{ ficha_tecnica_form.est_neumaticos }}
+    </div>
+    <div class="col-md-3">
+      <label class="fw-bold" style="font-size:12px;">Frenos</label>
+      {{ ficha_tecnica_form.est_frenos }}
+    </div>
+    <div class="col-md-3">
+      <label class="fw-bold" style="font-size:12px;">Amortiguadores</label>
+      {{ ficha_tecnica_form.est_amortiguadores }}
+    </div>
+    <div class="col-md-3">
+      <label class="fw-bold" style="font-size:12px;">Batería</label>
+      {{ ficha_tecnica_form.est_bateria }}
+    </div>
+    <div class="col-md-3">
+      <label class="fw-bold" style="font-size:12px;">Escape / Silenciador</label>
+      {{ ficha_tecnica_form.est_escape }}
+    </div>
+    <div class="col-md-3">
+      <label class="fw-bold" style="font-size:12px;">Chapa y pintura</label>
+      {{ ficha_tecnica_form.est_chapa_pintura }}
+    </div>
+    <div class="col-md-3">
+      <label class="fw-bold" style="font-size:12px;">Tapizado</label>
+      {{ ficha_tecnica_form.est_tapizado }}
+    </div>
+    <div class="col-md-3">
+      <label class="fw-bold" style="font-size:12px;">Vidrios / Cristales</label>
+      {{ ficha_tecnica_form.est_vidrios }}
+    </div>
+    <div class="col-md-3">
+      <label class="fw-bold" style="font-size:12px;">Luces</label>
+      {{ ficha_tecnica_form.est_luces }}
+    </div>
+    <div class="col-md-3">
+      <label class="fw-bold" style="font-size:12px;">Motor</label>
+      {{ ficha_tecnica_form.est_motor }}
+    </div>
+  </div>
+
+  <!-- OBSERVACIONES TÉCNICAS -->
+  <div class="mb-3">
+    <label class="fw-bold">Observaciones técnicas</label>
+    {{ ficha_tecnica_form.observaciones_tecnicas }}
+  </div>
+</div>
+
 <div class="tab-pane fade" id="tab-observaciones">
   <div class="row g-3">
 
@@ -618,6 +824,9 @@
 
   </div>
 </div>
+
+<!-- 🔴 CIERRO ACÁ EL FORM PRINCIPAL DE LA FICHA -->
+</form>
 
           </div> <!-- /tab-content -->
 <!-- ================= FOOTER ACCIONES ================= -->

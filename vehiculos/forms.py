@@ -1,5 +1,5 @@
 from django import forms
-from .models import Vehiculo, FichaVehicular
+from .models import Vehiculo, FichaVehicular, FichaTecnica
 from django.conf import settings
 
 
@@ -370,3 +370,55 @@ class FichaVehicularForm(forms.ModelForm):
     # ======================================================
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+
+# ==========================================================
+# FORMULARIO FICHA TÉCNICA
+# ==========================================================
+class FichaTecnicaForm(forms.ModelForm):
+    class Meta:
+        model = FichaTecnica
+        exclude = ['vehiculo']
+
+        widgets = {
+            'tipo_vehiculo': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Sedán, SUV, Pick Up...'}),
+            'potencia': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 150 HP'}),
+            'cilindrada': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 1.6 / 2.0T'}),
+            'direccion': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Hidráulica, Eléctrica'}),
+            'capacidad_tanque': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 55'}),
+            'capacidad_baul': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 420'}),
+            'puertas': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 4'}),
+            'largo': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 4.50'}),
+            'ancho': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 1.86'}),
+            'alto': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 1.50'}),
+            'peso': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 1350'}),
+            'abs_frenos': forms.Select(attrs={'class': 'form-control'}),
+            'airbag': forms.Select(attrs={'class': 'form-control'}),
+            'airbags_laterales': forms.Select(attrs={'class': 'form-control'}),
+            'aire_acondicionado': forms.Select(attrs={'class': 'form-control'}),
+            'cierre_centralizado': forms.Select(attrs={'class': 'form-control'}),
+            'alzacristales': forms.Select(attrs={'class': 'form-control'}),
+            'alarma': forms.Select(attrs={'class': 'form-control'}),
+            'sensor_estacionamiento': forms.Select(attrs={'class': 'form-control'}),
+            'camara_retroceso': forms.Select(attrs={'class': 'form-control'}),
+            'pantalla': forms.Select(attrs={'class': 'form-control'}),
+            'gps': forms.Select(attrs={'class': 'form-control'}),
+            'isofix': forms.Select(attrs={'class': 'form-control'}),
+            'techo_solar': forms.Select(attrs={'class': 'form-control'}),
+            'llantas_aleacion': forms.Select(attrs={'class': 'form-control'}),
+            'control_crucero': forms.Select(attrs={'class': 'form-control'}),
+            'control_traccion': forms.Select(attrs={'class': 'form-control'}),
+            'asientos_cuero': forms.Select(attrs={'class': 'form-control'}),
+            'bluetooth': forms.Select(attrs={'class': 'form-control'}),
+            'est_neumaticos': forms.Select(attrs={'class': 'form-control'}),
+            'est_frenos': forms.Select(attrs={'class': 'form-control'}),
+            'est_amortiguadores': forms.Select(attrs={'class': 'form-control'}),
+            'est_bateria': forms.Select(attrs={'class': 'form-control'}),
+            'est_escape': forms.Select(attrs={'class': 'form-control'}),
+            'est_chapa_pintura': forms.Select(attrs={'class': 'form-control'}),
+            'est_tapizado': forms.Select(attrs={'class': 'form-control'}),
+            'est_vidrios': forms.Select(attrs={'class': 'form-control'}),
+            'est_luces': forms.Select(attrs={'class': 'form-control'}),
+            'est_motor': forms.Select(attrs={'class': 'form-control'}),
+            'observaciones_tecnicas': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Detalles adicionales, trabajos realizados...'}),
+        }
