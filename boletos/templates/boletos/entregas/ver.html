@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Entrega – {{ entrega.nombre_comprador }}{% endblock %}
+{% block content %}
+
+<div class="mb-4">
+    <a href="{% url 'boletos:lista_entregas' %}" class="text-muted text-decoration-none d-inline-flex align-items-center mb-2" style="font-size:14px;">
+        <i data-lucide="arrow-left" style="width:16px;height:16px;margin-right:6px;"></i>
+        Volver a entregas
+    </a>
+    <div class="d-flex justify-content-between align-items-start">
+        <div>
+            <h3 class="fw-bold mb-1">Entrega de Documentacion</h3>
+            <p class="text-muted mb-0">{{ entrega.nombre_comprador }} – {{ entrega.marca }} {{ entrega.modelo }} ({{ entrega.dominio }})</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'boletos:entrega_pdf' pk=entrega.pk %}" class="btn btn-danger">
+                <i data-lucide="file-text" style="width:16px;height:16px;margin-right:6px;"></i>
+                Descargar PDF
+            </a>
+            <a href="{% url 'boletos:eliminar_entrega' pk=entrega.pk %}" class="btn btn-outline-danger">
+                <i data-lucide="trash-2" style="width:16px;height:16px;"></i>
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-md-6">
+        <!-- VEHICULO -->
+        <div class="card p-4 mb-4">
+            <h6 class="fw-bold mb-3">
+                <i data-lucide="car" style="width:16px;height:16px;margin-right:6px;"></i>
+                Vehiculo
+            </h6>
+            <table class="table table-borderless mb-0" style="font-size:14px;">
+                <tr><td class="text-muted" style="width:100px;">Marca</td><td>{{ entrega.marca }}</td></tr>
+                <tr><td class="text-muted">Modelo</td><td>{{ entrega.modelo }}</td></tr>
+                <tr><td class="text-muted">Dominio</td><td><span class="badge bg-secondary">{{ entrega.dominio }}</span></td></tr>
+                <tr><td class="text-muted">Anio</td><td>{{ entrega.anio|default:"-" }}</td></tr>
+                <tr><td class="text-muted">Motor</td><td>{{ entrega.motor|default:"-" }}</td></tr>
+                <tr><td class="text-muted">Chasis</td><td>{{ entrega.chasis|default:"-" }}</td></tr>
+            </table>
+        </div>
+
+        <!-- COMPRADOR -->
+        <div class="card p-4">
+            <h6 class="fw-bold mb-3">
+                <i data-lucide="user" style="width:16px;height:16px;margin-right:6px;"></i>
+                Comprador
+            </h6>
+            <table class="table table-borderless mb-0" style="font-size:14px;">
+                <tr><td class="text-muted" style="width:100px;">Nombre</td><td><strong>{{ entrega.nombre_comprador }}</strong></td></tr>
+                <tr><td class="text-muted">DNI</td><td>{{ entrega.dni_comprador|default:"-" }}</td></tr>
+                <tr><td class="text-muted">Domicilio</td><td>{{ entrega.domicilio_comprador|default:"-" }}</td></tr>
+                <tr><td class="text-muted">Telefono</td><td>{{ entrega.telefono_comprador|default:"-" }}</td></tr>
+            </table>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <!-- CHECKLIST -->
+        <div class="card p-4">
+            <h6 class="fw-bold mb-3">
+                <i data-lucide="clipboard-check" style="width:16px;height:16px;margin-right:6px;"></i>
+                Documentacion
+            </h6>
+            <div class="row">
+                {% for nombre, valor in entrega.items_entregados %}
+                <div class="col-6 mb-2 d-flex align-items-center gap-2">
+                    {% if valor == "si" %}
+                    <i data-lucide="check-circle" style="width:16px;height:16px;color:#059669;"></i>
+                    <span>{{ nombre }}</span>
+                    {% else %}
+                    <i data-lucide="x-circle" style="width:16px;height:16px;color:#dc2626;"></i>
+                    <span class="text-muted">{{ nombre }}</span>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+
+            {% if entrega.observaciones %}
+            <hr>
+            <h6 class="fw-bold mb-2">Observaciones</h6>
+            <p class="mb-0" style="white-space:pre-line;">{{ entrega.observaciones }}</p>
+            {% endif %}
+
+            <hr>
+            <small class="text-muted">
+                Fecha: {{ entrega.fecha|date:"d/m/Y" }}
+                {% if entrega.hora %} – {{ entrega.hora|time:"H:i" }}{% endif %}
+            </small>
+        </div>
+    </div>
+</div>
+
+<script>lucide.createIcons();</script>
+{% endblock %}

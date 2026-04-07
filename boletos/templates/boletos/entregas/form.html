@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+{% block title %}{{ titulo }}{% endblock %}
+{% block content %}
+
+<div class="mb-4">
+    <a href="{% url 'boletos:lista_entregas' %}" class="text-muted text-decoration-none d-inline-flex align-items-center mb-2" style="font-size:14px;">
+        <i data-lucide="arrow-left" style="width:16px;height:16px;margin-right:6px;"></i>
+        Volver a entregas
+    </a>
+    <h3 class="fw-bold mb-1">{{ titulo }}</h3>
+    <p class="text-muted mb-0">Selecciona un vehiculo para autocompletar los datos</p>
+</div>
+
+<div class="card p-4" style="max-width:900px;">
+    <form method="post">
+        {% csrf_token %}
+
+        <!-- VEHICULO SELECTOR -->
+        <h6 class="fw-bold mb-3">
+            <i data-lucide="car" style="width:16px;height:16px;margin-right:6px;"></i>
+            Datos del vehiculo
+        </h6>
+        <div class="row g-3 mb-3">
+            <div class="col-md-12">
+                <label class="form-label">Seleccionar vehiculo (autocompleta datos)</label>
+                {{ form.vehiculo }}
+            </div>
+        </div>
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <label class="form-label">Marca *</label>
+                {{ form.marca }}
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Modelo *</label>
+                {{ form.modelo }}
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Dominio *</label>
+                {{ form.dominio }}
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Anio</label>
+                {{ form.anio }}
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Motor</label>
+                {{ form.motor }}
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Chasis</label>
+                {{ form.chasis }}
+            </div>
+        </div>
+
+        <!-- COMPRADOR -->
+        <h6 class="fw-bold mb-3">
+            <i data-lucide="user" style="width:16px;height:16px;margin-right:6px;"></i>
+            Datos del comprador
+        </h6>
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <label class="form-label">Nombre y apellido *</label>
+                {{ form.nombre_comprador }}
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">DNI</label>
+                {{ form.dni_comprador }}
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Domicilio</label>
+                {{ form.domicilio_comprador }}
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Telefono</label>
+                {{ form.telefono_comprador }}
+            </div>
+        </div>
+
+        <!-- CHECKLIST -->
+        <h6 class="fw-bold mb-3">
+            <i data-lucide="clipboard-check" style="width:16px;height:16px;margin-right:6px;"></i>
+            Documentacion entregada
+        </h6>
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <label class="form-label">Titulo</label>
+                {{ form.titulo }}
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Cedula</label>
+                {{ form.cedula }}
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Cedula azul</label>
+                {{ form.cedula_azul }}
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Formulario 08</label>
+                {{ form.formulario_08 }}
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Formulario 02</label>
+                {{ form.formulario_02 }}
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Formulario 12</label>
+                {{ form.formulario_12 }}
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Formulario 13D</label>
+                {{ form.formulario_13d }}
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">GP 01</label>
+                {{ form.gp01 }}
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">GNC</label>
+                {{ form.gnc }}
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">VTV</label>
+                {{ form.vtv }}
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Verificacion policial</label>
+                {{ form.verificacion_policial }}
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Informe de dominio</label>
+                {{ form.informe_dominio }}
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Infracciones</label>
+                {{ form.infracciones }}
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Patentes al dia</label>
+                {{ form.patentes_al_dia }}
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Libre deuda</label>
+                {{ form.libre_deuda }}
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Manuales</label>
+                {{ form.manuales }}
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Codigo radio</label>
+                {{ form.codigo_radio }}
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Llave duplicado</label>
+                {{ form.llave_duplicado }}
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Rueda de auxilio</label>
+                {{ form.rueda_auxilio }}
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Gato / llave de rueda</label>
+                {{ form.gato_llave_rueda }}
+            </div>
+        </div>
+
+        <!-- FECHA Y OBS -->
+        <h6 class="fw-bold mb-3">
+            <i data-lucide="calendar" style="width:16px;height:16px;margin-right:6px;"></i>
+            Fecha y observaciones
+        </h6>
+        <div class="row g-3 mb-3">
+            <div class="col-md-3">
+                <label class="form-label">Fecha</label>
+                {{ form.fecha }}
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Hora</label>
+                {{ form.hora }}
+            </div>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Observaciones</label>
+            {{ form.observaciones }}
+        </div>
+
+        {% if form.errors %}
+        <div class="alert alert-danger mb-3" style="border-radius:10px;">
+            <ul class="mb-0">
+                {% for field, errors in form.errors.items %}
+                    {% for error in errors %}
+                    <li>{{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <hr class="my-4">
+        <div class="d-flex gap-3">
+            <button type="submit" class="btn btn-primary">
+                <i data-lucide="save" style="width:16px;height:16px;margin-right:6px;"></i>
+                Guardar
+            </button>
+            <a href="{% url 'boletos:lista_entregas' %}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const vehiculos = {{ vehiculos_json|safe }};
+    const select = document.getElementById('id_vehiculo_select');
+
+    if (select) {
+        select.addEventListener('change', function() {
+            const id = parseInt(this.value);
+            const v = vehiculos.find(x => x.id === id);
+            if (v) {
+                document.getElementById('id_marca').value = v.marca;
+                document.getElementById('id_modelo').value = v.modelo;
+                document.getElementById('id_dominio').value = v.dominio;
+                document.getElementById('id_anio').value = v.anio;
+                document.getElementById('id_motor').value = v.motor;
+                document.getElementById('id_chasis').value = v.chasis;
+            }
+        });
+    }
+
+    lucide.createIcons();
+});
+</script>
+{% endblock %}

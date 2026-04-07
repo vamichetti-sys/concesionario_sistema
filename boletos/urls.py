@@ -31,4 +31,11 @@ urlpatterns = [
     path("reservas/editar/<int:reserva_id>/", views.editar_reserva, name="editar_reserva"),
     path("reservas/eliminar/<int:reserva_id>/", views.eliminar_reserva, name="eliminar_reserva"),
     path("reservas/pdf/<int:reserva_id>/", views.reserva_pdf, name="reserva_pdf"),
+
+    # ENTREGA DE DOCUMENTACION
+    path("entregas/", views.lista_entregas, name="lista_entregas"),
+    path("entregas/nueva/", views.crear_entrega, name="crear_entrega"),
+    path("entregas/ver/<int:pk>/", views.ver_entrega, name="ver_entrega"),
+    path("entregas/eliminar/<int:pk>/", views.eliminar_entrega, name="eliminar_entrega"),
+    path("entregas/pdf/<int:pk>/", views.entrega_pdf, name="entrega_pdf"),
 ]

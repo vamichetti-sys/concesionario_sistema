@@ -248,3 +248,99 @@ class Reserva(models.Model):
                 super().save(*args, **kwargs)
                 return
         super().save(*args, **kwargs)
+
+
+# ============================================================
+# ENTREGA DE DOCUMENTACION
+# ============================================================
+class EntregaDocumentacion(models.Model):
+
+    SI_NO = [
+        ("si", "Si"),
+        ("no", "No"),
+    ]
+
+    # Datos del vehiculo (auto-completables desde Vehiculo)
+    vehiculo = models.ForeignKey(
+        Vehiculo,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="entregas_documentacion",
+    )
+    marca = models.CharField(max_length=100)
+    modelo = models.CharField(max_length=100)
+    dominio = models.CharField(max_length=20)
+    anio = models.CharField(max_length=10, blank=True, null=True)
+    motor = models.CharField(max_length=100, blank=True, null=True)
+    chasis = models.CharField(max_length=100, blank=True, null=True)
+
+    # Datos del comprador
+    nombre_comprador = models.CharField(max_length=150)
+    dni_comprador = models.CharField(max_length=20, blank=True, null=True)
+    domicilio_comprador = models.CharField(max_length=200, blank=True, null=True)
+    telefono_comprador = models.CharField(max_length=50, blank=True, null=True)
+
+    # Checklist de documentacion entregada
+    titulo = models.CharField(max_length=2, choices=SI_NO, default="no")
+    cedula = models.CharField(max_length=2, choices=SI_NO, default="no")
+    cedula_azul = models.CharField(max_length=2, choices=SI_NO, default="no")
+    formulario_08 = models.CharField(max_length=2, choices=SI_NO, default="no")
+    formulario_02 = models.CharField(max_length=2, choices=SI_NO, default="no")
+    formulario_12 = models.CharField(max_length=2, choices=SI_NO, default="no")
+    formulario_13d = models.CharField(max_length=2, choices=SI_NO, default="no")
+    gp01 = models.CharField(max_length=2, choices=SI_NO, default="no", verbose_name="GP 01")
+    gnc = models.CharField(max_length=2, choices=SI_NO, default="no", verbose_name="GNC")
+    vtv = models.CharField(max_length=2, choices=SI_NO, default="no", verbose_name="VTV")
+    verificacion_policial = models.CharField(max_length=2, choices=SI_NO, default="no")
+    informe_dominio = models.CharField(max_length=2, choices=SI_NO, default="no")
+    infracciones = models.CharField(max_length=2, choices=SI_NO, default="no")
+    patentes_al_dia = models.CharField(max_length=2, choices=SI_NO, default="no")
+    libre_deuda = models.CharField(max_length=2, choices=SI_NO, default="no")
+    manuales = models.CharField(max_length=2, choices=SI_NO, default="no")
+    codigo_radio = models.CharField(max_length=2, choices=SI_NO, default="no")
+    llave_duplicado = models.CharField(max_length=2, choices=SI_NO, default="no")
+    rueda_auxilio = models.CharField(max_length=2, choices=SI_NO, default="no")
+    gato_llave_rueda = models.CharField(max_length=2, choices=SI_NO, default="no")
+
+    # Observaciones
+    observaciones = models.TextField(blank=True, null=True)
+
+    # Fecha y metadatos
+    fecha = models.DateField(default=now)
+    hora = models.TimeField(blank=True, null=True)
+    creada = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-fecha"]
+        verbose_name = "Entrega de documentacion"
+        verbose_name_plural = "Entregas de documentacion"
+
+    def __str__(self):
+        return f"Entrega – {self.nombre_comprador} – {self.marca} {self.modelo} ({self.dominio})"
+
+    def items_entregados(self):
+        """Retorna lista de items marcados como SI."""
+        campos = [
+            ("Titulo", self.titulo),
+            ("Cedula", self.cedula),
+            ("Cedula azul", self.cedula_azul),
+            ("Formulario 08", self.formulario_08),
+            ("Formulario 02", self.formulario_02),
+            ("Formulario 12", self.formulario_12),
+            ("Formulario 13D", self.formulario_13d),
+            ("GP 01", self.gp01),
+            ("GNC", self.gnc),
+            ("VTV", self.vtv),
+            ("Verificacion policial", self.verificacion_policial),
+            ("Informe de dominio", self.informe_dominio),
+            ("Infracciones", self.infracciones),
+            ("Patentes al dia", self.patentes_al_dia),
+            ("Libre deuda", self.libre_deuda),
+            ("Manuales", self.manuales),
+            ("Codigo radio", self.codigo_radio),
+            ("Llave duplicado", self.llave_duplicado),
+            ("Rueda de auxilio", self.rueda_auxilio),
+            ("Gato / llave de rueda", self.gato_llave_rueda),
+        ]
+        return [(nombre, valor) for nombre, valor in campos]

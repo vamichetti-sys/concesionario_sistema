@@ -4,7 +4,7 @@ from datetime import date
 
 from clientes.models import Cliente
 from vehiculos.models import Vehiculo
-from .models import BoletoCompraventa, Pagare, Reserva
+from .models import BoletoCompraventa, Pagare, Reserva, EntregaDocumentacion
 
 
 # ==========================================================
@@ -317,3 +317,64 @@ class ReservaForm(forms.ModelForm):
             "observaciones": forms.Textarea(attrs={**W, "rows": 3}),
             "fecha_reserva": forms.DateInput(attrs={**W, "type": "date"}),
         }
+
+
+# ==========================================================
+# ENTREGA DE DOCUMENTACION
+# ==========================================================
+class EntregaDocumentacionForm(forms.ModelForm):
+    class Meta:
+        model = EntregaDocumentacion
+        fields = [
+            "vehiculo",
+            "marca", "modelo", "dominio", "anio", "motor", "chasis",
+            "nombre_comprador", "dni_comprador", "domicilio_comprador", "telefono_comprador",
+            "titulo", "cedula", "cedula_azul",
+            "formulario_08", "formulario_02", "formulario_12", "formulario_13d",
+            "gp01", "gnc", "vtv", "verificacion_policial",
+            "informe_dominio", "infracciones", "patentes_al_dia", "libre_deuda",
+            "manuales", "codigo_radio", "llave_duplicado",
+            "rueda_auxilio", "gato_llave_rueda",
+            "observaciones", "fecha", "hora",
+        ]
+        widgets = {
+            "vehiculo": forms.Select(attrs={"class": "form-select", "id": "id_vehiculo_select"}),
+            "marca": forms.TextInput(attrs={"class": "form-control"}),
+            "modelo": forms.TextInput(attrs={"class": "form-control"}),
+            "dominio": forms.TextInput(attrs={"class": "form-control"}),
+            "anio": forms.TextInput(attrs={"class": "form-control"}),
+            "motor": forms.TextInput(attrs={"class": "form-control"}),
+            "chasis": forms.TextInput(attrs={"class": "form-control"}),
+            "nombre_comprador": forms.TextInput(attrs={"class": "form-control", "placeholder": "Nombre y apellido"}),
+            "dni_comprador": forms.TextInput(attrs={"class": "form-control", "placeholder": "DNI"}),
+            "domicilio_comprador": forms.TextInput(attrs={"class": "form-control", "placeholder": "Domicilio"}),
+            "telefono_comprador": forms.TextInput(attrs={"class": "form-control", "placeholder": "Telefono"}),
+            "titulo": forms.Select(attrs={"class": "form-select"}),
+            "cedula": forms.Select(attrs={"class": "form-select"}),
+            "cedula_azul": forms.Select(attrs={"class": "form-select"}),
+            "formulario_08": forms.Select(attrs={"class": "form-select"}),
+            "formulario_02": forms.Select(attrs={"class": "form-select"}),
+            "formulario_12": forms.Select(attrs={"class": "form-select"}),
+            "formulario_13d": forms.Select(attrs={"class": "form-select"}),
+            "gp01": forms.Select(attrs={"class": "form-select"}),
+            "gnc": forms.Select(attrs={"class": "form-select"}),
+            "vtv": forms.Select(attrs={"class": "form-select"}),
+            "verificacion_policial": forms.Select(attrs={"class": "form-select"}),
+            "informe_dominio": forms.Select(attrs={"class": "form-select"}),
+            "infracciones": forms.Select(attrs={"class": "form-select"}),
+            "patentes_al_dia": forms.Select(attrs={"class": "form-select"}),
+            "libre_deuda": forms.Select(attrs={"class": "form-select"}),
+            "manuales": forms.Select(attrs={"class": "form-select"}),
+            "codigo_radio": forms.Select(attrs={"class": "form-select"}),
+            "llave_duplicado": forms.Select(attrs={"class": "form-select"}),
+            "rueda_auxilio": forms.Select(attrs={"class": "form-select"}),
+            "gato_llave_rueda": forms.Select(attrs={"class": "form-select"}),
+            "observaciones": forms.Textarea(attrs={"class": "form-control", "rows": 2}),
+            "fecha": forms.DateInput(attrs={"class": "form-control", "type": "date"}),
+            "hora": forms.TimeInput(attrs={"class": "form-control", "type": "time"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["vehiculo"].required = False
+        self.fields["vehiculo"].queryset = Vehiculo.objects.all().order_by("-id")

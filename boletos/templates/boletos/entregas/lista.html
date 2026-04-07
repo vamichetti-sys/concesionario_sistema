@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Entregas de Documentacion{% endblock %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <a href="{% url 'boletos:panel' %}" class="text-muted text-decoration-none d-inline-flex align-items-center mb-2" style="font-size:14px;">
+            <i data-lucide="arrow-left" style="width:16px;height:16px;margin-right:6px;"></i>
+            Volver a Boletos
+        </a>
+        <h3 class="fw-bold mb-1">Entregas de Documentacion</h3>
+        <p class="text-muted mb-0">Control de documentacion entregada al comprador</p>
+    </div>
+    <a href="{% url 'boletos:crear_entrega' %}" class="btn btn-primary">
+        <i data-lucide="plus" style="width:16px;height:16px;margin-right:6px;"></i>
+        Nueva Entrega
+    </a>
+</div>
+
+<!-- BUSQUEDA -->
+<div class="card p-3 mb-4">
+    <form method="GET">
+        <div class="input-group">
+            <span class="input-group-text" style="background:#fff;border-right:none;">
+                <i data-lucide="search" style="width:18px;height:18px;color:#9ca3af;"></i>
+            </span>
+            <input type="text" name="q" class="form-control" style="border-left:none;"
+                   placeholder="Buscar por comprador, dominio, marca..." value="{{ query }}">
+            <button type="submit" class="btn btn-primary">Buscar</button>
+        </div>
+    </form>
+</div>
+
+<!-- LISTADO -->
+<div class="card p-0">
+    {% if entregas %}
+    <div class="table-responsive">
+        <table class="table align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Comprador</th>
+                    <th>Vehiculo</th>
+                    <th>Dominio</th>
+                    <th>Fecha</th>
+                    <th class="text-end">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for e in entregas %}
+                <tr>
+                    <td>
+                        <strong>{{ e.nombre_comprador }}</strong>
+                        {% if e.dni_comprador %}<br><small class="text-muted">DNI {{ e.dni_comprador }}</small>{% endif %}
+                    </td>
+                    <td>{{ e.marca }} {{ e.modelo }}</td>
+                    <td><span class="badge bg-secondary">{{ e.dominio }}</span></td>
+                    <td><span class="text-muted">{{ e.fecha|date:"d/m/Y" }}</span></td>
+                    <td class="text-end">
+                        <div class="d-flex gap-1 justify-content-end">
+                            <a href="{% url 'boletos:ver_entrega' pk=e.pk %}" class="btn btn-secondary btn-sm">
+                                <i data-lucide="eye" style="width:14px;height:14px;"></i>
+                            </a>
+                            <a href="{% url 'boletos:entrega_pdf' pk=e.pk %}" class="btn btn-danger btn-sm" title="PDF">
+                                <i data-lucide="file-text" style="width:14px;height:14px;"></i>
+                            </a>
+                            <a href="{% url 'boletos:eliminar_entrega' pk=e.pk %}" class="btn btn-outline-danger btn-sm">
+                                <i data-lucide="trash-2" style="width:14px;height:14px;"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="p-5 text-center">
+        <i data-lucide="folder-open" style="width:48px;height:48px;color:#9ca3af;margin-bottom:12px;"></i>
+        <p class="text-muted mb-3">No hay entregas registradas</p>
+        <a href="{% url 'boletos:crear_entrega' %}" class="btn btn-primary">
+            <i data-lucide="plus" style="width:16px;height:16px;margin-right:6px;"></i>
+            Registrar primera entrega
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<script>lucide.createIcons();</script>
+{% endblock %}

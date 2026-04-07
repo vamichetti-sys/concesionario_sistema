@@ -22,8 +22,8 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import cm
 from reportlab.lib import colors
 
-from .models import BoletoCompraventa, Pagare, PagareLote, Reserva
-from .forms import CrearBoletoForm, CrearPagareLoteForm, ReservaForm
+from .models import BoletoCompraventa, Pagare, PagareLote, Reserva, EntregaDocumentacion
+from .forms import CrearBoletoForm, CrearPagareLoteForm, ReservaForm, EntregaDocumentacionForm
 from clientes.models import Cliente
 from cuentas.models import CuentaCorriente
 
@@ -963,4 +963,208 @@ def reserva_pdf(request, reserva_id):
     pdf_bytes = _generar_pdf_reserva(reserva)
     response = HttpResponse(pdf_bytes, content_type="application/pdf")
     response["Content-Disposition"] = f'inline; filename="reserva_{reserva.numero_reserva}.pdf"'
+    return response
+
+
+# ====================================
+# ENTREGA DE DOCUMENTACION - LISTA
+# ====================================
+@login_required
+def lista_entregas(request):
+    q = request.GET.get("q", "")
+    entregas = EntregaDocumentacion.objects.all()
+    if q:
+        entregas = entregas.filter(
+            Q(nombre_comprador__icontains=q)
+            | Q(dominio__icontains=q)
+            | Q(marca__icontains=q)
+            | Q(modelo__icontains=q)
+        )
+    return render(request, "boletos/entregas/lista.html", {
+        "entregas": entregas,
+        "query": q,
+    })
+
+
+# ====================================
+# ENTREGA DE DOCUMENTACION - CREAR
+# ====================================
+@login_required
+def crear_entrega(request):
+    from vehiculos.models import Vehiculo, FichaVehicular
+
+    if request.method == "POST":
+        form = EntregaDocumentacionForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Entrega de documentacion registrada.")
+            return redirect("boletos:lista_entregas")
+    else:
+        form = EntregaDocumentacionForm()
+
+    vehiculos_json = []
+    for v in Vehiculo.objects.all().order_by("-id"):
+        ficha = getattr(v, "ficha", None)
+        vehiculos_json.append({
+            "id": v.id,
+            "marca": v.marca,
+            "modelo": v.modelo,
+            "dominio": v.dominio,
+            "anio": str(v.anio) if v.anio else "",
+            "motor": ficha.numero_motor if ficha and ficha.numero_motor else "",
+            "chasis": ficha.numero_chasis if ficha and ficha.numero_chasis else "",
+        })
+
+    import json
+    return render(request, "boletos/entregas/form.html", {
+        "form": form,
+        "titulo": "Nueva Entrega de Documentacion",
+        "vehiculos_json": json.dumps(vehiculos_json),
+    })
+
+
+# ====================================
+# ENTREGA DE DOCUMENTACION - VER
+# ====================================
+@login_required
+def ver_entrega(request, pk):
+    entrega = get_object_or_404(EntregaDocumentacion, pk=pk)
+    return render(request, "boletos/entregas/ver.html", {"entrega": entrega})
+
+
+# ====================================
+# ENTREGA DE DOCUMENTACION - ELIMINAR
+# ====================================
+@login_required
+def eliminar_entrega(request, pk):
+    entrega = get_object_or_404(EntregaDocumentacion, pk=pk)
+    if request.method == "POST":
+        entrega.delete()
+        messages.success(request, "Entrega eliminada.")
+        return redirect("boletos:lista_entregas")
+    return render(request, "boletos/entregas/eliminar.html", {"entrega": entrega})
+
+
+# ====================================
+# ENTREGA DE DOCUMENTACION - PDF
+# ====================================
+@login_required
+def entrega_pdf(request, pk):
+    entrega = get_object_or_404(EntregaDocumentacion, pk=pk)
+
+    response = HttpResponse(content_type="application/pdf")
+    response["Content-Disposition"] = (
+        f'inline; filename="entrega_{entrega.dominio}_{entrega.pk}.pdf"'
+    )
+
+    c = canvas.Canvas(response, pagesize=A4)
+    w, h = A4
+
+    # Header
+    c.setFont("Helvetica-Bold", 16)
+    c.drawString(2 * cm, h - 2 * cm, "AMICHETTI AUTOMOTORES")
+    c.setFont("Helvetica", 9)
+    c.drawString(2 * cm, h - 2.6 * cm, "Rojas, Buenos Aires")
+
+    c.setFont("Helvetica-Bold", 12)
+    c.drawString(2 * cm, h - 3.6 * cm, "RECIBO DE ENTREGA DE DOCUMENTACION")
+
+    # Datos del vehiculo
+    y = h - 4.8 * cm
+    c.setFont("Helvetica-Bold", 10)
+    c.drawString(2 * cm, y, "DATOS DEL VEHICULO")
+    y -= 0.6 * cm
+    c.setFont("Helvetica", 9)
+
+    datos_vehiculo = [
+        f"Marca: {entrega.marca}",
+        f"Modelo: {entrega.modelo}",
+        f"Dominio: {entrega.dominio}",
+        f"Anio: {entrega.anio or '-'}",
+        f"Motor: {entrega.motor or '-'}",
+        f"Chasis: {entrega.chasis or '-'}",
+    ]
+    for dato in datos_vehiculo:
+        c.drawString(2.5 * cm, y, dato)
+        y -= 0.45 * cm
+
+    # Datos del comprador
+    y -= 0.4 * cm
+    c.setFont("Helvetica-Bold", 10)
+    c.drawString(2 * cm, y, "DATOS DEL COMPRADOR")
+    y -= 0.6 * cm
+    c.setFont("Helvetica", 9)
+
+    datos_comprador = [
+        f"Nombre: {entrega.nombre_comprador}",
+        f"DNI: {entrega.dni_comprador or '-'}",
+        f"Domicilio: {entrega.domicilio_comprador or '-'}",
+        f"Telefono: {entrega.telefono_comprador or '-'}",
+    ]
+    for dato in datos_comprador:
+        c.drawString(2.5 * cm, y, dato)
+        y -= 0.45 * cm
+
+    # Checklist
+    y -= 0.5 * cm
+    c.setFont("Helvetica-Bold", 10)
+    c.drawString(2 * cm, y, "DOCUMENTACION RECIBIDA")
+    y -= 0.6 * cm
+    c.setFont("Helvetica", 9)
+
+    items = entrega.items_entregados()
+
+    col1_x = 2.5 * cm
+    col2_x = 10.5 * cm
+    items_por_col = (len(items) + 1) // 2
+
+    y_start = y
+    for i, (nombre, valor) in enumerate(items):
+        marca = "SI" if valor == "si" else "NO"
+        texto = f"{nombre}: {marca}"
+
+        if i < items_por_col:
+            c.drawString(col1_x, y_start - (i * 0.45 * cm), texto)
+        else:
+            c.drawString(col2_x, y_start - ((i - items_por_col) * 0.45 * cm), texto)
+
+    y = y_start - (items_por_col * 0.45 * cm) - 0.6 * cm
+
+    # Observaciones
+    if entrega.observaciones:
+        c.setFont("Helvetica-Bold", 9)
+        c.drawString(2 * cm, y, "Observaciones:")
+        y -= 0.4 * cm
+        c.setFont("Helvetica", 8)
+        for linea in entrega.observaciones.split("\n"):
+            c.drawString(2.5 * cm, y, linea.strip())
+            y -= 0.35 * cm
+
+    # Fecha y firma
+    y -= 1 * cm
+    fecha_str = entrega.fecha.strftime("%d/%m/%Y") if entrega.fecha else ""
+    hora_str = entrega.hora.strftime("%H:%M") if entrega.hora else ""
+    c.setFont("Helvetica", 9)
+    c.drawString(2 * cm, y, f"Fecha: {fecha_str}    Hora: {hora_str}")
+
+    y -= 2 * cm
+    c.line(2 * cm, y, 8 * cm, y)
+    c.drawString(2 * cm, y - 0.4 * cm, "Firma del comprador")
+
+    c.line(11 * cm, y, 17 * cm, y)
+    c.drawString(11 * cm, y - 0.4 * cm, "Firma autorizada")
+
+    y -= 0.8 * cm
+    c.line(2 * cm, y, 8 * cm, y)
+    c.drawString(2 * cm, y - 0.4 * cm, "Aclaracion")
+
+    c.line(11 * cm, y, 17 * cm, y)
+    c.drawString(11 * cm, y - 0.4 * cm, "Aclaracion")
+
+    # Footer
+    c.setFont("Helvetica", 7)
+    c.drawCentredString(w / 2, 1.5 * cm, "Amichetti Automotores - Documento generado por sistema")
+
+    c.showPage()
+    c.save()
     return response

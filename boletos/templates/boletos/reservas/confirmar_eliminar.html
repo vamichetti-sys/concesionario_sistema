@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}Eliminar Reserva{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+      <div class="card shadow-sm border-danger">
+        <div class="card-header bg-danger text-white fw-bold">
+          <i data-lucide="alert-triangle" style="width:14px;height:14px;" class="me-1"></i>
+          Confirmar eliminación
+        </div>
+        <div class="card-body">
+          <p class="mb-1">¿Estás segura que querés eliminar la reserva?</p>
+          <p class="fw-bold">{{ reserva.numero_reserva }} — {{ reserva.apellido_nombre }}</p>
+          <p class="text-muted small">{{ reserva.marca }} {{ reserva.modelo }} {% if reserva.anio %}({{ reserva.anio }}){% endif %}</p>
+          <p class="text-danger small">Esta acción no se puede deshacer.</p>
+        </div>
+        <div class="card-footer d-flex justify-content-end gap-2">
+          <a href="{% url 'boletos:ver_reserva' reserva.pk %}" class="btn btn-outline-secondary btn-sm">Cancelar</a>
+          <form method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger btn-sm fw-semibold">Sí, eliminar</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
