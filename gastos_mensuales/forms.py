@@ -60,7 +60,7 @@ class GastoMensualForm(forms.ModelForm):
             }),
             "unidad": forms.Select(attrs={"class": "form-select"}),
             "pagado": forms.CheckboxInput(attrs={"class": "form-check-input"}),
-            "fecha_pago": forms.DateInput(attrs={
+            "fecha_pago": forms.DateInput(format="%Y-%m-%d", attrs={
                 "class": "form-control",
                 "type": "date",
             }),

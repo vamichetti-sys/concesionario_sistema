@@ -41,7 +41,7 @@ class ProspectoForm(forms.ModelForm):
                 "placeholder": "Ej: Toyota Corolla 2020",
             }),
             "asignado_a": forms.Select(attrs={"class": "form-select"}),
-            "fecha_proximo_contacto": forms.DateInput(attrs={
+            "fecha_proximo_contacto": forms.DateInput(format="%Y-%m-%d", attrs={
                 "class": "form-control",
                 "type": "date",
             }),

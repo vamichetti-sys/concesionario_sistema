@@ -56,6 +56,7 @@ class PlanPagoForm(forms.ModelForm):
                 }
             ),
             'fecha_inicio': forms.DateInput(
+                format='%Y-%m-%d',
                 attrs={'type': 'date', 'class': 'form-control'}
             ),
             'interes_financiacion': forms.NumberInput(
@@ -123,6 +124,7 @@ CuotaFechaFormSet = modelformset_factory(
     extra=0,
     widgets={
         'vencimiento': forms.DateInput(
+            format='%Y-%m-%d',
             attrs={'type': 'date', 'class': 'form-control'}
         )
     }
@@ -138,6 +140,7 @@ class EditarCuotaForm(forms.ModelForm):
         fields = ['vencimiento', 'monto']
         widgets = {
             'vencimiento': forms.DateInput(
+                format='%Y-%m-%d',
                 attrs={'type': 'date', 'class': 'form-control'}
             ),
             'monto': forms.NumberInput(

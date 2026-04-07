@@ -216,7 +216,7 @@ class CrearPagareLoteForm(forms.Form):
     )
     fecha_emision = forms.DateField(
         label="Fecha de emisión", required=True, initial=date.today,
-        widget=forms.DateInput(attrs={"class": "form-control", "type": "date"})
+        widget=forms.DateInput(format="%Y-%m-%d", attrs={"class": "form-control", "type": "date"})
     )
 
     def clean_cliente(self):
@@ -255,7 +255,7 @@ class EditarPagareForm(forms.ModelForm):
         fields = ["monto", "fecha_vencimiento"]
         widgets = {
             "monto": forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}),
-            "fecha_vencimiento": forms.DateInput(attrs={"class": "form-control", "type": "date"}),
+            "fecha_vencimiento": forms.DateInput(format="%Y-%m-%d", attrs={"class": "form-control", "type": "date"}),
         }
 
     def clean_monto(self):
@@ -315,7 +315,7 @@ class ReservaForm(forms.ModelForm):
             "permuta_total":   forms.NumberInput(attrs={**W, "step": "0.01"}),
             # Otros
             "observaciones": forms.Textarea(attrs={**W, "rows": 3}),
-            "fecha_reserva": forms.DateInput(attrs={**W, "type": "date"}),
+            "fecha_reserva": forms.DateInput(format="%Y-%m-%d", attrs={**W, "type": "date"}),
         }
 
 
@@ -370,7 +370,7 @@ class EntregaDocumentacionForm(forms.ModelForm):
             "rueda_auxilio": forms.Select(attrs={"class": "form-select"}),
             "gato_llave_rueda": forms.Select(attrs={"class": "form-select"}),
             "observaciones": forms.Textarea(attrs={"class": "form-control", "rows": 2}),
-            "fecha": forms.DateInput(attrs={"class": "form-control", "type": "date"}),
+            "fecha": forms.DateInput(format="%Y-%m-%d", attrs={"class": "form-control", "type": "date"}),
             "hora": forms.TimeInput(attrs={"class": "form-control", "type": "time"}),
         }
 

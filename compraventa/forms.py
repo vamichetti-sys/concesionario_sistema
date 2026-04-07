@@ -48,7 +48,7 @@ class CompraOperacionForm(forms.ModelForm):
             "estado",
         ]
         widgets = {
-            "fecha_compra": forms.DateInput(attrs={
+            "fecha_compra": forms.DateInput(format="%Y-%m-%d", attrs={
                 "type": "date",
                 "class": "form-control",
             }),
@@ -96,7 +96,7 @@ class PagoProveedorForm(forms.ModelForm):
         model = PagoProveedor
         fields = ["fecha", "monto", "nota"]
         widgets = {
-            "fecha": forms.DateInput(attrs={
+            "fecha": forms.DateInput(format="%Y-%m-%d", attrs={
                 "type": "date",
                 "class": "form-control",
             }),

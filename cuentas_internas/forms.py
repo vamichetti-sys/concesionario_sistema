@@ -23,6 +23,6 @@ class MovimientoInternoForm(forms.ModelForm):
             'tipo': forms.Select(attrs={'class': 'form-select'}),
             'monto': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'concepto': forms.TextInput(attrs={'class': 'form-control'}),
-            'fecha': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'fecha': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
             'observaciones': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
         }

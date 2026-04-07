@@ -28,6 +28,7 @@ class FacturaRegistradaForm(forms.ModelForm):
             ),
 
             "fecha": forms.DateInput(
+                format="%Y-%m-%d",
                 attrs={"type": "date", "class": "form-control"}
             ),
 
@@ -100,7 +101,7 @@ class CompraRegistradaForm(forms.ModelForm):
                 "class": "form-control",
                 "placeholder": "Nombre del proveedor",
             }),
-            "fecha": forms.DateInput(attrs={"type": "date", "class": "form-control"}),
+            "fecha": forms.DateInput(format="%Y-%m-%d", attrs={"type": "date", "class": "form-control"}),
             "descripcion": forms.TextInput(attrs={
                 "class": "form-control",
                 "placeholder": "Descripcion de la compra",

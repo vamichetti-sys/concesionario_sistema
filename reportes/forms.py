@@ -58,12 +58,14 @@ class FichaReporteInternoForm(forms.ModelForm):
 
         widgets = {
             "fecha_compra": forms.DateInput(
+                format="%Y-%m-%d",
                 attrs={
                     "type": "date",
                     "class": "form-control"
                 }
             ),
             "fecha_venta": forms.DateInput(
+                format="%Y-%m-%d",
                 attrs={
                     "type": "date",
                     "class": "form-control"
