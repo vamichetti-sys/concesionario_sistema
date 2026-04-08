@@ -298,11 +298,42 @@ document.addEventListener('DOMContentLoaded', function () {
     function generarPreviewCuotas() {
         lista.innerHTML = '';
         preview.style.display = 'none';
+
+        const total  = calcularTotalConInteres();
+        const inicio = fechaInicio.value;
+
+        if (tipoPlan.value === 'unico') {
+            // Pago único: generar 1 cuota con el total
+            if (total <= 0 || !inicio) return;
+
+            totalFormsInput.value = 1;
+            cantidadCuotas.value = 1;
+            montoCuota.value = total.toFixed(2);
+            preview.style.display = 'block';
+
+            lista.insertAdjacentHTML('beforeend', `
+                <div class="card p-3 mb-2" style="background:#f8f9fa;">
+                    <div class="row g-3 align-items-center">
+                        <div class="col-md-2">
+                            <span class="badge bg-success">Pago único</span>
+                        </div>
+                        <div class="col-md-5">
+                            <label style="font-size:12px;color:#6b7280;margin-bottom:4px;">Vencimiento</label>
+                            <input type="date" name="form-0-vencimiento" class="form-control" value="${inicio}">
+                        </div>
+                        <div class="col-md-5">
+                            <label style="font-size:12px;color:#6b7280;margin-bottom:4px;">Monto</label>
+                            <input type="number" name="form-0-monto" class="form-control" value="${total.toFixed(2)}" step="0.01" min="0.01">
+                        </div>
+                    </div>
+                </div>
+            `);
+            return;
+        }
+
         if (tipoPlan.value !== 'cuotas') return;
 
         const cuotas = parseInt(cantidadCuotas.value);
-        const total  = calcularTotalConInteres();
-        const inicio = fechaInicio.value;
 
         if (!cuotas || cuotas <= 0 || total <= 0 || !inicio) return;
 
@@ -342,7 +373,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // ==============================
     function toggleCuotas() {
         bloqueCuotas.style.display = tipoPlan.value === 'cuotas' ? 'block' : 'none';
-        if (tipoPlan.value !== 'cuotas') preview.style.display = 'none';
+        generarPreviewCuotas();
     }
 
     // ==============================
