@@ -63,8 +63,8 @@ def _construir_texto_boleto(cliente, vehiculo, f, moneda='ARS'):
     mes      = hoy.strftime('%m')
     anio_hoy = hoy.strftime('%Y')
 
-    texto = f"""Entre el/los Señor/es AMICHETTI HUGO ALBERTO por una parte como comprador y el/los señor/es {cliente.nombre_completo} por la otra parte como vendedor, convienen celebrar el presente boleto de acuerdo a las clausulas siguientes:
-1° - El/los Señor/es {cliente.nombre_completo} vende/n al/los Señor/es AMICHETTI HUGO ALBERTO Un AUTOMOTOR Marca {marca} Modelo {modelo} Año {anio} Motor {motor} Chasis {chasis} Patente {dominio} en el estado que se encuentra, y que el comprador ha revisado y Controlando las numeraciones del motor, chasis, dominio y acepta de conformidad.
+    texto = f"""Entre el/los Señor/es AMICHETTI HUGO ALBERTO por una parte como vendedor y el/los señor/es {cliente.nombre_completo} por la otra parte como comprador, convienen celebrar el presente boleto de acuerdo a las clausulas siguientes:
+1° - El/los Señor/es AMICHETTI HUGO ALBERTO vende/n al/los Señor/es {cliente.nombre_completo} Un AUTOMOTOR Marca {marca} Modelo {modelo} Año {anio} Motor {motor} Chasis {chasis} Patente {dominio} en el estado que se encuentra, y que el comprador ha revisado y Controlando las numeraciones del motor, chasis, dominio y acepta de conformidad.
 2° - El vendedor entrega en este acto toda la documentación referente al vehiculo y el comprador se obliga a realizar la respectiva transferencia dentro de los (30) treinta días a partir de la fecha, siendo a su cargo todo tramite que deba realizar y ante quien corresponda, eximiendo al vendedor de toda responsabilidad en lo referente a la transferencia o patentamiento.
 3° - Los gastos que demande la transferencia del vehiculo en el orden nacional, provincial, municipal o de cualquier otro orden serán abonados por el comprador, y lo correspondiente a la ley 21.432/976.-
 4° - El comprador deberá asegurar el automotor contra todo riesgo en la CIA {compania_seguro} dentro de los dos días de la fecha del presente boleto, siendo el endoso a favor del vendedor.-
