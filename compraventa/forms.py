@@ -55,9 +55,6 @@ class CompraOperacionForm(forms.ModelForm):
             "precio_compra": forms.NumberInput(attrs={
                 "class": "form-control",
             }),
-            "gastos_ingreso": forms.NumberInput(attrs={
-                "class": "form-control",
-            }),
             "origen": forms.Select(attrs={
                 "class": "form-select",
             }),

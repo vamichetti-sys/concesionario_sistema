@@ -14,6 +14,18 @@ from .forms import (
     PagoProveedorForm,
 )
 from vehiculos.models import FichaVehicular
+from decimal import Decimal, InvalidOperation
+
+
+def _parse_monto(raw):
+    """Parsea monto en formato argentino (1.234.567,89) o decimal (1234567.89)."""
+    if not raw:
+        raise InvalidOperation("Monto vacío")
+    s = str(raw).strip().replace("$", "").replace(" ", "")
+    if "," in s:
+        s = s.replace(".", "").replace(",", ".")
+    return Decimal(s)
+
 
 # ==========================================================
 # 🏠 HOME COMPRA-VENTA
@@ -324,11 +336,11 @@ def deuda_editar(request, deuda_id):
     )
     
     if request.method == "POST":
-        monto_total = request.POST.get("monto_total", "").replace(".", "").replace(",", ".")
-        
+        monto_raw = request.POST.get("monto_total", "")
+
         try:
-            from decimal import Decimal, InvalidOperation
-            deuda.monto_total = Decimal(monto_total)
+            monto_total = _parse_monto(monto_raw)
+            deuda.monto_total = monto_total
             deuda.save()
             messages.success(request, "Precio de compra actualizado correctamente.")
         except (ValueError, InvalidOperation):

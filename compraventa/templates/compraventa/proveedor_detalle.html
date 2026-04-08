@@ -12,9 +12,7 @@
         </a>
         <h3 class="fw-bold mb-1">{{ proveedor.nombre_empresa }}</h3>
         <p class="text-muted mb-0">
-            {% if proveedor.contacto %}Contacto: {{ proveedor.contacto }} · {% endif %}
-            {% if proveedor.telefono %}Tel: {{ proveedor.telefono }}{% endif %}
-            {% if proveedor.cuit %}· CUIT: {{ proveedor.cuit }}{% endif %}
+            {% if proveedor.cuit %}CUIT: {{ proveedor.cuit }}{% endif %}
         </p>
     </div>
 </div>

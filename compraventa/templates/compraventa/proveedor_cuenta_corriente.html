@@ -136,7 +136,7 @@
                         <span class="fw-semibold">{{ pago.deuda.vehiculo.marca }} {{ pago.deuda.vehiculo.modelo }}</span>
                     </td>
                     <td class="text-end text-success fw-semibold">${{ pago.monto }}</td>
-                    <td><span class="text-muted">{{ pago.observaciones|default:"-" }}</span></td>
+                    <td><span class="text-muted">{{ pago.nota|default:"-" }}</span></td>
                 </tr>
                 {% endfor %}
             </tbody>
