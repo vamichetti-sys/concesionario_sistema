@@ -297,11 +297,17 @@ def cuenta_corriente_detalle(request, cuenta_id):
         .get("total") or Decimal("0")
     )
 
-    total_gestoria = (
-        movimientos.filter(origen="gestoria")
+    gestoria_debe = (
+        movimientos.filter(origen="gestoria", tipo="debe")
         .aggregate(total=Sum("monto"))
         .get("total") or Decimal("0")
     )
+    gestoria_haber = (
+        movimientos.filter(origen="gestoria", tipo="haber")
+        .aggregate(total=Sum("monto"))
+        .get("total") or Decimal("0")
+    )
+    total_gestoria = gestoria_debe - gestoria_haber
 
     vehiculo_permuta = (
         Vehiculo.objects
@@ -539,11 +545,17 @@ def registrar_movimiento(request, cuenta_id):
 def registrar_pago_gestoria(request, cuenta_id):
     cuenta = get_object_or_404(CuentaCorriente, id=cuenta_id)
 
-    total_gestoria = (
-        cuenta.movimientos.filter(origen="gestoria")
+    gest_debe = (
+        cuenta.movimientos.filter(origen="gestoria", tipo="debe")
         .aggregate(total=Sum("monto"))
         .get("total") or Decimal("0")
     )
+    gest_haber = (
+        cuenta.movimientos.filter(origen="gestoria", tipo="haber")
+        .aggregate(total=Sum("monto"))
+        .get("total") or Decimal("0")
+    )
+    total_gestoria = gest_debe - gest_haber
 
     if request.method == "POST":
         monto_raw     = request.POST.get("monto")
