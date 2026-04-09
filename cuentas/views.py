@@ -296,23 +296,6 @@ def cuenta_corriente_detalle(request, cuenta_id):
 
     vehiculos = Vehiculo.objects.all()
 
-    # Gastos de ingreso: desde la ficha vehicular del vehículo de la venta
-    vehiculo_venta = cuenta.venta.vehiculo if cuenta.venta else None
-    ficha_vehicular = None
-    if vehiculo_venta:
-        try:
-            ficha_vehicular = vehiculo_venta.ficha
-        except FichaVehicular.DoesNotExist:
-            pass
-    if ficha_vehicular:
-        # Suma real de todos los gastos de ingreso cargados
-        total_gastos_ingreso = Decimal("0")
-        for concepto, monto in ficha_vehicular.mapa_gastos_ingreso().items():
-            if monto:
-                total_gastos_ingreso += Decimal(monto)
-    else:
-        total_gastos_ingreso = Decimal("0")
-
     gestoria_debe = (
         movimientos.filter(origen="gestoria", tipo="debe")
         .aggregate(total=Sum("monto"))
@@ -338,6 +321,17 @@ def cuenta_corriente_detalle(request, cuenta_id):
     vehiculo_gastos = vehiculo_permuta or (
         cuenta.venta.vehiculo if cuenta.venta else None
     )
+
+    # Gastos de ingreso: desde la ficha vehicular del vehículo vinculado
+    total_gastos_ingreso = Decimal("0")
+    if vehiculo_gastos:
+        try:
+            ficha_v = vehiculo_gastos.ficha
+            for _, monto in ficha_v.mapa_gastos_ingreso().items():
+                if monto:
+                    total_gastos_ingreso += Decimal(monto)
+        except FichaVehicular.DoesNotExist:
+            pass
 
     # Deuda real = suma de saldos pendientes de cuotas
     # (refleja lo que falta pagar independientemente de los movimientos contables)
