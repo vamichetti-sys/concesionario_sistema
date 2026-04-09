@@ -1,3 +1,4 @@
+from decimal import Decimal
 from django import forms
 from .models import FacturaRegistrada, CompraRegistrada
 
@@ -129,9 +130,9 @@ class CompraRegistradaForm(forms.ModelForm):
         cleaned_data = super().clean()
         monto_neto = cleaned_data.get("monto_neto")
         iva_porcentaje = cleaned_data.get("iva_porcentaje")
-        otros = cleaned_data.get("otros_impuestos") or 0
+        otros = cleaned_data.get("otros_impuestos") or Decimal("0")
         if monto_neto is not None and iva_porcentaje is not None:
-            iva = (monto_neto * iva_porcentaje) / 100
+            iva = (monto_neto * iva_porcentaje) / Decimal("100")
             cleaned_data["monto_iva"] = round(iva, 2)
-            cleaned_data["monto"] = round(monto_neto + iva + float(otros), 2)
+            cleaned_data["monto"] = round(monto_neto + iva + otros, 2)
         return cleaned_data
