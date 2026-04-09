@@ -315,7 +315,7 @@ class CuotaPlan(models.Model):
 
     @property
     def esta_vencida(self):
-        return self.estado == 'pendiente' and self.vencimiento < date.today()
+        return self.estado == 'pendiente' and self.vencimiento < date.today() and self.saldo_pendiente > 0
 
     @property
     def total_pagado(self):

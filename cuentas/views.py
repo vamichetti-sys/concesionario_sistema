@@ -2,7 +2,8 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db import transaction
-from django.db.models import Sum, Count
+from django.db.models import Sum, Count, F
+from django.db.models.functions import Coalesce
 from datetime import timedelta, datetime
 from decimal import Decimal, InvalidOperation
 from django.utils import timezone
@@ -243,6 +244,10 @@ def lista_cuentas_corrientes(request):
             vencimiento__lt=hoy,
             plan__cuenta__estado__in=["al_dia", "deuda"]
         )
+        .annotate(
+            total_pagado=Coalesce(Sum("pagos__monto_aplicado"), Decimal("0"))
+        )
+        .filter(monto__gt=F("total_pagado"))
         .values(
             "plan__cuenta__cliente__nombre_completo",
             "plan__cuenta__venta__id"

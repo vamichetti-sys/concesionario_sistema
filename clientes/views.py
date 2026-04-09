@@ -1,7 +1,9 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.db.models import Q
+from django.db.models import Q, Sum, F
+from django.db.models.functions import Coalesce
+from decimal import Decimal
 from django.utils import timezone
 from django.http import JsonResponse
 
@@ -48,7 +50,9 @@ def lista_clientes(request):
                 plan__cuenta=cuenta_activa,
                 estado='pendiente',
                 vencimiento__lt=hoy
-            )
+            ).annotate(
+                _total_pagado=Coalesce(Sum("pagos__monto_aplicado"), Decimal("0"))
+            ).filter(monto__gt=F("_total_pagado"))
 
             if cuotas_vencidas.exists():
                 cuota_mas_antigua = cuotas_vencidas.order_by('vencimiento').first()
