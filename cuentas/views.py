@@ -296,11 +296,22 @@ def cuenta_corriente_detalle(request, cuenta_id):
 
     vehiculos = Vehiculo.objects.all()
 
-    total_gastos_ingreso = (
-        movimientos.filter(origen="permuta")
-        .aggregate(total=Sum("monto"))
-        .get("total") or Decimal("0")
-    )
+    # Gastos de ingreso: desde la ficha vehicular del vehículo de la venta
+    vehiculo_venta = cuenta.venta.vehiculo if cuenta.venta else None
+    ficha_vehicular = None
+    if vehiculo_venta:
+        try:
+            ficha_vehicular = vehiculo_venta.ficha
+        except FichaVehicular.DoesNotExist:
+            pass
+    if ficha_vehicular:
+        # Suma real de todos los gastos de ingreso cargados
+        total_gastos_ingreso = Decimal("0")
+        for concepto, monto in ficha_vehicular.mapa_gastos_ingreso().items():
+            if monto:
+                total_gastos_ingreso += Decimal(monto)
+    else:
+        total_gastos_ingreso = Decimal("0")
 
     gestoria_debe = (
         movimientos.filter(origen="gestoria", tipo="debe")
