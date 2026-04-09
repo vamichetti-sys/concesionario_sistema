@@ -126,6 +126,11 @@ class CompraRegistradaForm(forms.ModelForm):
             }),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["monto"].required = False
+        self.fields["monto_iva"].required = False
+
     def clean(self):
         cleaned_data = super().clean()
         monto_neto = cleaned_data.get("monto_neto")
@@ -135,4 +140,11 @@ class CompraRegistradaForm(forms.ModelForm):
             iva = (monto_neto * iva_porcentaje) / Decimal("100")
             cleaned_data["monto_iva"] = round(iva, 2)
             cleaned_data["monto"] = round(monto_neto + iva + otros, 2)
+        elif monto_neto is not None:
+            cleaned_data["monto_iva"] = Decimal("0")
+            cleaned_data["monto"] = monto_neto + otros
+        else:
+            monto = cleaned_data.get("monto")
+            if not monto:
+                self.add_error("monto_neto", "Ingresá el monto neto o el monto total.")
         return cleaned_data
