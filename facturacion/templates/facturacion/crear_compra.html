@@ -55,7 +55,7 @@
         <div class="row g-3 mb-3">
             <div class="col-md-4">
                 <label class="form-label">IVA calculado</label>
-                {{ form.monto_iva }}
+                <input type="text" id="id_monto_iva" class="form-control" readonly style="background:#f8f9fa;">
             </div>
             <div class="col-md-4">
                 <label class="form-label">Tasas + Impuestos</label>
@@ -63,7 +63,7 @@
             </div>
             <div class="col-md-4">
                 <label class="form-label">Total</label>
-                {{ form.monto }}
+                <input type="text" id="id_monto" class="form-control" readonly style="background:#f8f9fa;">
             </div>
         </div>
 

@@ -93,8 +93,8 @@ class CompraRegistradaForm(forms.ModelForm):
         model = CompraRegistrada
         fields = [
             "numero", "proveedor", "fecha", "descripcion",
-            "monto_neto", "iva_porcentaje", "monto_iva",
-            "otros_impuestos", "monto",
+            "monto_neto", "iva_porcentaje",
+            "otros_impuestos",
         ]
         widgets = {
             "numero": forms.TextInput(attrs={"class": "form-control"}),
@@ -114,37 +114,12 @@ class CompraRegistradaForm(forms.ModelForm):
             "iva_porcentaje": forms.NumberInput(attrs={
                 "class": "form-control", "step": "0.01",
             }),
-            "monto_iva": forms.NumberInput(attrs={
-                "class": "form-control", "step": "0.01", "readonly": "readonly",
-            }),
             "otros_impuestos": forms.NumberInput(attrs={
                 "class": "form-control", "step": "0.01",
                 "placeholder": "Tasas, percepciones, etc.",
-            }),
-            "monto": forms.NumberInput(attrs={
-                "class": "form-control", "step": "0.01", "readonly": "readonly",
             }),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["monto"].required = False
-        self.fields["monto_iva"].required = False
-
-    def clean(self):
-        cleaned_data = super().clean()
-        monto_neto = cleaned_data.get("monto_neto")
-        iva_porcentaje = cleaned_data.get("iva_porcentaje")
-        otros = cleaned_data.get("otros_impuestos") or Decimal("0")
-        if monto_neto is not None and iva_porcentaje is not None:
-            iva = (monto_neto * iva_porcentaje) / Decimal("100")
-            cleaned_data["monto_iva"] = round(iva, 2)
-            cleaned_data["monto"] = round(monto_neto + iva + otros, 2)
-        elif monto_neto is not None:
-            cleaned_data["monto_iva"] = Decimal("0")
-            cleaned_data["monto"] = monto_neto + otros
-        else:
-            monto = cleaned_data.get("monto")
-            if not monto:
-                self.add_error("monto_neto", "Ingresá el monto neto o el monto total.")
-        return cleaned_data
+        self.fields["monto_neto"].required = True
