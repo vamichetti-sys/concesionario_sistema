@@ -78,6 +78,19 @@
             </div>
             {% endif %}
 
+            {% if form.errors %}
+            <div style="padding:10px 14px; border-radius:8px; font-size:13px; background:#fee2e2; color:#991b1b; margin-bottom:16px;">
+                <strong>Errores:</strong>
+                <ul style="margin:4px 0 0 16px;">
+                {% for field, errors in form.errors.items %}
+                    {% for error in errors %}
+                    <li>{{ field }}: {{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
             <!-- SECCIÓN: PARTES -->
             <div style="margin-bottom: 28px;">
                 <div class="section-title">Partes del contrato</div>
@@ -107,7 +120,13 @@
             <div style="margin-bottom: 28px;">
                 <div class="section-title">Precio y forma de pago — Cláusula 9°</div>
 
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+                <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:16px;">
+                    <div>
+                        <label class="editar-label">
+                            <i data-lucide="banknote"></i> Moneda
+                        </label>
+                        {{ form.moneda }}
+                    </div>
                     <div>
                         <label class="editar-label">Precio en números</label>
                         {{ form.precio_numeros }}
@@ -130,6 +149,25 @@
                     {% if form.saldo_forma_pago.errors %}
                     <div style="color:#dc2626; font-size:12px; margin-top:4px;">{{ form.saldo_forma_pago.errors }}</div>
                     {% endif %}
+                </div>
+            </div>
+
+            <!-- SECCIÓN: DATOS LEGALES -->
+            <div style="margin-bottom: 28px;">
+                <div class="section-title">Datos legales</div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                    <div>
+                        <label class="editar-label">
+                            <i data-lucide="shield"></i> Compañía de seguro (cláusula 4°)
+                        </label>
+                        {{ form.compania_seguro }}
+                    </div>
+                    <div>
+                        <label class="editar-label">
+                            <i data-lucide="map-pin"></i> Domicilio legal (cláusula 7°)
+                        </label>
+                        {{ form.domicilio_legal }}
+                    </div>
                 </div>
             </div>
 
