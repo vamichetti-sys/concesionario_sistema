@@ -491,6 +491,8 @@ def crear_compra(request):
             compra.save()
             messages.success(request, f"Compra #{compra.numero} registrada.")
             return redirect("facturacion:compras")
+        else:
+            messages.error(request, f"Error al guardar: {form.errors.as_text()}")
     else:
         form = CompraRegistradaForm()
 
