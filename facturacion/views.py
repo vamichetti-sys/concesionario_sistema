@@ -519,6 +519,244 @@ def eliminar_compra(request, pk):
 
 
 # ==========================================================
+# COMPRAS - EXPORTAR PDF MENSUAL
+# ==========================================================
+@login_required
+def compras_pdf_mensual(request):
+    hoy = date.today()
+    mes = int(request.GET.get("mes", hoy.month))
+    anio = int(request.GET.get("anio", hoy.year))
+
+    MESES = [
+        "", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+        "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
+    ]
+
+    compras = CompraRegistrada.objects.filter(
+        fecha__year=anio, fecha__month=mes,
+    ).order_by("-fecha")
+
+    response = HttpResponse(content_type="application/pdf")
+    response["Content-Disposition"] = (
+        f'inline; filename="compras_{mes}_{anio}.pdf"'
+    )
+
+    doc = SimpleDocTemplate(response, pagesize=A4, rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=40)
+    elementos = []
+
+    header = Table(
+        [[
+            Paragraph(
+                "<b>AMICHETTI AUTOMOTORES</b><br/>"
+                f"Compras – {MESES[mes]} {anio}",
+                ParagraphStyle("h1", fontSize=14, textColor=colors.white)
+            ),
+            Paragraph(
+                f"Fecha emisión<br/>{hoy.strftime('%d/%m/%Y')}",
+                ParagraphStyle("h2", fontSize=10, textColor=colors.white, alignment=2)
+            )
+        ]],
+        colWidths=[340, 180]
+    )
+    header.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, -1), COLOR_AZUL),
+        ("PADDING", (0, 0), (-1, -1), 14),
+    ]))
+    elementos.append(header)
+    elementos.append(Spacer(1, 20))
+
+    data = [["N° Factura", "Proveedor", "Fecha", "Neto", "IVA", "Total"]]
+    for c in compras:
+        neto = c.monto_neto or Decimal("0")
+        iva = c.monto_iva or Decimal("0")
+        total = c.monto or Decimal("0")
+        data.append([
+            c.numero,
+            (c.proveedor or "-")[:20],
+            c.fecha.strftime("%d/%m/%Y"),
+            f"$ {neto:,.2f}",
+            f"$ {iva:,.2f}",
+            f"$ {total:,.2f}",
+        ])
+
+    tabla = Table(data, colWidths=[80, 90, 70, 90, 90, 90])
+    tabla.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), COLOR_GRIS),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("ALIGN", (3, 1), (-1, -1), "RIGHT"),
+        ("GRID", (0, 0), (-1, -1), 0.5, colors.lightgrey),
+        ("PADDING", (0, 0), (-1, -1), 8),
+    ]))
+    elementos.append(tabla)
+    elementos.append(Spacer(1, 16))
+
+    total_general = compras.aggregate(total=Sum("monto"))["total"] or 0
+    total_box = Table([["TOTAL COMPRAS", f"$ {total_general:,.2f}"]], colWidths=[390, 110])
+    total_box.setStyle(TableStyle([
+        ("FONTNAME", (0, 0), (-1, -1), "Helvetica-Bold"),
+        ("FONTSIZE", (0, 0), (-1, -1), 13),
+        ("TEXTCOLOR", (1, 0), (1, 0), COLOR_NARANJA),
+        ("ALIGN", (1, 0), (1, 0), "RIGHT"),
+        ("LINEABOVE", (0, 0), (-1, 0), 1, colors.lightgrey),
+        ("TOPPADDING", (0, 0), (-1, -1), 10),
+    ]))
+    elementos.append(total_box)
+    elementos.append(Spacer(1, 30))
+    elementos.append(Paragraph("Amichetti Automotores · Rojas, Buenos Aires", ParagraphStyle("f", fontSize=8, textColor=colors.grey, alignment=1)))
+
+    doc.build(elementos)
+    return response
+
+
+# ==========================================================
+# COMPRAS - EXPORTAR PDF ANUAL
+# ==========================================================
+@login_required
+def compras_pdf_anual(request):
+    hoy = date.today()
+    anio = int(request.GET.get("anio", hoy.year))
+
+    compras = CompraRegistrada.objects.filter(fecha__year=anio).order_by("-fecha")
+
+    response = HttpResponse(content_type="application/pdf")
+    response["Content-Disposition"] = (
+        f'inline; filename="compras_anual_{anio}.pdf"'
+    )
+
+    doc = SimpleDocTemplate(response, pagesize=A4, rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=40)
+    elementos = []
+
+    header = Table(
+        [[
+            Paragraph(
+                f"<b>AMICHETTI AUTOMOTORES</b><br/>Compras Anual – {anio}",
+                ParagraphStyle("h1", fontSize=14, textColor=colors.white)
+            ),
+            Paragraph(
+                f"Fecha emisión<br/>{hoy.strftime('%d/%m/%Y')}",
+                ParagraphStyle("h2", fontSize=10, textColor=colors.white, alignment=2)
+            )
+        ]],
+        colWidths=[340, 180]
+    )
+    header.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, -1), COLOR_AZUL),
+        ("PADDING", (0, 0), (-1, -1), 14),
+    ]))
+    elementos.append(header)
+    elementos.append(Spacer(1, 20))
+
+    data = [["N° Factura", "Proveedor", "Fecha", "Neto", "IVA", "Total"]]
+    for c in compras:
+        neto = c.monto_neto or Decimal("0")
+        iva = c.monto_iva or Decimal("0")
+        total = c.monto or Decimal("0")
+        data.append([
+            c.numero,
+            (c.proveedor or "-")[:20],
+            c.fecha.strftime("%d/%m/%Y"),
+            f"$ {neto:,.2f}",
+            f"$ {iva:,.2f}",
+            f"$ {total:,.2f}",
+        ])
+
+    tabla = Table(data, colWidths=[80, 90, 70, 90, 90, 90])
+    tabla.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), COLOR_GRIS),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("ALIGN", (3, 1), (-1, -1), "RIGHT"),
+        ("GRID", (0, 0), (-1, -1), 0.5, colors.lightgrey),
+        ("PADDING", (0, 0), (-1, -1), 8),
+    ]))
+    elementos.append(tabla)
+    elementos.append(Spacer(1, 16))
+
+    total_general = compras.aggregate(total=Sum("monto"))["total"] or 0
+    total_box = Table([["TOTAL ANUAL COMPRAS", f"$ {total_general:,.2f}"]], colWidths=[390, 110])
+    total_box.setStyle(TableStyle([
+        ("FONTNAME", (0, 0), (-1, -1), "Helvetica-Bold"),
+        ("FONTSIZE", (0, 0), (-1, -1), 13),
+        ("TEXTCOLOR", (1, 0), (1, 0), COLOR_NARANJA),
+        ("ALIGN", (1, 0), (1, 0), "RIGHT"),
+        ("LINEABOVE", (0, 0), (-1, 0), 1, colors.lightgrey),
+        ("TOPPADDING", (0, 0), (-1, -1), 10),
+    ]))
+    elementos.append(total_box)
+    elementos.append(Spacer(1, 30))
+    elementos.append(Paragraph("Amichetti Automotores · Rojas, Buenos Aires", ParagraphStyle("f", fontSize=8, textColor=colors.grey, alignment=1)))
+
+    doc.build(elementos)
+    return response
+
+
+# ==========================================================
+# COMPRAS - EXPORTAR EXCEL MENSUAL
+# ==========================================================
+@login_required
+def compras_excel_mensual(request):
+    hoy = date.today()
+    mes = int(request.GET.get("mes", hoy.month))
+    anio = int(request.GET.get("anio", hoy.year))
+
+    compras = CompraRegistrada.objects.filter(
+        fecha__year=anio, fecha__month=mes,
+    ).order_by("-fecha")
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = f"Compras {mes}-{anio}"
+    ws.append(["N° Factura", "Proveedor", "Fecha", "Neto", "IVA", "Otros Imp.", "Total"])
+
+    for c in compras:
+        ws.append([
+            c.numero,
+            c.proveedor or "-",
+            c.fecha.strftime("%d/%m/%Y"),
+            float(c.monto_neto or 0),
+            float(c.monto_iva or 0),
+            float(c.otros_impuestos or 0),
+            float(c.monto or 0),
+        ])
+
+    response = HttpResponse(content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    response["Content-Disposition"] = f'attachment; filename="compras_{mes}_{anio}.xlsx"'
+    wb.save(response)
+    return response
+
+
+# ==========================================================
+# COMPRAS - EXPORTAR EXCEL ANUAL
+# ==========================================================
+@login_required
+def compras_excel_anual(request):
+    hoy = date.today()
+    anio = int(request.GET.get("anio", hoy.year))
+
+    compras = CompraRegistrada.objects.filter(fecha__year=anio).order_by("-fecha")
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = f"Compras {anio}"
+    ws.append(["N° Factura", "Proveedor", "Fecha", "Neto", "IVA", "Otros Imp.", "Total"])
+
+    for c in compras:
+        ws.append([
+            c.numero,
+            c.proveedor or "-",
+            c.fecha.strftime("%d/%m/%Y"),
+            float(c.monto_neto or 0),
+            float(c.monto_iva or 0),
+            float(c.otros_impuestos or 0),
+            float(c.monto or 0),
+        ])
+
+    response = HttpResponse(content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    response["Content-Disposition"] = f'attachment; filename="compras_anual_{anio}.xlsx"'
+    wb.save(response)
+    return response
+
+
+# ==========================================================
 # IVA - POSICION MENSUAL
 # ==========================================================
 @login_required

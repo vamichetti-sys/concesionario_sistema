@@ -85,6 +85,30 @@
     </div>
 </div>
 
+<!-- EXPORTAR -->
+<div class="d-flex align-items-center gap-2 mb-4 flex-wrap">
+    <span class="text-muted">
+        <i data-lucide="download" style="width:16px;height:16px;margin-right:4px;"></i>
+        Exportar:
+    </span>
+    <a href="{% url 'facturacion:compras_excel_mensual' %}?mes={{ mes }}&anio={{ anio }}" class="btn btn-success btn-sm">
+        <i data-lucide="file-spreadsheet" style="width:14px;height:14px;margin-right:4px;"></i>
+        Excel mensual
+    </a>
+    <a href="{% url 'facturacion:compras_excel_anual' %}?anio={{ anio }}" class="btn btn-success btn-sm">
+        <i data-lucide="file-spreadsheet" style="width:14px;height:14px;margin-right:4px;"></i>
+        Excel anual
+    </a>
+    <a href="{% url 'facturacion:compras_pdf_mensual' %}?mes={{ mes }}&anio={{ anio }}" class="btn btn-danger btn-sm" target="_blank">
+        <i data-lucide="file-text" style="width:14px;height:14px;margin-right:4px;"></i>
+        PDF mensual
+    </a>
+    <a href="{% url 'facturacion:compras_pdf_anual' %}?anio={{ anio }}" class="btn btn-danger btn-sm" target="_blank">
+        <i data-lucide="file-text" style="width:14px;height:14px;margin-right:4px;"></i>
+        PDF anual
+    </a>
+</div>
+
 <!-- LISTADO -->
 <div class="card p-0">
     {% if compras %}
