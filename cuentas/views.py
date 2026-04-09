@@ -519,6 +519,19 @@ def registrar_movimiento(request, cuenta_id):
             cuota = get_object_or_404(CuotaPlan, id=cuota_id, plan__cuenta=cuenta)
             PagoCuota.objects.create(pago=pago, cuota=cuota, monto_aplicado=monto)
             cuota.marcar_pagada()
+        elif plan and plan.cuotas.filter(estado="pendiente").exists():
+            # Vincular automáticamente a cuotas pendientes (empezando por la más antigua)
+            restante = monto
+            for cuota in plan.cuotas.filter(estado="pendiente").order_by("numero"):
+                if restante <= 0:
+                    break
+                saldo_cuota = cuota.saldo_pendiente
+                if saldo_cuota <= 0:
+                    continue
+                aplicar = min(restante, saldo_cuota)
+                PagoCuota.objects.create(pago=pago, cuota=cuota, monto_aplicado=aplicar)
+                cuota.marcar_pagada()
+                restante -= aplicar
         else:
             MovimientoCuenta.objects.create(
                 cuenta=cuenta,
