@@ -154,7 +154,18 @@ class CuentaCorriente(models.Model):
             total += gest_pendiente
 
         # Gastos de ingreso pendientes (desde la ficha vehicular)
-        vehiculo = self.venta.vehiculo if self.venta else None
+        # Buscar primero en vehículo de permuta, sino en el de la venta
+        from vehiculos.models import Vehiculo
+        vehiculo_permuta = (
+            Vehiculo.objects
+            .filter(
+                movimientos_cuenta__cuenta=self,
+                movimientos_cuenta__origen="permuta"
+            )
+            .distinct()
+            .first()
+        )
+        vehiculo = vehiculo_permuta or (self.venta.vehiculo if self.venta else None)
         if vehiculo:
             try:
                 ficha = vehiculo.ficha
