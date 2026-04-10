@@ -1077,8 +1077,11 @@ def stock_pdf(request):
             | Q(dominio__icontains=query)
         )
 
-    if estado_filtro:
+    # Siempre excluir vendidos del PDF del listado
+    if estado_filtro and estado_filtro != "vendido":
         vehiculos = vehiculos.filter(estado=estado_filtro)
+    else:
+        vehiculos = vehiculos.exclude(estado="vendido")
 
     if marca_filtro:
         vehiculos = vehiculos.filter(marca__icontains=marca_filtro)
