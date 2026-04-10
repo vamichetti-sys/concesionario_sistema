@@ -382,6 +382,8 @@ def cuenta_corriente_detalle(request, cuenta_id):
             "total_gastos_ingreso": total_gastos_ingreso,
             "saldo_gastos_ingreso": saldo_gastos_ingreso,
             "total_gestoria": total_gestoria,
+            "gestoria_debe": gestoria_debe,
+            "gestoria_haber": gestoria_haber,
             "vehiculo_permuta": vehiculo_permuta,
             "vehiculo_gastos": vehiculo_gastos,
             "deuda_cuotas": deuda_cuotas,
