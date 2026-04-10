@@ -17,6 +17,7 @@
 =============================== -->
 <div class="card p-3 mb-4">
     <form method="get">
+        <input type="hidden" name="tab" value="{{ tab_actual }}">
         <div class="input-group">
             <span class="input-group-text" style="background:#fff;border-right:none;">
                 <i data-lucide="search" style="width:18px;height:18px;color:#9ca3af;"></i>
@@ -24,11 +25,33 @@
             <input type="text" name="q" class="form-control" style="border-left:none;" placeholder="Buscar cliente, DNI, CUIT o venta..." value="{{ query }}">
             <button type="submit" class="btn btn-primary">Buscar</button>
             {% if query %}
-            <a href="{% url 'cuentas:lista_cuentas_corrientes' %}" class="btn btn-secondary">Limpiar</a>
+            <a href="{% url 'cuentas:lista_cuentas_corrientes' %}?tab={{ tab_actual }}" class="btn btn-secondary">Limpiar</a>
             {% endif %}
         </div>
     </form>
 </div>
+
+<!-- ===============================
+     TABS
+=============================== -->
+<ul class="nav nav-tabs mb-4">
+    <li class="nav-item">
+        <a class="nav-link {% if tab_actual == 'deuda' %}active{% endif %}"
+           href="?tab=deuda{% if query %}&q={{ query }}{% endif %}">
+            <i data-lucide="alert-circle" style="width:16px;height:16px;margin-right:4px;"></i>
+            Con deuda
+            <span class="badge bg-danger ms-1">{{ cuentas_con_deuda_count }}</span>
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {% if tab_actual == 'al_dia' %}active{% endif %}"
+           href="?tab=al_dia{% if query %}&q={{ query }}{% endif %}">
+            <i data-lucide="check-circle" style="width:16px;height:16px;margin-right:4px;"></i>
+            Al día
+            <span class="badge bg-success ms-1">{{ cuentas_al_dia_count }}</span>
+        </a>
+    </li>
+</ul>
 
 <!-- ===============================
      TABLA DE CUENTAS
@@ -92,7 +115,9 @@
     {% else %}
     <div class="p-5 text-center">
         <i data-lucide="credit-card" style="width:48px;height:48px;color:#9ca3af;margin-bottom:12px;"></i>
-        <p class="text-muted mb-0">No hay cuentas corrientes creadas</p>
+        <p class="text-muted mb-0">
+            {% if tab_actual == 'al_dia' %}No hay cuentas al día{% else %}No hay cuentas con deuda{% endif %}
+        </p>
     </div>
     {% endif %}
 </div>

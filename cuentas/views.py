@@ -2,7 +2,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db import transaction
-from django.db.models import Sum, Count, F
+from django.db.models import Sum, Count, F, Q
 from django.db.models.functions import Coalesce
 from datetime import timedelta, datetime
 from decimal import Decimal, InvalidOperation
@@ -222,6 +222,8 @@ def _generar_pdf_recibo(pago, cuenta, concepto_extra=""):
 def lista_cuentas_corrientes(request):
 
     mostrar_cerradas = request.GET.get("mostrar_cerradas") == "1"
+    tab = request.GET.get("tab", "deuda")  # 'deuda' o 'al_dia'
+    query = request.GET.get("q", "").strip()
 
     cuentas_qs = (
         CuentaCorriente.objects
@@ -234,6 +236,24 @@ def lista_cuentas_corrientes(request):
             estado="cerrada",
             plan_pago__isnull=False
         )
+
+    if query:
+        cuentas_qs = cuentas_qs.filter(
+            Q(cliente__nombre_completo__icontains=query) |
+            Q(cliente__dni_cuit__icontains=query) |
+            Q(venta__id__icontains=query)
+        )
+
+    # Separar en con deuda / al día según deuda_total_real
+    cuentas_con_deuda = []
+    cuentas_al_dia = []
+    for c in cuentas_qs:
+        if c.deuda_total_real > 0:
+            cuentas_con_deuda.append(c)
+        else:
+            cuentas_al_dia.append(c)
+
+    cuentas_mostradas = cuentas_al_dia if tab == "al_dia" else cuentas_con_deuda
 
     hoy = timezone.now().date()
 
@@ -263,7 +283,11 @@ def lista_cuentas_corrientes(request):
         request,
         "cuentas/lista_cuentas_corrientes.html",
         {
-            "cuentas": cuentas_qs,
+            "cuentas": cuentas_mostradas,
+            "cuentas_con_deuda_count": len(cuentas_con_deuda),
+            "cuentas_al_dia_count": len(cuentas_al_dia),
+            "tab_actual": tab,
+            "query": query,
             "alertas_cuotas": alertas_cuotas,
             "mostrar_cerradas": mostrar_cerradas,
         }
