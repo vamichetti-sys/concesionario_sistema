@@ -124,6 +124,46 @@ class CuentaCorriente(models.Model):
             vencimiento__lt=date.today()
         ).exists()
 
+    @property
+    def deuda_total_real(self):
+        """
+        Deuda total = saldo cuotas del plan + gestoría pendiente + gastos de ingreso pendientes
+        """
+        from django.db.models import Sum
+        total = Decimal("0")
+
+        # Saldo del plan de pago
+        plan = getattr(self, 'plan_pago', None)
+        if plan and plan.estado == 'activo':
+            for cuota in plan.cuotas.all():
+                total += cuota.saldo_pendiente
+        else:
+            total += max(self.saldo or Decimal("0"), Decimal("0"))
+
+        # Gestoría pendiente
+        gest_debe = (
+            self.movimientos.filter(origen="gestoria", tipo="debe")
+            .aggregate(t=Sum("monto"))["t"] or Decimal("0")
+        )
+        gest_haber = (
+            self.movimientos.filter(origen="gestoria", tipo="haber")
+            .aggregate(t=Sum("monto"))["t"] or Decimal("0")
+        )
+        gest_pendiente = gest_debe - gest_haber
+        if gest_pendiente > 0:
+            total += gest_pendiente
+
+        # Gastos de ingreso pendientes (desde la ficha vehicular)
+        vehiculo = self.venta.vehiculo if self.venta else None
+        if vehiculo:
+            try:
+                ficha = vehiculo.ficha
+                total += ficha.saldo_total_gastos()
+            except Exception:
+                pass
+
+        return total
+
 
 # ==========================================================
 # MOVIMIENTOS CONTABLES

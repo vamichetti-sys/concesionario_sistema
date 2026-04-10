@@ -65,8 +65,8 @@
                         {% endif %}
                     </td>
                     <td class="text-end">
-                        <span class="fw-bold {% if cuenta.saldo > 0 %}text-danger{% else %}text-success{% endif %}">
-                            $ {{ cuenta.saldo|floatformat:0 }}
+                        <span class="fw-bold {% if cuenta.deuda_total_real > 0 %}text-danger{% else %}text-success{% endif %}">
+                            $ {{ cuenta.deuda_total_real|floatformat:0 }}
                         </span>
                     </td>
                     <td>

@@ -102,11 +102,11 @@
                 </div>
                 <div style="flex:1;">
                     <small class="text-muted">Deuda total</small>
-                    <div class="fw-bold {% if deuda_total > 0 %}text-danger{% else %}text-success{% endif %}" style="font-size:24px;">
-                        $ {{ deuda_total|floatformat:0 }}
+                    <div class="fw-bold {% if cuenta.deuda_total_real > 0 %}text-danger{% else %}text-success{% endif %}" style="font-size:24px;">
+                        $ {{ cuenta.deuda_total_real|floatformat:0 }}
                     </div>
                     <small class="text-muted d-block" style="font-size:11px;line-height:1.6;">
-                        {% if plan and plan.estado == 'activo' %}Plan: $ {{ deuda_cuotas|floatformat:0 }}{% endif %}
+                        {% if deuda_cuotas > 0 %}Plan: $ {{ deuda_cuotas|floatformat:0 }}{% endif %}
                         {% if total_gestoria > 0 %} · Gestoría: $ {{ total_gestoria|floatformat:0 }}{% endif %}
                         {% if saldo_gastos_ingreso > 0 %} · Gastos: $ {{ saldo_gastos_ingreso|floatformat:0 }}{% endif %}
                     </small>
