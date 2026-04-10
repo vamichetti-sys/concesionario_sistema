@@ -124,10 +124,64 @@ class CuentaCorriente(models.Model):
             vencimiento__lt=date.today()
         ).exists()
 
+    def _vehiculo_para_gastos(self):
+        """Devuelve el vehículo cuyos gastos aplican a esta cuenta (permuta o venta)."""
+        from vehiculos.models import Vehiculo
+        vehiculo_permuta = (
+            Vehiculo.objects
+            .filter(
+                movimientos_cuenta__cuenta=self,
+                movimientos_cuenta__origen="permuta"
+            )
+            .distinct()
+            .first()
+        )
+        return vehiculo_permuta or (self.venta.vehiculo if self.venta else None)
+
+    @property
+    def deuda_total_inicial(self):
+        """
+        Deuda total contraída (sin descontar pagos):
+        plan total + gestoría debe + gastos de ingreso totales
+        """
+        from django.db.models import Sum
+        total = Decimal("0")
+
+        # Total del plan de pago (con interés)
+        plan = getattr(self, 'plan_pago', None)
+        if plan and plan.estado == 'activo':
+            for cuota in plan.cuotas.all():
+                total += cuota.monto
+
+        # Gestoría debe (deuda original)
+        gest_debe = (
+            self.movimientos.filter(origen="gestoria", tipo="debe")
+            .aggregate(t=Sum("monto"))["t"] or Decimal("0")
+        )
+        total += gest_debe
+
+        # Gastos de ingreso totales
+        vehiculo = self._vehiculo_para_gastos()
+        if vehiculo:
+            try:
+                ficha = vehiculo.ficha
+                for _, monto in ficha.mapa_gastos_ingreso().items():
+                    if monto:
+                        total += Decimal(monto)
+            except Exception:
+                pass
+
+        return total
+
+    @property
+    def total_pagado_real(self):
+        """Total efectivamente pagado = deuda inicial - deuda actual."""
+        return self.deuda_total_inicial - self.deuda_total_real
+
     @property
     def deuda_total_real(self):
         """
-        Deuda total = saldo cuotas del plan + gestoría pendiente + gastos de ingreso pendientes
+        Saldo pendiente actual = saldo cuotas del plan + gestoría pendiente + gastos pendientes
         """
         from django.db.models import Sum
         total = Decimal("0")
@@ -140,7 +194,7 @@ class CuentaCorriente(models.Model):
         else:
             total += max(self.saldo or Decimal("0"), Decimal("0"))
 
-        # Gestoría pendiente
+        # Gestoría pendiente (debe - haber)
         gest_debe = (
             self.movimientos.filter(origen="gestoria", tipo="debe")
             .aggregate(t=Sum("monto"))["t"] or Decimal("0")
@@ -153,19 +207,8 @@ class CuentaCorriente(models.Model):
         if gest_pendiente > 0:
             total += gest_pendiente
 
-        # Gastos de ingreso pendientes (desde la ficha vehicular)
-        # Buscar primero en vehículo de permuta, sino en el de la venta
-        from vehiculos.models import Vehiculo
-        vehiculo_permuta = (
-            Vehiculo.objects
-            .filter(
-                movimientos_cuenta__cuenta=self,
-                movimientos_cuenta__origen="permuta"
-            )
-            .distinct()
-            .first()
-        )
-        vehiculo = vehiculo_permuta or (self.venta.vehiculo if self.venta else None)
+        # Gastos de ingreso pendientes
+        vehiculo = self._vehiculo_para_gastos()
         if vehiculo:
             try:
                 ficha = vehiculo.ficha
