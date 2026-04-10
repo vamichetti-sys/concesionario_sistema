@@ -294,11 +294,27 @@ class FichaVehicular(models.Model):
 
 
     def total_pagado_por_concepto(self, concepto):
+        # Mapeo entre los labels de mapa_gastos_ingreso y las keys cortas
+        # con las que se guardan los pagos en PagoGastoIngreso
+        LABEL_TO_KEY = {
+            "Formulario 08": "f08",
+            "Informes": "informes",
+            "Patentes": "patentes",
+            "Infracciones": "infracciones",
+            "Verificación": "verificacion",
+            "Autopartes": "autopartes",
+            "VTV": "vtv",
+            "R541": "r541",
+            "Firmas": "firmas",
+        }
+        # Aceptar tanto label como key
+        key_corta = LABEL_TO_KEY.get(concepto, concepto)
+
         PagoGasto = apps.get_model("vehiculos", "PagoGastoIngreso")
         total = (
             PagoGasto.objects.filter(
                 vehiculo=self.vehiculo,
-                concepto=concepto
+                concepto__in=[concepto, key_corta]
             ).aggregate(total=models.Sum("monto"))["total"]
         )
         return Decimal(total) if total else Decimal("0")
