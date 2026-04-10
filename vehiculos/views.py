@@ -1122,7 +1122,7 @@ def stock_pdf(request):
         vehiculos_data.append((v, dias))
 
     # ── Construir columnas dinámicas ──────────────────────
-    columnas = [("Marca / Modelo", 0.30)]  # siempre presente
+    columnas = [("Marca / Modelo", 0.38)]  # siempre presente, más ancho
 
     if col_carpeta:
         columnas.append(("Carpeta", 0.10))
@@ -1140,7 +1140,7 @@ def stock_pdf(request):
     # Si no eligió ninguna columna extra, mostrar todas por defecto
     if len(columnas) == 1:
         columnas = [
-            ("Marca / Modelo", 0.30),
+            ("Marca / Modelo", 0.38),
             ("Dominio", 0.12),
             ("Año", 0.08),
             ("Kilómetros", 0.14),
@@ -1156,8 +1156,17 @@ def stock_pdf(request):
     encabezado = [c[0] for c in columnas]
     filas = [encabezado]
 
+    # Estilo para que el modelo haga wrap en celdas
+    modelo_style = ParagraphStyle(
+        "modelo",
+        fontSize=9,
+        leading=11,
+        fontName="Helvetica",
+    )
+
     for v, dias in vehiculos_data:
-        fila = [f"{v.marca} {v.modelo}"]
+        modelo_txt = f"{v.marca} {v.modelo}"
+        fila = [Paragraph(modelo_txt, modelo_style)]
         for col_name, _ in columnas[1:]:
             if col_name == "Carpeta":
                 fila.append(v.numero_carpeta or "–")
@@ -1246,6 +1255,7 @@ def stock_pdf(request):
         ("ALIGN", (0, 0), (-1, 0), "CENTER"),
         ("FONTSIZE", (0, 1), (-1, -1), 9),
         ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, AZUL_CLARO]),
+        ("ALIGN", (0, 1), (0, -1), "LEFT"),
         ("ALIGN", (1, 1), (-1, -1), "CENTER"),
         ("ALIGN", (-1, 1), (-1, -1), "RIGHT"),
         ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#aaaaaa")),
