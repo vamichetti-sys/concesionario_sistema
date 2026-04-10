@@ -324,12 +324,14 @@ def cuenta_corriente_detalle(request, cuenta_id):
 
     # Gastos de ingreso: desde la ficha vehicular del vehículo vinculado
     total_gastos_ingreso = Decimal("0")
+    saldo_gastos_ingreso = Decimal("0")
     if vehiculo_gastos:
         try:
             ficha_v = vehiculo_gastos.ficha
             for _, monto in ficha_v.mapa_gastos_ingreso().items():
                 if monto:
                     total_gastos_ingreso += Decimal(monto)
+            saldo_gastos_ingreso = ficha_v.saldo_total_gastos()
         except FichaVehicular.DoesNotExist:
             pass
 
@@ -342,6 +344,9 @@ def cuenta_corriente_detalle(request, cuenta_id):
             Decimal("0")
         )
 
+    # Deuda total = saldo de cuotas + gestoría pendiente + gastos de ingreso pendientes
+    deuda_total = deuda_cuotas + max(total_gestoria, Decimal("0")) + saldo_gastos_ingreso
+
     return render(
         request,
         "cuentas/cuenta_corriente_detalle.html",
@@ -352,10 +357,12 @@ def cuenta_corriente_detalle(request, cuenta_id):
             "movimientos": movimientos,
             "vehiculos": vehiculos,
             "total_gastos_ingreso": total_gastos_ingreso,
+            "saldo_gastos_ingreso": saldo_gastos_ingreso,
             "total_gestoria": total_gestoria,
             "vehiculo_permuta": vehiculo_permuta,
             "vehiculo_gastos": vehiculo_gastos,
             "deuda_cuotas": deuda_cuotas,
+            "deuda_total": deuda_total,
         }
     )
 
