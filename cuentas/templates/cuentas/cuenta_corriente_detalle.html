@@ -55,20 +55,14 @@
         <div class="card p-4 h-100">
             <div class="d-flex align-items-center gap-3">
                 <div style="width:50px;height:50px;background:
-                    {% if plan and plan.estado == 'activo' and deuda_cuotas > 0 %}rgba(245,158,11,0.1)
-                    {% elif cuenta.estado == 'deuda' %}rgba(245,158,11,0.1)
-                    {% elif cuenta.estado == 'cerrada' %}rgba(107,114,128,0.1)
+                    {% if cuenta.estado == 'cerrada' %}rgba(107,114,128,0.1)
+                    {% elif cuenta.deuda_total_real > 0 %}rgba(245,158,11,0.1)
                     {% else %}rgba(16,185,129,0.1){% endif %};
                     border-radius:12px;display:flex;align-items:center;justify-content:center;">
-                    <i data-lucide="
-                        {% if plan and plan.estado == 'activo' and deuda_cuotas > 0 %}alert-circle
-                        {% elif cuenta.estado == 'deuda' %}alert-circle
-                        {% elif cuenta.estado == 'cerrada' %}lock
-                        {% else %}check-circle{% endif %}"
+                    <i data-lucide="{% if cuenta.estado == 'cerrada' %}lock{% elif cuenta.deuda_total_real > 0 %}alert-circle{% else %}check-circle{% endif %}"
                         style="width:24px;height:24px;color:
-                        {% if plan and plan.estado == 'activo' and deuda_cuotas > 0 %}#f59e0b
-                        {% elif cuenta.estado == 'deuda' %}#f59e0b
-                        {% elif cuenta.estado == 'cerrada' %}#6b7280
+                        {% if cuenta.estado == 'cerrada' %}#6b7280
+                        {% elif cuenta.deuda_total_real > 0 %}#f59e0b
                         {% else %}#10b981{% endif %};"></i>
                 </div>
                 <div>
@@ -76,11 +70,7 @@
                     <div>
                         {% if cuenta.estado == 'cerrada' %}
                             <span class="badge bg-secondary">Cerrada</span>
-                        {% elif plan and plan.estado == 'activo' and deuda_cuotas > 0 %}
-                            <span class="badge bg-warning">Con deuda</span>
-                        {% elif plan and plan.estado == 'activo' and deuda_cuotas == 0 %}
-                            <span class="badge bg-success">Al día</span>
-                        {% elif cuenta.estado == 'deuda' %}
+                        {% elif cuenta.deuda_total_real > 0 %}
                             <span class="badge bg-warning">Con deuda</span>
                         {% else %}
                             <span class="badge bg-success">Al día</span>

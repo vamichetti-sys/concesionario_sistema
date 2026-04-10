@@ -93,12 +93,12 @@
                         </span>
                     </td>
                     <td>
-                        {% if cuenta.estado == 'al_dia' %}
-                        <span class="badge bg-success">Al día</span>
-                        {% elif cuenta.estado == 'deuda' %}
-                        <span class="badge bg-warning">Con deuda</span>
-                        {% elif cuenta.estado == 'cerrada' %}
+                        {% if cuenta.estado == 'cerrada' %}
                         <span class="badge bg-secondary">Cerrada</span>
+                        {% elif cuenta.deuda_total_real > 0 %}
+                        <span class="badge bg-warning">Con deuda</span>
+                        {% else %}
+                        <span class="badge bg-success">Al día</span>
                         {% endif %}
                     </td>
                     <td class="text-end">
