@@ -125,9 +125,12 @@ class CuentaCorriente(models.Model):
         ).exists()
 
     def _vehiculo_para_gastos(self):
-        """Devuelve el vehículo cuyos gastos aplican a esta cuenta (permuta o venta)."""
+        """
+        Devuelve SOLO el vehículo de permuta vinculado a la cuenta.
+        Los gastos del vehículo vendido los paga la concesionaria, no el cliente.
+        """
         from vehiculos.models import Vehiculo
-        vehiculo_permuta = (
+        return (
             Vehiculo.objects
             .filter(
                 movimientos_cuenta__cuenta=self,
@@ -136,7 +139,6 @@ class CuentaCorriente(models.Model):
             .distinct()
             .first()
         )
-        return vehiculo_permuta or (self.venta.vehiculo if self.venta else None)
 
     @property
     def deuda_total_inicial(self):

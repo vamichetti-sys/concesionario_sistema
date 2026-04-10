@@ -342,11 +342,10 @@ def cuenta_corriente_detalle(request, cuenta_id):
         .first()
     )
 
-    vehiculo_gastos = vehiculo_permuta or (
-        cuenta.venta.vehiculo if cuenta.venta else None
-    )
+    # Solo el vehículo de permuta tiene gastos que paga el cliente
+    vehiculo_gastos = vehiculo_permuta
 
-    # Gastos de ingreso: desde la ficha vehicular del vehículo vinculado
+    # Gastos de ingreso: desde la ficha vehicular del vehículo de permuta
     total_gastos_ingreso = Decimal("0")
     saldo_gastos_ingreso = Decimal("0")
     if vehiculo_gastos:
