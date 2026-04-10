@@ -20,6 +20,92 @@
 </div>
 
 <!-- ===============================
+     ACCESOS RÁPIDOS
+=============================== -->
+<style>
+    .quick-access-card {
+        display: flex; align-items: center; gap: 12px;
+        padding: 16px 18px; background: #fff;
+        border: 1px solid #e5e7eb; border-radius: 12px;
+        text-decoration: none; color: inherit;
+        transition: all .2s ease; height: 100%;
+    }
+    .quick-access-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        border-color: #3b82f6;
+    }
+    .quick-access-icon {
+        width: 44px; height: 44px; border-radius: 10px;
+        display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0;
+    }
+    .quick-access-text { flex: 1; }
+    .quick-access-text strong {
+        display: block; font-size: 14px; color: #111827;
+    }
+    .quick-access-text small { font-size: 11px; color: #6b7280; }
+</style>
+
+<div class="row g-3 mb-4">
+    <div class="col-md">
+        <a href="{% url 'clientes:lista_clientes' %}" class="quick-access-card">
+            <div class="quick-access-icon" style="background:rgba(59,130,246,0.1);">
+                <i data-lucide="users" style="width:22px;height:22px;color:#3b82f6;"></i>
+            </div>
+            <div class="quick-access-text">
+                <strong>Clientes</strong>
+                <small>Gestión de clientes</small>
+            </div>
+        </a>
+    </div>
+    <div class="col-md">
+        <a href="{% url 'vehiculos:lista_vehiculos' %}" class="quick-access-card">
+            <div class="quick-access-icon" style="background:rgba(16,185,129,0.1);">
+                <i data-lucide="car" style="width:22px;height:22px;color:#10b981;"></i>
+            </div>
+            <div class="quick-access-text">
+                <strong>Vehículos</strong>
+                <small>Stock y fichas</small>
+            </div>
+        </a>
+    </div>
+    <div class="col-md">
+        <a href="{% url 'ventas:lista_unidades_vendidas' %}" class="quick-access-card">
+            <div class="quick-access-icon" style="background:rgba(245,158,11,0.1);">
+                <i data-lucide="trending-up" style="width:22px;height:22px;color:#f59e0b;"></i>
+            </div>
+            <div class="quick-access-text">
+                <strong>Ventas</strong>
+                <small>Unidades vendidas</small>
+            </div>
+        </a>
+    </div>
+    <div class="col-md">
+        <a href="{% url 'cuentas:lista_cuentas_corrientes' %}" class="quick-access-card">
+            <div class="quick-access-icon" style="background:rgba(239,68,68,0.1);">
+                <i data-lucide="credit-card" style="width:22px;height:22px;color:#ef4444;"></i>
+            </div>
+            <div class="quick-access-text">
+                <strong>Cuentas Ctes.</strong>
+                <small>Saldos y pagos</small>
+            </div>
+        </a>
+    </div>
+    <div class="col-md">
+        <a href="{% url 'boletos:panel' %}" class="quick-access-card">
+            <div class="quick-access-icon" style="background:rgba(139,92,246,0.1);">
+                <i data-lucide="file-text" style="width:22px;height:22px;color:#8b5cf6;"></i>
+            </div>
+            <div class="quick-access-text">
+                <strong>Boletos</strong>
+                <small>Compraventa y pagarés</small>
+            </div>
+        </a>
+    </div>
+</div>
+
+<!-- ===============================
      ALERTAS URGENTES
 =============================== -->
 {% if vtv_vencidos > 0 or verificacion_vencidos > 0 or cuotas_vencidas_count > 0 %}
