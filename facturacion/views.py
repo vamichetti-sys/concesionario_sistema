@@ -32,32 +32,42 @@ COLOR_GRIS = colors.HexColor("#F4F6F8")
 # ==========================================================
 @login_required
 def lista_facturacion(request):
+    hoy = date.today()
+    mes = int(request.GET.get("mes", hoy.month))
+    anio = int(request.GET.get("anio", hoy.year))
+
+    # Listado completo (todas las facturas válidas, sin filtrar por mes)
     facturas = (
         FacturaRegistrada.objects
         .filter(estado="valida")
         .order_by("-fecha")
     )
 
-    hoy = date.today()
-
+    # Totales del mes filtrado
     total_mes = (
         FacturaRegistrada.objects
         .filter(
             estado="valida",
-            fecha__year=hoy.year,
-            fecha__month=hoy.month
+            fecha__year=anio,
+            fecha__month=mes,
         )
-        .aggregate(total=Sum("monto"))["total"] or 0
+        .aggregate(total=Sum("monto"))["total"] or Decimal("0")
     )
 
+    # Totales del año filtrado
     total_anio = (
         FacturaRegistrada.objects
         .filter(
             estado="valida",
-            fecha__year=hoy.year
+            fecha__year=anio,
         )
-        .aggregate(total=Sum("monto"))["total"] or 0
+        .aggregate(total=Sum("monto"))["total"] or Decimal("0")
     )
+
+    MESES = [
+        "", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+        "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
+    ]
 
     return render(
         request,
@@ -65,6 +75,10 @@ def lista_facturacion(request):
         {
             "page_title": "Facturación",
             "facturas": facturas,
+            "mes": mes,
+            "anio": anio,
+            "mes_nombre": MESES[mes] if 1 <= mes <= 12 else "",
+            "meses_choices": list(enumerate(MESES))[1:],
             "total_mes": total_mes,
             "total_anio": total_anio,
         }
@@ -103,11 +117,13 @@ def crear_factura(request):
 @login_required
 def exportar_excel_mensual(request):
     hoy = date.today()
+    mes = int(request.GET.get("mes", hoy.month))
+    anio = int(request.GET.get("anio", hoy.year))
 
     facturas = FacturaRegistrada.objects.filter(
         estado="valida",
-        fecha__year=hoy.year,
-        fecha__month=hoy.month
+        fecha__year=anio,
+        fecha__month=mes,
     )
 
     wb = Workbook()
@@ -145,10 +161,11 @@ def exportar_excel_mensual(request):
 @login_required
 def exportar_excel_anual(request):
     hoy = date.today()
+    anio = int(request.GET.get("anio", hoy.year))
 
     facturas = FacturaRegistrada.objects.filter(
         estado="valida",
-        fecha__year=hoy.year
+        fecha__year=anio,
     )
 
     wb = Workbook()
@@ -173,7 +190,7 @@ def exportar_excel_anual(request):
         content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
     response["Content-Disposition"] = (
-        f'attachment; filename="facturacion_anual_{hoy.year}.xlsx"'
+        f'attachment; filename="facturacion_anual_{anio}.xlsx"'
     )
 
     wb.save(response)
@@ -186,16 +203,18 @@ def exportar_excel_anual(request):
 @login_required
 def exportar_pdf_mensual(request):
     hoy = date.today()
+    mes = int(request.GET.get("mes", hoy.month))
+    anio = int(request.GET.get("anio", hoy.year))
 
     facturas = FacturaRegistrada.objects.filter(
         estado="valida",
-        fecha__year=hoy.year,
-        fecha__month=hoy.month
+        fecha__year=anio,
+        fecha__month=mes,
     )
 
     response = HttpResponse(content_type="application/pdf")
     response["Content-Disposition"] = (
-        f'inline; filename="facturacion_{hoy.month}_{hoy.year}.pdf"'
+        f'inline; filename="facturacion_{mes}_{anio}.pdf"'
     )
 
     doc = SimpleDocTemplate(
@@ -210,11 +229,14 @@ def exportar_pdf_mensual(request):
     styles = getSampleStyleSheet()
     elementos = []
 
+    MESES_NOMBRE = ["", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+                    "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
+
     header = Table(
         [[
             Paragraph(
                 "<b>AMICHETTI AUTOMOTORES</b><br/>"
-                f"Facturación Mensual – {hoy.strftime('%B %Y').capitalize()}",
+                f"Facturación Mensual – {MESES_NOMBRE[mes]} {anio}",
                 ParagraphStyle(
                     "h1",
                     fontSize=14,
@@ -312,15 +334,16 @@ def exportar_pdf_mensual(request):
 @login_required
 def exportar_pdf_anual(request):
     hoy = date.today()
+    anio = int(request.GET.get("anio", hoy.year))
 
     facturas = FacturaRegistrada.objects.filter(
         estado="valida",
-        fecha__year=hoy.year
+        fecha__year=anio,
     )
 
     response = HttpResponse(content_type="application/pdf")
     response["Content-Disposition"] = (
-        f'inline; filename="facturacion_anual_{hoy.year}.pdf"'
+        f'inline; filename="facturacion_anual_{anio}.pdf"'
     )
 
     doc = SimpleDocTemplate(
@@ -339,7 +362,7 @@ def exportar_pdf_anual(request):
         [[
             Paragraph(
                 "<b>AMICHETTI AUTOMOTORES</b><br/>"
-                f"Facturación Anual – {hoy.year}",
+                f"Facturación Anual – {anio}",
                 ParagraphStyle(
                     "h1",
                     fontSize=14,
@@ -455,12 +478,19 @@ def lista_compras(request):
     mes = int(request.GET.get("mes", hoy.month))
     anio = int(request.GET.get("anio", hoy.year))
 
-    compras = CompraRegistrada.objects.filter(
-        fecha__year=anio, fecha__month=mes,
-    ).order_by("-fecha")
+    # Listado completo (todas las compras, sin filtrar por mes)
+    compras = CompraRegistrada.objects.all().order_by("-fecha")
 
-    total_mes = compras.aggregate(t=Sum("monto"))["t"] or Decimal("0")
-    total_iva_mes = compras.aggregate(t=Sum("monto_iva"))["t"] or Decimal("0")
+    # Totales del mes filtrado
+    compras_mes = CompraRegistrada.objects.filter(
+        fecha__year=anio, fecha__month=mes,
+    )
+    total_mes = compras_mes.aggregate(t=Sum("monto"))["t"] or Decimal("0")
+    total_iva_mes = compras_mes.aggregate(t=Sum("monto_iva"))["t"] or Decimal("0")
+
+    # Totales del año filtrado
+    compras_anio = CompraRegistrada.objects.filter(fecha__year=anio)
+    total_anio = compras_anio.aggregate(t=Sum("monto"))["t"] or Decimal("0")
 
     MESES = [
         "", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
@@ -474,6 +504,7 @@ def lista_compras(request):
         "mes_nombre": MESES[mes] if 1 <= mes <= 12 else "",
         "total_mes": total_mes,
         "total_iva_mes": total_iva_mes,
+        "total_anio": total_anio,
         "meses_choices": list(enumerate(MESES))[1:],
     })
 

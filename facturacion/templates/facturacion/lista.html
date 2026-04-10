@@ -36,6 +36,25 @@
     </li>
 </ul>
 
+<!-- FILTRO MES -->
+<div class="card p-3 mb-4">
+    <form method="GET" class="row g-2 align-items-end">
+        <div class="col-md-3">
+            <select name="mes" class="form-select">
+                {% for num, nombre in meses_choices %}
+                <option value="{{ num }}" {% if num == mes %}selected{% endif %}>{{ nombre }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <input type="number" name="anio" class="form-control" value="{{ anio }}">
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-primary w-100">Ver mes</button>
+        </div>
+    </form>
+</div>
+
 <!-- RESUMEN -->
 <div class="row g-4 mb-4">
     <div class="col-md-6">
@@ -45,7 +64,7 @@
                     <i data-lucide="calendar" style="width:24px;height:24px;color:#3b82f6;"></i>
                 </div>
                 <div>
-                    <small class="text-muted">Facturacion del mes</small>
+                    <small class="text-muted">Ventas {{ mes_nombre }} {{ anio }}</small>
                     <div class="fw-bold" style="font-size:24px;">${{ total_mes|floatformat:0 }}</div>
                 </div>
             </div>
@@ -58,7 +77,7 @@
                     <i data-lucide="trending-up" style="width:24px;height:24px;color:#10b981;"></i>
                 </div>
                 <div>
-                    <small class="text-muted">Facturacion anual</small>
+                    <small class="text-muted">Ventas anuales {{ anio }}</small>
                     <div class="fw-bold" style="font-size:24px;">${{ total_anio|floatformat:0 }}</div>
                 </div>
             </div>
@@ -66,30 +85,28 @@
     </div>
 </div>
 
-<!-- EXPORTACIONES -->
-<div class="card p-3 mb-4">
-    <div class="d-flex flex-wrap gap-2">
-        <span class="text-muted me-2 d-flex align-items-center">
-            <i data-lucide="download" style="width:16px;height:16px;margin-right:6px;"></i>
-            Exportar:
-        </span>
-        <a href="{% url 'facturacion:excel_mensual' %}" class="btn btn-success btn-sm">
-            <i data-lucide="file-spreadsheet" style="width:14px;height:14px;margin-right:4px;"></i>
-            Excel mensual
-        </a>
-        <a href="{% url 'facturacion:excel_anual' %}" class="btn btn-success btn-sm">
-            <i data-lucide="file-spreadsheet" style="width:14px;height:14px;margin-right:4px;"></i>
-            Excel anual
-        </a>
-        <a href="{% url 'facturacion:pdf_mensual' %}" class="btn btn-danger btn-sm">
-            <i data-lucide="file-text" style="width:14px;height:14px;margin-right:4px;"></i>
-            PDF mensual
-        </a>
-        <a href="{% url 'facturacion:pdf_anual' %}" class="btn btn-danger btn-sm">
-            <i data-lucide="file-text" style="width:14px;height:14px;margin-right:4px;"></i>
-            PDF anual
-        </a>
-    </div>
+<!-- EXPORTAR -->
+<div class="d-flex align-items-center gap-2 mb-4 flex-wrap">
+    <span class="text-muted">
+        <i data-lucide="download" style="width:16px;height:16px;margin-right:4px;"></i>
+        Exportar:
+    </span>
+    <a href="{% url 'facturacion:excel_mensual' %}?mes={{ mes }}&anio={{ anio }}" class="btn btn-success btn-sm">
+        <i data-lucide="file-spreadsheet" style="width:14px;height:14px;margin-right:4px;"></i>
+        Excel mensual
+    </a>
+    <a href="{% url 'facturacion:excel_anual' %}?anio={{ anio }}" class="btn btn-success btn-sm">
+        <i data-lucide="file-spreadsheet" style="width:14px;height:14px;margin-right:4px;"></i>
+        Excel anual
+    </a>
+    <a href="{% url 'facturacion:pdf_mensual' %}?mes={{ mes }}&anio={{ anio }}" class="btn btn-danger btn-sm" target="_blank">
+        <i data-lucide="file-text" style="width:14px;height:14px;margin-right:4px;"></i>
+        PDF mensual
+    </a>
+    <a href="{% url 'facturacion:pdf_anual' %}?anio={{ anio }}" class="btn btn-danger btn-sm" target="_blank">
+        <i data-lucide="file-text" style="width:14px;height:14px;margin-right:4px;"></i>
+        PDF anual
+    </a>
 </div>
 
 <!-- LISTADO -->
