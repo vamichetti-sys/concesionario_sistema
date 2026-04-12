@@ -18,7 +18,7 @@
 
         .catalogo-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
             gap: 24px; padding: 32px 0;
         }
 
@@ -32,8 +32,8 @@
             box-shadow: 0 8px 24px rgba(0,0,0,0.12);
         }
 
-        .vehiculo-card img {
-            width: 100%; height: 220px; object-fit: cover; display: block;
+        .vehiculo-card .foto-principal {
+            width: 100%; height: 240px; object-fit: cover; display: block; cursor: pointer;
         }
 
         .vehiculo-info { padding: 20px; }
@@ -47,18 +47,47 @@
             display: flex; gap: 16px; margin-top: 12px;
             font-size: 13px; color: #6b7280;
         }
-        .vehiculo-specs span {
-            display: flex; align-items: center; gap: 4px;
+
+        /* Galería de miniaturas */
+        .fotos-strip {
+            display: flex; gap: 4px; padding: 0 16px 16px; overflow-x: auto;
+        }
+        .fotos-strip img {
+            width: 64px; height: 48px; object-fit: cover; border-radius: 6px;
+            cursor: pointer; border: 2px solid transparent; transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        .fotos-strip img:hover, .fotos-strip img.active {
+            border-color: #002855; opacity: 1;
         }
 
-        .fotos-mini {
-            display: flex; gap: 4px; padding: 0 20px 16px;
+        /* Lightbox */
+        .lightbox {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.92); z-index: 9999;
+            align-items: center; justify-content: center; flex-direction: column;
         }
-        .fotos-mini img {
-            width: 48px; height: 36px; object-fit: cover; border-radius: 4px;
-            opacity: 0.7; cursor: pointer; transition: opacity 0.2s;
+        .lightbox.open { display: flex; }
+        .lightbox img {
+            max-width: 90%; max-height: 80vh; border-radius: 12px; object-fit: contain;
         }
-        .fotos-mini img:hover { opacity: 1; }
+        .lightbox .close-btn {
+            position: absolute; top: 20px; right: 24px;
+            color: #fff; font-size: 32px; cursor: pointer; z-index: 10;
+            background: none; border: none; line-height: 1;
+        }
+        .lightbox .nav-btn {
+            position: absolute; top: 50%; transform: translateY(-50%);
+            color: #fff; font-size: 48px; cursor: pointer;
+            background: rgba(255,255,255,0.1); border: none; border-radius: 50%;
+            width: 56px; height: 56px; display: flex; align-items: center; justify-content: center;
+        }
+        .lightbox .nav-btn:hover { background: rgba(255,255,255,0.25); }
+        .lightbox .prev-btn { left: 20px; }
+        .lightbox .next-btn { right: 20px; }
+        .lightbox .counter {
+            color: rgba(255,255,255,0.7); font-size: 14px; margin-top: 12px;
+        }
 
         .footer {
             text-align: center; padding: 32px; color: #9ca3af; font-size: 13px;
@@ -68,6 +97,7 @@
             .catalogo-grid { grid-template-columns: 1fr; padding: 16px 0; gap: 16px; }
             .hero { padding: 32px 16px; }
             .hero h1 { font-size: 24px; }
+            .vehiculo-card .foto-principal { height: 200px; }
         }
     </style>
 </head>
@@ -85,31 +115,33 @@
 <div class="container">
     <div class="catalogo-grid">
         {% for item in catalogo %}
-        <div class="vehiculo-card">
-            <img src="{{ item.portada.imagen.url }}" alt="{{ item.vehiculo.marca }} {{ item.vehiculo.modelo }}">
+        <div class="vehiculo-card" data-card-index="{{ forloop.counter0 }}">
+            <!-- Foto principal -->
+            <img class="foto-principal"
+                 src="{{ item.portada.imagen.url }}"
+                 alt="{{ item.vehiculo.marca }} {{ item.vehiculo.modelo }}"
+                 onclick="abrirLightbox({{ forloop.counter0 }}, 0)">
+
+            <!-- Info -->
             <div class="vehiculo-info">
                 <h3>{{ item.vehiculo.marca }} {{ item.vehiculo.modelo }}</h3>
                 <span class="dominio">{{ item.vehiculo.dominio }}</span>
-
                 <div class="vehiculo-specs">
                     <span>{{ item.vehiculo.anio }}</span>
                     {% if item.vehiculo.kilometros %}
                     <span>{{ item.vehiculo.kilometros|floatformat:0 }} km</span>
                     {% endif %}
-                    {% if item.vehiculo.ficha.combustible %}
-                    <span>{{ item.vehiculo.ficha.combustible }}</span>
-                    {% endif %}
                 </div>
             </div>
 
-            {% if item.fotos.count > 1 %}
-            <div class="fotos-mini">
-                {% for foto in item.fotos|slice:":5" %}
-                <img src="{{ foto.imagen.url }}" alt="Foto {{ forloop.counter }}">
+            <!-- Strip de fotos -->
+            {% if item.fotos_list|length > 1 %}
+            <div class="fotos-strip">
+                {% for foto in item.fotos_list %}
+                <img src="{{ foto.imagen.url }}"
+                     alt="Foto {{ forloop.counter }}"
+                     onclick="abrirLightbox({{ forloop.parentloop.counter0 }}, {{ forloop.counter0 }})">
                 {% endfor %}
-                {% if item.fotos.count > 5 %}
-                <span style="display:flex;align-items:center;font-size:12px;color:#9ca3af;">+{{ item.fotos.count|add:"-5" }}</span>
-                {% endif %}
             </div>
             {% endif %}
         </div>
@@ -123,10 +155,70 @@
     {% endif %}
 </div>
 
+<!-- LIGHTBOX -->
+<div class="lightbox" id="lightbox">
+    <button class="close-btn" onclick="cerrarLightbox()">&times;</button>
+    <button class="nav-btn prev-btn" onclick="navLightbox(-1)">&#8249;</button>
+    <button class="nav-btn next-btn" onclick="navLightbox(1)">&#8250;</button>
+    <img id="lightbox-img" src="" alt="">
+    <div class="counter" id="lightbox-counter"></div>
+</div>
+
 <div class="footer">
     Amichetti Automotores · Av. Larrea 255, Rojas (B) · Tel: 02475-465115<br>
-    Los precios no incluyen gastos de transferencia. Consulte disponibilidad.
+    Consulte disponibilidad y precio.
 </div>
+
+<script>
+// Construir array de fotos por vehículo
+var galeriaData = [
+    {% for item in catalogo %}
+    [{% for foto in item.fotos_list %}"{{ foto.imagen.url }}"{% if not forloop.last %},{% endif %}{% endfor %}]{% if not forloop.last %},{% endif %}
+    {% endfor %}
+];
+
+var currentCard = 0;
+var currentFoto = 0;
+
+function abrirLightbox(cardIdx, fotoIdx) {
+    currentCard = cardIdx;
+    currentFoto = fotoIdx;
+    mostrarFoto();
+    document.getElementById('lightbox').classList.add('open');
+    document.body.style.overflow = 'hidden';
+}
+
+function cerrarLightbox() {
+    document.getElementById('lightbox').classList.remove('open');
+    document.body.style.overflow = '';
+}
+
+function navLightbox(dir) {
+    var fotos = galeriaData[currentCard];
+    currentFoto += dir;
+    if (currentFoto < 0) currentFoto = fotos.length - 1;
+    if (currentFoto >= fotos.length) currentFoto = 0;
+    mostrarFoto();
+}
+
+function mostrarFoto() {
+    var fotos = galeriaData[currentCard];
+    document.getElementById('lightbox-img').src = fotos[currentFoto];
+    document.getElementById('lightbox-counter').textContent = (currentFoto + 1) + ' / ' + fotos.length;
+}
+
+// Cerrar con ESC
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') cerrarLightbox();
+    if (e.key === 'ArrowLeft') navLightbox(-1);
+    if (e.key === 'ArrowRight') navLightbox(1);
+});
+
+// Cerrar clickeando fuera
+document.getElementById('lightbox').addEventListener('click', function(e) {
+    if (e.target === this) cerrarLightbox();
+});
+</script>
 
 </body>
 </html>

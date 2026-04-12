@@ -166,13 +166,13 @@ def catalogo_publico(request):
 
     catalogo = []
     for v in vehiculos:
-        portada = v.fotos.filter(es_portada=True).first()
-        fotos = v.fotos.all()
-        if fotos.exists():
+        fotos = list(v.fotos.all())
+        if fotos:
+            portada = next((f for f in fotos if f.es_portada), fotos[0])
             catalogo.append({
                 "vehiculo": v,
-                "portada": portada or fotos.first(),
-                "fotos": fotos,
+                "portada": portada,
+                "fotos_list": fotos,
             })
 
     return render(request, "community/catalogo_publico.html", {
