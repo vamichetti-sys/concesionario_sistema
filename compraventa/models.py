@@ -21,6 +21,19 @@ class Proveedor(models.Model):
         default="00-00000000-0",
     )
 
+    # Contacto
+    telefono = models.CharField(max_length=30, blank=True, null=True, verbose_name="Teléfono")
+    email = models.EmailField(blank=True, null=True, verbose_name="Email")
+    contacto_nombre = models.CharField(max_length=100, blank=True, null=True, verbose_name="Persona de contacto")
+    domicilio = models.CharField(max_length=200, blank=True, null=True, verbose_name="Domicilio")
+    ciudad = models.CharField(max_length=100, blank=True, null=True, verbose_name="Ciudad")
+
+    # Datos bancarios
+    banco = models.CharField(max_length=100, blank=True, null=True, verbose_name="Banco")
+    cbu = models.CharField(max_length=22, blank=True, null=True, verbose_name="CBU")
+    alias_bancario = models.CharField(max_length=50, blank=True, null=True, verbose_name="Alias")
+    titular_cuenta = models.CharField(max_length=150, blank=True, null=True, verbose_name="Titular de la cuenta")
+
     activo = models.BooleanField(default=True)
     creado = models.DateTimeField(default=timezone.now)
 

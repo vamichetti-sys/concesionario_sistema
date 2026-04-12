@@ -10,8 +10,16 @@
         <i data-lucide="arrow-left" style="width:16px;height:16px;margin-right:6px;"></i>
         Volver al proveedor
     </a>
-    <h3 class="fw-bold mb-1">Cuenta Corriente</h3>
-    <p class="text-muted mb-0">{{ proveedor.nombre_empresa }}</p>
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h3 class="fw-bold mb-1">Cuenta Corriente</h3>
+            <p class="text-muted mb-0">{{ proveedor.nombre_empresa }}</p>
+        </div>
+        <a href="{% url 'compraventa:proveedor_cuenta_corriente_pdf' proveedor.id %}" class="btn btn-danger btn-sm" target="_blank">
+            <i data-lucide="file-text" style="width:14px;height:14px;margin-right:4px;"></i>
+            Imprimir PDF
+        </a>
+    </div>
 </div>
 
 <!-- ===============================

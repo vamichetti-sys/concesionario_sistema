@@ -12,24 +12,25 @@ from .models import (
 class ProveedorForm(forms.ModelForm):
     class Meta:
         model = Proveedor
-        fields = ["nombre_empresa", "cuit", "activo"]
-        labels = {
-            "nombre_empresa": "Nombre de la empresa",
-            "cuit": "CUIT",
-            "activo": "Proveedor activo",
-        }
+        fields = [
+            "nombre_empresa", "cuit", "telefono", "email",
+            "contacto_nombre", "domicilio", "ciudad",
+            "banco", "cbu", "alias_bancario", "titular_cuenta",
+            "activo",
+        ]
         widgets = {
-            "nombre_empresa": forms.TextInput(attrs={
-                "class": "form-control am-input",
-                "placeholder": "Nombre de la empresa",
-            }),
-            "cuit": forms.TextInput(attrs={
-                "class": "form-control am-input",
-                "placeholder": "00-00000000-0",
-            }),
-            "activo": forms.CheckboxInput(attrs={
-                "class": "form-check-input am-switch",
-            }),
+            "nombre_empresa": forms.TextInput(attrs={"class": "form-control", "placeholder": "Nombre de la empresa"}),
+            "cuit": forms.TextInput(attrs={"class": "form-control", "placeholder": "00-00000000-0"}),
+            "telefono": forms.TextInput(attrs={"class": "form-control", "placeholder": "Ej: 2475-400000"}),
+            "email": forms.EmailInput(attrs={"class": "form-control", "placeholder": "email@ejemplo.com"}),
+            "contacto_nombre": forms.TextInput(attrs={"class": "form-control", "placeholder": "Nombre del contacto"}),
+            "domicilio": forms.TextInput(attrs={"class": "form-control", "placeholder": "Dirección"}),
+            "ciudad": forms.TextInput(attrs={"class": "form-control", "placeholder": "Ciudad"}),
+            "banco": forms.TextInput(attrs={"class": "form-control", "placeholder": "Ej: Banco Nación"}),
+            "cbu": forms.TextInput(attrs={"class": "form-control", "placeholder": "22 dígitos"}),
+            "alias_bancario": forms.TextInput(attrs={"class": "form-control", "placeholder": "Ej: AGENCIA.ROJAS"}),
+            "titular_cuenta": forms.TextInput(attrs={"class": "form-control", "placeholder": "Titular de la cuenta bancaria"}),
+            "activo": forms.CheckboxInput(attrs={"class": "form-check-input"}),
         }
 
 

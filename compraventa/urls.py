@@ -18,6 +18,11 @@ urlpatterns = [
         views.proveedor_detalle,
         name="proveedor_detalle"
     ),
+    path(
+        "proveedor/<int:proveedor_id>/editar/",
+        views.proveedor_editar,
+        name="proveedor_editar"
+    ),
 
     path(
     "proveedor/<int:proveedor_id>/eliminar/",
@@ -70,5 +75,19 @@ urlpatterns = [
         "proveedor/<int:proveedor_id>/cuenta-corriente/",
         views.proveedor_cuenta_corriente,
         name="proveedor_cuenta_corriente"
+    ),
+
+    # =========================
+    # PDFs
+    # =========================
+    path(
+        "proveedor/<int:proveedor_id>/pdf/",
+        views.proveedor_pdf,
+        name="proveedor_pdf"
+    ),
+    path(
+        "proveedor/<int:proveedor_id>/cuenta-corriente/pdf/",
+        views.proveedor_cuenta_corriente_pdf,
+        name="proveedor_cuenta_corriente_pdf"
     ),
 ]

@@ -1,9 +1,8 @@
 {% extends "base.html" %}
+{% load humanize %}
 {% block content %}
 
-<!-- ===============================
-     ENCABEZADO
-=============================== -->
+<!-- ENCABEZADO -->
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h3 class="fw-bold mb-1">Compra-Venta</h3>
@@ -21,30 +20,101 @@
     </div>
 </div>
 
-<!-- ===============================
-     LISTA DE PROVEEDORES
-=============================== -->
+<!-- RESUMEN -->
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="card p-4" style="position:relative;">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <span class="text-muted" style="font-size:13px;">Proveedores activos</span>
+                <div style="width:40px;height:40px;background:rgba(59,130,246,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                    <i data-lucide="building" style="width:20px;height:20px;color:#3b82f6;"></i>
+                </div>
+            </div>
+            <h3 class="fw-bold mb-0">{{ cantidad_proveedores }}</h3>
+            <div style="position:absolute;top:0;left:0;width:4px;height:100%;background:#3b82f6;border-radius:14px 0 0 14px;"></div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card p-4" style="position:relative;">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <span class="text-muted" style="font-size:13px;">Total comprado</span>
+                <div style="width:40px;height:40px;background:rgba(245,158,11,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                    <i data-lucide="shopping-cart" style="width:20px;height:20px;color:#f59e0b;"></i>
+                </div>
+            </div>
+            <h3 class="fw-bold mb-0">${{ total_deuda|floatformat:0|intcomma }}</h3>
+            <div style="position:absolute;top:0;left:0;width:4px;height:100%;background:#f59e0b;border-radius:14px 0 0 14px;"></div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card p-4" style="position:relative;">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <span class="text-muted" style="font-size:13px;">Total pagado</span>
+                <div style="width:40px;height:40px;background:rgba(16,185,129,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                    <i data-lucide="check-circle" style="width:20px;height:20px;color:#10b981;"></i>
+                </div>
+            </div>
+            <h3 class="fw-bold mb-0 text-success">${{ total_pagado|floatformat:0|intcomma }}</h3>
+            <div style="position:absolute;top:0;left:0;width:4px;height:100%;background:#10b981;border-radius:14px 0 0 14px;"></div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card p-4" style="position:relative;">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <span class="text-muted" style="font-size:13px;">Saldo pendiente</span>
+                <div style="width:40px;height:40px;background:rgba(239,68,68,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                    <i data-lucide="alert-circle" style="width:20px;height:20px;color:#ef4444;"></i>
+                </div>
+            </div>
+            <h3 class="fw-bold mb-0 {% if saldo_pendiente > 0 %}text-danger{% else %}text-success{% endif %}">${{ saldo_pendiente|floatformat:0|intcomma }}</h3>
+            <div style="position:absolute;top:0;left:0;width:4px;height:100%;background:#ef4444;border-radius:14px 0 0 14px;"></div>
+        </div>
+    </div>
+</div>
+
+<!-- BUSCADOR -->
+<div class="card p-3 mb-4">
+    <form method="get">
+        <div class="input-group">
+            <span class="input-group-text" style="background:#fff;border-right:none;">
+                <i data-lucide="search" style="width:18px;height:18px;color:#9ca3af;"></i>
+            </span>
+            <input type="text" name="q" class="form-control" style="border-left:none;" placeholder="Buscar por nombre, CUIT, teléfono o ciudad..." value="{{ query }}">
+            <button type="submit" class="btn btn-primary">Buscar</button>
+            {% if query %}
+            <a href="{% url 'compraventa:home' %}" class="btn btn-secondary">Limpiar</a>
+            {% endif %}
+        </div>
+    </form>
+</div>
+
+<!-- LISTA DE PROVEEDORES -->
 <div class="card p-4">
     <div class="d-flex align-items-center gap-2 mb-4">
         <i data-lucide="building" style="width:20px;height:20px;color:#3b82f6;"></i>
-        <h5 class="fw-bold mb-0">Proveedores</h5>
+        <h5 class="fw-bold mb-0">Proveedores{% if query %} — resultados para "{{ query }}"{% endif %}</h5>
     </div>
 
     {% if proveedores %}
     <div class="row g-3">
         {% for p in proveedores %}
         <div class="col-md-6 col-lg-4">
-            <a href="{% url 'compraventa:proveedor_detalle' p.id %}" 
-               class="d-block p-3 text-decoration-none" 
+            <a href="{% url 'compraventa:proveedor_detalle' p.id %}"
+               class="d-block p-3 text-decoration-none"
                style="background:#f8f9fa;border-radius:12px;transition:all 0.2s ease;">
                 <div class="d-flex align-items-center gap-3">
                     <div style="width:44px;height:44px;background:linear-gradient(135deg,#3b82f6 0%,#2563eb 100%);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600;">
                         {{ p.nombre_empresa|slice:":1"|upper }}
                     </div>
-                    <div>
+                    <div style="flex:1;">
                         <div class="fw-semibold text-dark">{{ p.nombre_empresa }}</div>
-                        <small class="text-muted">{{ p.cuit|default:"Sin CUIT" }}</small>
+                        <small class="text-muted">{{ p.cuit|default:"Sin CUIT" }}{% if p.ciudad %} · {{ p.ciudad }}{% endif %}</small>
                     </div>
+                    {% if p.deuda_total > 0 %}
+                    <span class="badge bg-danger">${{ p.deuda_total|floatformat:0|intcomma }}</span>
+                    {% else %}
+                    <span class="badge bg-success">Al día</span>
+                    {% endif %}
                 </div>
             </a>
         </div>
@@ -53,19 +123,18 @@
     {% else %}
     <div class="p-5 text-center" style="background:#f8f9fa;border-radius:12px;">
         <i data-lucide="building" style="width:48px;height:48px;color:#9ca3af;margin-bottom:12px;"></i>
+        {% if query %}
+        <p class="text-muted mb-0">No se encontraron proveedores para "{{ query }}"</p>
+        {% else %}
         <p class="text-muted mb-3">Todavía no hay proveedores registrados</p>
         <a href="{% url 'compraventa:proveedor_crear' %}" class="btn btn-primary">
             <i data-lucide="plus" style="width:16px;height:16px;margin-right:6px;"></i>
             Registrar primer proveedor
         </a>
+        {% endif %}
     </div>
     {% endif %}
 </div>
 
-<script>
-    if (typeof lucide !== 'undefined') {
-        lucide.createIcons();
-    }
-</script>
-
+<script>if (typeof lucide !== 'undefined') lucide.createIcons();</script>
 {% endblock %}

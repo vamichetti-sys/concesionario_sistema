@@ -1,9 +1,8 @@
 {% extends "base.html" %}
+{% load humanize %}
 {% block content %}
 
-<!-- ===============================
-     ENCABEZADO
-=============================== -->
+<!-- ENCABEZADO -->
 <div class="d-flex justify-content-between align-items-start mb-4">
     <div>
         <a href="{% url 'compraventa:home' %}" class="text-muted text-decoration-none d-inline-flex align-items-center mb-2" style="font-size:14px;">
@@ -13,14 +12,81 @@
         <h3 class="fw-bold mb-1">{{ proveedor.nombre_empresa }}</h3>
         <p class="text-muted mb-0">
             {% if proveedor.cuit %}CUIT: {{ proveedor.cuit }}{% endif %}
+            {% if proveedor.telefono %} · Tel: {{ proveedor.telefono }}{% endif %}
+            {% if proveedor.ciudad %} · {{ proveedor.ciudad }}{% endif %}
         </p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'compraventa:proveedor_editar' proveedor.id %}" class="btn btn-secondary btn-sm">
+            <i data-lucide="pencil" style="width:14px;height:14px;margin-right:4px;"></i>
+            Editar
+        </a>
+        <a href="{% url 'compraventa:proveedor_pdf' proveedor.id %}" class="btn btn-danger btn-sm" target="_blank">
+            <i data-lucide="file-text" style="width:14px;height:14px;margin-right:4px;"></i>
+            PDF
+        </a>
     </div>
 </div>
 
-<!-- ===============================
-     ACCIONES
-=============================== -->
-<div class="card p-4">
+<!-- DATOS DEL PROVEEDOR -->
+<div class="row g-4 mb-4">
+    <!-- Contacto -->
+    <div class="col-md-6">
+        <div class="card p-4 h-100">
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <i data-lucide="user" style="width:18px;height:18px;color:#10b981;"></i>
+                <h6 class="fw-bold mb-0">Contacto</h6>
+            </div>
+            <div class="row g-2" style="font-size:14px;">
+                {% if proveedor.contacto_nombre %}
+                <div class="col-12"><span class="text-muted">Contacto:</span> <strong>{{ proveedor.contacto_nombre }}</strong></div>
+                {% endif %}
+                {% if proveedor.telefono %}
+                <div class="col-12"><span class="text-muted">Teléfono:</span> {{ proveedor.telefono }}</div>
+                {% endif %}
+                {% if proveedor.email %}
+                <div class="col-12"><span class="text-muted">Email:</span> {{ proveedor.email }}</div>
+                {% endif %}
+                {% if proveedor.domicilio %}
+                <div class="col-12"><span class="text-muted">Domicilio:</span> {{ proveedor.domicilio }}{% if proveedor.ciudad %}, {{ proveedor.ciudad }}{% endif %}</div>
+                {% endif %}
+                {% if not proveedor.contacto_nombre and not proveedor.telefono and not proveedor.email and not proveedor.domicilio %}
+                <div class="col-12 text-muted">Sin datos de contacto cargados</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Datos bancarios -->
+    <div class="col-md-6">
+        <div class="card p-4 h-100">
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <i data-lucide="landmark" style="width:18px;height:18px;color:#8b5cf6;"></i>
+                <h6 class="fw-bold mb-0">Datos bancarios</h6>
+            </div>
+            <div class="row g-2" style="font-size:14px;">
+                {% if proveedor.banco %}
+                <div class="col-12"><span class="text-muted">Banco:</span> <strong>{{ proveedor.banco }}</strong></div>
+                {% endif %}
+                {% if proveedor.cbu %}
+                <div class="col-12"><span class="text-muted">CBU:</span> <code style="font-size:13px;">{{ proveedor.cbu }}</code></div>
+                {% endif %}
+                {% if proveedor.alias_bancario %}
+                <div class="col-12"><span class="text-muted">Alias:</span> <strong>{{ proveedor.alias_bancario }}</strong></div>
+                {% endif %}
+                {% if proveedor.titular_cuenta %}
+                <div class="col-12"><span class="text-muted">Titular:</span> {{ proveedor.titular_cuenta }}</div>
+                {% endif %}
+                {% if not proveedor.banco and not proveedor.cbu and not proveedor.alias_bancario %}
+                <div class="col-12 text-muted">Sin datos bancarios cargados</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ACCIONES -->
+<div class="card p-4 mb-4">
     <div class="d-flex align-items-center gap-2 mb-4">
         <i data-lucide="settings" style="width:20px;height:20px;color:#3b82f6;"></i>
         <h5 class="fw-bold mb-0">Acciones</h5>
@@ -28,9 +94,9 @@
 
     <div class="row g-3">
         <div class="col-md-4">
-            <a href="{% url 'compraventa:proveedor_unidades' proveedor.id %}" 
-               class="d-block p-4 text-decoration-none text-center" 
-               style="background:#f8f9fa;border-radius:12px;transition:all 0.2s ease;">
+            <a href="{% url 'compraventa:proveedor_unidades' proveedor.id %}"
+               class="d-block p-4 text-decoration-none text-center"
+               style="background:#f8f9fa;border-radius:12px;">
                 <div style="width:50px;height:50px;background:rgba(59,130,246,0.1);border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;">
                     <i data-lucide="car" style="width:24px;height:24px;color:#3b82f6;"></i>
                 </div>
@@ -40,9 +106,9 @@
         </div>
 
         <div class="col-md-4">
-            <a href="{% url 'compraventa:proveedor_cuenta_corriente' proveedor.id %}" 
-               class="d-block p-4 text-decoration-none text-center" 
-               style="background:#f8f9fa;border-radius:12px;transition:all 0.2s ease;">
+            <a href="{% url 'compraventa:proveedor_cuenta_corriente' proveedor.id %}"
+               class="d-block p-4 text-decoration-none text-center"
+               style="background:#f8f9fa;border-radius:12px;">
                 <div style="width:50px;height:50px;background:rgba(16,185,129,0.1);border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;">
                     <i data-lucide="credit-card" style="width:24px;height:24px;color:#10b981;"></i>
                 </div>
@@ -53,9 +119,9 @@
 
         {% if proveedor.activo %}
         <div class="col-md-4">
-            <a href="{% url 'compraventa:compra_registrar_proveedor' proveedor.id %}" 
-               class="d-block p-4 text-decoration-none text-center" 
-               style="background:linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);border-radius:12px;transition:all 0.2s ease;">
+            <a href="{% url 'compraventa:compra_registrar_proveedor' proveedor.id %}"
+               class="d-block p-4 text-decoration-none text-center"
+               style="background:linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);border-radius:12px;">
                 <div style="width:50px;height:50px;background:rgba(255,255,255,0.2);border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;">
                     <i data-lucide="plus" style="width:24px;height:24px;color:#fff;"></i>
                 </div>
@@ -71,17 +137,12 @@
     <div class="d-flex gap-2">
         <a href="{% url 'compraventa:proveedor_eliminar' proveedor.id %}"
            class="btn btn-outline-danger btn-sm"
-           onclick="return confirm('¿Seguro que querés ELIMINAR este proveedor? Esta acción no se puede deshacer.')">
+           onclick="return confirm('¿Seguro que querés ELIMINAR este proveedor?')">
             <i data-lucide="trash-2" style="width:14px;height:14px;margin-right:4px;"></i>
             Eliminar proveedor
         </a>
     </div>
 </div>
 
-<script>
-    if (typeof lucide !== 'undefined') {
-        lucide.createIcons();
-    }
-</script>
-
+<script>if (typeof lucide !== 'undefined') lucide.createIcons();</script>
 {% endblock %}
