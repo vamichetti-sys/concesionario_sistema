@@ -130,29 +130,15 @@
                         </span>
                     </td>
                     <!-- Plataformas -->
-                    {% for plat in "mercadolibre,facebook,instagram,web"|cut:" " %}
+                    {% for plat_info in item.plataformas_list %}
                     <td class="text-center">
-                        {% with pub_val=item.pubs %}
-                        <a href="#" onclick="togglePub({{ item.vehiculo.id }}, '{{ plat }}', this); return false;"
-                           style="font-size:18px;text-decoration:none;">
-                            {% if plat in pub_val and pub_val|dictsort:plat %}
-                            <!-- Workaround: check via data attribute -->
+                        <a href="#" onclick="togglePub({{ item.vehiculo.id }}, '{{ plat_info.key }}', this); return false;"
+                           style="text-decoration:none;font-size:18px;cursor:pointer;">
+                            {% if plat_info.publicado %}
+                                <span class="text-success">&#10004;</span>
+                            {% else %}
+                                <span class="text-danger">&#10008;</span>
                             {% endif %}
-                            <span data-vehiculo="{{ item.vehiculo.id }}" data-plat="{{ plat }}"
-                                  style="cursor:pointer;">
-                                {% if item.pubs|default_if_none:"" %}
-                                    {% for pk, pv in item.pubs.items %}
-                                        {% if pk == plat and pv %}
-                                            <span class="text-success">&#10004;</span>
-                                        {% elif pk == plat and not pv %}
-                                            <span class="text-danger">&#10008;</span>
-                                        {% endif %}
-                                    {% endfor %}
-                                {% endif %}
-                                {% if plat not in item.pubs %}
-                                    <span class="text-muted">–</span>
-                                {% endif %}
-                            </span>
                         </a>
                     </td>
                     {% endfor %}

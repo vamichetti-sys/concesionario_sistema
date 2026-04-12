@@ -45,11 +45,18 @@ def community_dashboard(request):
         if fotos_count > 0 and todas_publicadas:
             total_completos += 1
 
+        PLAT_KEYS = ["mercadolibre", "facebook", "instagram", "web"]
+        plataformas_list = [
+            {"key": k, "publicado": pubs.get(k, False)}
+            for k in PLAT_KEYS
+        ]
+
         item = {
             "vehiculo": v,
             "fotos_count": fotos_count,
             "portada": portada,
             "pubs": pubs,
+            "plataformas_list": plataformas_list,
             "plataformas_publicadas": plataformas_publicadas,
             "todas_publicadas": todas_publicadas,
         }
