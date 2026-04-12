@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% load cloud_img %}
     <title>Amichetti Automotores – Catálogo</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
@@ -117,8 +118,8 @@
         {% for item in catalogo %}
         <div class="vehiculo-card" data-card-index="{{ forloop.counter0 }}">
             <!-- Foto principal -->
-            <img class="foto-principal"
-                 src="{{ item.portada.imagen.url }}"
+            <img class="foto-principal" loading="lazy"
+                 src="{{ item.portada.imagen.url|cloud_opt:'800' }}"
                  alt="{{ item.vehiculo.marca }} {{ item.vehiculo.modelo }}"
                  onclick="abrirLightbox({{ forloop.counter0 }}, 0)">
 
@@ -138,7 +139,7 @@
             {% if item.fotos_list|length > 1 %}
             <div class="fotos-strip">
                 {% for foto in item.fotos_list %}
-                <img src="{{ foto.imagen.url }}"
+                <img src="{{ foto.imagen.url|cloud_thumb }}" loading="lazy"
                      alt="Foto {{ forloop.counter }}"
                      onclick="abrirLightbox({{ forloop.parentloop.counter0 }}, {{ forloop.counter0 }})">
                 {% endfor %}
@@ -173,7 +174,7 @@
 // Construir array de fotos por vehículo
 var galeriaData = [
     {% for item in catalogo %}
-    [{% for foto in item.fotos_list %}"{{ foto.imagen.url }}"{% if not forloop.last %},{% endif %}{% endfor %}]{% if not forloop.last %},{% endif %}
+    [{% for foto in item.fotos_list %}"{{ foto.imagen.url|cloud_opt:'1200' }}"{% if not forloop.last %},{% endif %}{% endfor %}]{% if not forloop.last %},{% endif %}
     {% endfor %}
 ];
 

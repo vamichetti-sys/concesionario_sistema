@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load cloud_img %}
 {% block title %}Fotos – {{ vehiculo }}{% endblock %}
 {% block content %}
 
@@ -47,7 +48,7 @@
         {% for foto in fotos %}
         <div class="col-md-3 col-sm-4 col-6">
             <div style="position:relative;border-radius:12px;overflow:hidden;background:#f3f4f6;">
-                <img src="{{ foto.imagen.url }}" style="width:100%;height:180px;object-fit:cover;display:block;">
+                <img src="{{ foto.imagen.url|cloud_opt:'400' }}" loading="lazy" style="width:100%;height:180px;object-fit:cover;display:block;">
 
                 {% if foto.es_portada %}
                 <span class="badge bg-success" style="position:absolute;top:8px;left:8px;">Portada</span>

@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load cloud_img %}
 {% block title %}Community{% endblock %}
 {% block content %}
 
@@ -113,7 +114,7 @@
                 <tr>
                     <td>
                         {% if item.portada %}
-                        <img src="{{ item.portada.imagen.url }}" style="width:50px;height:38px;object-fit:cover;border-radius:6px;">
+                        <img src="{{ item.portada.imagen.url|cloud_thumb }}" style="width:50px;height:38px;object-fit:cover;border-radius:6px;">
                         {% else %}
                         <div style="width:50px;height:38px;background:#f3f4f6;border-radius:6px;display:flex;align-items:center;justify-content:center;">
                             <i data-lucide="image-off" style="width:18px;height:18px;color:#9ca3af;"></i>
