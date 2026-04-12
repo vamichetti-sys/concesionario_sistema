@@ -63,6 +63,7 @@ INSTALLED_APPS = [
     "django.contrib.humanize",
 
     # Apps del proyecto
+    "community",
     "cloudinary_storage",
     "cloudinary",
     "inicio",

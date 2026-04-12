@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}Fotos – {{ vehiculo }}{% endblock %}
+{% block content %}
+
+<!-- ENCABEZADO -->
+<div class="mb-4">
+    <a href="{% url 'community:dashboard' %}" class="text-muted text-decoration-none d-inline-flex align-items-center mb-2" style="font-size:14px;">
+        <i data-lucide="arrow-left" style="width:16px;height:16px;margin-right:6px;"></i>
+        Volver a Community
+    </a>
+    <h3 class="fw-bold mb-1">{{ vehiculo.marca }} {{ vehiculo.modelo }}</h3>
+    <p class="text-muted mb-0">{{ vehiculo.dominio }} · {{ vehiculo.anio }}{% if vehiculo.kilometros %} · {{ vehiculo.kilometros }} km{% endif %}</p>
+</div>
+
+<!-- SUBIR FOTOS -->
+<div class="card p-4 mb-4">
+    <div class="d-flex align-items-center gap-2 mb-3">
+        <i data-lucide="upload" style="width:20px;height:20px;color:#3b82f6;"></i>
+        <h5 class="fw-bold mb-0">Subir fotos</h5>
+    </div>
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="row g-3 align-items-end">
+            <div class="col-md-8">
+                <input type="file" name="imagenes" multiple accept="image/*" class="form-control" required>
+                <small class="text-muted">Podés seleccionar varias fotos a la vez</small>
+            </div>
+            <div class="col-md-4">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i data-lucide="upload" style="width:16px;height:16px;margin-right:6px;"></i>
+                    Subir fotos
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- GALERÍA -->
+<div class="card p-4 mb-4">
+    <div class="d-flex align-items-center gap-2 mb-3">
+        <i data-lucide="images" style="width:20px;height:20px;color:#10b981;"></i>
+        <h5 class="fw-bold mb-0">Fotos ({{ fotos.count }})</h5>
+    </div>
+
+    {% if fotos %}
+    <div class="row g-3">
+        {% for foto in fotos %}
+        <div class="col-md-3 col-sm-4 col-6">
+            <div style="position:relative;border-radius:12px;overflow:hidden;background:#f3f4f6;">
+                <img src="{{ foto.imagen.url }}" style="width:100%;height:180px;object-fit:cover;display:block;">
+
+                {% if foto.es_portada %}
+                <span class="badge bg-success" style="position:absolute;top:8px;left:8px;">Portada</span>
+                {% endif %}
+
+                <div style="position:absolute;bottom:0;left:0;right:0;padding:8px;background:linear-gradient(transparent,rgba(0,0,0,0.7));display:flex;gap:6px;justify-content:flex-end;">
+                    {% if not foto.es_portada %}
+                    <a href="{% url 'community:marcar_portada' foto.id %}" class="btn btn-sm btn-light" title="Marcar como portada">
+                        <i data-lucide="star" style="width:14px;height:14px;"></i>
+                    </a>
+                    {% endif %}
+                    <a href="{% url 'community:eliminar_foto' foto.id %}" class="btn btn-sm btn-danger"
+                       onclick="return confirm('¿Eliminar esta foto?')" title="Eliminar">
+                        <i data-lucide="trash-2" style="width:14px;height:14px;"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="p-5 text-center" style="background:#f8f9fa;border-radius:12px;">
+        <i data-lucide="image-off" style="width:48px;height:48px;color:#9ca3af;margin-bottom:12px;"></i>
+        <p class="text-muted mb-0">Este vehículo no tiene fotos cargadas</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- PLATAFORMAS -->
+<div class="card p-4">
+    <div class="d-flex align-items-center gap-2 mb-3">
+        <i data-lucide="share-2" style="width:20px;height:20px;color:#8b5cf6;"></i>
+        <h5 class="fw-bold mb-0">Publicación en plataformas</h5>
+    </div>
+
+    <div class="row g-3">
+        {% for pub in publicaciones %}
+        <div class="col-md-3">
+            <div class="p-3 text-center" style="background:#f8f9fa;border-radius:12px;border:2px solid {% if pub.publicado %}#10b981{% else %}#e5e7eb{% endif %};">
+                <div class="fw-semibold mb-2">{{ pub.get_plataforma_display }}</div>
+                <a href="#" onclick="togglePlat({{ vehiculo.id }}, '{{ pub.plataforma }}', this); return false;"
+                   class="btn btn-sm {% if pub.publicado %}btn-success{% else %}btn-outline-secondary{% endif %} w-100">
+                    {% if pub.publicado %}
+                        <i data-lucide="check" style="width:14px;height:14px;margin-right:4px;"></i> Publicado
+                    {% else %}
+                        Marcar como publicado
+                    {% endif %}
+                </a>
+                {% if pub.fecha_publicacion %}
+                <small class="text-muted d-block mt-1">{{ pub.fecha_publicacion|date:"d/m/Y" }}</small>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+function togglePlat(vehiculoId, plataforma, btn) {
+    fetch(`/community/vehiculo/${vehiculoId}/toggle/${plataforma}/`, {method: 'POST'})
+        .then(r => r.json())
+        .then(data => {
+            if (data.ok) location.reload();
+        });
+}
+if (typeof lucide !== 'undefined') lucide.createIcons();
+</script>
+{% endblock %}

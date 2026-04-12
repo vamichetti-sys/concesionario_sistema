@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+{% block title %}Community{% endblock %}
+{% block content %}
+
+<!-- ENCABEZADO -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-bold mb-1">Community</h3>
+        <p class="text-muted mb-0">Gestión de fotos y publicaciones en redes</p>
+    </div>
+    <a href="{% url 'community:catalogo_publico' %}" class="btn btn-primary" target="_blank">
+        <i data-lucide="external-link" style="width:16px;height:16px;margin-right:6px;"></i>
+        Ver catálogo público
+    </a>
+</div>
+
+<!-- RESUMEN -->
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <a href="?filtro=" class="card p-4 text-decoration-none" style="position:relative;display:block;">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <span class="text-muted" style="font-size:13px;">En stock</span>
+                <div style="width:40px;height:40px;background:rgba(59,130,246,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                    <i data-lucide="car" style="width:20px;height:20px;color:#3b82f6;"></i>
+                </div>
+            </div>
+            <h3 class="fw-bold mb-0 text-dark">{{ total_stock }}</h3>
+            <div style="position:absolute;top:0;left:0;width:4px;height:100%;background:#3b82f6;border-radius:14px 0 0 14px;"></div>
+        </a>
+    </div>
+    <div class="col-md-3">
+        <a href="?filtro=sin_fotos" class="card p-4 text-decoration-none" style="position:relative;display:block;">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <span class="text-muted" style="font-size:13px;">Sin fotos</span>
+                <div style="width:40px;height:40px;background:rgba(239,68,68,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                    <i data-lucide="image-off" style="width:20px;height:20px;color:#ef4444;"></i>
+                </div>
+            </div>
+            <h3 class="fw-bold mb-0 text-danger">{{ total_sin_fotos }}</h3>
+            <div style="position:absolute;top:0;left:0;width:4px;height:100%;background:#ef4444;border-radius:14px 0 0 14px;"></div>
+        </a>
+    </div>
+    <div class="col-md-3">
+        <a href="?filtro=sin_publicar" class="card p-4 text-decoration-none" style="position:relative;display:block;">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <span class="text-muted" style="font-size:13px;">Falta publicar</span>
+                <div style="width:40px;height:40px;background:rgba(245,158,11,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                    <i data-lucide="share-2" style="width:20px;height:20px;color:#f59e0b;"></i>
+                </div>
+            </div>
+            <h3 class="fw-bold mb-0 text-warning">{{ total_sin_publicar }}</h3>
+            <div style="position:absolute;top:0;left:0;width:4px;height:100%;background:#f59e0b;border-radius:14px 0 0 14px;"></div>
+        </a>
+    </div>
+    <div class="col-md-3">
+        <a href="?filtro=completo" class="card p-4 text-decoration-none" style="position:relative;display:block;">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <span class="text-muted" style="font-size:13px;">Completos</span>
+                <div style="width:40px;height:40px;background:rgba(16,185,129,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                    <i data-lucide="check-circle" style="width:20px;height:20px;color:#10b981;"></i>
+                </div>
+            </div>
+            <h3 class="fw-bold mb-0 text-success">{{ total_completos }}</h3>
+            <div style="position:absolute;top:0;left:0;width:4px;height:100%;background:#10b981;border-radius:14px 0 0 14px;"></div>
+        </a>
+    </div>
+</div>
+
+<!-- BUSCADOR -->
+<div class="card p-3 mb-4">
+    <form method="get">
+        {% if filtro %}<input type="hidden" name="filtro" value="{{ filtro }}">{% endif %}
+        <div class="input-group">
+            <span class="input-group-text" style="background:#fff;border-right:none;">
+                <i data-lucide="search" style="width:18px;height:18px;color:#9ca3af;"></i>
+            </span>
+            <input type="text" name="q" class="form-control" style="border-left:none;" placeholder="Buscar marca, modelo o dominio..." value="{{ query }}">
+            <button type="submit" class="btn btn-primary">Buscar</button>
+            {% if query or filtro %}
+            <a href="{% url 'community:dashboard' %}" class="btn btn-secondary">Limpiar</a>
+            {% endif %}
+        </div>
+    </form>
+</div>
+
+<!-- LISTADO -->
+<div class="card p-0">
+    {% if vehiculos_data %}
+    <div class="table-responsive">
+        <table class="table align-middle mb-0">
+            <thead>
+                <tr>
+                    <th style="width:60px;"></th>
+                    <th>Vehículo</th>
+                    <th class="text-center">Fotos</th>
+                    <th class="text-center">
+                        <i data-lucide="shopping-bag" style="width:14px;height:14px;" title="MercadoLibre"></i>
+                    </th>
+                    <th class="text-center">
+                        <i data-lucide="facebook" style="width:14px;height:14px;" title="Facebook"></i>
+                    </th>
+                    <th class="text-center">
+                        <i data-lucide="instagram" style="width:14px;height:14px;" title="Instagram"></i>
+                    </th>
+                    <th class="text-center">
+                        <i data-lucide="globe" style="width:14px;height:14px;" title="Página web"></i>
+                    </th>
+                    <th class="text-end">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in vehiculos_data %}
+                <tr>
+                    <td>
+                        {% if item.portada %}
+                        <img src="{{ item.portada.imagen.url }}" style="width:50px;height:38px;object-fit:cover;border-radius:6px;">
+                        {% else %}
+                        <div style="width:50px;height:38px;background:#f3f4f6;border-radius:6px;display:flex;align-items:center;justify-content:center;">
+                            <i data-lucide="image-off" style="width:18px;height:18px;color:#9ca3af;"></i>
+                        </div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="fw-semibold">{{ item.vehiculo.marca }} {{ item.vehiculo.modelo }}</div>
+                        <small class="text-muted">{{ item.vehiculo.dominio }} · {{ item.vehiculo.anio }}</small>
+                    </td>
+                    <td class="text-center">
+                        <span class="badge {% if item.fotos_count > 0 %}bg-success{% else %}bg-danger{% endif %}">
+                            {{ item.fotos_count }}
+                        </span>
+                    </td>
+                    <!-- Plataformas -->
+                    {% for plat in "mercadolibre,facebook,instagram,web"|cut:" " %}
+                    <td class="text-center">
+                        {% with pub_val=item.pubs %}
+                        <a href="#" onclick="togglePub({{ item.vehiculo.id }}, '{{ plat }}', this); return false;"
+                           style="font-size:18px;text-decoration:none;">
+                            {% if plat in pub_val and pub_val|dictsort:plat %}
+                            <!-- Workaround: check via data attribute -->
+                            {% endif %}
+                            <span data-vehiculo="{{ item.vehiculo.id }}" data-plat="{{ plat }}"
+                                  style="cursor:pointer;">
+                                {% if item.pubs|default_if_none:"" %}
+                                    {% for pk, pv in item.pubs.items %}
+                                        {% if pk == plat and pv %}
+                                            <span class="text-success">&#10004;</span>
+                                        {% elif pk == plat and not pv %}
+                                            <span class="text-danger">&#10008;</span>
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endif %}
+                                {% if plat not in item.pubs %}
+                                    <span class="text-muted">–</span>
+                                {% endif %}
+                            </span>
+                        </a>
+                    </td>
+                    {% endfor %}
+                    <td class="text-end">
+                        <a href="{% url 'community:vehiculo_fotos' item.vehiculo.id %}" class="btn btn-secondary btn-sm">
+                            <i data-lucide="camera" style="width:14px;height:14px;margin-right:4px;"></i>
+                            Gestionar
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="p-5 text-center">
+        <i data-lucide="image" style="width:48px;height:48px;color:#9ca3af;margin-bottom:12px;"></i>
+        <p class="text-muted mb-0">No hay vehículos que mostrar</p>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function togglePub(vehiculoId, plataforma, el) {
+    fetch(`/community/vehiculo/${vehiculoId}/toggle/${plataforma}/`, {method: 'POST'})
+        .then(r => r.json())
+        .then(data => {
+            if (!data.ok) return;
+            const span = el.querySelector('span[data-plat="'+plataforma+'"] span') || el.querySelector('span');
+            if (data.publicado) {
+                span.className = 'text-success';
+                span.innerHTML = '&#10004;';
+            } else {
+                span.className = 'text-danger';
+                span.innerHTML = '&#10008;';
+            }
+        });
+}
+if (typeof lucide !== 'undefined') lucide.createIcons();
+</script>
+{% endblock %}
