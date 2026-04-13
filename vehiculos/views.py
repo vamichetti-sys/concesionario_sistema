@@ -246,6 +246,9 @@ def cambiar_estado_vehiculo(request, vehiculo_id):
             CuentaCorriente.objects.filter(venta=venta).update(
                 venta=None, estado="cerrada"
             )
+            # Desvincular facturas (no se borran, quedan como historial)
+            from facturacion.models import FacturaRegistrada
+            FacturaRegistrada.objects.filter(venta=venta).update(venta=None)
             venta.delete()
 
         from gestoria.models import Gestoria
