@@ -1098,8 +1098,10 @@ def stock_pdf(request):
             | Q(dominio__icontains=query)
         )
 
-    # Siempre excluir vendidos del PDF del listado
-    if estado_filtro and estado_filtro != "vendido":
+    # Filtrar por estado: stock muestra stock + temporal, nunca vendidos
+    if estado_filtro == "stock":
+        vehiculos = vehiculos.filter(estado__in=["stock", "temporal"])
+    elif estado_filtro and estado_filtro != "vendido":
         vehiculos = vehiculos.filter(estado=estado_filtro)
     else:
         vehiculos = vehiculos.exclude(estado="vendido")
