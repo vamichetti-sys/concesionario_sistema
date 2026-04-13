@@ -411,7 +411,25 @@ def guardar_ficha_vehicular(request, vehiculo_id):
             # ===============================
             # GUARDAR FICHA
             # ===============================
+            # Preservar gastos de ingreso y concesionario antes de que el form los sobreescriba
+            gastos_preservar = {}
+            campos_a_preservar = [
+                "gasto_f08", "gasto_informes", "gasto_patentes", "gasto_infracciones",
+                "gasto_verificacion", "gasto_autopartes", "gasto_vtv", "gasto_r541", "gasto_firmas",
+                "gc_service", "gc_mecanica", "gc_chapa_pintura", "gc_tapizado",
+                "gc_neumaticos", "gc_vidrios", "gc_cerrajeria", "gc_lavado",
+                "gc_gnc", "gc_grabado_autopartes", "gc_vtv", "gc_verificacion", "gc_patentes", "gc_otros",
+                "total_gastos",
+            ]
+            for campo in campos_a_preservar:
+                gastos_preservar[campo] = getattr(ficha, campo, None)
+
             ficha = ficha_form.save(commit=False)
+
+            # Restaurar gastos que el form pudo haber borrado
+            for campo, valor in gastos_preservar.items():
+                if getattr(ficha, campo, None) is None and valor is not None:
+                    setattr(ficha, campo, valor)
 
             # ===============================
             # CAMPOS MANUALES (NO ESTÁN EN EL FORM)
