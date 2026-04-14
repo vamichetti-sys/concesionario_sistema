@@ -118,37 +118,38 @@
             <thead>
                 <tr>
                     <th>Numero</th>
+                    <th>Cliente</th>
                     <th>Fecha</th>
+                    <th>Vehículo</th>
                     <th class="text-end">Neto</th>
                     <th class="text-end">IVA</th>
                     <th class="text-end">Total</th>
-                    <th>Venta</th>
                     <th class="text-end">Acciones</th>
                 </tr>
             </thead>
             <tbody>
                 {% for f in facturas %}
                 <tr>
+                    <td><span class="fw-semibold">{{ f.numero }}</span></td>
                     <td>
-                        <div class="d-flex align-items-center gap-3">
-                            <div style="width:40px;height:40px;background:rgba(59,130,246,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
-                                <i data-lucide="receipt" style="width:18px;height:18px;color:#3b82f6;"></i>
-                            </div>
-                            <span class="fw-semibold">{{ f.numero }}</span>
-                        </div>
+                        {% if f.venta and f.venta.cliente %}
+                        {{ f.venta.cliente.nombre_completo }}
+                        {% else %}
+                        <span class="text-muted">–</span>
+                        {% endif %}
                     </td>
                     <td><span class="text-muted">{{ f.fecha|date:"d/m/Y" }}</span></td>
+                    <td>
+                        {% if f.venta and f.venta.vehiculo %}
+                        {{ f.venta.vehiculo.marca }} {{ f.venta.vehiculo.modelo }}
+                        {% else %}
+                        <span class="text-muted">–</span>
+                        {% endif %}
+                    </td>
                     <td class="text-end">${{ f.monto_neto|floatformat:2|intcomma|default:"-" }}</td>
                     <td class="text-end">${{ f.monto_iva|floatformat:2|intcomma|default:"-" }}</td>
                     <td class="text-end">
                         <span class="fw-bold" style="color:#10b981;">${{ f.monto|floatformat:2|intcomma }}</span>
-                    </td>
-                    <td>
-                        {% if f.venta %}
-                        <span class="badge bg-info">Venta #{{ f.venta.id }}</span>
-                        {% else %}
-                        <span class="text-muted">&mdash;</span>
-                        {% endif %}
                     </td>
                     <td class="text-end">
                         <a href="{% url 'facturacion:eliminar' pk=f.pk %}" class="btn btn-outline-danger btn-sm">

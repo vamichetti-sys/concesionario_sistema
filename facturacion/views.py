@@ -40,6 +40,7 @@ def lista_facturacion(request):
     facturas = (
         FacturaRegistrada.objects
         .filter(estado="valida")
+        .select_related("venta", "venta__cliente", "venta__vehiculo")
         .order_by("-fecha")
     )
 
