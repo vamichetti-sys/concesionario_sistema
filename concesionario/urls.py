@@ -112,6 +112,7 @@ urlpatterns = [
     path('crm/', include('crm.urls')),
     path('gastos-mensuales/', include('gastos_mensuales.urls')),
     path('community/', include('community.urls')),
+    path('auditoria/', include('auditoria.urls')),
 ]
 
 # ==========================================================

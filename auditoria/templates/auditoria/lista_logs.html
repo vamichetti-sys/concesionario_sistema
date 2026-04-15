@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}Auditoría{% endblock %}
+{% block content %}
+
+<!-- ENCABEZADO -->
+<div class="mb-4">
+    <h3 class="fw-bold mb-1">Log de auditoría</h3>
+    <p class="text-muted mb-0">Historial de acciones realizadas en el sistema · {{ total }} registros</p>
+</div>
+
+<!-- FILTROS -->
+<div class="card p-3 mb-4">
+    <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-3">
+            <label class="form-label" style="font-size:12px;">Buscar</label>
+            <input type="text" name="q" class="form-control" placeholder="Usuario, modelo, descripción..." value="{{ query }}">
+        </div>
+        <div class="col-md-2">
+            <label class="form-label" style="font-size:12px;">Acción</label>
+            <select name="accion" class="form-select">
+                <option value="">Todas</option>
+                {% for val, label in acciones_choices %}
+                <option value="{{ val }}" {% if val == accion %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label" style="font-size:12px;">Modelo</label>
+            <select name="modelo" class="form-select">
+                <option value="">Todos</option>
+                {% for m in modelos_choices %}
+                <option value="{{ m }}" {% if m == modelo %}selected{% endif %}>{{ m }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label" style="font-size:12px;">Usuario</label>
+            <input type="text" name="usuario" class="form-control" value="{{ usuario }}">
+        </div>
+        <div class="col-md-1">
+            <label class="form-label" style="font-size:12px;">Desde</label>
+            <input type="date" name="desde" class="form-control" value="{{ fecha_desde }}">
+        </div>
+        <div class="col-md-1">
+            <label class="form-label" style="font-size:12px;">Hasta</label>
+            <input type="date" name="hasta" class="form-control" value="{{ fecha_hasta }}">
+        </div>
+        <div class="col-md-1">
+            <button type="submit" class="btn btn-primary w-100">Filtrar</button>
+        </div>
+    </form>
+    {% if query or accion or modelo or usuario or fecha_desde or fecha_hasta %}
+    <div class="mt-2">
+        <a href="{% url 'auditoria:lista_logs' %}" class="btn btn-sm btn-outline-secondary">Limpiar filtros</a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- TABLA -->
+<div class="card p-0">
+    {% if logs %}
+    <div class="table-responsive">
+        <table class="table align-middle mb-0" style="font-size:13px;">
+            <thead>
+                <tr>
+                    <th style="width:150px;">Fecha</th>
+                    <th>Usuario</th>
+                    <th>Acción</th>
+                    <th>Modelo</th>
+                    <th>Descripción</th>
+                    <th>IP</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs %}
+                <tr>
+                    <td><span class="text-muted">{{ log.fecha|date:"d/m/Y H:i" }}</span></td>
+                    <td><span class="fw-semibold">{{ log.usuario_texto|default:"Anónimo" }}</span></td>
+                    <td>
+                        {% if log.accion == 'crear' %}<span class="badge bg-success">Crear</span>
+                        {% elif log.accion == 'editar' %}<span class="badge bg-warning">Editar</span>
+                        {% elif log.accion == 'eliminar' %}<span class="badge bg-danger">Eliminar</span>
+                        {% elif log.accion == 'login' %}<span class="badge bg-info">Login</span>
+                        {% elif log.accion == 'logout' %}<span class="badge bg-secondary">Logout</span>
+                        {% elif log.accion == 'login_fallido' %}<span class="badge bg-dark">Login fallido</span>
+                        {% else %}{{ log.get_accion_display }}{% endif %}
+                    </td>
+                    <td>{{ log.modelo|default:"—" }}</td>
+                    <td>{{ log.descripcion }}</td>
+                    <td><code style="font-size:11px;">{{ log.ip|default:"—" }}</code></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Paginación -->
+    {% if page_obj.has_other_pages %}
+    <div class="d-flex justify-content-between align-items-center p-3 border-top">
+        <small class="text-muted">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</small>
+        <div class="d-flex gap-2">
+            {% if page_obj.has_previous %}
+            <a href="?{% if query %}q={{ query }}&{% endif %}{% if accion %}accion={{ accion }}&{% endif %}{% if modelo %}modelo={{ modelo }}&{% endif %}{% if usuario %}usuario={{ usuario }}&{% endif %}{% if fecha_desde %}desde={{ fecha_desde }}&{% endif %}{% if fecha_hasta %}hasta={{ fecha_hasta }}&{% endif %}page={{ page_obj.previous_page_number }}" class="btn btn-sm btn-outline-secondary">‹ Anterior</a>
+            {% endif %}
+            {% if page_obj.has_next %}
+            <a href="?{% if query %}q={{ query }}&{% endif %}{% if accion %}accion={{ accion }}&{% endif %}{% if modelo %}modelo={{ modelo }}&{% endif %}{% if usuario %}usuario={{ usuario }}&{% endif %}{% if fecha_desde %}desde={{ fecha_desde }}&{% endif %}{% if fecha_hasta %}hasta={{ fecha_hasta }}&{% endif %}page={{ page_obj.next_page_number }}" class="btn btn-sm btn-outline-secondary">Siguiente ›</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+    {% else %}
+    <div class="p-5 text-center">
+        <i data-lucide="shield" style="width:48px;height:48px;color:#9ca3af;margin-bottom:12px;"></i>
+        <p class="text-muted mb-0">No hay registros que coincidan con los filtros</p>
+    </div>
+    {% endif %}
+</div>
+
+<script>if (typeof lucide !== 'undefined') lucide.createIcons();</script>
+{% endblock %}
