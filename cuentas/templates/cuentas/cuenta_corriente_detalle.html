@@ -412,13 +412,23 @@
                   onsubmit="return validarVinculacionVehiculo();">
                 {% csrf_token %}
                 <div class="modal-body">
-                    <label class="form-label">Seleccioná el vehículo</label>
-                    <select class="form-select" id="selectVehiculoVincular" required onchange="setearVehiculoVincular(this.value)">
-                        <option value="">Elegir vehículo...</option>
+                    <label class="form-label">Buscar vehículo</label>
+                    <input type="text" class="form-control mb-2" id="buscarVehiculoVincular"
+                           placeholder="Escribí marca, modelo o dominio..." oninput="filtrarVehiculosVincular()" autocomplete="off">
+                    <div id="listaVehiculosVincular" style="max-height:300px;overflow-y:auto;border:1px solid #e5e7eb;border-radius:8px;">
                         {% for v in vehiculos %}
-                        <option value="{{ v.id }}">{{ v.marca }} {{ v.modelo }}{% if v.dominio %} ({{ v.dominio }}){% endif %}</option>
+                        <div class="vehiculo-opt px-3 py-2" style="cursor:pointer;border-bottom:1px solid #f3f4f6;"
+                             data-id="{{ v.id }}"
+                             data-texto="{{ v.marca|lower }} {{ v.modelo|lower }} {{ v.dominio|lower }}"
+                             onclick="seleccionarVehiculoVincular(this)">
+                            <div class="fw-semibold">{{ v.marca }} {{ v.modelo }}</div>
+                            {% if v.dominio %}<small class="text-muted">{{ v.dominio }}</small>{% endif %}
+                        </div>
                         {% endfor %}
-                    </select>
+                    </div>
+                    <div id="seleccionadoVincular" class="mt-2" style="display:none;">
+                        <small class="text-success fw-semibold">Seleccionado: <span id="seleccionadoTexto"></span></small>
+                    </div>
                     <small class="text-muted mt-2 d-block">Los gastos de ingreso se imputarán automáticamente a la cuenta corriente.</small>
                 </div>
                 <div class="modal-footer">
@@ -433,14 +443,32 @@
     </div>
 </div>
 
+<style>
+.vehiculo-opt:hover { background: #f3f4f6; }
+.vehiculo-opt.selected { background: #dbeafe; border-left: 3px solid #3b82f6; }
+</style>
 <script>
-function setearVehiculoVincular(vehiculoId) {
-    const form    = document.getElementById('formVincularVehiculo');
-    const btn     = document.getElementById('btnVincularVehiculo');
-    const baseUrl = form.dataset.urlBase;
-    if (!vehiculoId) { form.action = ""; btn.disabled = true; return; }
-    form.action  = baseUrl.replace('9999', vehiculoId);
+function filtrarVehiculosVincular() {
+    const q = document.getElementById('buscarVehiculoVincular').value.toLowerCase().trim();
+    document.querySelectorAll('#listaVehiculosVincular .vehiculo-opt').forEach(function(el){
+        el.style.display = (!q || el.dataset.texto.includes(q)) ? '' : 'none';
+    });
+}
+
+function seleccionarVehiculoVincular(el) {
+    document.querySelectorAll('#listaVehiculosVincular .vehiculo-opt').forEach(function(x){
+        x.classList.remove('selected');
+    });
+    el.classList.add('selected');
+
+    const id = el.dataset.id;
+    const txt = el.querySelector('.fw-semibold').textContent;
+    const form = document.getElementById('formVincularVehiculo');
+    const btn = document.getElementById('btnVincularVehiculo');
+    form.action = form.dataset.urlBase.replace('9999', id);
     btn.disabled = false;
+    document.getElementById('seleccionadoVincular').style.display = 'block';
+    document.getElementById('seleccionadoTexto').textContent = txt;
 }
 
 function validarVinculacionVehiculo() {
