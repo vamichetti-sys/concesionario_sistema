@@ -106,7 +106,7 @@ def webhook(request):
 def _procesar_mensaje(texto, body, from_number, resp):
 
     # ==========================================================
-    # COMANDO: STOCK COMPLETO
+    # COMANDO: STOCK COMPLETO (paginado para no exceder límite)
     # ==========================================================
     if texto in ("stock", "lista", "todos", "listar"):
         vehiculos = Vehiculo.objects.filter(estado="stock").order_by("marca", "modelo")
@@ -115,17 +115,32 @@ def _procesar_mensaje(texto, body, from_number, resp):
             resp.message("No hay vehículos en stock en este momento.")
             return HttpResponse(str(resp), content_type="text/xml")
 
-        lineas = ["*STOCK ACTUAL*\n"]
-        for i, v in enumerate(vehiculos, 1):
-            km_txt = f" - {int(v.kilometros):,} km".replace(",", ".") if v.kilometros else ""
-            lineas.append(
-                f"{i}. {v.marca.upper()} {v.modelo.upper()} {v.anio} "
-                f"({v.dominio.upper()}){km_txt}"
-            )
+        lista_vehiculos = list(vehiculos)
+        total = len(lista_vehiculos)
 
-        lineas.append(f"\n_Total: {vehiculos.count()} unidades_")
-        lineas.append("\nEscribí el nombre o modelo para ver fotos y detalles.")
-        resp.message("\n".join(lineas))
+        # Dividir en bloques de 15 para no exceder límite de WhatsApp
+        BLOQUE = 15
+        for inicio in range(0, total, BLOQUE):
+            bloque = lista_vehiculos[inicio:inicio + BLOQUE]
+
+            if inicio == 0:
+                lineas = [f"*STOCK ACTUAL ({total} unidades)*\n"]
+            else:
+                lineas = [f"*... continuación*\n"]
+
+            for i, v in enumerate(bloque, inicio + 1):
+                km_txt = f" - {int(v.kilometros):,} km".replace(",", ".") if v.kilometros else ""
+                lineas.append(
+                    f"{i}. {v.marca.upper()} {v.modelo.upper()} {v.anio} "
+                    f"({v.dominio.upper()}){km_txt}"
+                )
+
+            if inicio + BLOQUE >= total:
+                lineas.append("\nEscribí el nombre o modelo para ver fotos.")
+                lineas.append("Escribí *precio* + modelo para ver precios.")
+
+            resp.message("\n".join(lineas))
+
         return HttpResponse(str(resp), content_type="text/xml")
 
     # ==========================================================
@@ -143,14 +158,18 @@ def _procesar_mensaje(texto, body, from_number, resp):
             resp.message("No encontré vehículos con esa búsqueda.")
             return HttpResponse(str(resp), content_type="text/xml")
 
-        lineas = ["*PRECIOS*\n"]
-        for v in vehiculos:
-            precio_txt = f"${v.precio:,.0f}".replace(",", ".") if v.precio else "Consultar"
-            lineas.append(
-                f"- {v.marca.upper()} {v.modelo.upper()} {v.anio} → {precio_txt}"
-            )
+        lista_vehiculos = list(vehiculos)
+        BLOQUE = 15
+        for inicio in range(0, len(lista_vehiculos), BLOQUE):
+            bloque = lista_vehiculos[inicio:inicio + BLOQUE]
+            lineas = ["*PRECIOS*\n"] if inicio == 0 else ["*... continuación*\n"]
+            for v in bloque:
+                precio_txt = f"${int(v.precio):,}".replace(",", ".") if v.precio else "Consultar"
+                lineas.append(
+                    f"- {v.marca.upper()} {v.modelo.upper()} {v.anio} → {precio_txt}"
+                )
+            resp.message("\n".join(lineas))
 
-        resp.message("\n".join(lineas))
         return HttpResponse(str(resp), content_type="text/xml")
 
     # ==========================================================
