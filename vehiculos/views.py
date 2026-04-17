@@ -825,6 +825,16 @@ def registrar_pago_gasto(request):
     monto = Decimal(monto_raw)
 
     # ===============================
+    # PROTECCIÓN CONTRA PAGO DOBLE
+    # ===============================
+    if saldo_actual <= 0:
+        messages.warning(request, f"{CONCEPTOS[concepto_key]} ya está pagado.")
+        return redirect("vehiculos:ficha_completa", vehiculo_id=vehiculo.id)
+
+    if monto > saldo_actual:
+        monto = saldo_actual
+
+    # ===============================
     # REGISTRAR PAGO DE GASTO
     # ===============================
     PagoGastoIngreso.objects.create(
