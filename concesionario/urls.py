@@ -113,6 +113,11 @@ urlpatterns = [
     path('gastos-mensuales/', include('gastos_mensuales.urls')),
     path('community/', include('community.urls')),
     path('auditoria/', include('auditoria.urls')),
+
+    # ===============================
+    # BOT WHATSAPP (TWILIO)
+    # ===============================
+    path('whatsapp/', include('whatsapp_bot.urls')),
 ]
 
 # ==========================================================

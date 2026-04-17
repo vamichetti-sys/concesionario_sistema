@@ -26,3 +26,4 @@ whitenoise==6.11.0
 zopfli==0.4.0
 cloudinary
 django-cloudinary-storage
+twilio

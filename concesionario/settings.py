@@ -87,6 +87,7 @@ INSTALLED_APPS = [
     "cuentas_internas",
     "crm.apps.CrmConfig",
     "gastos_mensuales",
+    "whatsapp_bot",
 ]
 
 # ==========================================================
