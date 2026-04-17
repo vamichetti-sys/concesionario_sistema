@@ -1,0 +1,199 @@
+{% extends 'base.html' %}
+
+{% block title %}Cotizador de Cuotas{% endblock %}
+
+{% block content %}
+
+<!-- ENCABEZADO -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-bold mb-1">Cotizador de Cuotas</h3>
+        <p class="text-muted mb-0">Calculá la financiación y generá el PDF para el cliente</p>
+    </div>
+    <a href="{% url 'presupuestos:lista' %}" class="btn btn-secondary btn-sm">
+        <i data-lucide="arrow-left" style="width:14px;height:14px;margin-right:4px;"></i>
+        Presupuestos
+    </a>
+</div>
+
+<div class="row g-4">
+
+    <!-- FORMULARIO -->
+    <div class="col-md-6">
+        <div class="card p-4">
+            <h5 class="fw-bold mb-4">
+                <i data-lucide="calculator" style="width:20px;height:20px;color:#002855;margin-right:6px;"></i>
+                Datos de la cotización
+            </h5>
+
+            <!-- Cliente -->
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Nombre del cliente</label>
+                    <input type="text" id="cliente" class="form-control" placeholder="Opcional">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Teléfono</label>
+                    <input type="text" id="telefono" class="form-control" placeholder="Opcional">
+                </div>
+            </div>
+
+            <!-- Vehículo -->
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Vehículo</label>
+                <select id="vehiculo" class="form-select">
+                    <option value="">-- Seleccionar (opcional) --</option>
+                    {% for v in vehiculos %}
+                    <option value="{{ v.id }}" data-precio="{{ v.precio|default:'0' }}">
+                        {{ v.marca|upper }} {{ v.modelo|upper }} {{ v.anio }} ({{ v.dominio|upper }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Precio -->
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Precio del vehículo ($)</label>
+                <input type="number" id="precio" class="form-control form-control-lg" value="0" min="0">
+            </div>
+
+            <!-- Anticipo -->
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Anticipo ($)</label>
+                <input type="number" id="anticipo" class="form-control" value="0" min="0">
+            </div>
+
+            <!-- Interés -->
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Tasa de interés (%)</label>
+                <input type="number" id="interes" class="form-control" value="0" min="0" step="0.1">
+            </div>
+
+            <!-- Cuotas -->
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Cantidad de cuotas</label>
+                <input type="number" id="cuotas" class="form-control" value="12" min="1" max="120">
+            </div>
+
+            <!-- Observaciones -->
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Observaciones</label>
+                <textarea id="observaciones" class="form-control" rows="2" placeholder="Opcional"></textarea>
+            </div>
+        </div>
+    </div>
+
+    <!-- RESULTADO EN VIVO -->
+    <div class="col-md-6">
+        <div class="card p-4 mb-3" style="border-left:4px solid #002855;">
+            <h5 class="fw-bold mb-4">
+                <i data-lucide="file-text" style="width:20px;height:20px;color:#ff6c1a;margin-right:6px;"></i>
+                Resultado
+            </h5>
+
+            <div class="row g-3 mb-3">
+                <div class="col-6">
+                    <small class="text-muted">Precio</small>
+                    <div class="fw-bold" id="res_precio">$ 0</div>
+                </div>
+                <div class="col-6">
+                    <small class="text-muted">Anticipo</small>
+                    <div class="fw-bold" id="res_anticipo">$ 0</div>
+                </div>
+            </div>
+
+            <div class="row g-3 mb-3">
+                <div class="col-6">
+                    <small class="text-muted">Monto a financiar</small>
+                    <div class="fw-bold" id="res_financiar">$ 0</div>
+                </div>
+                <div class="col-6">
+                    <small class="text-muted">Interés total</small>
+                    <div class="fw-bold text-danger" id="res_interes">$ 0</div>
+                </div>
+            </div>
+
+            <div class="p-3 mb-3" style="background:#f0f4ff;border-radius:10px;">
+                <div class="row">
+                    <div class="col-6">
+                        <small class="text-muted">Total con interés</small>
+                        <div class="fw-bold" style="font-size:18px;" id="res_total">$ 0</div>
+                    </div>
+                    <div class="col-6">
+                        <small class="text-muted">Cuotas</small>
+                        <div class="fw-bold" style="font-size:18px;" id="res_cuotas">12</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-3" style="background:#002855;border-radius:10px;text-align:center;">
+                <small class="text-white-50">Monto por cuota</small>
+                <div class="text-white fw-bold" style="font-size:28px;" id="res_monto_cuota">$ 0</div>
+            </div>
+        </div>
+
+        <!-- BOTÓN PDF -->
+        <a id="btn_pdf" href="#" target="_blank" class="btn btn-primary w-100 py-3" style="font-size:16px;">
+            <i data-lucide="file-down" style="width:20px;height:20px;margin-right:8px;"></i>
+            Generar PDF para el cliente
+        </a>
+    </div>
+</div>
+
+<script>
+function formatMoney(n) {
+    return '$ ' + Math.round(n).toLocaleString('es-AR').replace(/,/g, '.');
+}
+
+function calcular() {
+    const precio = parseFloat(document.getElementById('precio').value) || 0;
+    const anticipo = parseFloat(document.getElementById('anticipo').value) || 0;
+    const interes = parseFloat(document.getElementById('interes').value) || 0;
+    const cuotas = parseInt(document.getElementById('cuotas').value) || 1;
+
+    const financiar = precio - anticipo;
+    const montoInteres = financiar * (interes / 100);
+    const total = financiar + montoInteres;
+    const montoCuota = cuotas > 0 ? total / cuotas : 0;
+
+    document.getElementById('res_precio').textContent = formatMoney(precio);
+    document.getElementById('res_anticipo').textContent = formatMoney(anticipo);
+    document.getElementById('res_financiar').textContent = formatMoney(financiar);
+    document.getElementById('res_interes').textContent = formatMoney(montoInteres);
+    document.getElementById('res_total').textContent = formatMoney(total);
+    document.getElementById('res_cuotas').textContent = cuotas;
+    document.getElementById('res_monto_cuota').textContent = formatMoney(montoCuota);
+
+    // Actualizar link PDF
+    const cliente = encodeURIComponent(document.getElementById('cliente').value);
+    const telefono = encodeURIComponent(document.getElementById('telefono').value);
+    const vehiculoId = document.getElementById('vehiculo').value;
+    const obs = encodeURIComponent(document.getElementById('observaciones').value);
+
+    const url = "{% url 'presupuestos:cotizador_pdf' %}" +
+        `?cliente=${cliente}&telefono=${telefono}&vehiculo_id=${vehiculoId}` +
+        `&precio=${precio}&anticipo=${anticipo}&interes=${interes}` +
+        `&cuotas=${cuotas}&observaciones=${obs}`;
+
+    document.getElementById('btn_pdf').href = url;
+}
+
+// Eventos
+['precio', 'anticipo', 'interes', 'cuotas', 'cliente', 'telefono', 'observaciones'].forEach(id => {
+    document.getElementById(id).addEventListener('input', calcular);
+});
+
+document.getElementById('vehiculo').addEventListener('change', function() {
+    const opt = this.options[this.selectedIndex];
+    const precio = opt.dataset.precio || 0;
+    document.getElementById('precio').value = Math.round(parseFloat(precio));
+    calcular();
+});
+
+// Calcular al cargar
+calcular();
+
+if (typeof lucide !== 'undefined') lucide.createIcons();
+</script>
+
+{% endblock %}

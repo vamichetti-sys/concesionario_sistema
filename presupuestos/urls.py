@@ -11,4 +11,6 @@ urlpatterns = [
     path('<int:pk>/eliminar/', views.eliminar_presupuesto, name='eliminar'),
     path('<int:pk>/marcar-enviado/', views.marcar_enviado, name='marcar_enviado'),
     path('<int:pk>/cambiar-estado/', views.cambiar_estado, name='cambiar_estado'),
+    path('cotizador/', views.cotizador, name='cotizador'),
+    path('cotizador/pdf/', views.cotizador_pdf, name='cotizador_pdf'),
 ]

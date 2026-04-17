@@ -10,10 +10,16 @@
         <h3 class="fw-bold mb-1">Presupuestos</h3>
         <p class="text-muted mb-0">Gestión de cotizaciones para clientes</p>
     </div>
-    <a href="{% url 'presupuestos:crear' %}" class="btn btn-primary">
-        <i data-lucide="plus" style="width:16px;height:16px;margin-right:6px;"></i>
-        Nuevo Presupuesto
-    </a>
+    <div class="d-flex gap-2">
+        <a href="{% url 'presupuestos:cotizador' %}" class="btn btn-outline-primary">
+            <i data-lucide="calculator" style="width:16px;height:16px;margin-right:6px;"></i>
+            Cotizador
+        </a>
+        <a href="{% url 'presupuestos:crear' %}" class="btn btn-primary">
+            <i data-lucide="plus" style="width:16px;height:16px;margin-right:6px;"></i>
+            Nuevo Presupuesto
+        </a>
+    </div>
 </div>
 
 <!-- FILTROS POR ESTADO -->
