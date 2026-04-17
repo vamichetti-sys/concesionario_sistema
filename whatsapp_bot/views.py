@@ -6,7 +6,10 @@ from django.db.models import Q
 from twilio.twiml.messaging_response import MessagingResponse
 from twilio.rest import Client
 
-from vehiculos.models import Vehiculo
+from vehiculos.models import Vehiculo, FichaVehicular
+from cuentas.models import CuentaCorriente
+from clientes.models import Cliente
+from decimal import Decimal
 import traceback
 
 import os
@@ -173,6 +176,159 @@ def _procesar_mensaje(texto, body, from_number, resp):
         return HttpResponse(str(resp), content_type="text/xml")
 
     # ==========================================================
+    # COMANDO: DEUDA / CUENTA CORRIENTE
+    # ==========================================================
+    if texto.startswith("deuda") or texto.startswith("cuenta"):
+        consulta = texto.replace("deuda", "").replace("cuenta", "").strip()
+
+        if not consulta:
+            # Mostrar todas las cuentas con deuda
+            cuentas = CuentaCorriente.objects.select_related("cliente", "venta").all()
+            con_deuda = []
+            for c in cuentas:
+                deuda = c.deuda_total_real
+                if deuda > 0:
+                    vehiculo_txt = ""
+                    if c.venta and c.venta.vehiculo:
+                        v = c.venta.vehiculo
+                        vehiculo_txt = f" ({v.marca} {v.modelo})"
+                    con_deuda.append(
+                        f"- {c.cliente.nombre_completo}{vehiculo_txt}: "
+                        f"*${int(deuda):,}*".replace(",", ".")
+                    )
+
+            if con_deuda:
+                BLOQUE = 15
+                for inicio in range(0, len(con_deuda), BLOQUE):
+                    bloque = con_deuda[inicio:inicio + BLOQUE]
+                    header = f"*CUENTAS CON DEUDA ({len(con_deuda)})*\n\n" if inicio == 0 else ""
+                    resp.message(header + "\n".join(bloque))
+            else:
+                resp.message("No hay cuentas con deuda pendiente.")
+
+            return HttpResponse(str(resp), content_type="text/xml")
+
+        # Buscar cliente específico
+        cuentas = CuentaCorriente.objects.filter(
+            Q(cliente__nombre_completo__icontains=consulta) |
+            Q(cliente__dni_cuit__icontains=consulta)
+        ).select_related("cliente", "venta")
+
+        if not cuentas.exists():
+            resp.message(f"No encontré cuentas corrientes para *{consulta}*.")
+            return HttpResponse(str(resp), content_type="text/xml")
+
+        for cuenta in cuentas[:3]:
+            deuda = cuenta.deuda_total_real
+            plan = getattr(cuenta, "plan_pago", None)
+
+            lineas = [f"*{cuenta.cliente.nombre_completo}*\n"]
+
+            if cuenta.venta and cuenta.venta.vehiculo:
+                v = cuenta.venta.vehiculo
+                lineas.append(f"Vehículo: {v.marca} {v.modelo} {v.anio}")
+
+            lineas.append(f"Estado: {cuenta.get_estado_display()}")
+
+            if plan and plan.estado == "activo":
+                cuotas = plan.cuotas.all()
+                total_cuotas = cuotas.count()
+                pagadas = cuotas.filter(estado="pagada").count()
+                saldo_plan = sum(c.saldo_pendiente for c in cuotas)
+                lineas.append(f"Plan: {pagadas}/{total_cuotas} cuotas pagadas")
+                lineas.append(f"Saldo plan: *${int(saldo_plan):,}*".replace(",", "."))
+
+                # Próxima cuota pendiente
+                proxima = cuotas.filter(estado="pendiente").order_by("vencimiento").first()
+                if proxima:
+                    lineas.append(
+                        f"Próxima cuota: ${int(proxima.monto):,} "
+                        f"vence {proxima.vencimiento.strftime('%d/%m/%Y')}".replace(",", ".")
+                    )
+
+            lineas.append(f"\nDeuda total: *${int(deuda):,}*".replace(",", "."))
+            resp.message("\n".join(lineas))
+
+        return HttpResponse(str(resp), content_type="text/xml")
+
+    # ==========================================================
+    # COMANDO: DOCUMENTACIÓN / VTV / VERIFICACIÓN
+    # ==========================================================
+    if texto.startswith("doc") or texto.startswith("vtv") or texto.startswith("verif"):
+        consulta = (
+            texto.replace("documentacion", "").replace("documentación", "")
+            .replace("doc", "").replace("vtv", "").replace("verificacion", "")
+            .replace("verificación", "").replace("verif", "").strip()
+        )
+
+        if not consulta:
+            resp.message(
+                "Escribí el modelo o dominio después del comando.\n"
+                "Ej: *doc amarok* o *vtv KOH008*"
+            )
+            return HttpResponse(str(resp), content_type="text/xml")
+
+        vehiculos = buscar_vehiculos(consulta)
+        # También buscar en todos los estados, no solo stock
+        if not vehiculos.exists():
+            vehiculos = Vehiculo.objects.filter(
+                Q(marca__icontains=consulta) |
+                Q(modelo__icontains=consulta) |
+                Q(dominio__icontains=consulta)
+            )
+
+        if not vehiculos.exists():
+            resp.message(f"No encontré vehículos con *{consulta}*.")
+            return HttpResponse(str(resp), content_type="text/xml")
+
+        for v in vehiculos[:3]:
+            lineas = [f"*{v.marca.upper()} {v.modelo.upper()}* ({v.dominio.upper()})\n"]
+
+            try:
+                ficha = v.ficha
+            except FichaVehicular.DoesNotExist:
+                lineas.append("_Sin ficha vehicular cargada_")
+                resp.message("\n".join(lineas))
+                continue
+
+            def estado_txt(estado):
+                if estado == "tiene":
+                    return "Tiene"
+                elif estado == "no_tiene":
+                    return "No tiene"
+                return "Sin datos"
+
+            def fecha_txt(fecha):
+                return fecha.strftime("%d/%m/%Y") if fecha else "-"
+
+            lineas.append(f"Patentes: {estado_txt(ficha.patentes_estado)}")
+            if ficha.patentes_monto:
+                lineas.append(f"  Deuda patentes: ${int(ficha.patentes_monto):,}".replace(",", "."))
+
+            lineas.append(f"Formulario 08: {estado_txt(ficha.f08_estado)}")
+            lineas.append(f"Cédula: {estado_txt(ficha.cedula_estado)}")
+
+            lineas.append(f"Verificación: {estado_txt(ficha.verificacion_estado)}")
+            if ficha.verificacion_vencimiento:
+                lineas.append(f"  Vence: {fecha_txt(ficha.verificacion_vencimiento)}")
+            if ficha.verificacion_turno:
+                lineas.append(f"  Turno: {fecha_txt(ficha.verificacion_turno)}")
+
+            lineas.append(f"Grabado autopartes: {estado_txt(ficha.autopartes_estado)}")
+            if ficha.autopartes_turno:
+                lineas.append(f"  Turno: {fecha_txt(ficha.autopartes_turno)}")
+
+            lineas.append(f"VTV: {estado_txt(ficha.vtv_estado)}")
+            if ficha.vtv_vencimiento:
+                lineas.append(f"  Vence: {fecha_txt(ficha.vtv_vencimiento)}")
+            if ficha.vtv_turno:
+                lineas.append(f"  Turno: {fecha_txt(ficha.vtv_turno)}")
+
+            resp.message("\n".join(lineas))
+
+        return HttpResponse(str(resp), content_type="text/xml")
+
+    # ==========================================================
     # COMANDO: AYUDA
     # ==========================================================
     if texto in ("hola", "ayuda", "help", "menu", "menú"):
@@ -184,6 +340,10 @@ def _procesar_mensaje(texto, body, from_number, resp):
             "*ford ranger 2022* → búsqueda específica\n"
             "*precio amarok* → ver precio de un modelo\n"
             "*precios* → ver todos los precios\n\n"
+            "*deuda* → cuentas con deuda\n"
+            "*deuda García* → deuda de un cliente\n\n"
+            "*doc amarok* → documentación de un vehículo\n"
+            "*vtv KOH008* → estado de VTV\n\n"
             "_Cuando encuentre un vehículo, te envío las fotos._"
         )
         return HttpResponse(str(resp), content_type="text/xml")
