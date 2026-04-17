@@ -375,6 +375,7 @@ class FichaVehicular(models.Model):
             "Formulario 08": self.gasto_f08,
             "Informes": self.gasto_informes,
             "Patentes": self.gasto_patentes,
+            "Infracciones": self.gasto_infracciones,
             "Verificación": self.gasto_verificacion,
             "Autopartes": self.gasto_autopartes,
             "VTV": self.gasto_vtv,

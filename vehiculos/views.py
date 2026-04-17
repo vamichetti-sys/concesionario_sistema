@@ -1485,14 +1485,29 @@ def guardar_ficha_parcial(request, vehiculo_id):
     ficha, _ = FichaVehicular.objects.get_or_create(vehiculo=vehiculo)
 
     if request.method == "POST":
-        ficha_form = FichaVehicularForm(request.POST, instance=ficha)
+        # Solo actualizar los campos que vienen en el POST,
+        # sin tocar los demás (evita borrar datos de otras secciones)
+        campos_enviados = [
+            campo for campo in FichaVehicularForm.Meta.fields
+            if campo in request.POST
+        ]
 
-        if ficha_form.is_valid():
-            ficha_form.save()
-            sincronizar_turnos_calendario(vehiculo, ficha)
-            messages.success(request, "Cambios guardados correctamente.")
+        if campos_enviados:
+            # Crear form dinámico solo con los campos enviados
+            class FichaParcialForm(FichaVehicularForm):
+                class Meta(FichaVehicularForm.Meta):
+                    fields = campos_enviados
+
+            ficha_form = FichaParcialForm(request.POST, instance=ficha)
+
+            if ficha_form.is_valid():
+                ficha_form.save()
+                sincronizar_turnos_calendario(vehiculo, ficha)
+                messages.success(request, "Cambios guardados correctamente.")
+            else:
+                messages.error(request, "Error al guardar los cambios.")
         else:
-            messages.error(request, "Error al guardar los cambios.")
+            messages.error(request, "No se recibieron campos para guardar.")
 
     return redirect("vehiculos:ficha_completa", vehiculo_id=vehiculo.id)
 
