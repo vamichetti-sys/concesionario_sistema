@@ -64,9 +64,24 @@
             </div>
             <div class="mb-4">
                 <small class="text-muted">Precio de venta</small>
-                <div class="fw-bold text-success" style="font-size:20px;">
-                    ${% if venta.precio_venta %}{{ venta.precio_venta|floatformat:0 }}{% else %}{{ vehiculo.precio|floatformat:0 }}{% endif %}
+                <div class="d-flex align-items-center gap-2">
+                    <div class="fw-bold text-success" style="font-size:20px;" id="precioVentaDisplay">
+                        ${% if venta.precio_venta %}{{ venta.precio_venta|floatformat:0 }}{% else %}{{ vehiculo.precio|floatformat:0 }}{% endif %}
+                    </div>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="editarPrecioVenta()">
+                        <i data-lucide="pencil" style="width:12px;height:12px;"></i>
+                    </button>
                 </div>
+                <form method="post" action="{% url 'ventas:actualizar_precio_venta' venta.id %}" id="formPrecioVenta" style="display:none;" class="mt-2">
+                    {% csrf_token %}
+                    <div class="input-group">
+                        <span class="input-group-text">$</span>
+                        <input type="number" name="precio_venta" class="form-control" step="1" min="1"
+                               value="{% if venta.precio_venta %}{{ venta.precio_venta|floatformat:0 }}{% else %}{{ vehiculo.precio|floatformat:0 }}{% endif %}">
+                        <button type="submit" class="btn btn-success btn-sm">Guardar</button>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="cancelarEditarPrecio()">Cancelar</button>
+                    </div>
+                </form>
             </div>
 
             <a href="{% url 'vehiculos:ficha_completa' vehiculo.id %}" class="btn btn-secondary">
@@ -203,6 +218,15 @@
 
 <script>
     if (typeof lucide !== 'undefined') lucide.createIcons();
+
+    function editarPrecioVenta() {
+        document.getElementById('precioVentaDisplay').parentElement.style.display = 'none';
+        document.getElementById('formPrecioVenta').style.display = 'block';
+    }
+    function cancelarEditarPrecio() {
+        document.getElementById('precioVentaDisplay').parentElement.style.display = 'flex';
+        document.getElementById('formPrecioVenta').style.display = 'none';
+    }
 </script>
 
 {% endblock %}

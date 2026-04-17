@@ -300,3 +300,27 @@ def revertir_venta(request, venta_id):
         )
 
     return redirect("ventas:lista_unidades_vendidas")
+
+
+# ==========================================================
+# ACTUALIZAR PRECIO DE VENTA
+# ==========================================================
+@login_required
+def actualizar_precio_venta(request, venta_id):
+    venta = get_object_or_404(Venta, id=venta_id)
+
+    if request.method == "POST":
+        from decimal import Decimal, InvalidOperation
+        precio_raw = request.POST.get("precio_venta", "").strip()
+        try:
+            precio = Decimal(precio_raw.replace(",", "."))
+            if precio > 0:
+                venta.precio_venta = precio
+                venta.save(update_fields=["precio_venta"])
+                messages.success(request, "Precio de venta actualizado.")
+            else:
+                messages.error(request, "El precio debe ser mayor a 0.")
+        except (ValueError, InvalidOperation):
+            messages.error(request, "Monto inválido.")
+
+    return redirect("ventas:crear_venta", venta_id=venta.id)

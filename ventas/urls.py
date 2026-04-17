@@ -50,4 +50,13 @@ urlpatterns = [
         views.revertir_venta,
         name="revertir_venta"
     ),
+
+    # ===============================
+    # ACTUALIZAR PRECIO DE VENTA
+    # ===============================
+    path(
+        "precio/<int:venta_id>/",
+        views.actualizar_precio_venta,
+        name="actualizar_precio_venta"
+    ),
 ]
