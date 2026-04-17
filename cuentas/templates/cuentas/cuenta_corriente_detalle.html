@@ -325,12 +325,51 @@
         </div>
     </div>
 
+    {% if gastos_detalle %}
+    <div class="table-responsive mb-3">
+        <table class="table table-sm mb-0">
+            <thead>
+                <tr>
+                    <th>Concepto</th>
+                    <th class="text-end">Monto</th>
+                    <th class="text-end">Pagado</th>
+                    <th class="text-end">Saldo</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for g in gastos_detalle %}
+                <tr>
+                    <td>{{ g.concepto }}</td>
+                    <td class="text-end">$ {{ g.monto|floatformat:0 }}</td>
+                    <td class="text-end text-success">$ {{ g.total_pagado|floatformat:0 }}</td>
+                    <td class="text-end {% if g.pagado %}text-success{% else %}text-danger{% endif %} fw-bold">
+                        $ {{ g.saldo|floatformat:0 }}
+                    </td>
+                    <td class="text-end">
+                        {% if g.pagado %}
+                        <span class="badge bg-success">PAGADO</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
     <div class="p-3" style="background:#f8f9fa;border-radius:12px;">
         <div class="d-flex justify-content-between align-items-center">
-            <span class="fw-semibold">Total gastos de ingreso</span>
-            <span class="fw-bold text-danger" style="font-size:20px;">$ {{ total_gastos_ingreso|floatformat:0 }}</span>
+            <span class="fw-semibold">Saldo pendiente de gastos</span>
+            <span class="fw-bold {% if saldo_gastos_ingreso > 0 %}text-danger{% else %}text-success{% endif %}" style="font-size:20px;">
+                $ {{ saldo_gastos_ingreso|floatformat:0 }}
+            </span>
         </div>
     </div>
+    {% else %}
+    <div class="p-3 text-center" style="background:#f8f9fa;border-radius:12px;">
+        <span class="text-muted">No hay vehículo vinculado</span>
+    </div>
+    {% endif %}
 </div>
 
 <!-- ===============================

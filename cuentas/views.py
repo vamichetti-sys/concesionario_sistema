@@ -28,7 +28,7 @@ from reportlab.lib.units import cm
 # MODELOS
 # ===============================
 from clientes.models import Cliente
-from vehiculos.models import Vehiculo, FichaVehicular
+from vehiculos.models import Vehiculo, FichaVehicular, PagoGastoIngreso
 from .models import (
     CuentaCorriente,
     MovimientoCuenta,
@@ -345,16 +345,53 @@ def cuenta_corriente_detalle(request, cuenta_id):
     # Solo el vehículo de permuta tiene gastos que paga el cliente
     vehiculo_gastos = vehiculo_permuta
 
-    # Gastos de ingreso: desde la ficha vehicular del vehículo de permuta
+    # Gastos de ingreso: detalle con saldos (como solapa "Pago de gastos")
     total_gastos_ingreso = Decimal("0")
     saldo_gastos_ingreso = Decimal("0")
+    gastos_detalle = []
+
+    CONCEPTOS_KEYS = {
+        "Formulario 08": "f08",
+        "Informes": "informes",
+        "Patentes": "patentes",
+        "Infracciones": "infracciones",
+        "Verificación": "verificacion",
+        "Autopartes": "autopartes",
+        "VTV": "vtv",
+        "R541": "r541",
+        "Firmas": "firmas",
+    }
+
     if vehiculo_gastos:
         try:
             ficha_v = vehiculo_gastos.ficha
-            for _, monto in ficha_v.mapa_gastos_ingreso().items():
-                if monto:
-                    total_gastos_ingreso += Decimal(monto)
-            saldo_gastos_ingreso = ficha_v.saldo_total_gastos()
+            for concepto, monto in ficha_v.mapa_gastos_ingreso().items():
+                if not monto or Decimal(monto) <= 0:
+                    continue
+
+                monto_dec = Decimal(monto)
+                key = CONCEPTOS_KEYS.get(concepto, concepto)
+                total_gastos_ingreso += monto_dec
+
+                total_pagado = (
+                    PagoGastoIngreso.objects.filter(
+                        vehiculo=vehiculo_gastos,
+                        concepto__in=[concepto, key]
+                    ).aggregate(total=Sum("monto"))["total"]
+                    or Decimal("0")
+                )
+
+                saldo = monto_dec - Decimal(total_pagado)
+                if saldo > 0:
+                    saldo_gastos_ingreso += saldo
+
+                gastos_detalle.append({
+                    "concepto": concepto,
+                    "monto": monto_dec,
+                    "total_pagado": total_pagado,
+                    "saldo": saldo,
+                    "pagado": saldo <= 0,
+                })
         except FichaVehicular.DoesNotExist:
             pass
 
@@ -381,6 +418,7 @@ def cuenta_corriente_detalle(request, cuenta_id):
             "vehiculos": vehiculos,
             "total_gastos_ingreso": total_gastos_ingreso,
             "saldo_gastos_ingreso": saldo_gastos_ingreso,
+            "gastos_detalle": gastos_detalle,
             "total_gestoria": total_gestoria,
             "gestoria_debe": gestoria_debe,
             "gestoria_haber": gestoria_haber,
