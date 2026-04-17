@@ -65,7 +65,7 @@ def enviar_fotos_extra(vehiculo, to_number):
     portada = vehiculo.fotos.filter(es_portada=True).first() or vehiculo.fotos.first()
     portada_id = portada.id if portada else None
 
-    fotos_extra = vehiculo.fotos.exclude(id=portada_id).order_by("orden")[:4]
+    fotos_extra = vehiculo.fotos.exclude(id=portada_id).order_by("orden")
 
     for foto in fotos_extra:
         url = foto.imagen.url
