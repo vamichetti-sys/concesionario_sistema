@@ -1,4 +1,4 @@
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from django.db.models import Q
@@ -7,6 +7,7 @@ from twilio.twiml.messaging_response import MessagingResponse
 from twilio.rest import Client
 
 from vehiculos.models import Vehiculo
+import traceback
 
 import os
 
@@ -96,7 +97,9 @@ def webhook(request):
     try:
         return _procesar_mensaje(texto, body, from_number, resp)
     except Exception as e:
-        resp.message(f"Error interno: {e}")
+        error_detail = traceback.format_exc()
+        print(f"[WHATSAPP BOT ERROR] {error_detail}")
+        resp.message(f"Error: {e}")
         return HttpResponse(str(resp), content_type="text/xml")
 
 
@@ -209,3 +212,40 @@ def _procesar_mensaje(texto, body, from_number, resp):
             enviar_fotos_extra(v, from_number)
 
     return HttpResponse(str(resp), content_type="text/xml")
+
+
+def test_bot(request):
+    """Vista de prueba para verificar que el bot funciona (acceder desde navegador)."""
+    consulta = request.GET.get("q", "stock")
+    try:
+        if consulta == "stock":
+            vehiculos = Vehiculo.objects.filter(estado="stock")
+            data = []
+            for v in vehiculos:
+                fotos_count = v.fotos.count()
+                portada = v.fotos.filter(es_portada=True).first()
+                data.append({
+                    "id": v.id,
+                    "marca": v.marca,
+                    "modelo": v.modelo,
+                    "anio": v.anio,
+                    "dominio": v.dominio,
+                    "km": v.kilometros,
+                    "precio": str(v.precio) if v.precio else None,
+                    "fotos": fotos_count,
+                    "portada_url": portada.imagen.url if portada else None,
+                })
+            return JsonResponse({"ok": True, "total": len(data), "vehiculos": data})
+        else:
+            vehiculos = buscar_vehiculos(consulta)
+            return JsonResponse({
+                "ok": True,
+                "consulta": consulta,
+                "total": vehiculos.count(),
+                "vehiculos": [
+                    {"marca": v.marca, "modelo": v.modelo, "anio": v.anio, "dominio": v.dominio}
+                    for v in vehiculos
+                ]
+            })
+    except Exception as e:
+        return JsonResponse({"ok": False, "error": str(e), "trace": traceback.format_exc()})
