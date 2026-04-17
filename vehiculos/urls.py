@@ -118,6 +118,11 @@ urlpatterns = [
         views.registrar_pago_gasto,
         name="registrar_pago_gasto"
     ),
+    path(
+        "pago-gasto/eliminar/<int:pago_id>/",
+        views.eliminar_pago_gasto,
+        name="eliminar_pago_gasto"
+    ),
     # ==================================================
     # GASTOS CONCESIONARIO
     # ==================================================

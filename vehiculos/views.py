@@ -873,6 +873,21 @@ def registrar_pago_gasto(request):
 
 
 # ==========================================================
+# ELIMINAR PAGO DE GASTO DE INGRESO
+# ==========================================================
+@login_required
+def eliminar_pago_gasto(request, pago_id):
+    pago = get_object_or_404(PagoGastoIngreso, id=pago_id)
+    vehiculo_id = pago.vehiculo_id
+
+    if request.method == "POST":
+        pago.delete()
+        messages.success(request, "Pago eliminado correctamente.")
+
+    return redirect("vehiculos:ficha_completa", vehiculo_id=vehiculo_id)
+
+
+# ==========================================================
 # QUITAR VEHÍCULO DEL STOCK (NO DELETE)
 # ==========================================================
 @login_required

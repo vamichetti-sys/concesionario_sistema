@@ -454,6 +454,7 @@
                             <th>Fecha</th>
                             <th class="text-end">Monto</th>
                             <th>Observaciones</th>
+                            <th></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -462,6 +463,14 @@
                             <td>{{ pago.fecha_pago|date:"d/m/Y" }}</td>
                             <td class="text-end text-success">${{ pago.monto }}</td>
                             <td>{{ pago.observaciones|default:"-" }}</td>
+                            <td class="text-end">
+                                <form method="post" action="{% url 'vehiculos:eliminar_pago_gasto' pago.id %}" style="display:inline;" onsubmit="return confirm('¿Eliminar este pago de ${{ pago.monto }}?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-outline-danger btn-sm" title="Eliminar pago">
+                                        <i data-lucide="trash-2" style="width:14px;height:14px;"></i>
+                                    </button>
+                                </form>
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>
