@@ -45,11 +45,11 @@ def formatear_vehiculo(v, mostrar_precio=False):
         f"Dominio: {v.dominio.upper()}",
     ]
     if v.kilometros:
-        lineas.append(f"Km: {v.kilometros:,.0f}".replace(",", "."))
+        lineas.append(f"Km: {int(v.kilometros):,}".replace(",", "."))
     if v.es_0km:
         lineas.append("0 KM")
     if mostrar_precio and v.precio:
-        lineas.append(f"Precio: ${v.precio:,.0f}".replace(",", "."))
+        lineas.append(f"Precio: ${int(v.precio):,}".replace(",", "."))
 
     return "\n".join(lineas)
 
@@ -93,6 +93,15 @@ def webhook(request):
 
     texto = body.lower().strip()
 
+    try:
+        return _procesar_mensaje(texto, body, from_number, resp)
+    except Exception as e:
+        resp.message(f"Error interno: {e}")
+        return HttpResponse(str(resp), content_type="text/xml")
+
+
+def _procesar_mensaje(texto, body, from_number, resp):
+
     # ==========================================================
     # COMANDO: STOCK COMPLETO
     # ==========================================================
@@ -105,7 +114,7 @@ def webhook(request):
 
         lineas = ["*STOCK ACTUAL*\n"]
         for i, v in enumerate(vehiculos, 1):
-            km_txt = f" - {v.kilometros:,.0f} km".replace(",", ".") if v.kilometros else ""
+            km_txt = f" - {int(v.kilometros):,} km".replace(",", ".") if v.kilometros else ""
             lineas.append(
                 f"{i}. {v.marca.upper()} {v.modelo.upper()} {v.anio} "
                 f"({v.dominio.upper()}){km_txt}"
@@ -174,7 +183,7 @@ def webhook(request):
     if vehiculos.count() > 5:
         lineas = [f"Encontré *{vehiculos.count()} vehículos* con \"{body}\":\n"]
         for i, v in enumerate(vehiculos, 1):
-            km_txt = f" - {v.kilometros:,.0f} km".replace(",", ".") if v.kilometros else ""
+            km_txt = f" - {int(v.kilometros):,} km".replace(",", ".") if v.kilometros else ""
             lineas.append(
                 f"{i}. {v.marca.upper()} {v.modelo.upper()} {v.anio} "
                 f"({v.dominio.upper()}){km_txt}"
