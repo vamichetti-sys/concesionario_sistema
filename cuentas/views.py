@@ -77,7 +77,7 @@ def _parse_monto_argentino(raw: str) -> Decimal:
     return Decimal(s)
 
 
-def _generar_pdf_recibo(pago, cuenta, concepto_extra=""):
+def _generar_pdf_recibo(pago, cuenta, concepto_extra="", modo_saldo="completo"):
     """
     Genera el PDF de recibo con ReportLab y devuelve un HttpResponse.
     Se usa tanto para recibos normales como para anticipo.
@@ -182,21 +182,67 @@ def _generar_pdf_recibo(pago, cuenta, concepto_extra=""):
     elements.append(Spacer(1, 12))
 
     # ----------------------------------------------------------
-    # SALDO PENDIENTE DEL PLAN
+    # SALDO PENDIENTE (según modo elegido)
     # ----------------------------------------------------------
-    plan_obj   = getattr(cuenta, "plan_pago", None)
-    saldo_plan = Decimal("0")
-    if plan_obj:
-        saldo_plan = sum(
-            (cuota.saldo_pendiente for cuota in plan_obj.cuotas.all()),
-            Decimal("0")
-        )
+    if modo_saldo != "oculto":
+        plan_obj   = getattr(cuenta, "plan_pago", None)
+        saldo_plan = Decimal("0")
+        if plan_obj:
+            saldo_plan = sum(
+                (cuota.saldo_pendiente for cuota in plan_obj.cuotas.all()),
+                Decimal("0")
+            )
 
-    elements.append(Paragraph(
-        f"<b>Saldo pendiente del plan de pago:</b> "
-        f"<font color='red'><b>$ {saldo_plan:,.2f}</b></font>",
-        styles["Normal"]
-    ))
+        if modo_saldo == "completo":
+            # Gestoría
+            gestoria_debe = (
+                cuenta.movimientos.filter(origen="gestoria", tipo="debe")
+                .aggregate(total=Sum("monto")).get("total") or Decimal("0")
+            )
+            gestoria_haber = (
+                cuenta.movimientos.filter(origen="gestoria", tipo="haber")
+                .aggregate(total=Sum("monto")).get("total") or Decimal("0")
+            )
+            total_gestoria = max(gestoria_debe - gestoria_haber, Decimal("0"))
+
+            # Gastos de ingreso pendientes
+            saldo_gastos = Decimal("0")
+            vehiculo_permuta = (
+                Vehiculo.objects.filter(
+                    movimientos_cuenta__cuenta=cuenta,
+                    movimientos_cuenta__origen="permuta"
+                ).distinct().first()
+            )
+            if vehiculo_permuta:
+                try:
+                    saldo_gastos = vehiculo_permuta.ficha.saldo_total_gastos()
+                except FichaVehicular.DoesNotExist:
+                    pass
+
+            deuda_total = saldo_plan + total_gestoria + saldo_gastos
+
+            elements.append(Paragraph("<b>Estado de cuenta</b>", styles["Heading3Custom"]))
+            elements.append(Spacer(1, 6))
+            if saldo_plan > 0:
+                elements.append(Paragraph(f"Plan de pago: $ {saldo_plan:,.2f}", styles["Normal"]))
+            if total_gestoria > 0:
+                elements.append(Paragraph(f"Gestoría: $ {total_gestoria:,.2f}", styles["Normal"]))
+            if saldo_gastos > 0:
+                elements.append(Paragraph(f"Gastos de ingreso: $ {saldo_gastos:,.2f}", styles["Normal"]))
+            elements.append(Spacer(1, 4))
+            elements.append(Paragraph(
+                f"<b>Deuda total pendiente:</b> "
+                f"<font color='red'><b>$ {deuda_total:,.2f}</b></font>",
+                styles["Normal"]
+            ))
+
+        else:  # modo_saldo == "plan"
+            elements.append(Paragraph(
+                f"<b>Saldo pendiente del plan de pago:</b> "
+                f"<font color='red'><b>$ {saldo_plan:,.2f}</b></font>",
+                styles["Normal"]
+            ))
+
     elements.append(Spacer(1, 50))
 
     # ----------------------------------------------------------
@@ -690,7 +736,8 @@ def registrar_pago_gestoria(request, cuenta_id):
 def recibo_pago_pdf(request, pago_id):
     pago   = get_object_or_404(Pago, id=pago_id)
     cuenta = pago.cuenta
-    return _generar_pdf_recibo(pago, cuenta)
+    modo_saldo = request.GET.get("saldo", "completo")
+    return _generar_pdf_recibo(pago, cuenta, modo_saldo=modo_saldo)
 
 
 # ==========================================================

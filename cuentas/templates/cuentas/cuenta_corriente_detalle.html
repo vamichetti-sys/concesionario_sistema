@@ -292,10 +292,29 @@
         </div>
         <div class="d-flex justify-content-between align-items-center">
             <span class="fw-bold text-success" style="font-size:18px;">$ {{ pago.monto_total|floatformat:0 }}</span>
-            <a href="{% url 'cuentas:recibo_pago_pdf' pago.id %}" target="_blank" class="btn btn-secondary btn-sm">
-                <i data-lucide="printer" style="width:14px;height:14px;margin-right:4px;"></i>
-                Reimprimir
-            </a>
+            <div class="dropdown">
+                <button class="btn btn-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    <i data-lucide="printer" style="width:14px;height:14px;margin-right:4px;"></i>
+                    Imprimir
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                        <a class="dropdown-item" href="{% url 'cuentas:recibo_pago_pdf' pago.id %}?saldo=completo" target="_blank">
+                            Con deuda total (plan + gestoría + gastos)
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="{% url 'cuentas:recibo_pago_pdf' pago.id %}?saldo=plan" target="_blank">
+                            Solo deuda del vehículo (plan)
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="{% url 'cuentas:recibo_pago_pdf' pago.id %}?saldo=oculto" target="_blank">
+                            Sin mostrar saldo
+                        </a>
+                    </li>
+                </ul>
+            </div>
         </div>
     </div>
     {% endfor %}
