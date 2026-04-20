@@ -10,6 +10,10 @@
         <p class="text-muted mb-0">Gestión de fotos y publicaciones en redes</p>
     </div>
     <div class="d-flex gap-2">
+        <a href="{% url 'community:resumen_publicaciones_pdf' %}" class="btn btn-outline-primary" target="_blank">
+            <i data-lucide="clipboard-list" style="width:16px;height:16px;margin-right:6px;"></i>
+            Resumen publicaciones
+        </a>
         <a href="{% url 'community:catalogo_pdf' %}" class="btn btn-danger" target="_blank">
             <i data-lucide="file-text" style="width:16px;height:16px;margin-right:6px;"></i>
             PDF Catálogo

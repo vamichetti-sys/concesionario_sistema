@@ -299,3 +299,213 @@ def catalogo_pdf(request):
     response = HttpResponse(buffer, content_type="application/pdf")
     response["Content-Disposition"] = 'inline; filename="catalogo_amichetti.pdf"'
     return response
+
+
+# ==========================================================
+# PDF RESUMEN DE PUBLICACIONES (USO INTERNO)
+# ==========================================================
+@login_required
+def resumen_publicaciones_pdf(request):
+    vehiculos = Vehiculo.objects.filter(estado="stock").order_by("marca", "modelo")
+
+    PLATAFORMAS = [
+        ("mercadolibre", "ML"),
+        ("facebook", "FB"),
+        ("instagram", "IG"),
+        ("web", "Web"),
+    ]
+
+    hoy = date.today()
+    buffer = BytesIO()
+
+    doc = SimpleDocTemplate(
+        buffer, pagesize=A4,
+        rightMargin=20, leftMargin=20, topMargin=20, bottomMargin=20,
+    )
+
+    AZUL = colors.HexColor("#002855")
+    NARANJA = colors.HexColor("#ff6c1a")
+    VERDE = colors.HexColor("#10b981")
+    ROJO = colors.HexColor("#ef4444")
+    GRIS = colors.HexColor("#f4f6f8")
+
+    elementos = []
+
+    # Header
+    header = Table([[
+        Paragraph(
+            "<b>AMICHETTI AUTOMOTORES</b><br/>Resumen de publicaciones",
+            ParagraphStyle("h1", fontSize=14, textColor=colors.white)
+        ),
+        Paragraph(
+            f"Fecha: {hoy.strftime('%d/%m/%Y')}",
+            ParagraphStyle("h2", fontSize=10, textColor=colors.white, alignment=2)
+        ),
+    ]], colWidths=[380, 140])
+    header.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, -1), AZUL),
+        ("LINEBELOW", (0, 0), (-1, -1), 3, NARANJA),
+        ("PADDING", (0, 0), (-1, -1), 12),
+    ]))
+    elementos.append(header)
+    elementos.append(Spacer(1, 14))
+
+    # Procesar datos
+    rows_completos = []
+    rows_faltantes = []
+    total_fotos_ok = 0
+    total_sin_fotos = 0
+    conteo_faltantes = {k: 0 for k, _ in PLATAFORMAS}
+
+    for v in vehiculos:
+        fotos_count = v.fotos.count()
+        pubs = {p.plataforma: p.publicado for p in v.publicaciones.all()}
+
+        if fotos_count == 0:
+            total_sin_fotos += 1
+        else:
+            total_fotos_ok += 1
+
+        vehiculo_txt = f"{v.marca.upper()} {v.modelo.upper()} {v.anio} ({v.dominio.upper()})"
+
+        faltan = []
+        marcas_plat = []
+        for key, label in PLATAFORMAS:
+            if pubs.get(key, False):
+                marcas_plat.append(f"<font color='#10b981'>{label}</font>")
+            else:
+                marcas_plat.append(f"<font color='#ef4444'>{label}</font>")
+                faltan.append(label)
+                conteo_faltantes[key] += 1
+
+        plat_str = " · ".join(marcas_plat)
+        fotos_str = f"<b>{fotos_count}</b> fotos" if fotos_count > 0 else "<font color='#ef4444'>SIN FOTOS</font>"
+
+        row = [
+            Paragraph(vehiculo_txt, ParagraphStyle("v", fontSize=9, fontName="Helvetica-Bold")),
+            Paragraph(fotos_str, ParagraphStyle("f", fontSize=9)),
+            Paragraph(plat_str, ParagraphStyle("p", fontSize=9)),
+            Paragraph(
+                ", ".join(faltan) if faltan else "-",
+                ParagraphStyle("x", fontSize=9, textColor=ROJO if faltan else colors.grey)
+            ),
+        ]
+
+        if faltan or fotos_count == 0:
+            rows_faltantes.append(row)
+        else:
+            rows_completos.append(row)
+
+    # Resumen de estadísticas
+    total = vehiculos.count()
+    total_completos = len(rows_completos)
+    total_incompletos = len(rows_faltantes)
+
+    stats_data = [[
+        Paragraph(f"<b>{total}</b><br/><font size=8>Total stock</font>",
+                  ParagraphStyle("s", fontSize=16, alignment=1)),
+        Paragraph(f"<font color='#10b981'><b>{total_completos}</b></font><br/><font size=8>Publicados completos</font>",
+                  ParagraphStyle("s", fontSize=16, alignment=1)),
+        Paragraph(f"<font color='#ef4444'><b>{total_incompletos}</b></font><br/><font size=8>Falta publicar</font>",
+                  ParagraphStyle("s", fontSize=16, alignment=1)),
+        Paragraph(f"<font color='#ef4444'><b>{total_sin_fotos}</b></font><br/><font size=8>Sin fotos</font>",
+                  ParagraphStyle("s", fontSize=16, alignment=1)),
+    ]]
+    stats_table = Table(stats_data, colWidths=[130, 130, 130, 130])
+    stats_table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, -1), GRIS),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("PADDING", (0, 0), (-1, -1), 12),
+        ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#dddddd")),
+    ]))
+    elementos.append(stats_table)
+    elementos.append(Spacer(1, 8))
+
+    # Desglose por plataforma
+    plat_names = {"mercadolibre": "MercadoLibre", "facebook": "Facebook", "instagram": "Instagram", "web": "Web"}
+    plat_data = [["Plataforma", "Faltan publicar"]]
+    for key, label in PLATAFORMAS:
+        plat_data.append([plat_names[key], str(conteo_faltantes[key])])
+
+    plat_table = Table(plat_data, colWidths=[260, 260])
+    plat_table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), AZUL),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("FONTSIZE", (0, 0), (-1, -1), 9),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, GRIS]),
+        ("PADDING", (0, 0), (-1, -1), 6),
+        ("LEFTPADDING", (0, 0), (-1, -1), 10),
+        ("ALIGN", (1, 0), (1, -1), "CENTER"),
+    ]))
+    elementos.append(plat_table)
+    elementos.append(Spacer(1, 14))
+
+    # SECCIÓN: VEHÍCULOS CON PUBLICACIONES PENDIENTES
+    if rows_faltantes:
+        elementos.append(Paragraph(
+            "<b>PENDIENTES DE PUBLICAR</b>",
+            ParagraphStyle("t", fontSize=11, textColor=ROJO, fontName="Helvetica-Bold", spaceAfter=6)
+        ))
+
+        header_row = [
+            Paragraph("<b>Vehículo</b>", ParagraphStyle("h", fontSize=9, textColor=colors.white)),
+            Paragraph("<b>Fotos</b>", ParagraphStyle("h", fontSize=9, textColor=colors.white)),
+            Paragraph("<b>Plataformas</b>", ParagraphStyle("h", fontSize=9, textColor=colors.white)),
+            Paragraph("<b>Faltan en</b>", ParagraphStyle("h", fontSize=9, textColor=colors.white)),
+        ]
+        tabla_faltantes = Table(
+            [header_row] + rows_faltantes,
+            colWidths=[200, 60, 140, 120]
+        )
+        tabla_faltantes.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), AZUL),
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, GRIS]),
+            ("PADDING", (0, 0), (-1, -1), 6),
+            ("LEFTPADDING", (0, 0), (-1, -1), 8),
+            ("GRID", (0, 0), (-1, -1), 0.3, colors.HexColor("#dddddd")),
+        ]))
+        elementos.append(tabla_faltantes)
+        elementos.append(Spacer(1, 14))
+
+    # SECCIÓN: VEHÍCULOS PUBLICADOS COMPLETOS
+    if rows_completos:
+        elementos.append(Paragraph(
+            "<b>PUBLICADOS EN TODAS LAS PLATAFORMAS</b>",
+            ParagraphStyle("t", fontSize=11, textColor=VERDE, fontName="Helvetica-Bold", spaceAfter=6)
+        ))
+
+        header_row = [
+            Paragraph("<b>Vehículo</b>", ParagraphStyle("h", fontSize=9, textColor=colors.white)),
+            Paragraph("<b>Fotos</b>", ParagraphStyle("h", fontSize=9, textColor=colors.white)),
+            Paragraph("<b>Plataformas</b>", ParagraphStyle("h", fontSize=9, textColor=colors.white)),
+            Paragraph("", ParagraphStyle("h", fontSize=9)),
+        ]
+        tabla_completos = Table(
+            [header_row] + rows_completos,
+            colWidths=[200, 60, 140, 120]
+        )
+        tabla_completos.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), VERDE),
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, GRIS]),
+            ("PADDING", (0, 0), (-1, -1), 6),
+            ("LEFTPADDING", (0, 0), (-1, -1), 8),
+            ("GRID", (0, 0), (-1, -1), 0.3, colors.HexColor("#dddddd")),
+        ]))
+        elementos.append(tabla_completos)
+
+    # Pie
+    elementos.append(Spacer(1, 16))
+    elementos.append(Paragraph(
+        f"Amichetti Automotores · Rojas, Buenos Aires · Generado {hoy.strftime('%d/%m/%Y')}",
+        ParagraphStyle("f", fontSize=8, textColor=colors.grey, alignment=1),
+    ))
+
+    doc.build(elementos)
+    buffer.seek(0)
+
+    response = HttpResponse(buffer, content_type="application/pdf")
+    response["Content-Disposition"] = 'inline; filename="resumen_publicaciones.pdf"'
+    return response
