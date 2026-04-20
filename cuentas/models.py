@@ -69,10 +69,16 @@ class CuentaCorriente(models.Model):
 
         if saldo > 0:
             self.saldo = saldo
-            self.estado = 'deuda'
         else:
             self.saldo = Decimal('0')
-            self.estado = 'al_dia'
+
+        # El estado depende de la deuda TOTAL real
+        # (plan de pago + gestoría + gastos de ingreso pendientes)
+        if self.estado != 'cerrada':
+            if self.deuda_total_real > 0:
+                self.estado = 'deuda'
+            else:
+                self.estado = 'al_dia'
 
         self.save(update_fields=['saldo', 'estado'])
 
