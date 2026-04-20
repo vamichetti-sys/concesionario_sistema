@@ -149,9 +149,9 @@ class CuentaCorriente(models.Model):
         from django.db.models import Sum
         total = Decimal("0")
 
-        # Total del plan de pago (con interés)
+        # Total del plan de pago (con interés) - incluye planes finalizados
         plan = getattr(self, 'plan_pago', None)
-        if plan and plan.estado == 'activo':
+        if plan:
             for cuota in plan.cuotas.all():
                 total += cuota.monto
 
@@ -188,9 +188,9 @@ class CuentaCorriente(models.Model):
         from django.db.models import Sum
         total = Decimal("0")
 
-        # Saldo del plan de pago
+        # Saldo del plan de pago (si existe, usar saldos de cuotas)
         plan = getattr(self, 'plan_pago', None)
-        if plan and plan.estado == 'activo':
+        if plan:
             for cuota in plan.cuotas.all():
                 total += cuota.saldo_pendiente
         else:
