@@ -3,13 +3,57 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.db.models import Q
 from datetime import date
 from io import BytesIO
 import urllib.request
 
+from PIL import Image as PILImage, ImageOps
+
 from vehiculos.models import Vehiculo
 from .models import FotoVehiculo, PublicacionPlataforma
+
+
+MAX_SIZE_PX = 2000          # lado máximo en píxeles
+JPEG_QUALITY = 82           # calidad de compresión
+MAX_BYTES_CLOUDINARY = 9_500_000  # dejar margen sobre el límite de 10 MB
+
+
+def comprimir_imagen(img_file):
+    """
+    Redimensiona y comprime una imagen para que pese menos de 10 MB.
+    Mantiene la orientación EXIF y convierte a JPEG optimizado.
+    """
+    try:
+        pil_img = PILImage.open(img_file)
+        pil_img = ImageOps.exif_transpose(pil_img)
+
+        if pil_img.mode not in ("RGB", "L"):
+            pil_img = pil_img.convert("RGB")
+
+        # Redimensionar si excede tamaño máximo
+        pil_img.thumbnail((MAX_SIZE_PX, MAX_SIZE_PX), PILImage.LANCZOS)
+
+        # Comprimir progresivamente si sigue pesando mucho
+        calidad = JPEG_QUALITY
+        buffer = BytesIO()
+        pil_img.save(buffer, format="JPEG", quality=calidad, optimize=True)
+
+        while buffer.tell() > MAX_BYTES_CLOUDINARY and calidad > 40:
+            calidad -= 10
+            buffer = BytesIO()
+            pil_img.save(buffer, format="JPEG", quality=calidad, optimize=True)
+
+        buffer.seek(0)
+        nombre = img_file.name.rsplit(".", 1)[0] + ".jpg"
+        return InMemoryUploadedFile(
+            buffer, None, nombre, "image/jpeg",
+            buffer.getbuffer().nbytes, None
+        )
+    except Exception:
+        img_file.seek(0)
+        return img_file
 
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Table, TableStyle, Spacer, Image
 from reportlab.lib.styles import ParagraphStyle
@@ -106,14 +150,26 @@ def vehiculo_fotos(request, vehiculo_id):
 
     if request.method == "POST":
         imagenes = request.FILES.getlist("imagenes")
+        exitosas = 0
+        fallidas = []
         for img in imagenes:
-            es_primera = not vehiculo.fotos.exists()
-            FotoVehiculo.objects.create(
-                vehiculo=vehiculo,
-                imagen=img,
-                es_portada=es_primera,
-            )
-        messages.success(request, f"{len(imagenes)} foto(s) subida(s).")
+            try:
+                img_comprimida = comprimir_imagen(img)
+                es_primera = not vehiculo.fotos.exists()
+                FotoVehiculo.objects.create(
+                    vehiculo=vehiculo,
+                    imagen=img_comprimida,
+                    es_portada=es_primera,
+                )
+                exitosas += 1
+            except Exception as e:
+                fallidas.append(f"{img.name}: {e}")
+
+        if exitosas:
+            messages.success(request, f"{exitosas} foto(s) subida(s).")
+        if fallidas:
+            messages.error(request, "No se pudieron subir: " + "; ".join(fallidas))
+
         return redirect("community:vehiculo_fotos", vehiculo_id=vehiculo.id)
 
     return render(request, "community/vehiculo_fotos.html", {
