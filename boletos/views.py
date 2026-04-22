@@ -45,8 +45,8 @@ def _construir_texto_boleto(cliente, vehiculo, f, moneda='ARS'):
     dominio = vehiculo.dominio if vehiculo else f.get('patente', '')
 
     ficha  = getattr(vehiculo, 'ficha', None) if vehiculo else None
-    motor  = getattr(ficha, 'numero_motor',  '') if ficha else ''
-    chasis = getattr(ficha, 'numero_chasis', '') if ficha else ''
+    motor  = f.get('motor') or (getattr(ficha, 'numero_motor',  '') if ficha else '')
+    chasis = f.get('chasis') or (getattr(ficha, 'numero_chasis', '') if ficha else '')
 
     precio_numeros   = f.get('precio_numeros', '')
     precio_letras    = f.get('precio_letras', '')
@@ -261,6 +261,8 @@ def editar_boleto(request, boleto_id):
     precio_letras_inicial    = ""
     saldo_forma_pago_inicial = ""
     moneda_inicial           = "ARS"
+    motor_inicial            = ""
+    chasis_inicial           = ""
 
     if boleto.texto_final:
         if 'U$S' in boleto.texto_final or 'DÓLARES' in boleto.texto_final:
@@ -274,6 +276,19 @@ def editar_boleto(request, boleto_id):
             precio_numeros_inicial   = match_9.group(1).strip()
             precio_letras_inicial    = match_9.group(2).strip()
             saldo_forma_pago_inicial = match_9.group(3).strip()
+        match_mc = re.search(
+            r"Motor\s+(.+?)\s+Chasis\s+(.+?)\s+Patente",
+            boleto.texto_final,
+            re.IGNORECASE
+        )
+        if match_mc:
+            motor_inicial  = match_mc.group(1).strip()
+            chasis_inicial = match_mc.group(2).strip()
+
+    if not motor_inicial and boleto.vehiculo:
+        ficha = getattr(boleto.vehiculo, "ficha", None)
+        motor_inicial  = getattr(ficha, "numero_motor", "")  or ""
+        chasis_inicial = getattr(ficha, "numero_chasis", "") or ""
 
     if request.method == "POST":
         form = EditarBoletoForm(request.POST, instance=boleto)
@@ -302,6 +317,8 @@ def editar_boleto(request, boleto_id):
                 "precio_numeros":   precio_numeros_inicial,
                 "precio_letras":    precio_letras_inicial,
                 "saldo_forma_pago": saldo_forma_pago_inicial,
+                "motor":            motor_inicial,
+                "chasis":           chasis_inicial,
             }
         )
 

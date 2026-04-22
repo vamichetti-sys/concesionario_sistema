@@ -116,6 +116,31 @@
                 </div>
             </div>
 
+            <!-- SECCIÓN: DATOS DEL VEHÍCULO -->
+            <div style="margin-bottom: 28px;">
+                <div class="section-title">Datos del vehículo — Cláusula 1°</div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                    <div>
+                        <label class="editar-label">
+                            <i data-lucide="cog"></i> N° Motor
+                        </label>
+                        {{ form.motor }}
+                        {% if form.motor.errors %}
+                        <div style="color:#dc2626; font-size:12px; margin-top:4px;">{{ form.motor.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label class="editar-label">
+                            <i data-lucide="hash"></i> N° Chasis
+                        </label>
+                        {{ form.chasis }}
+                        {% if form.chasis.errors %}
+                        <div style="color:#dc2626; font-size:12px; margin-top:4px;">{{ form.chasis.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
             <!-- SECCIÓN: PRECIO -->
             <div style="margin-bottom: 28px;">
                 <div class="section-title">Precio y forma de pago — Cláusula 9°</div>

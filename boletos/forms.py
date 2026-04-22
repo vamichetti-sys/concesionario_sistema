@@ -53,11 +53,11 @@ class CrearBoletoForm(forms.Form):
     )
     motor = forms.CharField(
         label="Motor", max_length=80, required=False,
-        widget=forms.TextInput(attrs={"class": "form-control", "id": "id_motor", "readonly": "readonly"})
+        widget=forms.TextInput(attrs={"class": "form-control", "id": "id_motor"})
     )
     chasis = forms.CharField(
         label="Chasis", max_length=80, required=False,
-        widget=forms.TextInput(attrs={"class": "form-control", "id": "id_chasis", "readonly": "readonly"})
+        widget=forms.TextInput(attrs={"class": "form-control", "id": "id_chasis"})
     )
     patente = forms.CharField(
         label="Dominio / Patente", max_length=20, required=False,
@@ -175,6 +175,14 @@ class EditarBoletoForm(forms.ModelForm):
     )
     domicilio_legal = forms.CharField(
         label="Domicilio legal (cláusula 7)", max_length=255, required=False,
+        widget=forms.TextInput(attrs={"class": "form-control"})
+    )
+    motor = forms.CharField(
+        label="N° Motor", max_length=100, required=False,
+        widget=forms.TextInput(attrs={"class": "form-control"})
+    )
+    chasis = forms.CharField(
+        label="N° Chasis", max_length=100, required=False,
         widget=forms.TextInput(attrs={"class": "form-control"})
     )
 
