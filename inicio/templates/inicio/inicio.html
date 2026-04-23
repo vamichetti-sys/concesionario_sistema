@@ -106,6 +106,85 @@
 </div>
 
 <!-- ===============================
+     RECORDATORIOS
+=============================== -->
+<div class="card p-4 mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="d-flex align-items-center gap-2">
+            <i data-lucide="sticky-note" style="width:20px;height:20px;color:#8b5cf6;"></i>
+            <h6 class="fw-bold mb-0">Recordatorios</h6>
+        </div>
+    </div>
+
+    <!-- FORMULARIO AGREGAR -->
+    <form method="post" action="{% url 'agregar_recordatorio' %}" class="row g-2 mb-3 align-items-end">
+        {% csrf_token %}
+        <div class="col">
+            <input type="text" name="texto" class="form-control" placeholder="Escribir recordatorio..." required>
+        </div>
+        <div class="col-auto">
+            <select name="prioridad" class="form-select" style="width:auto;">
+                <option value="normal">Normal</option>
+                <option value="alta">Alta</option>
+                <option value="baja">Baja</option>
+            </select>
+        </div>
+        <div class="col-auto">
+            <button type="submit" class="btn btn-primary">
+                <i data-lucide="plus" style="width:16px;height:16px;margin-right:4px;"></i>
+                Agregar
+            </button>
+        </div>
+    </form>
+
+    <!-- LISTA -->
+    {% if recordatorios %}
+    <div class="list-group list-group-flush">
+        {% for r in recordatorios %}
+        <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-2">
+                <!-- BOTON COMPLETAR -->
+                <form method="post" action="{% url 'completar_recordatorio' pk=r.pk %}" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm p-0" style="border:none;background:none;" title="{% if r.completado %}Reactivar{% else %}Completar{% endif %}">
+                        {% if r.completado %}
+                        <i data-lucide="check-circle-2" style="width:20px;height:20px;color:#059669;"></i>
+                        {% else %}
+                        <i data-lucide="circle" style="width:20px;height:20px;color:#d1d5db;"></i>
+                        {% endif %}
+                    </button>
+                </form>
+
+                <div>
+                    <span class="{% if r.completado %}text-muted text-decoration-line-through{% endif %}">
+                        {{ r.texto }}
+                    </span>
+                    {% if r.prioridad == "alta" %}
+                    <span class="badge" style="background:rgba(239,68,68,0.1);color:#dc2626;font-size:10px;margin-left:4px;">Alta</span>
+                    {% endif %}
+                    <br>
+                    <small class="text-muted">
+                        {{ r.creado_por.get_full_name|default:r.creado_por.username }} &middot; {{ r.fecha_creacion|date:"d/m H:i" }}
+                    </small>
+                </div>
+            </div>
+
+            <!-- BOTON ELIMINAR -->
+            <form method="post" action="{% url 'eliminar_recordatorio' pk=r.pk %}" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm p-1" style="border:none;background:none;" title="Eliminar">
+                    <i data-lucide="x" style="width:16px;height:16px;color:#9ca3af;"></i>
+                </button>
+            </form>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-muted text-center mb-0">Sin recordatorios</p>
+    {% endif %}
+</div>
+
+<!-- ===============================
      ALERTAS URGENTES
 =============================== -->
 {% if vtv_vencidos > 0 or verificacion_vencidos > 0 or cuotas_vencidas_count > 0 %}
@@ -563,85 +642,6 @@
             </a>
         </div>
     </div>
-</div>
-
-<!-- ===============================
-     RECORDATORIOS
-=============================== -->
-<div class="card p-4 mb-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <div class="d-flex align-items-center gap-2">
-            <i data-lucide="sticky-note" style="width:20px;height:20px;color:#8b5cf6;"></i>
-            <h6 class="fw-bold mb-0">Recordatorios</h6>
-        </div>
-    </div>
-
-    <!-- FORMULARIO AGREGAR -->
-    <form method="post" action="{% url 'agregar_recordatorio' %}" class="row g-2 mb-3 align-items-end">
-        {% csrf_token %}
-        <div class="col">
-            <input type="text" name="texto" class="form-control" placeholder="Escribir recordatorio..." required>
-        </div>
-        <div class="col-auto">
-            <select name="prioridad" class="form-select" style="width:auto;">
-                <option value="normal">Normal</option>
-                <option value="alta">Alta</option>
-                <option value="baja">Baja</option>
-            </select>
-        </div>
-        <div class="col-auto">
-            <button type="submit" class="btn btn-primary">
-                <i data-lucide="plus" style="width:16px;height:16px;margin-right:4px;"></i>
-                Agregar
-            </button>
-        </div>
-    </form>
-
-    <!-- LISTA -->
-    {% if recordatorios %}
-    <div class="list-group list-group-flush">
-        {% for r in recordatorios %}
-        <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
-            <div class="d-flex align-items-center gap-2">
-                <!-- BOTON COMPLETAR -->
-                <form method="post" action="{% url 'completar_recordatorio' pk=r.pk %}" style="display:inline;">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-sm p-0" style="border:none;background:none;" title="{% if r.completado %}Reactivar{% else %}Completar{% endif %}">
-                        {% if r.completado %}
-                        <i data-lucide="check-circle-2" style="width:20px;height:20px;color:#059669;"></i>
-                        {% else %}
-                        <i data-lucide="circle" style="width:20px;height:20px;color:#d1d5db;"></i>
-                        {% endif %}
-                    </button>
-                </form>
-
-                <div>
-                    <span class="{% if r.completado %}text-muted text-decoration-line-through{% endif %}">
-                        {{ r.texto }}
-                    </span>
-                    {% if r.prioridad == "alta" %}
-                    <span class="badge" style="background:rgba(239,68,68,0.1);color:#dc2626;font-size:10px;margin-left:4px;">Alta</span>
-                    {% endif %}
-                    <br>
-                    <small class="text-muted">
-                        {{ r.creado_por.get_full_name|default:r.creado_por.username }} &middot; {{ r.fecha_creacion|date:"d/m H:i" }}
-                    </small>
-                </div>
-            </div>
-
-            <!-- BOTON ELIMINAR -->
-            <form method="post" action="{% url 'eliminar_recordatorio' pk=r.pk %}" style="display:inline;">
-                {% csrf_token %}
-                <button type="submit" class="btn btn-sm p-1" style="border:none;background:none;" title="Eliminar">
-                    <i data-lucide="x" style="width:16px;height:16px;color:#9ca3af;"></i>
-                </button>
-            </form>
-        </div>
-        {% endfor %}
-    </div>
-    {% else %}
-    <p class="text-muted text-center mb-0">Sin recordatorios</p>
-    {% endif %}
 </div>
 
 <!-- ===============================
