@@ -13,6 +13,7 @@ class FacturaRegistradaForm(forms.ModelForm):
             "venta",
             "numero",
             "fecha",
+            "descripcion",
             "monto_neto",
             "iva_porcentaje",
             "monto_iva",
@@ -31,6 +32,13 @@ class FacturaRegistradaForm(forms.ModelForm):
             "fecha": forms.DateInput(
                 format="%Y-%m-%d",
                 attrs={"type": "date", "class": "form-control"}
+            ),
+
+            "descripcion": forms.TextInput(
+                attrs={
+                    "class": "form-control",
+                    "placeholder": "Ej: Servicio, honorarios, alquiler..."
+                }
             ),
 
             # ======================

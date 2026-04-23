@@ -131,19 +131,24 @@ def exportar_excel_mensual(request):
     ws = wb.active
     ws.title = "Facturación Mensual"
 
-    ws.append(["Número", "Fecha", "Monto total", "Venta"])
+    ws.append(["Número", "Fecha", "Detalle", "Monto total", "Venta"])
 
     for f in facturas:
+        if f.venta:
+            detalle = f"Venta #{f.venta.id}"
+        else:
+            detalle = f.descripcion or ""
         ws.append([
             f.numero,
             f.fecha.strftime("%d/%m/%Y"),
+            detalle,
             float(f.monto),
             f.venta.id if f.venta else ""
         ])
 
     total = facturas.aggregate(total=Sum("monto"))["total"] or 0
     ws.append([])
-    ws.append(["TOTAL", "", float(total), ""])
+    ws.append(["TOTAL", "", "", float(total), ""])
 
     response = HttpResponse(
         content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -173,19 +178,24 @@ def exportar_excel_anual(request):
     ws = wb.active
     ws.title = "Facturación Anual"
 
-    ws.append(["Número", "Fecha", "Monto total", "Venta"])
+    ws.append(["Número", "Fecha", "Detalle", "Monto total", "Venta"])
 
     for f in facturas:
+        if f.venta:
+            detalle = f"Venta #{f.venta.id}"
+        else:
+            detalle = f.descripcion or ""
         ws.append([
             f.numero,
             f.fecha.strftime("%d/%m/%Y"),
+            detalle,
             float(f.monto),
             f.venta.id if f.venta else ""
         ])
 
     total = facturas.aggregate(total=Sum("monto"))["total"] or 0
     ws.append([])
-    ws.append(["TOTAL ANUAL", "", float(total), ""])
+    ws.append(["TOTAL ANUAL", "", "", float(total), ""])
 
     response = HttpResponse(
         content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -266,7 +276,7 @@ def exportar_pdf_mensual(request):
     elementos.append(Spacer(1, 20))
 
     data = [
-        ["N° Factura", "Fecha", "Neto", "IVA", "Total"]
+        ["N° Factura", "Fecha", "Detalle", "Neto", "IVA", "Total"]
     ]
 
     for f in facturas:
@@ -274,19 +284,25 @@ def exportar_pdf_mensual(request):
         iva = f.monto_iva if f.monto_iva is not None else Decimal("0.00")
         total = f.monto
 
+        if f.venta:
+            detalle = f"Venta #{f.venta.id}"
+        else:
+            detalle = f.descripcion or "-"
+
         data.append([
             f.numero,
             f.fecha.strftime("%d/%m/%Y"),
+            detalle[:28],
             f"$ {neto:,.2f}",
             f"$ {iva:,.2f}",
             f"$ {total:,.2f}",
         ])
 
-    tabla = Table(data, colWidths=[90, 80, 110, 110, 110])
+    tabla = Table(data, colWidths=[75, 65, 110, 85, 85, 95])
     tabla.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), COLOR_GRIS),
         ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-        ("ALIGN", (2, 1), (-1, -1), "RIGHT"),
+        ("ALIGN", (3, 1), (-1, -1), "RIGHT"),
         ("GRID", (0, 0), (-1, -1), 0.5, colors.lightgrey),
         ("PADDING", (0, 0), (-1, -1), 8),
     ]))
@@ -392,7 +408,7 @@ def exportar_pdf_anual(request):
     elementos.append(Spacer(1, 20))
 
     data = [
-        ["N° Factura", "Fecha", "Neto", "IVA", "Total"]
+        ["N° Factura", "Fecha", "Detalle", "Neto", "IVA", "Total"]
     ]
 
     for f in facturas:
@@ -400,19 +416,25 @@ def exportar_pdf_anual(request):
         iva = f.monto_iva if f.monto_iva is not None else Decimal("0.00")
         total = f.monto
 
+        if f.venta:
+            detalle = f"Venta #{f.venta.id}"
+        else:
+            detalle = f.descripcion or "-"
+
         data.append([
             f.numero,
             f.fecha.strftime("%d/%m/%Y"),
+            detalle[:28],
             f"$ {neto:,.2f}",
             f"$ {iva:,.2f}",
             f"$ {total:,.2f}",
         ])
 
-    tabla = Table(data, colWidths=[90, 80, 110, 110, 110])
+    tabla = Table(data, colWidths=[75, 65, 110, 85, 85, 95])
     tabla.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), COLOR_GRIS),
         ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-        ("ALIGN", (2, 1), (-1, -1), "RIGHT"),
+        ("ALIGN", (3, 1), (-1, -1), "RIGHT"),
         ("GRID", (0, 0), (-1, -1), 0.5, colors.lightgrey),
         ("PADDING", (0, 0), (-1, -1), 8),
     ]))

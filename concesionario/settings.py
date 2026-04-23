@@ -103,6 +103,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "auditoria.middleware.AuditoriaMiddleware",
+    "auditoria.middleware.NoBrowserCacheMiddleware",
 ]
 
 # ==========================================================

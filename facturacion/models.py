@@ -34,6 +34,14 @@ class FacturaRegistrada(models.Model):
         help_text="Fecha de la factura"
     )
 
+    # Detalle libre: útil cuando la factura NO está vinculada a una venta/vehículo
+    descripcion = models.CharField(
+        max_length=200,
+        blank=True,
+        null=True,
+        help_text="Detalle de la factura (servicio, concepto, etc.)"
+    )
+
     # ======================================================
     # 💰 IMPORTES
     # ======================================================

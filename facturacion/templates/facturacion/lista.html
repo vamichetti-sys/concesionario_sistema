@@ -134,6 +134,8 @@
                     <td>
                         {% if f.venta and f.venta.cliente %}
                         {{ f.venta.cliente.nombre_completo }}
+                        {% elif f.descripcion %}
+                        <span class="text-muted fst-italic">{{ f.descripcion }}</span>
                         {% else %}
                         <span class="text-muted">–</span>
                         {% endif %}
@@ -142,6 +144,8 @@
                     <td>
                         {% if f.venta and f.venta.vehiculo %}
                         {{ f.venta.vehiculo.marca }} {{ f.venta.vehiculo.modelo }}
+                        {% elif f.descripcion %}
+                        <span class="text-muted fst-italic">{{ f.descripcion }}</span>
                         {% else %}
                         <span class="text-muted">–</span>
                         {% endif %}
