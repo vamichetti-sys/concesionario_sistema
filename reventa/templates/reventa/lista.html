@@ -119,6 +119,16 @@
                     <td class="text-muted">{{ r.fecha_confirmacion|date:"d/m/Y"|default:"-" }}</td>
                     <td class="text-end">
                         <div class="d-flex gap-1 justify-content-end">
+                            <div class="dropdown d-inline-block">
+                                <button class="btn btn-outline-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" title="Acta de entrega en consignación">
+                                    <i data-lucide="file-text" style="width:14px;height:14px;"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li><h6 class="dropdown-header">Acta de entrega — Titular</h6></li>
+                                    <li><a class="dropdown-item" href="{% url 'reventa:acta_entrega' reventa_id=r.pk %}?titular=valentina" target="_blank">Valentina Amichetti · DNI 40.883.059</a></li>
+                                    <li><a class="dropdown-item" href="{% url 'reventa:acta_entrega' reventa_id=r.pk %}?titular=hugo" target="_blank">Hugo Alberto Amichetti · DNI 13.814.200</a></li>
+                                </ul>
+                            </div>
                             <a href="{% url 'reventa:editar' reventa_id=r.pk %}" class="btn btn-secondary btn-sm" title="Editar">
                                 <i data-lucide="edit" style="width:14px;height:14px;"></i>
                             </a>

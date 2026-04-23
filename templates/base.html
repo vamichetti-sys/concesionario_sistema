@@ -699,8 +699,24 @@
     {% endif %}
 </div>
 
+<style>
+    .app-messages { max-width: 1100px; margin: 0 auto 16px auto; padding: 0 16px; }
+    .app-message { padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 8px; }
+    .app-message.success { background: #dcfce7; color: #166534; }
+    .app-message.error   { background: #fee2e2; color: #991b1b; }
+    .app-message.warning { background: #fef3c7; color: #92400e; }
+    .app-message.info    { background: #dbeafe; color: #1e40af; }
+</style>
+
 <!-- CONTENIDO -->
 <div class="content">
+    {% if messages %}
+    <div class="app-messages">
+        {% for message in messages %}
+        <div class="app-message {{ message.tags|default:'success' }}">{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
     {% block content %}{% endblock %}
 </div>
 

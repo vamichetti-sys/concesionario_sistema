@@ -195,25 +195,27 @@ class CuentaCorriente(models.Model):
         total = Decimal("0")
 
         # Saldo del plan de pago (si existe, usar saldos de cuotas)
+        # Con plan: self.saldo se ignora — se suma gestoría aparte.
+        # Sin plan: self.saldo YA incluye gestoría (es debe-haber de todos los movimientos),
+        #           así que NO volver a sumarla.
         plan = getattr(self, 'plan_pago', None)
         if plan:
             for cuota in plan.cuotas.all():
                 total += cuota.saldo_pendiente
+
+            gest_debe = (
+                self.movimientos.filter(origen="gestoria", tipo="debe")
+                .aggregate(t=Sum("monto"))["t"] or Decimal("0")
+            )
+            gest_haber = (
+                self.movimientos.filter(origen="gestoria", tipo="haber")
+                .aggregate(t=Sum("monto"))["t"] or Decimal("0")
+            )
+            gest_pendiente = gest_debe - gest_haber
+            if gest_pendiente > 0:
+                total += gest_pendiente
         else:
             total += max(self.saldo or Decimal("0"), Decimal("0"))
-
-        # Gestoría pendiente (debe - haber)
-        gest_debe = (
-            self.movimientos.filter(origen="gestoria", tipo="debe")
-            .aggregate(t=Sum("monto"))["t"] or Decimal("0")
-        )
-        gest_haber = (
-            self.movimientos.filter(origen="gestoria", tipo="haber")
-            .aggregate(t=Sum("monto"))["t"] or Decimal("0")
-        )
-        gest_pendiente = gest_debe - gest_haber
-        if gest_pendiente > 0:
-            total += gest_pendiente
 
         # Gastos de ingreso pendientes
         vehiculo = self._vehiculo_para_gastos()

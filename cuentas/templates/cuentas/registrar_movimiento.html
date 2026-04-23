@@ -40,7 +40,7 @@
             <select name="cuota_id" id="cuota_id" class="form-select">
                 <option value="">Seleccionar cuota</option>
                 {% for cuota in cuotas %}
-                <option value="{{ cuota.id }}">Cuota {{ cuota.numero }} – saldo $ {{ cuota.saldo_actual|floatformat:0 }}</option>
+                <option value="{{ cuota.id }}">Cuota {{ cuota.numero }} – $ {{ cuota.monto|floatformat:0 }} (saldo $ {{ cuota.saldo_pendiente|floatformat:0 }})</option>
                 {% endfor %}
             </select>
             <small class="text-muted">Si el monto supera esta cuota, se descontará de las siguientes.</small>

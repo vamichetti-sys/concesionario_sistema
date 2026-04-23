@@ -277,9 +277,8 @@ def editar_boleto(request, boleto_id):
             precio_letras_inicial    = match_9.group(2).strip()
             saldo_forma_pago_inicial = match_9.group(3).strip()
         match_mc = re.search(
-            r"Motor\s+(.+?)\s+Chasis\s+(.+?)\s+Patente",
+            r"\bMotor\s+(\S.*?)\s+Chasis\s+(\S.*?)\s+Patente",
             boleto.texto_final,
-            re.IGNORECASE
         )
         if match_mc:
             motor_inicial  = match_mc.group(1).strip()

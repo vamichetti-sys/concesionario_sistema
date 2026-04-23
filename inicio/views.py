@@ -6,7 +6,7 @@ from django.db.models import Sum, Count, Q
 from django.utils import timezone
 from datetime import timedelta
 
-from cuentas.models import CuentaCorriente, MovimientoCuenta
+from cuentas.models import CuentaCorriente, MovimientoCuenta, CuotaPlan
 from gestoria.models import Gestoria
 from ventas.models import Venta
 from vehiculos.models import Vehiculo, FichaVehicular
@@ -142,10 +142,10 @@ def inicio(request):
     # =============================
     # CUOTAS VENCIDAS
     # =============================
-    cuotas_vencidas_count = MovimientoCuenta.objects.filter(
-        tipo="debe",
-        fecha__lt=hoy,
-        cuenta__saldo__gt=0
+    cuotas_vencidas_count = CuotaPlan.objects.filter(
+        estado="pendiente",
+        vencimiento__lt=hoy,
+        plan__estado="activo",
     ).count()
 
     # =============================

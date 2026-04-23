@@ -10,6 +10,7 @@ urlpatterns = [
     path("editar/<int:reventa_id>/", views.editar_reventa, name="editar"),
     path("revertir/<int:reventa_id>/", views.revertir_reventa, name="revertir"),
     path("eliminar/<int:reventa_id>/", views.eliminar_reventa, name="eliminar"),
+    path("acta/<int:reventa_id>/", views.acta_entrega_pdf, name="acta_entrega"),
 
     # Cuentas de revendedores
     path("cuentas/", views.lista_cuentas_revendedores, name="cuentas"),
