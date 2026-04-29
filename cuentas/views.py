@@ -1052,12 +1052,168 @@ def plan_pago_pdf(request, cuenta_id):
     ]))
     elements.append(t_cuotas)
 
+    # ----------------------------------------------------------
+    # GESTORÍA
+    # ----------------------------------------------------------
+    gestoria_debe = (
+        cuenta.movimientos.filter(origen="gestoria", tipo="debe")
+        .aggregate(total=Sum("monto")).get("total") or Decimal("0")
+    )
+    gestoria_haber = (
+        cuenta.movimientos.filter(origen="gestoria", tipo="haber")
+        .aggregate(total=Sum("monto")).get("total") or Decimal("0")
+    )
+    gestoria_saldo = max(gestoria_debe - gestoria_haber, Decimal("0"))
+
+    if gestoria_debe > 0:
+        elements.append(Paragraph("<b>Gestoría</b>", h3))
+        data_gest = [
+            ["Concepto", "Monto"],
+            ["Debe (deuda inicial)", f"$ {gestoria_debe:,.2f}"],
+            ["Haber (pagos realizados)", f"$ {gestoria_haber:,.2f}"],
+            ["Saldo pendiente", f"$ {gestoria_saldo:,.2f}"],
+        ]
+        t_gest = Table(data_gest, colWidths=[10 * cm, 6.5 * cm])
+        t_gest.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1e3a5f")),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("FONTSIZE", (0, 0), (-1, -1), 9),
+            ("ALIGN", (1, 0), (1, -1), "RIGHT"),
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ("INNERGRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#d1d5db")),
+            ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#9ca3af")),
+            ("BACKGROUND", (0, -1), (-1, -1), colors.HexColor("#f3f4f6")),
+            ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"),
+            ("LEFTPADDING", (0, 0), (-1, -1), 6),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+            ("TOPPADDING", (0, 0), (-1, -1), 5),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+        ]))
+        elements.append(t_gest)
+
+    # ----------------------------------------------------------
+    # GASTOS DEL VEHÍCULO VINCULADO (PERMUTA)
+    # ----------------------------------------------------------
+    vehiculo_permuta = (
+        Vehiculo.objects.filter(
+            movimientos_cuenta__cuenta=cuenta,
+            movimientos_cuenta__origen="permuta",
+        ).distinct().first()
+    )
+
+    gastos_total = Decimal("0")
+    gastos_pagado = Decimal("0")
+    gastos_saldo = Decimal("0")
+    gastos_filas = []
+
+    if vehiculo_permuta:
+        try:
+            ficha_v = vehiculo_permuta.ficha
+            CONCEPTOS_KEYS = {
+                "Formulario 08": "f08", "Informes": "informes", "Patentes": "patentes",
+                "Infracciones": "infracciones", "Verificación": "verificacion",
+                "Autopartes": "autopartes", "VTV": "vtv", "R541": "r541", "Firmas": "firmas",
+            }
+            for concepto, monto in ficha_v.mapa_gastos_ingreso().items():
+                if not monto or Decimal(monto) <= 0:
+                    continue
+                monto_dec = Decimal(monto)
+                key = CONCEPTOS_KEYS.get(concepto, concepto)
+                pagado = (
+                    PagoGastoIngreso.objects.filter(
+                        vehiculo=vehiculo_permuta,
+                        concepto__in=[concepto, key],
+                    ).aggregate(total=Sum("monto"))["total"] or Decimal("0")
+                )
+                saldo_g = max(monto_dec - Decimal(pagado), Decimal("0"))
+                gastos_total += monto_dec
+                gastos_pagado += Decimal(pagado)
+                gastos_saldo += saldo_g
+                gastos_filas.append([
+                    concepto,
+                    f"$ {monto_dec:,.2f}",
+                    f"$ {Decimal(pagado):,.2f}",
+                    f"$ {saldo_g:,.2f}",
+                    "Pagado" if saldo_g <= 0 else "Pendiente",
+                ])
+        except FichaVehicular.DoesNotExist:
+            pass
+
+    if gastos_filas:
+        titulo_gastos = (
+            f"<b>Gastos del vehículo vinculado · "
+            f"{vehiculo_permuta.marca} {vehiculo_permuta.modelo} ({vehiculo_permuta.dominio})</b>"
+        )
+        elements.append(Paragraph(titulo_gastos, h3))
+
+        data_gastos = [["Concepto", "Monto", "Pagado", "Saldo", "Estado"]]
+        data_gastos.extend(gastos_filas)
+        data_gastos.append([
+            "TOTAL",
+            f"$ {gastos_total:,.2f}",
+            f"$ {gastos_pagado:,.2f}",
+            f"$ {gastos_saldo:,.2f}",
+            "",
+        ])
+
+        t_gastos = Table(
+            data_gastos,
+            colWidths=[5 * cm, 3 * cm, 3 * cm, 3 * cm, 2.5 * cm],
+            repeatRows=1,
+        )
+        t_gastos.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1e3a5f")),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("FONTSIZE", (0, 0), (-1, -1), 9),
+            ("ALIGN", (1, 0), (3, -1), "RIGHT"),
+            ("ALIGN", (4, 0), (4, -1), "CENTER"),
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ("INNERGRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#d1d5db")),
+            ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#9ca3af")),
+            ("ROWBACKGROUNDS", (0, 1), (-1, -2), [colors.white, colors.HexColor("#f9fafb")]),
+            ("BACKGROUND", (0, -1), (-1, -1), colors.HexColor("#f3f4f6")),
+            ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"),
+            ("LEFTPADDING", (0, 0), (-1, -1), 5),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 5),
+            ("TOPPADDING", (0, 0), (-1, -1), 4),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+        ]))
+        elements.append(t_gastos)
+
+    # ----------------------------------------------------------
+    # RESUMEN FINAL
+    # ----------------------------------------------------------
+    deuda_total = total_saldo + gestoria_saldo + gastos_saldo
+
     elements.append(Spacer(1, 18))
-    elements.append(Paragraph(
-        f"<b>Saldo pendiente del plan:</b> "
-        f"<font color='{'red' if total_saldo > 0 else 'green'}'><b>$ {total_saldo:,.2f}</b></font>",
-        normal
-    ))
+    elements.append(Paragraph("<b>Resumen de saldos pendientes</b>", h3))
+    resumen_data = [
+        ["Plan de pago", f"$ {total_saldo:,.2f}"],
+    ]
+    if gestoria_debe > 0:
+        resumen_data.append(["Gestoría", f"$ {gestoria_saldo:,.2f}"])
+    if gastos_filas:
+        resumen_data.append(["Gastos del vehículo", f"$ {gastos_saldo:,.2f}"])
+    resumen_data.append(["DEUDA TOTAL PENDIENTE", f"$ {deuda_total:,.2f}"])
+
+    t_resumen = Table(resumen_data, colWidths=[10 * cm, 6.5 * cm])
+    t_resumen.setStyle(TableStyle([
+        ("FONTSIZE", (0, 0), (-1, -1), 10),
+        ("ALIGN", (1, 0), (1, -1), "RIGHT"),
+        ("INNERGRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#d1d5db")),
+        ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#9ca3af")),
+        ("BACKGROUND", (0, -1), (-1, -1), colors.HexColor("#fee2e2") if deuda_total > 0 else colors.HexColor("#dcfce7")),
+        ("TEXTCOLOR", (0, -1), (-1, -1), colors.HexColor("#991b1b") if deuda_total > 0 else colors.HexColor("#166534")),
+        ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"),
+        ("FONTSIZE", (0, -1), (-1, -1), 11),
+        ("LEFTPADDING", (0, 0), (-1, -1), 8),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 8),
+        ("TOPPADDING", (0, 0), (-1, -1), 6),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+    ]))
+    elements.append(t_resumen)
 
     doc.build(elements)
     buf.seek(0)
