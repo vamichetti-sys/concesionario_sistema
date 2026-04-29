@@ -165,6 +165,10 @@
         <span class="badge {% if plan.estado == 'activo' %}bg-success{% else %}bg-secondary{% endif %} ms-2">
             {{ plan.get_estado_display }}
         </span>
+        <a href="{% url 'cuentas:plan_pago_pdf' cuenta.id %}" target="_blank" class="btn btn-outline-primary btn-sm ms-auto">
+            <i data-lucide="printer" style="width:14px;height:14px;margin-right:4px;"></i>
+            Imprimir PDF
+        </a>
         {% endif %}
     </div>
 

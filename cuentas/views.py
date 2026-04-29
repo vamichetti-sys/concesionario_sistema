@@ -901,3 +901,168 @@ def cerrar_cuenta_corriente(request, cuenta_id):
 
     messages.success(request, "Cuenta corriente cerrada correctamente.")
     return redirect("cuentas:cuenta_corriente_detalle", cuenta_id=cuenta.id)
+
+
+# ==========================================================
+# PDF: PLAN DE PAGO
+# ==========================================================
+@login_required
+def plan_pago_pdf(request, cuenta_id):
+    from io import BytesIO
+    from reportlab.lib.enums import TA_CENTER
+
+    cuenta = get_object_or_404(CuentaCorriente, id=cuenta_id)
+    plan = getattr(cuenta, "plan_pago", None)
+
+    if not plan:
+        messages.error(request, "Esta cuenta no tiene plan de pago.")
+        return redirect("cuentas:cuenta_corriente_detalle", cuenta_id=cuenta.id)
+
+    cliente = cuenta.cliente
+    cuotas = plan.cuotas.all().order_by("numero")
+
+    total_monto = sum((c.monto for c in cuotas), Decimal("0"))
+    total_pagado = sum((c.total_pagado for c in cuotas), Decimal("0"))
+    total_saldo = sum((c.saldo_pendiente for c in cuotas), Decimal("0"))
+
+    buf = BytesIO()
+    doc = SimpleDocTemplate(
+        buf,
+        pagesize=A4,
+        leftMargin=2 * cm, rightMargin=2 * cm,
+        topMargin=1.5 * cm, bottomMargin=1.5 * cm,
+    )
+
+    styles = getSampleStyleSheet()
+    H1 = ParagraphStyle("H1", parent=styles["Heading1"], fontSize=16, alignment=TA_CENTER, spaceAfter=4)
+    sub = ParagraphStyle("sub", parent=styles["Normal"], fontSize=9, textColor=colors.HexColor("#6b7280"), alignment=TA_CENTER, spaceAfter=14)
+    h3 = ParagraphStyle("h3", parent=styles["Heading3"], fontSize=11, textColor=colors.HexColor("#1e3a5f"), spaceBefore=10, spaceAfter=6)
+    normal = styles["Normal"]
+
+    elements = []
+    elements.append(Paragraph("AMICHETTI AUTOMOTORES", H1))
+    elements.append(Paragraph(
+        f"Plan de pago — Emitido el {timezone.localdate().strftime('%d/%m/%Y')}",
+        sub
+    ))
+
+    documento = getattr(cliente, "dni_cuit", None) or "-"
+    elements.append(Paragraph("<b>Cliente</b>", h3))
+    info_cliente = [
+        [Paragraph("<b>Nombre:</b>", normal), Paragraph(cliente.nombre_completo or "-", normal)],
+        [Paragraph("<b>DNI / CUIT:</b>", normal), Paragraph(str(documento), normal)],
+    ]
+    if getattr(cliente, "direccion", None):
+        info_cliente.append([Paragraph("<b>Domicilio:</b>", normal), Paragraph(cliente.direccion, normal)])
+    if getattr(cliente, "telefono", None):
+        info_cliente.append([Paragraph("<b>Teléfono:</b>", normal), Paragraph(cliente.telefono, normal)])
+
+    t_cli = Table(info_cliente, colWidths=[3.5 * cm, 13 * cm])
+    t_cli.setStyle(TableStyle([
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+    ]))
+    elements.append(t_cli)
+
+    elements.append(Paragraph("<b>Detalle del plan</b>", h3))
+    info_plan = [
+        ["Descripción", plan.descripcion or "-"],
+        ["Tipo de plan", plan.get_tipo_plan_display()],
+        ["Moneda", plan.get_moneda_display()],
+        ["Fecha de inicio", plan.fecha_inicio.strftime("%d/%m/%Y") if plan.fecha_inicio else "-"],
+        ["Cantidad de cuotas", str(plan.cantidad_cuotas)],
+        ["Monto financiado", f"$ {plan.monto_financiado:,.2f}"],
+    ]
+    if plan.anticipo and plan.anticipo > 0:
+        info_plan.append(["Anticipo", f"$ {plan.anticipo:,.2f}"])
+    if plan.interes_financiacion and plan.interes_financiacion > 0:
+        info_plan.append(["Interés de financiación", f"{plan.interes_financiacion}%"])
+        info_plan.append(["Total con interés", f"$ {plan.total_con_interes:,.2f}"])
+    if plan.interes_mora_mensual and plan.interes_mora_mensual > 0:
+        info_plan.append(["Interés mora mensual", f"{plan.interes_mora_mensual}%"])
+    info_plan.append(["Estado", plan.get_estado_display()])
+
+    t_plan = Table(info_plan, colWidths=[5 * cm, 11.5 * cm])
+    t_plan.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (0, -1), colors.HexColor("#f3f4f6")),
+        ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
+        ("FONTSIZE", (0, 0), (-1, -1), 9),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("INNERGRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#e5e7eb")),
+        ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#9ca3af")),
+        ("LEFTPADDING", (0, 0), (-1, -1), 6),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+        ("TOPPADDING", (0, 0), (-1, -1), 4),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+    ]))
+    elements.append(t_plan)
+
+    elements.append(Paragraph("<b>Cuotas</b>", h3))
+
+    data = [["N°", "Vencimiento", "Monto", "Pagado", "Saldo", "Estado"]]
+    hoy = timezone.localdate()
+    for c in cuotas:
+        if c.estado == "pagada":
+            estado_txt = "Pagada"
+        elif c.vencimiento and c.vencimiento < hoy and c.saldo_pendiente > 0:
+            estado_txt = "Vencida"
+        else:
+            estado_txt = "Pendiente"
+        data.append([
+            str(c.numero),
+            c.vencimiento.strftime("%d/%m/%Y") if c.vencimiento else "-",
+            f"$ {c.monto:,.2f}",
+            f"$ {c.total_pagado:,.2f}",
+            f"$ {c.saldo_pendiente:,.2f}",
+            estado_txt,
+        ])
+
+    data.append([
+        "", "TOTAL",
+        f"$ {total_monto:,.2f}",
+        f"$ {total_pagado:,.2f}",
+        f"$ {total_saldo:,.2f}",
+        "",
+    ])
+
+    t_cuotas = Table(
+        data,
+        colWidths=[1.2 * cm, 3 * cm, 3.2 * cm, 3.2 * cm, 3.2 * cm, 2.7 * cm],
+        repeatRows=1,
+    )
+    t_cuotas.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1e3a5f")),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("FONTSIZE", (0, 0), (-1, -1), 9),
+        ("ALIGN", (0, 0), (0, -1), "CENTER"),
+        ("ALIGN", (2, 0), (4, -1), "RIGHT"),
+        ("ALIGN", (1, 0), (1, -1), "CENTER"),
+        ("ALIGN", (5, 0), (5, -1), "CENTER"),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("INNERGRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#d1d5db")),
+        ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#9ca3af")),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -2), [colors.white, colors.HexColor("#f9fafb")]),
+        ("BACKGROUND", (0, -1), (-1, -1), colors.HexColor("#f3f4f6")),
+        ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 5),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 5),
+        ("TOPPADDING", (0, 0), (-1, -1), 5),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+    ]))
+    elements.append(t_cuotas)
+
+    elements.append(Spacer(1, 18))
+    elements.append(Paragraph(
+        f"<b>Saldo pendiente del plan:</b> "
+        f"<font color='{'red' if total_saldo > 0 else 'green'}'><b>$ {total_saldo:,.2f}</b></font>",
+        normal
+    ))
+
+    doc.build(elements)
+    buf.seek(0)
+    response = HttpResponse(buf.getvalue(), content_type="application/pdf")
+    response["Content-Disposition"] = (
+        f'inline; filename="plan_pago_{cuenta.id}_{cliente.nombre_completo or "cliente"}.pdf"'
+    )
+    return response

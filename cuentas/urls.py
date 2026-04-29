@@ -68,6 +68,11 @@ urlpatterns = [
         views.eliminar_plan_pago,
         name="eliminar_plan_pago"
     ),
+    path(
+        "<int:cuenta_id>/plan/pdf/",
+        views.plan_pago_pdf,
+        name="plan_pago_pdf"
+    ),
 
     # ===============================
     # 🔒 CERRAR CUENTA CORRIENTE (NUEVO)
