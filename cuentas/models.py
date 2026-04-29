@@ -131,8 +131,12 @@ class CuentaCorriente(models.Model):
         ).exists()
 
     def _vehiculo_para_gastos(self):
+        """Devuelve el primer vehículo de permuta vinculado (compatibilidad)."""
+        return self._vehiculos_para_gastos().first()
+
+    def _vehiculos_para_gastos(self):
         """
-        Devuelve SOLO el vehículo de permuta vinculado a la cuenta.
+        Devuelve TODOS los vehículos de permuta vinculados a la cuenta.
         Los gastos del vehículo vendido los paga la concesionaria, no el cliente.
         """
         from vehiculos.models import Vehiculo
@@ -143,7 +147,6 @@ class CuentaCorriente(models.Model):
                 movimientos_cuenta__origen="permuta"
             )
             .distinct()
-            .first()
         )
 
     @property
@@ -168,9 +171,8 @@ class CuentaCorriente(models.Model):
         )
         total += gest_debe
 
-        # Gastos de ingreso totales
-        vehiculo = self._vehiculo_para_gastos()
-        if vehiculo:
+        # Gastos de ingreso totales (suma de todos los vehículos vinculados)
+        for vehiculo in self._vehiculos_para_gastos():
             try:
                 ficha = vehiculo.ficha
                 for _, monto in ficha.mapa_gastos_ingreso().items():
@@ -217,9 +219,8 @@ class CuentaCorriente(models.Model):
         else:
             total += max(self.saldo or Decimal("0"), Decimal("0"))
 
-        # Gastos de ingreso pendientes
-        vehiculo = self._vehiculo_para_gastos()
-        if vehiculo:
+        # Gastos de ingreso pendientes (suma de todos los vehículos vinculados)
+        for vehiculo in self._vehiculos_para_gastos():
             try:
                 ficha = vehiculo.ficha
                 total += ficha.saldo_total_gastos()

@@ -96,6 +96,11 @@ urlpatterns = [
         views.conectar_vehiculo_permuta,
         name="conectar_vehiculo_permuta"
     ),
+    path(
+        "<int:cuenta_id>/permuta/<int:vehiculo_id>/desvincular/",
+        views.desvincular_vehiculo_permuta,
+        name="desvincular_vehiculo_permuta"
+    ),
 
     # ===============================
     # RECIBO DE PAGO

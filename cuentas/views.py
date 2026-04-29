@@ -378,23 +378,24 @@ def cuenta_corriente_detalle(request, cuenta_id):
     )
     total_gestoria = gestoria_debe - gestoria_haber
 
-    vehiculo_permuta = (
+    vehiculos_permuta = list(
         Vehiculo.objects
         .filter(
             movimientos_cuenta__cuenta=cuenta,
             movimientos_cuenta__origen="permuta"
         )
         .distinct()
-        .first()
     )
 
-    # Solo el vehículo de permuta tiene gastos que paga el cliente
+    # Compatibilidad: primer vehículo (algunos templates/recibos lo usan)
+    vehiculo_permuta = vehiculos_permuta[0] if vehiculos_permuta else None
     vehiculo_gastos = vehiculo_permuta
 
-    # Gastos de ingreso: detalle con saldos (como solapa "Pago de gastos")
+    # Gastos de ingreso: detalle por vehículo
     total_gastos_ingreso = Decimal("0")
     saldo_gastos_ingreso = Decimal("0")
-    gastos_detalle = []
+    gastos_detalle = []          # plano (legacy / para PDF)
+    vehiculos_gastos = []        # agrupado por vehículo (para template)
 
     CONCEPTOS_KEYS = {
         "Formulario 08": "f08",
@@ -408,38 +409,49 @@ def cuenta_corriente_detalle(request, cuenta_id):
         "Firmas": "firmas",
     }
 
-    if vehiculo_gastos:
+    for veh in vehiculos_permuta:
         try:
-            ficha_v = vehiculo_gastos.ficha
-            for concepto, monto in ficha_v.mapa_gastos_ingreso().items():
-                if not monto or Decimal(monto) <= 0:
-                    continue
-
-                monto_dec = Decimal(monto)
-                key = CONCEPTOS_KEYS.get(concepto, concepto)
-                total_gastos_ingreso += monto_dec
-
-                total_pagado = (
-                    PagoGastoIngreso.objects.filter(
-                        vehiculo=vehiculo_gastos,
-                        concepto__in=[concepto, key]
-                    ).aggregate(total=Sum("monto"))["total"]
-                    or Decimal("0")
-                )
-
-                saldo = monto_dec - Decimal(total_pagado)
-                if saldo > 0:
-                    saldo_gastos_ingreso += saldo
-
-                gastos_detalle.append({
-                    "concepto": concepto,
-                    "monto": monto_dec,
-                    "total_pagado": total_pagado,
-                    "saldo": saldo,
-                    "pagado": saldo <= 0,
-                })
+            ficha_v = veh.ficha
         except FichaVehicular.DoesNotExist:
-            pass
+            continue
+        items_veh = []
+        total_veh = Decimal("0")
+        saldo_veh = Decimal("0")
+        for concepto, monto in ficha_v.mapa_gastos_ingreso().items():
+            if not monto or Decimal(monto) <= 0:
+                continue
+            monto_dec = Decimal(monto)
+            key = CONCEPTOS_KEYS.get(concepto, concepto)
+            total_pagado = (
+                PagoGastoIngreso.objects.filter(
+                    vehiculo=veh,
+                    concepto__in=[concepto, key],
+                ).aggregate(total=Sum("monto"))["total"]
+                or Decimal("0")
+            )
+            saldo = monto_dec - Decimal(total_pagado)
+            item = {
+                "concepto": concepto,
+                "monto": monto_dec,
+                "total_pagado": total_pagado,
+                "saldo": saldo,
+                "pagado": saldo <= 0,
+                "vehiculo": veh,
+            }
+            items_veh.append(item)
+            gastos_detalle.append(item)
+            total_veh += monto_dec
+            total_gastos_ingreso += monto_dec
+            if saldo > 0:
+                saldo_veh += saldo
+                saldo_gastos_ingreso += saldo
+        if items_veh:
+            vehiculos_gastos.append({
+                "vehiculo": veh,
+                "items": items_veh,
+                "total": total_veh,
+                "saldo": saldo_veh,
+            })
 
     # Deuda real = suma de saldos pendientes de cuotas
     # (refleja lo que falta pagar independientemente de los movimientos contables)
@@ -470,6 +482,8 @@ def cuenta_corriente_detalle(request, cuenta_id):
             "gestoria_haber": gestoria_haber,
             "vehiculo_permuta": vehiculo_permuta,
             "vehiculo_gastos": vehiculo_gastos,
+            "vehiculos_permuta": vehiculos_permuta,
+            "vehiculos_gastos": vehiculos_gastos,
             "deuda_cuotas": deuda_cuotas,
             "deuda_total": deuda_total,
         }
@@ -772,10 +786,18 @@ def conectar_vehiculo_permuta(request, cuenta_id, vehiculo_id):
     cuenta   = get_object_or_404(CuentaCorriente, id=cuenta_id)
     vehiculo = get_object_or_404(Vehiculo, id=vehiculo_id)
 
+    ya_vinculado = cuenta.movimientos.filter(
+        origen="permuta", vehiculo=vehiculo
+    ).exists()
+
     ficha = vehiculo.ficha
     ficha.imputar_gastos_permuta_en_cuenta(cuenta)
+    cuenta.recalcular_saldo()
 
-    messages.success(request, "Vehículo vinculado correctamente.")
+    if ya_vinculado:
+        messages.info(request, f"El vehículo {vehiculo} ya estaba vinculado.")
+    else:
+        messages.success(request, f"Vehículo {vehiculo} vinculado correctamente.")
     return redirect("cuentas:cuenta_corriente_detalle", cuenta_id=cuenta.id)
 
 
@@ -900,6 +922,28 @@ def cerrar_cuenta_corriente(request, cuenta_id):
         return redirect("cuentas:cuenta_corriente_detalle", cuenta_id=cuenta.id)
 
     messages.success(request, "Cuenta corriente cerrada correctamente.")
+    return redirect("cuentas:cuenta_corriente_detalle", cuenta_id=cuenta.id)
+
+
+# ==========================================================
+# DESVINCULAR VEHÍCULO DE PERMUTA (uno específico)
+# ==========================================================
+@login_required
+@transaction.atomic
+def desvincular_vehiculo_permuta(request, cuenta_id, vehiculo_id):
+    cuenta = get_object_or_404(CuentaCorriente, id=cuenta_id)
+    if request.method != "POST":
+        return redirect("cuentas:cuenta_corriente_detalle", cuenta_id=cuenta.id)
+
+    movs = cuenta.movimientos.filter(origen="permuta", vehiculo_id=vehiculo_id)
+    if not movs.exists():
+        messages.info(request, "Ese vehículo no estaba vinculado a esta cuenta.")
+        return redirect("cuentas:cuenta_corriente_detalle", cuenta_id=cuenta.id)
+
+    nombre = str(movs.first().vehiculo)
+    movs.delete()
+    cuenta.recalcular_saldo()
+    messages.success(request, f"Vehículo {nombre} desvinculado correctamente.")
     return redirect("cuentas:cuenta_corriente_detalle", cuenta_id=cuenta.id)
 
 
