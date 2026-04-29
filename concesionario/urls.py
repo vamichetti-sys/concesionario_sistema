@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.urls import path, include
 from inicio import views as inicio_views
+from crm import views as crm_views
 from django.contrib.auth import views as auth_views
 from django.conf import settings
 from django.conf.urls.static import static
@@ -16,6 +17,11 @@ urlpatterns = [
     # ===============================
     path('login/', inicio_views.ingreso, name='ingreso'),
     path('', inicio_views.ingreso),
+
+    # ===============================
+    # 📨 FORMULARIO DE CONTACTO PÚBLICO
+    # ===============================
+    path('contacto/', crm_views.contacto_publico, name='contacto_publico'),
 
     # ===============================
     # 🏠 DASHBOARD PRINCIPAL

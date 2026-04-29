@@ -18,6 +18,7 @@ class Prospecto(models.Model):
         ("facebook", "Facebook"),
         ("mercadolibre", "MercadoLibre"),
         ("referido", "Referido"),
+        ("web", "Formulario web"),
         ("otro", "Otro"),
     ]
 
@@ -182,6 +183,8 @@ class NotificacionCRM(models.Model):
         Vehiculo,
         on_delete=models.CASCADE,
         related_name="notificaciones_crm",
+        null=True,
+        blank=True,
     )
 
     mensaje = models.CharField(max_length=300)

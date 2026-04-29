@@ -14,6 +14,44 @@
     </a>
 </div>
 
+<!-- LINK PÚBLICO PARA COMPARTIR -->
+<div class="card p-3 mb-4" style="background:linear-gradient(135deg,#eef2ff,#e0e7ff);border:1px solid #c7d2fe;">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div class="d-flex align-items-center gap-2">
+            <i data-lucide="link" style="width:18px;height:18px;color:#4f46e5;"></i>
+            <div>
+                <div class="fw-semibold" style="color:#3730a3;">Formulario público para clientes</div>
+                <small class="text-muted">Compartí este link en redes / WhatsApp y los contactos entran solos al CRM.</small>
+            </div>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <input type="text" id="linkPublicoContacto"
+                   value="{{ request.scheme }}://{{ request.get_host }}{% url 'contacto_publico' %}"
+                   class="form-control form-control-sm" style="min-width:280px;font-family:monospace;font-size:12px;" readonly>
+            <button class="btn btn-sm btn-primary" onclick="copiarLinkContacto()" type="button">
+                <i data-lucide="copy" style="width:14px;height:14px;margin-right:4px;"></i>Copiar
+            </button>
+            <a class="btn btn-sm btn-outline-secondary" href="{% url 'contacto_publico' %}" target="_blank">
+                <i data-lucide="external-link" style="width:14px;height:14px;"></i>
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+function copiarLinkContacto() {
+    const input = document.getElementById('linkPublicoContacto');
+    input.select();
+    input.setSelectionRange(0, 99999);
+    navigator.clipboard.writeText(input.value).then(() => {
+        const btn = event.target.closest('button');
+        const original = btn.innerHTML;
+        btn.innerHTML = '✓ Copiado';
+        setTimeout(() => { btn.innerHTML = original; if (typeof lucide !== 'undefined') lucide.createIcons(); }, 1500);
+    });
+}
+</script>
+
 <!-- INDICADORES -->
 <div class="row g-3 mb-4">
     <div class="col-6 col-md-2">

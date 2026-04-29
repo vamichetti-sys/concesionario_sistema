@@ -230,3 +230,69 @@ def marcar_notificacion_leida(request, pk):
     notificacion.leida = True
     notificacion.save(update_fields=["leida"])
     return redirect("inicio")
+
+
+# ==========================================================
+# FORMULARIO DE CONTACTO PÚBLICO (sin login)
+# ==========================================================
+def contacto_publico(request):
+    from vehiculos.models import Vehiculo
+
+    enviado = False
+
+    if request.method == "POST":
+        # Anti-spam: honeypot. Si el campo "website" viene completado,
+        # ignoramos silenciosamente la submission (es un bot).
+        if request.POST.get("website", "").strip():
+            return render(request, "crm/contacto_publico.html", {"enviado": True})
+
+        nombre = request.POST.get("nombre_completo", "").strip()
+        telefono = request.POST.get("telefono", "").strip()
+        email = request.POST.get("email", "").strip()
+        vehiculo_id = request.POST.get("vehiculo_interes", "")
+        vehiculo_texto = request.POST.get("vehiculo_interes_texto", "").strip()
+        observaciones = request.POST.get("observaciones", "").strip()
+
+        if not nombre or (not telefono and not email):
+            messages.error(request, "Completá nombre y al menos teléfono o email.")
+            return redirect("contacto_publico")
+
+        vehiculo_obj = None
+        if vehiculo_id:
+            vehiculo_obj = Vehiculo.objects.filter(pk=vehiculo_id, estado="stock").first()
+
+        prospecto = Prospecto.objects.create(
+            nombre_completo=nombre[:150],
+            telefono=telefono[:50] or None,
+            email=email[:254] or None,
+            origen="web",
+            etapa="nuevo",
+            vehiculo_interes=vehiculo_obj,
+            vehiculo_interes_texto=vehiculo_texto[:200] or None,
+            observaciones=observaciones or None,
+        )
+
+        # Notificación interna para que el sistema avise
+        descripcion_veh = ""
+        if vehiculo_obj:
+            descripcion_veh = f" – interés en {vehiculo_obj}"
+        elif vehiculo_texto:
+            descripcion_veh = f" – interés en {vehiculo_texto[:80]}"
+        NotificacionCRM.objects.create(
+            prospecto=prospecto,
+            vehiculo=vehiculo_obj,
+            mensaje=f"Nuevo contacto desde la web: {nombre}{descripcion_veh}",
+        )
+
+        enviado = True
+
+    vehiculos_stock = (
+        Vehiculo.objects
+        .filter(estado="stock")
+        .order_by("marca", "modelo")
+    )
+
+    return render(request, "crm/contacto_publico.html", {
+        "enviado": enviado,
+        "vehiculos_stock": vehiculos_stock,
+    })
