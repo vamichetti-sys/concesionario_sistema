@@ -681,8 +681,12 @@ def registrar_movimiento(request, cuenta_id):
         pago.saldo_posterior = cuenta.saldo
         pago.save(update_fields=["saldo_posterior"])
 
-        messages.success(request, "Pago registrado correctamente.")
-        return redirect("cuentas:recibo_pago_pdf", pago_id=pago.id)
+        messages.success(
+            request,
+            f"Pago Nº {pago.numero_recibo} registrado correctamente. "
+            "Podés imprimirlo desde el listado de pagos."
+        )
+        return redirect("cuentas:cuenta_corriente_detalle", cuenta_id=cuenta.id)
 
     return render(
         request,
