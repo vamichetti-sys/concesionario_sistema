@@ -673,7 +673,8 @@ def registrar_movimiento(request, cuenta_id):
                 descripcion=f"Pago ({forma_pago}) {observaciones}".strip(),
                 tipo="haber",
                 monto=monto,
-                origen="manual"
+                origen="manual",
+                pago=pago,
             )
             cuenta.recalcular_saldo()
 
@@ -922,6 +923,74 @@ def cerrar_cuenta_corriente(request, cuenta_id):
         return redirect("cuentas:cuenta_corriente_detalle", cuenta_id=cuenta.id)
 
     messages.success(request, "Cuenta corriente cerrada correctamente.")
+    return redirect("cuentas:cuenta_corriente_detalle", cuenta_id=cuenta.id)
+
+
+# ==========================================================
+# EDITAR PAGO (solo metadatos: forma, banco, cheque, observaciones)
+# ==========================================================
+@login_required
+@transaction.atomic
+def editar_pago(request, pago_id):
+    pago = get_object_or_404(Pago, id=pago_id)
+    cuenta = pago.cuenta
+
+    if request.method == "POST":
+        forma_pago = request.POST.get("forma_pago", pago.forma_pago)
+        banco = request.POST.get("banco", "").strip()
+        numero_cheque = request.POST.get("numero_cheque", "").strip()
+        observaciones = request.POST.get("observaciones", "").strip()
+
+        pago.forma_pago = forma_pago
+        pago.banco = banco
+        pago.numero_cheque = numero_cheque
+        pago.observaciones = observaciones
+        pago.save(update_fields=[
+            "forma_pago", "banco", "numero_cheque", "observaciones"
+        ])
+
+        messages.success(request, f"Pago {pago.numero_recibo} actualizado.")
+        return redirect("cuentas:cuenta_corriente_detalle", cuenta_id=cuenta.id)
+
+    return render(request, "cuentas/editar_pago.html", {
+        "pago": pago,
+        "cuenta": cuenta,
+    })
+
+
+# ==========================================================
+# ELIMINAR PAGO (revierte todo)
+# ==========================================================
+@login_required
+@transaction.atomic
+def eliminar_pago(request, pago_id):
+    pago = get_object_or_404(Pago, id=pago_id)
+    cuenta = pago.cuenta
+
+    if request.method != "POST":
+        return redirect("cuentas:cuenta_corriente_detalle", cuenta_id=cuenta.id)
+
+    cuotas_afectadas = list(
+        CuotaPlan.objects.filter(pagos__pago=pago).distinct()
+    )
+
+    pago.movimientos_creados.all().delete()
+    pago.delete()
+
+    for cuota in cuotas_afectadas:
+        if cuota.saldo_pendiente > 0 and cuota.estado == "pagada":
+            cuota.estado = "pendiente"
+            cuota.save(update_fields=["estado"])
+
+    plan = getattr(cuenta, "plan_pago", None)
+    if plan and plan.estado == "finalizado":
+        if plan.cuotas.filter(estado="pendiente").exists():
+            plan.estado = "activo"
+            plan.save(update_fields=["estado"])
+
+    cuenta.recalcular_saldo()
+
+    messages.success(request, "Pago eliminado correctamente.")
     return redirect("cuentas:cuenta_corriente_detalle", cuenta_id=cuenta.id)
 
 

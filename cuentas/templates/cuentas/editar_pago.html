@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Editar pago {{ pago.numero_recibo }}{% endblock %}
+{% block content %}
+
+<div style="max-width:680px; margin:0 auto; padding:24px 16px;">
+
+    <div style="margin-bottom:16px;">
+        <a href="{% url 'cuentas:cuenta_corriente_detalle' cuenta.id %}"
+           style="color:#6b7280; font-size:13px; text-decoration:none;">
+            ← Volver a la cuenta corriente
+        </a>
+    </div>
+
+    <div class="card" style="background:#fff; border:1px solid #e5e7eb; border-radius:12px; overflow:hidden;">
+        <div style="background:#1e3a5f; padding:18px 24px;">
+            <div style="color:#fff; font-size:17px; font-weight:600;">
+                Editar pago — Recibo Nº {{ pago.numero_recibo }}
+            </div>
+            <div style="color:#93c5fd; font-size:12px; margin-top:2px;">
+                {{ cuenta.cliente }} · ${{ pago.monto_total|floatformat:0 }} · {{ pago.fecha|date:"d/m/Y H:i" }}
+            </div>
+        </div>
+
+        <form method="post" style="padding:24px;">
+            {% csrf_token %}
+
+            <div class="alert alert-info" style="font-size:13px;">
+                <strong>Nota:</strong> el monto del pago no se puede modificar porque ya está aplicado a las cuotas.
+                Si necesitás cambiar el monto, eliminá el pago y registralo de nuevo.
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Forma de pago</label>
+                <select name="forma_pago" class="form-select">
+                    <option value="efectivo" {% if pago.forma_pago == "efectivo" %}selected{% endif %}>Efectivo</option>
+                    <option value="transferencia" {% if pago.forma_pago == "transferencia" %}selected{% endif %}>Transferencia</option>
+                    <option value="cheque" {% if pago.forma_pago == "cheque" %}selected{% endif %}>Cheque</option>
+                </select>
+            </div>
+
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Banco</label>
+                    <input type="text" name="banco" value="{{ pago.banco }}" class="form-control" maxlength="100">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">N° Cheque</label>
+                    <input type="text" name="numero_cheque" value="{{ pago.numero_cheque }}" class="form-control" maxlength="100">
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label">Observaciones</label>
+                <textarea name="observaciones" class="form-control" rows="3">{{ pago.observaciones }}</textarea>
+            </div>
+
+            <div class="d-flex gap-2 justify-content-end">
+                <a href="{% url 'cuentas:cuenta_corriente_detalle' cuenta.id %}" class="btn btn-secondary">Cancelar</a>
+                <button type="submit" class="btn btn-primary">Guardar cambios</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}

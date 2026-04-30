@@ -110,6 +110,16 @@ urlpatterns = [
         views.recibo_pago_pdf,
         name="recibo_pago_pdf"
     ),
+    path(
+        "pago/<int:pago_id>/editar/",
+        views.editar_pago,
+        name="editar_pago"
+    ),
+    path(
+        "pago/<int:pago_id>/eliminar/",
+        views.eliminar_pago,
+        name="eliminar_pago"
+    ),
 
     # ===============================
     # HISTORIAL DE FINANCIACIÓN

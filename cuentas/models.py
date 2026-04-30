@@ -275,6 +275,15 @@ class MovimientoCuenta(models.Model):
         default='manual'
     )
 
+    pago = models.ForeignKey(
+        "Pago",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="movimientos_creados",
+        help_text="Pago que originó este movimiento (si aplica)",
+    )
+
     def __str__(self):
         return f"{self.get_tipo_display()} - ${self.monto}"
 
@@ -560,7 +569,8 @@ class PagoCuota(models.Model):
             descripcion=descripcion,
             tipo="haber",
             monto=self.monto_aplicado,
-            origen="venta"
+            origen="venta",
+            pago=self.pago,
         )
 
         cuenta.recalcular_saldo()
