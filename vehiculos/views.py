@@ -1099,7 +1099,7 @@ def stock_pdf(request):
     from datetime import date as _date
 
     query = request.GET.get("q", "")
-    estado_filtro = request.GET.get("estado", "stock")
+    estado_filtro = request.GET.get("estado", "")
     marca_filtro = request.GET.get("marca", "").strip()
     anio_min = request.GET.get("anio_min", "")
     anio_max = request.GET.get("anio_max", "")
@@ -1123,13 +1123,19 @@ def stock_pdf(request):
             | Q(dominio__icontains=query)
         )
 
-    # Filtrar por estado: stock muestra stock + temporal, nunca vendidos
-    if estado_filtro == "stock":
-        vehiculos = vehiculos.filter(estado__in=["stock", "temporal"])
-    elif estado_filtro and estado_filtro != "vendido":
-        vehiculos = vehiculos.filter(estado=estado_filtro)
-    else:
+    # Filtrar por estado:
+    # - "" o "activos"  -> todo lo no vendido (stock + temporal + reventa)
+    # - "stock"         -> stock + temporal (lo que está disponible)
+    # - "todos"         -> absolutamente todos los vehículos
+    # - cualquier otro  -> filtro exacto por ese estado
+    if estado_filtro in ("", "activos"):
         vehiculos = vehiculos.exclude(estado="vendido")
+    elif estado_filtro == "stock":
+        vehiculos = vehiculos.filter(estado__in=["stock", "temporal"])
+    elif estado_filtro == "todos":
+        pass  # sin filtro de estado
+    else:
+        vehiculos = vehiculos.filter(estado=estado_filtro)
 
     if marca_filtro:
         vehiculos = vehiculos.filter(marca__icontains=marca_filtro)

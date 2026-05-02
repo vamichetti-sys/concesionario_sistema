@@ -239,12 +239,6 @@ if (typeof lucide !== 'undefined') lucide.createIcons();
     <div class="modal-dialog">
         <div class="modal-content">
             <form method="GET" action="{% url 'vehiculos:stock_pdf' %}" target="_blank">
-                {% if estado_filtro %}
-                <input type="hidden" name="estado" value="{{ estado_filtro }}">
-                {% endif %}
-                {% if query %}
-                <input type="hidden" name="q" value="{{ query }}">
-                {% endif %}
 
                 <div class="modal-header">
                     <h5 class="modal-title fw-bold">
@@ -259,7 +253,24 @@ if (typeof lucide !== 'undefined') lucide.createIcons();
                     <h6 class="fw-bold mb-3">Filtros</h6>
                     <div class="row g-2 mb-3">
                         <div class="col-6">
-                            <label class="form-label" style="font-size:12px;">Marca</label>
+                            <label class="form-label" style="font-size:12px;">Estado</label>
+                            <select name="estado" class="form-select form-select-sm">
+                                <option value="activos" {% if estado_filtro == "" or estado_filtro == "activos" %}selected{% endif %}>Activos (sin vendidos)</option>
+                                <option value="stock" {% if estado_filtro == "stock" %}selected{% endif %}>En stock + temporal</option>
+                                <option value="temporal" {% if estado_filtro == "temporal" %}selected{% endif %}>Solo temporal</option>
+                                <option value="reventa" {% if estado_filtro == "reventa" %}selected{% endif %}>En reventa</option>
+                                <option value="vendido" {% if estado_filtro == "vendido" %}selected{% endif %}>Vendidos</option>
+                                <option value="todos" {% if estado_filtro == "todos" %}selected{% endif %}>Todos (incluye vendidos)</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label" style="font-size:12px;">Búsqueda (marca/modelo/dominio)</label>
+                            <input type="text" name="q" value="{{ query }}" class="form-control form-control-sm" placeholder="Ej: Ford Ka">
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label" style="font-size:12px;">Marca exacta</label>
                             <input type="text" name="marca" class="form-control form-control-sm" placeholder="Ej: Volkswagen">
                         </div>
                         <div class="col-3">
