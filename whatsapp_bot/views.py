@@ -329,27 +329,112 @@ def _procesar_mensaje(texto, body, from_number, resp):
         return HttpResponse(str(resp), content_type="text/xml")
 
     # ==========================================================
+    # COMANDO: DATOS (datos completos + foto de portada)
+    # ==========================================================
+    if texto.startswith("datos"):
+        consulta = texto.replace("datos", "", 1).strip()
+        if not consulta:
+            resp.message(
+                "Escribí el modelo o dominio después del comando.\n"
+                "Ej: *datos ford ka 2013* o *datos KOH008*"
+            )
+            return HttpResponse(str(resp), content_type="text/xml")
+
+        vehiculos = buscar_vehiculos(consulta)
+        if not vehiculos.exists():
+            resp.message(f"No encontré vehículos con *{consulta}* en stock.")
+            return HttpResponse(str(resp), content_type="text/xml")
+
+        for v in vehiculos[:5]:
+            msg = resp.message(formatear_vehiculo(v))
+            portada = v.fotos.filter(es_portada=True).first() or v.fotos.first()
+            if portada and portada.imagen:
+                url = portada.imagen.url
+                if url.startswith("http"):
+                    msg.media(url)
+
+        if vehiculos.count() > 5:
+            resp.message(
+                f"_Hay {vehiculos.count()} resultados, mostré los primeros 5._\n"
+                "Sé más específico (ej: *datos ford ka 2013*)."
+            )
+        return HttpResponse(str(resp), content_type="text/xml")
+
+    # ==========================================================
+    # COMANDO: FOTOS (todas las fotos sin datos)
+    # ==========================================================
+    if texto.startswith("fotos") or texto.startswith("foto "):
+        consulta = texto.replace("fotos", "", 1).replace("foto", "", 1).strip()
+        if not consulta:
+            resp.message(
+                "Escribí el modelo o dominio después del comando.\n"
+                "Ej: *fotos ford ka 2013* o *fotos KOH008*"
+            )
+            return HttpResponse(str(resp), content_type="text/xml")
+
+        vehiculos = buscar_vehiculos(consulta)
+        if not vehiculos.exists():
+            resp.message(f"No encontré vehículos con *{consulta}* en stock.")
+            return HttpResponse(str(resp), content_type="text/xml")
+
+        if vehiculos.count() > 1:
+            lineas = [
+                f"Hay *{vehiculos.count()} vehículos* que coinciden con \"{consulta}\":\n"
+            ]
+            for i, v in enumerate(vehiculos, 1):
+                lineas.append(
+                    f"{i}. {v.marca.upper()} {v.modelo.upper()} {v.anio} "
+                    f"({v.dominio.upper()})"
+                )
+            lineas.append(
+                "\nSé más específico para que te mande las fotos del que querés."
+            )
+            resp.message("\n".join(lineas))
+            return HttpResponse(str(resp), content_type="text/xml")
+
+        v = vehiculos.first()
+        portada = v.fotos.filter(es_portada=True).first() or v.fotos.first()
+        if not portada or not portada.imagen:
+            resp.message(
+                f"*{v.marca.upper()} {v.modelo.upper()} {v.anio}* "
+                f"({v.dominio.upper()}) todavía no tiene fotos cargadas."
+            )
+            return HttpResponse(str(resp), content_type="text/xml")
+
+        msg = resp.message(
+            f"*{v.marca.upper()} {v.modelo.upper()} {v.anio}* ({v.dominio.upper()})"
+        )
+        url = portada.imagen.url
+        if url.startswith("http"):
+            msg.media(url)
+
+        if v.fotos.count() > 1:
+            enviar_fotos_extra(v, from_number)
+
+        return HttpResponse(str(resp), content_type="text/xml")
+
+    # ==========================================================
     # COMANDO: AYUDA
     # ==========================================================
     if texto in ("hola", "ayuda", "help", "menu", "menú"):
         resp.message(
-            "*Amichetti Automotores - Bot interno*\n\n"
+            "*Amichetti Automotores - Bot*\n\n"
             "Comandos disponibles:\n\n"
             "*stock* → ver todas las unidades\n"
-            "*amarok* → buscar por modelo\n"
-            "*ford ranger 2022* → búsqueda específica\n"
-            "*precio amarok* → ver precio de un modelo\n"
+            "*precio amarok* → precio de un modelo\n"
             "*precios* → ver todos los precios\n\n"
+            "*datos ford ka 2013* → datos del vehículo + foto de portada\n"
+            "*fotos ford ka 2013* → todas las fotos\n\n"
             "*deuda* → cuentas con deuda\n"
             "*deuda García* → deuda de un cliente\n\n"
             "*doc amarok* → documentación de un vehículo\n"
-            "*vtv KOH008* → estado de VTV\n\n"
-            "_Cuando encuentre un vehículo, te envío las fotos._"
+            "*vtv KOH008* → estado de VTV"
         )
         return HttpResponse(str(resp), content_type="text/xml")
 
     # ==========================================================
     # BÚSQUEDA GENERAL (nombre, modelo, año, dominio)
+    # Lista los resultados y guía cómo pedir datos o fotos.
     # ==========================================================
     vehiculos = buscar_vehiculos(texto)
 
@@ -361,35 +446,22 @@ def _procesar_mensaje(texto, body, from_number, resp):
         )
         return HttpResponse(str(resp), content_type="text/xml")
 
-    # Más de 5 resultados: solo lista
-    if vehiculos.count() > 5:
-        lineas = [f"Encontré *{vehiculos.count()} vehículos* con \"{body}\":\n"]
-        for i, v in enumerate(vehiculos, 1):
-            km_txt = f" - {int(v.kilometros):,} km".replace(",", ".") if v.kilometros else ""
-            lineas.append(
-                f"{i}. {v.marca.upper()} {v.modelo.upper()} {v.anio} "
-                f"({v.dominio.upper()}){km_txt}"
-            )
-        lineas.append("\nSé más específico para ver fotos (ej: *amarok 2021*)")
-        resp.message("\n".join(lineas))
-        return HttpResponse(str(resp), content_type="text/xml")
+    lineas = [f"Encontré *{vehiculos.count()} vehículo(s)* con \"{body}\":\n"]
+    for i, v in enumerate(vehiculos[:15], 1):
+        km_txt = f" - {int(v.kilometros):,} km".replace(",", ".") if v.kilometros else ""
+        lineas.append(
+            f"{i}. {v.marca.upper()} {v.modelo.upper()} {v.anio} "
+            f"({v.dominio.upper()}){km_txt}"
+        )
+    if vehiculos.count() > 15:
+        lineas.append(f"\n_... y {vehiculos.count() - 15} más._")
 
-    # Hasta 5 resultados: datos + foto de portada
-    for v in vehiculos:
-        msg = resp.message(formatear_vehiculo(v))
-
-        portada = v.fotos.filter(es_portada=True).first() or v.fotos.first()
-        if portada and portada.imagen:
-            url = portada.imagen.url
-            if url.startswith("http"):
-                msg.media(url)
-
-    # Si es 1 solo resultado, enviar fotos extra
-    if vehiculos.count() == 1:
-        v = vehiculos.first()
-        if v.fotos.count() > 1:
-            enviar_fotos_extra(v, from_number)
-
+    lineas.append(
+        "\nPara más info usá:\n"
+        f"• *datos {body}* → datos del vehículo\n"
+        f"• *fotos {body}* → ver las fotos"
+    )
+    resp.message("\n".join(lineas))
     return HttpResponse(str(resp), content_type="text/xml")
 
 
