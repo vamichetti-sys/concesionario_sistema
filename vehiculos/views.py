@@ -5,7 +5,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse, HttpResponse
 from django.template.loader import render_to_string
 from django.contrib import messages
-from django.db.models import Q, Sum
+from django.db.models import Q, Sum, Case, When, IntegerField, Value
 from django.db import transaction
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
@@ -46,7 +46,22 @@ def lista_vehiculos(request):
     query = request.GET.get("q", "")
     estado_filtro = request.GET.get("estado", "")
     
-    vehiculos = Vehiculo.objects.all().select_related('ficha').order_by("-id")
+    vehiculos = (
+        Vehiculo.objects
+        .all()
+        .select_related('ficha')
+        .annotate(
+            estado_orden=Case(
+                When(estado="stock", then=Value(0)),
+                When(estado="temporal", then=Value(1)),
+                When(estado="reventa", then=Value(2)),
+                When(estado="vendido", then=Value(3)),
+                default=Value(4),
+                output_field=IntegerField(),
+            )
+        )
+        .order_by("estado_orden", "-id")
+    )
 
     # Filtro por búsqueda
     if query:
@@ -55,7 +70,7 @@ def lista_vehiculos(request):
             | Q(modelo__icontains=query)
             | Q(dominio__icontains=query)
         )
-    
+
     # Filtro por estado
     if estado_filtro:
         vehiculos = vehiculos.filter(estado=estado_filtro)
