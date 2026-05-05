@@ -410,48 +410,53 @@ def cuenta_corriente_detalle(request, cuenta_id):
     }
 
     for veh in vehiculos_permuta:
-        try:
-            ficha_v = veh.ficha
-        except FichaVehicular.DoesNotExist:
-            continue
         items_veh = []
         total_veh = Decimal("0")
         saldo_veh = Decimal("0")
-        for concepto, monto in ficha_v.mapa_gastos_ingreso().items():
-            if not monto or Decimal(monto) <= 0:
-                continue
-            monto_dec = Decimal(monto)
-            key = CONCEPTOS_KEYS.get(concepto, concepto)
-            total_pagado = (
-                PagoGastoIngreso.objects.filter(
-                    vehiculo=veh,
-                    concepto__in=[concepto, key],
-                ).aggregate(total=Sum("monto"))["total"]
-                or Decimal("0")
-            )
-            saldo = monto_dec - Decimal(total_pagado)
-            item = {
-                "concepto": concepto,
-                "monto": monto_dec,
-                "total_pagado": total_pagado,
-                "saldo": saldo,
-                "pagado": saldo <= 0,
-                "vehiculo": veh,
-            }
-            items_veh.append(item)
-            gastos_detalle.append(item)
-            total_veh += monto_dec
-            total_gastos_ingreso += monto_dec
-            if saldo > 0:
-                saldo_veh += saldo
-                saldo_gastos_ingreso += saldo
-        if items_veh:
-            vehiculos_gastos.append({
-                "vehiculo": veh,
-                "items": items_veh,
-                "total": total_veh,
-                "saldo": saldo_veh,
-            })
+        try:
+            ficha_v = veh.ficha
+        except FichaVehicular.DoesNotExist:
+            ficha_v = None
+
+        if ficha_v is not None:
+            for concepto, monto in ficha_v.mapa_gastos_ingreso().items():
+                if not monto or Decimal(monto) <= 0:
+                    continue
+                monto_dec = Decimal(monto)
+                key = CONCEPTOS_KEYS.get(concepto, concepto)
+                total_pagado = (
+                    PagoGastoIngreso.objects.filter(
+                        vehiculo=veh,
+                        concepto__in=[concepto, key],
+                    ).aggregate(total=Sum("monto"))["total"]
+                    or Decimal("0")
+                )
+                saldo = monto_dec - Decimal(total_pagado)
+                item = {
+                    "concepto": concepto,
+                    "monto": monto_dec,
+                    "total_pagado": total_pagado,
+                    "saldo": saldo,
+                    "pagado": saldo <= 0,
+                    "vehiculo": veh,
+                }
+                items_veh.append(item)
+                gastos_detalle.append(item)
+                total_veh += monto_dec
+                total_gastos_ingreso += monto_dec
+                if saldo > 0:
+                    saldo_veh += saldo
+                    saldo_gastos_ingreso += saldo
+
+        # Siempre mostramos la tarjeta del vehículo vinculado, incluso si
+        # todavía no tiene gastos cargados.
+        vehiculos_gastos.append({
+            "vehiculo": veh,
+            "items": items_veh,
+            "total": total_veh,
+            "saldo": saldo_veh,
+            "sin_gastos": not items_veh,
+        })
 
     # Deuda real = suma de saldos pendientes de cuotas
     # (refleja lo que falta pagar independientemente de los movimientos contables)

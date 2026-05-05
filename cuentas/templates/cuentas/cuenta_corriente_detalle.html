@@ -384,6 +384,12 @@
                 </form>
             </div>
         </div>
+        {% if vg.sin_gastos %}
+        <div class="text-muted text-center p-3" style="font-size:13px;">
+            Este vehículo no tiene gastos de ingreso cargados todavía.
+            <a href="{% url 'vehiculos:ficha_completa' vg.vehiculo.id %}?from=cuenta" class="ms-2">Cargar gastos</a>
+        </div>
+        {% else %}
         <div class="table-responsive">
             <table class="table table-sm mb-0">
                 <thead>
@@ -412,6 +418,7 @@
                 </tbody>
             </table>
         </div>
+        {% endif %}
     </div>
     {% endfor %}
 
