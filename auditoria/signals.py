@@ -11,22 +11,61 @@ from .models import LogActividad
 
 
 # Modelos a auditar: (app_label, model_name)
+# NOTA: en cada delete, el handler captura snapshot completo del registro,
+# permitiendo recuperar manualmente desde la auditoría si fuera necesario.
 MODELOS_AUDITAR = [
+    # Vehículos
     ("vehiculos", "Vehiculo"),
     ("vehiculos", "FichaVehicular"),
+    ("vehiculos", "FichaTecnica"),
+    ("vehiculos", "PagoGastoIngreso"),
+    ("vehiculos", "GastoConcesionario"),
+    ("vehiculos", "Mantenimiento"),
+    # Ventas / Cuentas
     ("ventas", "Venta"),
     ("cuentas", "CuentaCorriente"),
     ("cuentas", "PlanPago"),
+    ("cuentas", "CuotaPlan"),
     ("cuentas", "Pago"),
+    ("cuentas", "PagoCuota"),
     ("cuentas", "MovimientoCuenta"),
+    # Clientes / CRM
+    ("clientes", "Cliente"),
+    ("crm", "Prospecto"),
+    ("crm", "Seguimiento"),
+    # Compraventa
     ("compraventa", "Proveedor"),
     ("compraventa", "CompraVentaOperacion"),
+    ("compraventa", "DeudaProveedor"),
     ("compraventa", "PagoProveedor"),
+    # Facturación
     ("facturacion", "FacturaRegistrada"),
     ("facturacion", "CompraRegistrada"),
-    ("clientes", "Cliente"),
+    # Boletos / Reservas
     ("boletos", "BoletoCompraventa"),
+    ("boletos", "Pagare"),
+    ("boletos", "PagareLote"),
+    ("boletos", "Reserva"),
+    ("boletos", "EntregaDocumentacion"),
+    # Reventa
+    ("reventa", "Reventa"),
+    ("reventa", "CuentaRevendedor"),
+    ("reventa", "MovimientoRevendedor"),
+    # Cheques / Cuentas internas
+    ("cheques", "Cheque"),
+    ("cuentas_internas", "CuentaInterna"),
+    ("cuentas_internas", "MovimientoInterno"),
+    # Gestoría
     ("gestoria", "Gestoria"),
+    # Gastos mensuales
+    ("gastos_mensuales", "CategoriaGasto"),
+    ("gastos_mensuales", "GastoMensual"),
+    # Presupuestos
+    ("presupuestos", "Presupuesto"),
+    # Inicio
+    ("inicio", "RecordatorioDashboard"),
+    # Asistencia
+    ("asistencia", "Empleado"),
 ]
 
 # Campos que no aportan info útil al diff
