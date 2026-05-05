@@ -68,3 +68,45 @@ class LogActividad(models.Model):
             datos_despues=datos_despues,
             ip=ip,
         )
+
+    def cambios(self):
+        """
+        Devuelve lista de (campo, antes, despues) con los campos que cambiaron.
+        Usado por el template de auditoría para mostrar el diff.
+        """
+        if not self.datos_antes:
+            return []
+        labels = self._labels_de_campos()
+        despues = self.datos_despues or {}
+        resultado = []
+        for campo, val_antes in self.datos_antes.items():
+            val_despues = despues.get(campo)
+            etiqueta = labels.get(
+                campo, campo.replace("_", " ").capitalize()
+            )
+            resultado.append((etiqueta, val_antes, val_despues))
+        return resultado
+
+    def _labels_de_campos(self):
+        """
+        Resuelve verbose_name de cada campo del modelo afectado para mostrar
+        etiquetas legibles en el diff.
+        """
+        from django.apps import apps as _apps
+        if not self.modelo:
+            return {}
+        try:
+            for Model in _apps.get_models():
+                if Model.__name__ == self.modelo:
+                    out = {}
+                    for f in Model._meta.fields:
+                        verbose = getattr(f, "verbose_name", None)
+                        out[f.name] = (
+                            str(verbose).capitalize()
+                            if verbose
+                            else f.name.replace("_", " ").capitalize()
+                        )
+                    return out
+        except Exception:
+            pass
+        return {}

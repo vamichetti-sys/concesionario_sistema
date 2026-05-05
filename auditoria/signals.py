@@ -126,17 +126,59 @@ def _desc_obj(instance):
         return f"{instance.__class__.__name__} #{instance.pk}"
 
 
+def _verbose_modelo(instance):
+    try:
+        return str(instance._meta.verbose_name).capitalize()
+    except Exception:
+        return instance.__class__.__name__
+
+
+def _verbose_campo(instance, nombre):
+    """Devuelve el verbose_name de un campo o el nombre normalizado."""
+    try:
+        field = instance._meta.get_field(nombre)
+        verbose = getattr(field, "verbose_name", None)
+        if verbose:
+            return str(verbose)
+    except Exception:
+        pass
+    return nombre.replace("_", " ")
+
+
+def _construir_descripcion(accion, instance, diff_antes=None):
+    modelo = _verbose_modelo(instance)
+    desc_obj = _desc_obj(instance)
+    pk = instance.pk
+
+    if accion == "crear":
+        return f"Creó {modelo} «{desc_obj}» (id {pk})"
+    if accion == "eliminar":
+        return f"Eliminó {modelo} «{desc_obj}» (id {pk})"
+    if accion == "editar":
+        if diff_antes:
+            campos = list(diff_antes.keys())
+            etiquetas = [_verbose_campo(instance, c) for c in campos[:5]]
+            mas = f" y {len(campos) - 5} más" if len(campos) > 5 else ""
+            cambios_txt = ", ".join(etiquetas) + mas
+            return (
+                f"Editó {modelo} «{desc_obj}» (id {pk}) — "
+                f"{len(campos)} campo(s): {cambios_txt}"
+            )
+        return f"Editó {modelo} «{desc_obj}» (id {pk})"
+    return f"{accion} {modelo} «{desc_obj}» (id {pk})"
+
+
 def _registrar(accion, instance, datos_antes=None, datos_despues=None):
     user = get_current_user()
     ip = get_current_ip()
     modelo = instance.__class__.__name__
-    desc = _desc_obj(instance)
+    descripcion = _construir_descripcion(accion, instance, datos_antes)
     LogActividad.registrar(
         usuario=user,
         accion=accion,
         modelo=modelo,
         objeto_id=instance.pk,
-        descripcion=f"{modelo}: {desc}",
+        descripcion=descripcion,
         datos_antes=datos_antes,
         datos_despues=datos_despues,
         ip=ip,
