@@ -382,6 +382,16 @@
         </div>
     </div>
 
+    {% if vehiculos_gastos and saldo_gastos_ingreso == 0 and total_gastos_ingreso > 0 %}
+    <div class="alert alert-success d-flex align-items-center gap-2 mb-3" style="border-radius:12px;">
+        <i data-lucide="check-circle-2" style="width:20px;height:20px;flex-shrink:0;"></i>
+        <div>
+            <strong>Todos los gastos de ingreso están pagados.</strong>
+            <span class="text-muted ms-1">Esta cuenta está al día.</span>
+        </div>
+    </div>
+    {% endif %}
+
     {% if vehiculos_gastos %}
     {% for vg in vehiculos_gastos %}
     <div class="mb-3 p-3" style="border:1px solid #e5e7eb;border-radius:12px;">

@@ -421,12 +421,33 @@
             <i data-lucide="credit-card" style="width:20px;height:20px;color:#10b981;"></i>
             <h5 class="fw-bold mb-0">Pago de gastos de ingreso</h5>
         </div>
+        {% if total_pendiente and total_pendiente > 0 %}
         <button type="button" class="btn btn-outline-success btn-sm"
                 data-bs-toggle="collapse" data-bs-target="#panelPagoLote">
             <i data-lucide="layers" style="width:14px;height:14px;margin-right:4px;"></i>
             Cargar varios pagos a la vez
         </button>
+        {% endif %}
     </div>
+
+    {% if not total_pendiente or total_pendiente == 0 %}
+    {% if gastos_ingreso %}
+    <div class="alert alert-success d-flex align-items-center gap-2 mb-4" style="border-radius:12px;">
+        <i data-lucide="check-circle-2" style="width:20px;height:20px;flex-shrink:0;"></i>
+        <div>
+            <strong>Todos los gastos de ingreso están pagados.</strong>
+            <span class="text-muted ms-1">Esta cuenta está al día.</span>
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-light d-flex align-items-center gap-2 mb-4 border" style="border-radius:12px;">
+        <i data-lucide="info" style="width:20px;height:20px;flex-shrink:0;color:#6b7280;"></i>
+        <div class="text-muted">
+            Este vehículo no tiene gastos de ingreso cargados.
+        </div>
+    </div>
+    {% endif %}
+    {% endif %}
 
     <!-- PANEL DE LOTE -->
     <div class="collapse mb-3" id="panelPagoLote">
