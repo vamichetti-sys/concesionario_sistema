@@ -474,19 +474,32 @@ def guardar_ficha_vehicular(request, vehiculo_id):
             ficha.prenda_estado = request.POST.get("prenda_estado") or ficha.prenda_estado
             ficha.prenda_obs = request.POST.get("prenda_obs") or ficha.prenda_obs
 
-            # Gastos concesionario
+            # Gastos concesionario.
+            # Solo aceptamos un valor del POST si:
+            #   - viene explícitamente en el POST (no None) Y
+            #   - es > 0, o el valor previo también era 0
+            # Esto evita que un guardado del modal (donde a veces los inputs
+            # se renderizan vacíos por bugs de carga) zerifique todos los
+            # gc_* que ya estaban guardados.
             campos_gc = [
                 "gc_service", "gc_mecanica", "gc_chapa_pintura", "gc_tapizado",
                 "gc_neumaticos", "gc_vidrios", "gc_cerrajeria", "gc_lavado",
                 "gc_gnc", "gc_grabado_autopartes", "gc_vtv", "gc_verificacion", "gc_patentes", "gc_otros",
             ]
             for campo in campos_gc:
-                valor = request.POST.get(campo, "").replace(",", ".")
-                if valor:
-                    try:
-                        setattr(ficha, campo, Decimal(valor))
-                    except Exception:
-                        pass
+                if campo not in request.POST:
+                    continue
+                valor_raw = (request.POST.get(campo, "") or "").replace(",", ".").strip()
+                if not valor_raw:
+                    continue
+                try:
+                    nuevo = Decimal(valor_raw)
+                except Exception:
+                    continue
+                previo = gastos_preservar.get(campo) or Decimal("0")
+                if nuevo > 0 or Decimal(previo or 0) == 0:
+                    setattr(ficha, campo, nuevo)
+                # else: el POST manda 0 pero antes había valor — preservamos.
 
             ficha.save()
 
@@ -665,12 +678,22 @@ def guardar_gastos_concesionario(request, vehiculo_id):
             "gc_neumaticos", "gc_vidrios", "gc_cerrajeria", "gc_lavado",
             "gc_gnc", "gc_grabado_autopartes", "gc_vtv", "gc_verificacion", "gc_patentes", "gc_otros",
         ]
+        # Snapshot previo para preservar valores si el form manda 0 sobre algo > 0
+        previos = {c: (getattr(ficha, c, None) or Decimal("0")) for c in campos_gc}
+
         for campo in campos_gc:
-            valor = request.POST.get(campo, "0").replace(",", ".")
+            if campo not in request.POST:
+                continue
+            valor_raw = (request.POST.get(campo, "") or "").replace(",", ".").strip()
+            if not valor_raw:
+                continue
             try:
-                setattr(ficha, campo, Decimal(valor) if valor else Decimal("0"))
+                nuevo = Decimal(valor_raw)
             except Exception:
-                setattr(ficha, campo, Decimal("0"))
+                continue
+            if nuevo > 0 or previos[campo] == 0:
+                setattr(ficha, campo, nuevo)
+            # else: el POST manda 0 sobre un valor previo > 0 — preservamos.
 
         ficha.save(update_fields=campos_gc)
         messages.success(request, "Gastos de concesionario actualizados.")
