@@ -442,12 +442,27 @@ def guardar_ficha_vehicular(request, vehiculo_id):
             for campo in campos_a_preservar:
                 gastos_preservar[campo] = getattr(ficha, campo, None)
 
+            # Lista de campos de gasto que están en el form: si el POST no los
+            # mandó (porque el form de edición no incluye la sección de gastos),
+            # NO los pisamos con 0 al guardar.
+            campos_form_recibidos = set(ficha_form.cleaned_data.keys())
+
             ficha = ficha_form.save(commit=False)
 
-            # Restaurar gastos que el form pudo haber borrado
-            for campo, valor in gastos_preservar.items():
-                if getattr(ficha, campo, None) is None and valor is not None:
-                    setattr(ficha, campo, valor)
+            # Restaurar gastos cuando:
+            #   - el form NO recibió ese campo (no estaba en el POST), o
+            #   - el form mandó None / 0 pero el valor anterior era > 0
+            # Esto evita que ediciones parciales de la ficha zerifiquen los
+            # gastos cargados.
+            for campo, valor_previo in gastos_preservar.items():
+                if valor_previo is None or valor_previo == 0:
+                    continue
+                if campo not in campos_form_recibidos:
+                    setattr(ficha, campo, valor_previo)
+                    continue
+                nuevo = getattr(ficha, campo, None)
+                if nuevo is None or nuevo == 0:
+                    setattr(ficha, campo, valor_previo)
 
             # ===============================
             # CAMPOS MANUALES (NO ESTÁN EN EL FORM)

@@ -1,4 +1,8 @@
-from django.db.models.signals import post_save, post_delete
+import threading
+from datetime import date, datetime
+from decimal import Decimal
+
+from django.db.models.signals import post_save, post_delete, pre_save
 from django.contrib.auth.signals import user_logged_in, user_logged_out, user_login_failed
 from django.dispatch import receiver
 
@@ -6,9 +10,10 @@ from .middleware import get_current_user, get_current_ip
 from .models import LogActividad
 
 
-# Modelos a auditar: (app_label, model_name, descripcion_extra_func)
+# Modelos a auditar: (app_label, model_name)
 MODELOS_AUDITAR = [
     ("vehiculos", "Vehiculo"),
+    ("vehiculos", "FichaVehicular"),
     ("ventas", "Venta"),
     ("cuentas", "CuentaCorriente"),
     ("cuentas", "PlanPago"),
@@ -24,16 +29,65 @@ MODELOS_AUDITAR = [
     ("gestoria", "Gestoria"),
 ]
 
+# Campos que no aportan info útil al diff
+CAMPOS_IGNORAR = {
+    "id", "creado", "creada", "modificado", "modificada",
+    "actualizado", "actualizada", "ultima_modificacion",
+    "updated_at", "created_at",
+}
+
+# Snapshots del estado previo, por thread
+_snapshots = threading.local()
+
+
+def _get_snapshots():
+    if not hasattr(_snapshots, "data"):
+        _snapshots.data = {}
+    return _snapshots.data
+
+
+def _serializar(valor):
+    if valor is None:
+        return None
+    if isinstance(valor, (int, float, str, bool)):
+        return valor
+    if isinstance(valor, Decimal):
+        return str(valor)
+    if isinstance(valor, (date, datetime)):
+        return valor.isoformat()
+    return str(valor)
+
+
+def _snapshot(instance):
+    """Captura un dict con los valores actuales de los campos del instance."""
+    data = {}
+    try:
+        for field in instance._meta.fields:
+            name = field.name
+            if name in CAMPOS_IGNORAR:
+                continue
+            try:
+                if field.is_relation:
+                    val = getattr(instance, name, None)
+                    val = str(val) if val is not None else None
+                else:
+                    val = getattr(instance, name, None)
+                data[name] = _serializar(val)
+            except Exception:
+                continue
+    except Exception:
+        pass
+    return data
+
 
 def _desc_obj(instance):
-    """Devuelve una descripción del objeto."""
     try:
         return str(instance)[:200]
     except Exception:
         return f"{instance.__class__.__name__} #{instance.pk}"
 
 
-def _registrar(accion, instance):
+def _registrar(accion, instance, datos_antes=None, datos_despues=None):
     user = get_current_user()
     ip = get_current_ip()
     modelo = instance.__class__.__name__
@@ -44,17 +98,55 @@ def _registrar(accion, instance):
         modelo=modelo,
         objeto_id=instance.pk,
         descripcion=f"{modelo}: {desc}",
+        datos_antes=datos_antes,
+        datos_despues=datos_despues,
         ip=ip,
     )
 
 
+# ============================================================
+# SIGNALS: CAPTURA DE DIFF
+# ============================================================
+def _handler_pre_save(sender, instance, **kwargs):
+    """Guarda snapshot del estado anterior antes de guardar."""
+    if sender == LogActividad:
+        return
+    if not instance.pk:
+        return  # creación: no hay estado previo
+    try:
+        original = sender._default_manager.get(pk=instance.pk)
+        _get_snapshots()[(sender, instance.pk)] = _snapshot(original)
+    except Exception:
+        pass
+
+
 def _handler_save(sender, instance, created, **kwargs):
-    # Evitamos infinito: no auditamos el mismo LogActividad
     if sender == LogActividad:
         return
     accion = "crear" if created else "editar"
+    antes = None
+    despues = None
+
+    if not created:
+        snap_antes = _get_snapshots().pop((sender, instance.pk), None)
+        if snap_antes:
+            snap_despues = _snapshot(instance)
+            # Sólo campos que efectivamente cambiaron
+            diff_antes = {}
+            diff_despues = {}
+            for campo, val_antes in snap_antes.items():
+                val_despues = snap_despues.get(campo)
+                if val_antes != val_despues:
+                    diff_antes[campo] = val_antes
+                    diff_despues[campo] = val_despues
+            if diff_antes:
+                antes = diff_antes
+                despues = diff_despues
+            else:
+                # No hubo cambios reales: no registramos log
+                return
     try:
-        _registrar(accion, instance)
+        _registrar(accion, instance, antes, despues)
     except Exception:
         pass
 
@@ -63,7 +155,7 @@ def _handler_delete(sender, instance, **kwargs):
     if sender == LogActividad:
         return
     try:
-        _registrar("eliminar", instance)
+        _registrar("eliminar", instance, datos_antes=_snapshot(instance))
     except Exception:
         pass
 
@@ -74,10 +166,18 @@ def conectar_signals():
     for app_label, model_name in MODELOS_AUDITAR:
         try:
             Model = apps.get_model(app_label, model_name)
-            post_save.connect(_handler_save, sender=Model, weak=False,
-                              dispatch_uid=f"audit_save_{app_label}_{model_name}")
-            post_delete.connect(_handler_delete, sender=Model, weak=False,
-                                dispatch_uid=f"audit_delete_{app_label}_{model_name}")
+            pre_save.connect(
+                _handler_pre_save, sender=Model, weak=False,
+                dispatch_uid=f"audit_presave_{app_label}_{model_name}",
+            )
+            post_save.connect(
+                _handler_save, sender=Model, weak=False,
+                dispatch_uid=f"audit_save_{app_label}_{model_name}",
+            )
+            post_delete.connect(
+                _handler_delete, sender=Model, weak=False,
+                dispatch_uid=f"audit_delete_{app_label}_{model_name}",
+            )
         except LookupError:
             pass
 
