@@ -44,6 +44,12 @@ class CuentaCorriente(models.Model):
         default='al_dia'
     )
 
+    observaciones = models.TextField(
+        blank=True,
+        default="",
+        help_text="Notas internas sobre el cliente / cuenta",
+    )
+
     creada = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

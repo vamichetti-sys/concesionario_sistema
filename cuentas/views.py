@@ -936,6 +936,19 @@ def cerrar_cuenta_corriente(request, cuenta_id):
 
 
 # ==========================================================
+# ACTUALIZAR OBSERVACIONES DE LA CUENTA CORRIENTE
+# ==========================================================
+@login_required
+def actualizar_observaciones_cuenta(request, cuenta_id):
+    cuenta = get_object_or_404(CuentaCorriente, id=cuenta_id)
+    if request.method == "POST":
+        cuenta.observaciones = request.POST.get("observaciones", "").strip()
+        cuenta.save(update_fields=["observaciones"])
+        messages.success(request, "Observaciones guardadas.")
+    return redirect("cuentas:cuenta_corriente_detalle", cuenta_id=cuenta.id)
+
+
+# ==========================================================
 # EDITAR PAGO (solo metadatos: forma, banco, cheque, observaciones)
 # ==========================================================
 @login_required

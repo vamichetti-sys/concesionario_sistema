@@ -82,6 +82,11 @@ urlpatterns = [
         views.cerrar_cuenta_corriente,
         name="cerrar_cuenta_corriente"
     ),
+    path(
+        "<int:cuenta_id>/observaciones/",
+        views.actualizar_observaciones_cuenta,
+        name="actualizar_observaciones_cuenta"
+    ),
 
     # ===============================
     # AGREGAR / VINCULAR GASTOS

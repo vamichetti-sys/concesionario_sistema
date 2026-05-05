@@ -726,6 +726,26 @@
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 <script>
+    // ==========================================================
+    // Confirmación universal antes de eliminar.
+    // Aplica a cualquier <form> cuyo action contenga "/eliminar"
+    // o "/delete". Si el form ya tiene onsubmit propio o el atributo
+    // data-no-confirm, se respeta y no se prompt dos veces.
+    // ==========================================================
+    document.addEventListener('submit', function (e) {
+        const form = e.target;
+        if (!form || form.tagName !== 'FORM') return;
+        if (form.hasAttribute('data-no-confirm')) return;
+        if (form.hasAttribute('onsubmit')) return;
+        const action = (form.getAttribute('action') || '').toLowerCase();
+        if (action.includes('/eliminar') || action.includes('/delete')) {
+            if (!confirm('¿Estás seguro que querés eliminar este registro?\n\nSi te equivocás, podés restaurarlo desde Auditoría → Registros eliminados.')) {
+                e.preventDefault();
+                return false;
+            }
+        }
+    }, true);
+
     lucide.createIcons();
 
     function toggleCategory(header) {
