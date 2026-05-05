@@ -416,10 +416,95 @@
      PAGO DE GASTOS
 =============================== -->
 <div class="card p-4 mb-4">
-    <div class="d-flex align-items-center gap-2 mb-4">
-        <i data-lucide="credit-card" style="width:20px;height:20px;color:#10b981;"></i>
-        <h5 class="fw-bold mb-0">Pago de gastos de ingreso</h5>
+    <div class="d-flex align-items-center justify-content-between gap-2 mb-4 flex-wrap">
+        <div class="d-flex align-items-center gap-2">
+            <i data-lucide="credit-card" style="width:20px;height:20px;color:#10b981;"></i>
+            <h5 class="fw-bold mb-0">Pago de gastos de ingreso</h5>
+        </div>
+        <button type="button" class="btn btn-outline-success btn-sm"
+                data-bs-toggle="collapse" data-bs-target="#panelPagoLote">
+            <i data-lucide="layers" style="width:14px;height:14px;margin-right:4px;"></i>
+            Cargar varios pagos a la vez
+        </button>
     </div>
+
+    <!-- PANEL DE LOTE -->
+    <div class="collapse mb-3" id="panelPagoLote">
+        <div class="p-3" style="background:#ecfdf5;border:1px solid #a7f3d0;border-radius:12px;">
+            <h6 class="fw-bold mb-3" style="color:#065f46;">
+                <i data-lucide="layers" style="width:16px;height:16px;margin-right:4px;"></i>
+                Pago en lote
+            </h6>
+            <p class="text-muted small mb-3">
+                Completá los conceptos que querés pagar (dejá en blanco los que no). Si el monto que ponés supera el saldo, se ajusta automáticamente.
+            </p>
+            <form method="post" action="{% url 'vehiculos:registrar_pagos_gastos_lote' %}" data-no-confirm>
+                {% csrf_token %}
+                <input type="hidden" name="vehiculo_id" value="{{ vehiculo.id }}">
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Fecha de pago</label>
+                        <input type="date" name="fecha_pago_lote" class="form-control" required>
+                    </div>
+                    <div class="col-md-8">
+                        <label class="form-label">Observación común (opcional)</label>
+                        <input type="text" name="observaciones_lote" class="form-control"
+                               placeholder="Aplica a todos los pagos del lote">
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Concepto</th>
+                                <th class="text-end">Saldo</th>
+                                <th style="width:200px;">Monto a pagar</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for gasto in gastos_ingreso %}
+                            {% if not gasto.esta_pagado %}
+                            <tr>
+                                <td>{{ gasto.concepto }}</td>
+                                <td class="text-end fw-semibold text-danger">$ {{ gasto.saldo|floatformat:0 }}</td>
+                                <td>
+                                    <input type="number" step="0.01" min="0"
+                                           name="monto_{{ gasto.key }}"
+                                           class="form-control form-control-sm"
+                                           placeholder="0">
+                                </td>
+                            </tr>
+                            {% endif %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="text-end mt-3">
+                    <button type="button" class="btn btn-sm btn-link text-muted me-2" onclick="completarSaldosLote()">
+                        Completar todos con su saldo
+                    </button>
+                    <button type="submit" class="btn btn-success">
+                        <i data-lucide="check" style="width:14px;height:14px;margin-right:4px;"></i>
+                        Registrar pagos del lote
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+    function completarSaldosLote() {
+        const filas = document.querySelectorAll('#panelPagoLote tbody tr');
+        filas.forEach(tr => {
+            const saldoTxt = tr.children[1].innerText.replace(/[$.\s]/g, '').replace(',', '.');
+            const input = tr.querySelector('input[type="number"]');
+            if (input && saldoTxt) input.value = saldoTxt;
+        });
+    }
+    </script>
 
     {% for gasto in gastos_ingreso %}
     <div class="p-4 mb-3" style="background:#f8f9fa;border-radius:12px;">

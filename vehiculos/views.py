@@ -903,6 +903,117 @@ def registrar_pago_gasto(request):
 
 
 # ==========================================================
+# REGISTRAR PAGOS DE VARIOS GASTOS DE UNA VEZ
+# ==========================================================
+@login_required
+@transaction.atomic
+def registrar_pagos_gastos_lote(request):
+    if request.method != "POST":
+        return redirect("vehiculos:inicio")
+
+    vehiculo_id = request.POST.get("vehiculo_id")
+    fecha_pago = request.POST.get("fecha_pago_lote")
+    observaciones_comunes = (request.POST.get("observaciones_lote") or "").strip()
+
+    if not vehiculo_id or not fecha_pago:
+        messages.error(request, "Faltan datos para registrar los pagos.")
+        return redirect(request.META.get("HTTP_REFERER", "/"))
+
+    vehiculo = get_object_or_404(Vehiculo, id=vehiculo_id)
+    try:
+        ficha = vehiculo.ficha
+    except FichaVehicular.DoesNotExist:
+        messages.error(request, "El vehículo no tiene ficha vehicular.")
+        return redirect("vehiculos:ficha_completa", vehiculo_id=vehiculo.id)
+
+    CONCEPTOS = {
+        "f08": "Formulario 08",
+        "informes": "Informes",
+        "patentes": "Patentes",
+        "infracciones": "Infracciones",
+        "verificacion": "Verificación",
+        "autopartes": "Autopartes",
+        "vtv": "VTV",
+        "r541": "R541",
+        "firmas": "Firmas",
+    }
+
+    mapa_gastos = {
+        "f08": ficha.gasto_f08, "informes": ficha.gasto_informes,
+        "patentes": ficha.gasto_patentes, "infracciones": ficha.gasto_infracciones,
+        "verificacion": ficha.gasto_verificacion, "autopartes": ficha.gasto_autopartes,
+        "vtv": ficha.gasto_vtv, "r541": ficha.gasto_r541, "firmas": ficha.gasto_firmas,
+    }
+
+    cuenta = None
+    if hasattr(vehiculo, "venta") and vehiculo.venta:
+        if hasattr(vehiculo.venta, "cuenta_corriente"):
+            cuenta = vehiculo.venta.cuenta_corriente
+
+    creados = 0
+    saltados = []
+
+    for key, label in CONCEPTOS.items():
+        monto_raw = (request.POST.get(f"monto_{key}") or "").strip()
+        if not monto_raw:
+            continue
+        try:
+            monto = Decimal(monto_raw)
+        except Exception:
+            saltados.append(f"{label} (monto inválido)")
+            continue
+        if monto <= 0:
+            continue
+
+        monto_total = mapa_gastos.get(key) or Decimal("0")
+        ya_pagado = (
+            PagoGastoIngreso.objects.filter(vehiculo=vehiculo, concepto=key)
+            .aggregate(total=Sum("monto"))["total"] or Decimal("0")
+        )
+        saldo = Decimal(monto_total) - Decimal(ya_pagado)
+        if saldo <= 0:
+            saltados.append(f"{label} (ya pagado)")
+            continue
+        if monto > saldo:
+            monto = saldo
+
+        PagoGastoIngreso.objects.create(
+            vehiculo=vehiculo,
+            concepto=key,
+            fecha_pago=fecha_pago,
+            monto=monto,
+            observaciones=observaciones_comunes,
+        )
+        creados += 1
+
+        if cuenta:
+            MovimientoCuenta.objects.create(
+                cuenta=cuenta,
+                vehiculo=vehiculo,
+                descripcion=label,
+                tipo="haber",
+                monto=monto,
+                origen="permuta",
+            )
+
+    if cuenta:
+        cuenta.recalcular_saldo()
+
+    if creados:
+        msg = f"Se registraron {creados} pago(s) en lote."
+        if saltados:
+            msg += f" Salteados: {', '.join(saltados)}."
+        messages.success(request, msg)
+    else:
+        messages.warning(
+            request,
+            "No se registró ningún pago. Completá al menos un monto."
+        )
+
+    return redirect("vehiculos:ficha_completa", vehiculo_id=vehiculo.id)
+
+
+# ==========================================================
 # ELIMINAR PAGO DE GASTO DE INGRESO
 # ==========================================================
 @login_required
