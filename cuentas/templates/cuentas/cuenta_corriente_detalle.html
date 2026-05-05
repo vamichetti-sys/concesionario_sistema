@@ -123,6 +123,28 @@
 </div>
 
 <!-- ===============================
+     OBSERVACIONES DE LA CUENTA
+=============================== -->
+<div class="card p-4 mb-4">
+    <div class="d-flex align-items-center gap-2 mb-3">
+        <i data-lucide="sticky-note" style="width:18px;height:18px;color:#8b5cf6;"></i>
+        <h6 class="fw-bold mb-0">Observaciones</h6>
+        <small class="text-muted">notas internas sobre la cuenta del cliente</small>
+    </div>
+    <form method="post" action="{% url 'cuentas:actualizar_observaciones_cuenta' cuenta.id %}" data-no-confirm>
+        {% csrf_token %}
+        <textarea name="observaciones" class="form-control mb-2" rows="3"
+                  placeholder="Ej: cliente paga siempre en efectivo, pidió postergar enero, etc.">{{ cuenta.observaciones }}</textarea>
+        <div class="text-end">
+            <button type="submit" class="btn btn-sm btn-primary">
+                <i data-lucide="save" style="width:14px;height:14px;margin-right:4px;"></i>
+                Guardar observaciones
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- ===============================
      ACCIONES PRINCIPALES
 =============================== -->
 <div class="card p-4 mb-4">
