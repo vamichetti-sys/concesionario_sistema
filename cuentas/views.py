@@ -458,14 +458,24 @@ def cuenta_corriente_detalle(request, cuenta_id):
             "sin_gastos": not items_veh,
         })
 
-    # Deuda real = suma de saldos pendientes de cuotas
-    # (refleja lo que falta pagar independientemente de los movimientos contables)
+    # Deuda real = suma de saldos pendientes de cuotas (de cualquier plan,
+    # activo o finalizado, para que el desglose siempre cuadre con el
+    # saldo total que muestra el modelo).
     deuda_cuotas = Decimal("0")
-    if plan and plan.estado == "activo":
+    if plan:
         deuda_cuotas = sum(
             (c.saldo_pendiente for c in cuotas),
             Decimal("0")
         )
+
+    # Si el plan está "finalizado" pero hay cuotas con saldo pendiente,
+    # lo reactivamos: significa que se eliminó un pago y volvió a haber
+    # deuda. Esto evita que el saldo total y el desglose queden
+    # desincronizados.
+    if plan and plan.estado == "finalizado" and deuda_cuotas > 0:
+        if plan.cuotas.filter(estado="pendiente").exists():
+            plan.estado = "activo"
+            plan.save(update_fields=["estado"])
 
     # Deuda total = saldo de cuotas + gestoría pendiente + gastos de ingreso pendientes
     deuda_total = deuda_cuotas + max(total_gestoria, Decimal("0")) + saldo_gastos_ingreso
