@@ -155,14 +155,24 @@
 
     <!-- VEHÍCULO USADO EN PARTE DE PAGO -->
     <div class="card mb-3 shadow-sm">
-      <div class="card-header bg-dark text-white fw-bold py-2 small">
-        <i data-lucide="repeat" style="width:13px;height:13px;" class="me-1"></i> Vehículo Usado en Parte de Pago (Permuta)
+      <div class="card-header bg-dark text-white fw-bold py-2 small d-flex justify-content-between align-items-center">
+        <div>
+          <i data-lucide="repeat" style="width:13px;height:13px;" class="me-1"></i>
+          Vehículo Usado en Parte de Pago (opcional)
+        </div>
+        <small class="text-white-50">Solo si entrega un usado</small>
       </div>
       <div class="card-body">
 
-        <!-- Vehículo 1 -->
-        <div class="fw-semibold text-muted small mb-2">Vehículo 1</div>
-        <div class="row g-3 mb-3">
+        <!-- Vehículo 1 (opcional) -->
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <div class="fw-semibold text-muted small">Vehículo 1</div>
+          <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none"
+                  onclick="togglePermuta1()" id="togglePermuta1Btn">
+            <i data-lucide="plus" style="width:14px;height:14px;"></i> Agregar
+          </button>
+        </div>
+        <div class="row g-3 mb-3" id="permuta1Wrapper" style="display:none;">
           <div class="col-md-6">
             <label class="form-label small fw-semibold mb-1">Marca</label>{{ form.permuta_marca }}
           </div>
@@ -178,10 +188,10 @@
 
         <!-- Vehículo 2 (opcional) -->
         <div class="d-flex justify-content-between align-items-center mb-2">
-          <div class="fw-semibold text-muted small">Vehículo 2 (opcional)</div>
+          <div class="fw-semibold text-muted small">Vehículo 2</div>
           <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none"
                   onclick="togglePermuta2()" id="togglePermuta2Btn">
-            <i data-lucide="plus" style="width:14px;height:14px;"></i> Mostrar
+            <i data-lucide="plus" style="width:14px;height:14px;"></i> Agregar
           </button>
         </div>
         <div class="row g-3 mb-3" id="permuta2Wrapper" style="display:none;">
@@ -207,20 +217,31 @@
     </div>
 
     <script>
-    function togglePermuta2() {
-        const wrap = document.getElementById('permuta2Wrapper');
-        const btn = document.getElementById('togglePermuta2Btn');
+    function _togglePermuta(num) {
+        const wrap = document.getElementById('permuta' + num + 'Wrapper');
+        const btn = document.getElementById('togglePermuta' + num + 'Btn');
         if (wrap.style.display === 'none') {
             wrap.style.display = '';
-            btn.innerHTML = '<i data-lucide="minus" style="width:14px;height:14px;"></i> Ocultar';
+            btn.innerHTML = '<i data-lucide="minus" style="width:14px;height:14px;"></i> Quitar';
         } else {
             wrap.style.display = 'none';
-            btn.innerHTML = '<i data-lucide="plus" style="width:14px;height:14px;"></i> Mostrar';
+            btn.innerHTML = '<i data-lucide="plus" style="width:14px;height:14px;"></i> Agregar';
+            // Limpiar inputs al ocultar
+            wrap.querySelectorAll('input').forEach(i => { i.value = ''; });
         }
         if (typeof lucide !== 'undefined') lucide.createIcons();
     }
-    // Si el form viene con datos en permuta2, mostrar el bloque
+    function togglePermuta1() { _togglePermuta(1); }
+    function togglePermuta2() { _togglePermuta(2); }
+
+    // Si el form viene con datos en permuta o permuta2, mostrar el bloque correspondiente
     document.addEventListener('DOMContentLoaded', function() {
+        const m1 = document.querySelector('[name="permuta_marca"]');
+        const p1 = document.querySelector('[name="permuta_patente"]');
+        const s1 = document.querySelector('[name="permuta_suma"]');
+        if ((m1 && m1.value) || (p1 && p1.value) || (s1 && s1.value)) {
+            togglePermuta1();
+        }
         const m2 = document.querySelector('[name="permuta2_marca"]');
         const p2 = document.querySelector('[name="permuta2_patente"]');
         const s2 = document.querySelector('[name="permuta2_suma"]');
