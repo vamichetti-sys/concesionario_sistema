@@ -222,6 +222,12 @@ class Reserva(models.Model):
     permuta_marca   = models.CharField("Marca (usado)", max_length=100, blank=True)
     permuta_patente = models.CharField("Patente (usado)", max_length=20, blank=True)
     permuta_suma    = models.DecimalField("Suma propuesta (usado)", max_digits=15, decimal_places=2, null=True, blank=True)
+
+    # Segundo vehículo en permuta (opcional)
+    permuta2_marca   = models.CharField("Marca (usado 2)", max_length=100, blank=True)
+    permuta2_patente = models.CharField("Patente (usado 2)", max_length=20, blank=True)
+    permuta2_suma    = models.DecimalField("Suma propuesta (usado 2)", max_digits=15, decimal_places=2, null=True, blank=True)
+
     permuta_total   = models.DecimalField("Total con permuta", max_digits=15, decimal_places=2, null=True, blank=True)
 
     # ── Observaciones ─────────────────────────────────────

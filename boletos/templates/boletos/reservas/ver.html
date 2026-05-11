@@ -90,16 +90,28 @@
     </div>
 
     <!-- Permuta -->
-    {% if reserva.permuta_marca or reserva.permuta_patente %}
+    {% if reserva.permuta_marca or reserva.permuta_patente or reserva.permuta2_marca or reserva.permuta2_patente %}
     <div class="col-12">
       <div class="card shadow-sm">
-        <div class="card-header bg-dark text-white small fw-bold py-2">Vehículo en Parte de Pago</div>
+        <div class="card-header bg-dark text-white small fw-bold py-2">Vehículos en Parte de Pago</div>
         <div class="card-body small">
-          <dl class="row mb-0">
+          {% if reserva.permuta_marca or reserva.permuta_patente %}
+          <div class="mb-2 fw-semibold text-muted">Vehículo 1</div>
+          <dl class="row mb-3">
             {% if reserva.permuta_marca %}<dt class="col-sm-3 text-muted">Marca</dt><dd class="col-sm-9">{{ reserva.permuta_marca }}</dd>{% endif %}
             {% if reserva.permuta_patente %}<dt class="col-sm-3 text-muted">Patente</dt><dd class="col-sm-9">{{ reserva.permuta_patente }}</dd>{% endif %}
             {% if reserva.permuta_suma %}<dt class="col-sm-3 text-muted">Suma propuesta</dt><dd class="col-sm-9">$ {{ reserva.permuta_suma|floatformat:0 }}</dd>{% endif %}
           </dl>
+          {% endif %}
+
+          {% if reserva.permuta2_marca or reserva.permuta2_patente %}
+          <div class="mb-2 fw-semibold text-muted">Vehículo 2</div>
+          <dl class="row mb-0">
+            {% if reserva.permuta2_marca %}<dt class="col-sm-3 text-muted">Marca</dt><dd class="col-sm-9">{{ reserva.permuta2_marca }}</dd>{% endif %}
+            {% if reserva.permuta2_patente %}<dt class="col-sm-3 text-muted">Patente</dt><dd class="col-sm-9">{{ reserva.permuta2_patente }}</dd>{% endif %}
+            {% if reserva.permuta2_suma %}<dt class="col-sm-3 text-muted">Suma propuesta</dt><dd class="col-sm-9">$ {{ reserva.permuta2_suma|floatformat:0 }}</dd>{% endif %}
+          </dl>
+          {% endif %}
         </div>
       </div>
     </div>

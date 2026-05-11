@@ -841,6 +841,17 @@ def _generar_pdf_reserva(reserva):
     campo("Patente N°:", reserva.permuta_patente, ML + 6.5 * cm, ancho_label=2 * cm, ancho_total=CW - 6.5 * cm)
     y -= 0.52 * cm
     monto_box("En la suma de:", reserva.permuta_suma)
+
+    # ── Segundo vehículo en permuta (si existe) ─────────
+    if (reserva.permuta2_marca or reserva.permuta2_patente or reserva.permuta2_suma):
+        c.setFont("Helvetica-Bold", 7.5)
+        c.drawString(ML, y, "Segundo vehículo:")
+        y -= 0.42 * cm
+        campo("Marca:", reserva.permuta2_marca, ML, ancho_label=1.2 * cm, ancho_total=5.8 * cm)
+        campo("Patente N°:", reserva.permuta2_patente, ML + 6.5 * cm, ancho_label=2 * cm, ancho_total=CW - 6.5 * cm)
+        y -= 0.52 * cm
+        monto_box("En la suma de:", reserva.permuta2_suma)
+
     monto_box("TOTAL:", reserva.permuta_total)
     y -= 0.2 * cm
 

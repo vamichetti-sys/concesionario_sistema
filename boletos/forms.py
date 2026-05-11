@@ -316,10 +316,14 @@ class ReservaForm(forms.ModelForm):
             "cant_cuotas":       forms.NumberInput(attrs={**W}),
             "valor_cuota":       forms.NumberInput(attrs={**W, "step": "0.01"}),
             "dia_cuota":         forms.TextInput(attrs={**W, "placeholder": "Ej: 10"}),
-            # Permuta
+            # Permuta (vehículo 1)
             "permuta_marca":   forms.TextInput(attrs={**W}),
             "permuta_patente": forms.TextInput(attrs={**W}),
             "permuta_suma":    forms.NumberInput(attrs={**W, "step": "0.01"}),
+            # Permuta (vehículo 2 - opcional)
+            "permuta2_marca":   forms.TextInput(attrs={**W}),
+            "permuta2_patente": forms.TextInput(attrs={**W}),
+            "permuta2_suma":    forms.NumberInput(attrs={**W, "step": "0.01"}),
             "permuta_total":   forms.NumberInput(attrs={**W, "step": "0.01"}),
             # Otros
             "observaciones": forms.Textarea(attrs={**W, "rows": 3}),
