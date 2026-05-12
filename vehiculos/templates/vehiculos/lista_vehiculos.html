@@ -33,15 +33,15 @@
 =============================== -->
 <div class="card p-3 mb-4">
     <div class="d-flex flex-wrap gap-2">
-        <a href="{% url 'vehiculos:lista_vehiculos' %}{% if query %}?q={{ query }}{% endif %}" 
-           class="btn {% if not estado_filtro %}btn-primary{% else %}btn-secondary{% endif %}">
-            Todos
-        </a>
-        <a href="{% url 'vehiculos:lista_vehiculos' %}?estado=stock{% if query %}&q={{ query }}{% endif %}" 
+        <a href="{% url 'vehiculos:lista_vehiculos' %}?estado=stock{% if query %}&q={{ query }}{% endif %}"
            class="btn {% if estado_filtro == 'stock' %}btn-primary{% else %}btn-secondary{% endif %}">
             <i data-lucide="package" style="width:16px;height:16px;margin-right:6px;"></i>
             En stock
             <span class="badge bg-white text-primary ms-2">{{ total_stock }}</span>
+        </a>
+        <a href="{% url 'vehiculos:lista_vehiculos' %}?estado=todos{% if query %}&q={{ query }}{% endif %}"
+           class="btn {% if estado_filtro == 'todos' %}btn-primary{% else %}btn-secondary{% endif %}">
+            Todos
         </a>
         <a href="{% url 'vehiculos:lista_vehiculos' %}?estado=temporal{% if query %}&q={{ query }}{% endif %}" 
            class="btn {% if estado_filtro == 'temporal' %}btn-warning{% else %}btn-secondary{% endif %}">

@@ -44,8 +44,10 @@ def get_configuracion_gastos():
 # ==========================================================
 def lista_vehiculos(request):
     query = request.GET.get("q", "")
-    estado_filtro = request.GET.get("estado", "")
-    
+    # Por defecto se muestra el stock (los disponibles). Para ver el resto
+    # el usuario tiene que cambiar de tab.
+    estado_filtro = request.GET.get("estado", "stock")
+
     vehiculos = (
         Vehiculo.objects
         .all()
@@ -60,7 +62,7 @@ def lista_vehiculos(request):
                 output_field=IntegerField(),
             )
         )
-        .order_by("estado_orden", "-id")
+        .order_by("estado_orden", "marca", "modelo", "-id")
     )
 
     # Filtro por búsqueda
@@ -71,8 +73,10 @@ def lista_vehiculos(request):
             | Q(dominio__icontains=query)
         )
 
-    # Filtro por estado
-    if estado_filtro:
+    # Filtro por estado:
+    #   "todos" → no filtra (incluye todos los estados)
+    #   <estado puntual> → filtra por ese estado exacto
+    if estado_filtro and estado_filtro != "todos":
         vehiculos = vehiculos.filter(estado=estado_filtro)
 
     # Calcular días en stock para cada vehículo
