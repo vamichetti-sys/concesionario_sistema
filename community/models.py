@@ -40,7 +40,7 @@ class FotoVehiculo(models.Model):
 # ============================================================
 class PublicacionPlataforma(models.Model):
     PLATAFORMAS = [
-        ("mercadolibre", "MercadoLibre"),
+        ("mercadolibre", "Story"),
         ("facebook", "Facebook Marketplace"),
         ("instagram", "Instagram"),
         ("web", "Página web"),

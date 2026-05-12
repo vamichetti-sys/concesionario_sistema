@@ -365,7 +365,7 @@ def resumen_publicaciones_pdf(request):
     vehiculos = Vehiculo.objects.filter(estado="stock").order_by("marca", "modelo")
 
     PLATAFORMAS = [
-        ("mercadolibre", "ML"),
+        ("mercadolibre", "Story"),
         ("facebook", "FB"),
         ("instagram", "IG"),
         ("web", "Web"),
@@ -478,7 +478,7 @@ def resumen_publicaciones_pdf(request):
     elementos.append(Spacer(1, 8))
 
     # Desglose por plataforma
-    plat_names = {"mercadolibre": "MercadoLibre", "facebook": "Facebook", "instagram": "Instagram", "web": "Web"}
+    plat_names = {"mercadolibre": "Story", "facebook": "Facebook", "instagram": "Instagram", "web": "Web"}
     plat_data = [["Plataforma", "Faltan publicar"]]
     for key, label in PLATAFORMAS:
         plat_data.append([plat_names[key], str(conteo_faltantes[key])])
