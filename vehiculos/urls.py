@@ -53,6 +53,11 @@ urlpatterns = [
         views.cambiar_estado_vehiculo,
         name="cambiar_estado_vehiculo"
     ),
+    path(
+        "reingresar/<int:vehiculo_id>/",
+        views.reingresar_a_stock,
+        name="reingresar_a_stock"
+    ),
     # ==================================================
     # FICHA VEHICULAR
     # ==================================================

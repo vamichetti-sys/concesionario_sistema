@@ -166,6 +166,61 @@ def agregar_vehiculo(request):
     )
 
 
+@login_required
+@transaction.atomic
+def reingresar_a_stock(request, vehiculo_id):
+    """
+    Reingresa un vehículo vendido al stock para volver a venderlo.
+    - Archiva la venta anterior eliminándola del modelo (queda snapshot
+      completo en auditoría con accion=eliminar).
+    - Desvincula la cuenta corriente vinculada (no se borra, queda como
+      historial cerrado).
+    - Desvincula facturas (idem).
+    - Borra gestoría asociada.
+    - Permite actualizar el precio de venta en el mismo paso.
+    """
+    vehiculo = get_object_or_404(Vehiculo, id=vehiculo_id)
+
+    if request.method != "POST":
+        return redirect("vehiculos:lista_vehiculos")
+
+    nuevo_precio_raw = (request.POST.get("nuevo_precio") or "").strip().replace(",", ".")
+    if nuevo_precio_raw:
+        try:
+            vehiculo.precio = Decimal(nuevo_precio_raw)
+        except Exception:
+            messages.warning(request, "El precio ingresado es inválido — el reingreso se hizo igual.")
+
+    vehiculo.estado = "stock"
+    vehiculo.save(update_fields=["estado", "precio"])
+
+    if hasattr(vehiculo, "venta"):
+        try:
+            venta = vehiculo.venta
+            from cuentas.models import CuentaCorriente
+            CuentaCorriente.objects.filter(venta=venta).update(
+                venta=None, estado="cerrada"
+            )
+            from facturacion.models import FacturaRegistrada
+            FacturaRegistrada.objects.filter(venta=venta).update(venta=None)
+            venta.delete()
+        except Exception:
+            pass
+
+    try:
+        from gestoria.models import Gestoria
+        Gestoria.objects.filter(vehiculo=vehiculo).delete()
+    except Exception:
+        pass
+
+    messages.success(
+        request,
+        f"Vehículo {vehiculo} reingresado a stock. "
+        "La venta anterior quedó registrada en Auditoría (Registros eliminados)."
+    )
+    return redirect("vehiculos:lista_vehiculos")
+
+
 @transaction.atomic
 def cambiar_estado_vehiculo(request, vehiculo_id):
     vehiculo = get_object_or_404(Vehiculo, id=vehiculo_id)
