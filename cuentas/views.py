@@ -873,6 +873,13 @@ def eliminar_plan_pago(request, cuenta_id):
     # 5. Borrar el plan — las CuotaPlan se borran por CASCADE
     plan.delete()
 
+    # Limpiar el cache del OneToOne reverso para que recalcular_saldo
+    # no encuentre un PlanPago con pk=None.
+    try:
+        del cuenta._state.fields_cache["plan_pago"]
+    except (KeyError, AttributeError):
+        pass
+
     # 6. Recalcular saldo limpio
     cuenta.recalcular_saldo()
 

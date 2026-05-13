@@ -166,6 +166,8 @@ class CuentaCorriente(models.Model):
 
         # Total del plan de pago (con interés) - incluye planes finalizados
         plan = getattr(self, 'plan_pago', None)
+        if plan and not plan.pk:
+            plan = None
         if plan:
             for cuota in plan.cuotas.all():
                 total += cuota.monto
@@ -207,6 +209,9 @@ class CuentaCorriente(models.Model):
         # Sin plan: self.saldo YA incluye gestoría (es debe-haber de todos los movimientos),
         #           así que NO volver a sumarla.
         plan = getattr(self, 'plan_pago', None)
+        # Si el plan fue borrado pero quedó en caché (pk=None), tratarlo como inexistente.
+        if plan and not plan.pk:
+            plan = None
         if plan:
             for cuota in plan.cuotas.all():
                 total += cuota.saldo_pendiente
