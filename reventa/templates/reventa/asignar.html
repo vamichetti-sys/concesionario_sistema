@@ -88,6 +88,22 @@
                       placeholder="Ej: Titulo, Cedula verde, F08, Verificacion policial, Informe de dominio...">{{ reventa.documentacion_entregada|default:'' }}</textarea>
         </div>
 
+        <hr class="my-3">
+
+        <div class="form-check mb-3">
+            <input type="checkbox" name="enviar_a_gestoria" id="enviar_a_gestoria"
+                   class="form-check-input"
+                   {% if reventa.enviar_a_gestoria %}checked{% endif %}>
+            <label for="enviar_a_gestoria" class="form-check-label fw-semibold">
+                <i data-lucide="clipboard-list" style="width:14px;height:14px;margin-right:4px;"></i>
+                Enviar a Gestoría al transferir
+            </label>
+            <div class="form-text small">
+                Si está tildado, al confirmar esta reventa se genera un trámite
+                en Gestoría para gestionar la transferencia.
+            </div>
+        </div>
+
         <hr class="my-4">
         <div class="d-flex gap-3">
             <button type="submit" class="btn btn-primary">

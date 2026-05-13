@@ -90,6 +90,7 @@ def asignar_reventa(request, vehiculo_id):
         reventa.telefono = cuenta.telefono
         reventa.observaciones = observaciones
         reventa.documentacion_entregada = request.POST.get("documentacion_entregada", "").strip()
+        reventa.enviar_a_gestoria = request.POST.get("enviar_a_gestoria") == "on"
 
         try:
             from decimal import Decimal
@@ -131,6 +132,8 @@ def editar_reventa(request, reventa_id):
         reventa.telefono = request.POST.get("telefono", "").strip()
         reventa.observaciones = request.POST.get("observaciones", "").strip()
         reventa.documentacion_entregada = request.POST.get("documentacion_entregada", "").strip()
+        enviar_antes = reventa.enviar_a_gestoria
+        reventa.enviar_a_gestoria = request.POST.get("enviar_a_gestoria") == "on"
 
         precio = request.POST.get("precio_reventa", "").replace(",", ".")
         comision = request.POST.get("comision", "0").replace(",", ".")
@@ -145,6 +148,20 @@ def editar_reventa(request, reventa_id):
             pass
 
         reventa.save()
+
+        # Si justo ahora se activó el envío a gestoría y la reventa ya está
+        # confirmada, generamos el trámite (si no existe).
+        if (not enviar_antes and reventa.enviar_a_gestoria
+                and reventa.estado == "confirmada" and reventa.vehiculo):
+            from gestoria.models import Gestoria
+            if not Gestoria.objects.filter(vehiculo=reventa.vehiculo, estado="vigente").exists():
+                Gestoria.objects.create(
+                    vehiculo=reventa.vehiculo,
+                    cliente=None,
+                    estado="vigente",
+                    observaciones=f"Reventa a {reventa.agencia or 'agencia sin asignar'}",
+                )
+
         messages.success(request, "Reventa actualizada.")
         return redirect("reventa:lista")
 

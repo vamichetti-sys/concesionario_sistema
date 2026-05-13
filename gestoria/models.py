@@ -29,7 +29,9 @@ class Gestoria(models.Model):
 
     cliente = models.ForeignKey(
         Cliente,
-        on_delete=models.PROTECT
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
     )
 
     monto_transferencia = models.DecimalField(

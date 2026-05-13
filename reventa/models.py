@@ -59,6 +59,13 @@ class Reventa(models.Model):
         help_text="Detalle de documentacion entregada con el vehiculo",
     )
 
+    # Si está tildado, al confirmar la reventa se crea automáticamente un
+    # registro en Gestoría para gestionar la transferencia del vehículo.
+    enviar_a_gestoria = models.BooleanField(
+        default=False,
+        verbose_name="Enviar a Gestoría al transferir",
+    )
+
     # Cuenta corriente del revendedor
     cuenta = models.ForeignKey(
         "CuentaRevendedor",
@@ -101,6 +108,21 @@ class Reventa(models.Model):
                     monto=self.precio_reventa,
                     descripcion=f"Reventa – {vehiculo_str}",
                     reventa=self,
+                )
+
+        # Si se marcó "enviar a gestoría", crear el registro de gestoría
+        # para gestionar la transferencia. Se hace sin cliente porque la
+        # contraparte es una agencia (CuentaRevendedor), no un Cliente.
+        if self.enviar_a_gestoria and self.vehiculo:
+            from gestoria.models import Gestoria
+            ya_tiene = Gestoria.objects.filter(vehiculo=self.vehiculo, estado="vigente").exists()
+            if not ya_tiene:
+                obs = f"Reventa a {self.agencia or 'agencia sin asignar'}"
+                Gestoria.objects.create(
+                    vehiculo=self.vehiculo,
+                    cliente=None,
+                    estado="vigente",
+                    observaciones=obs,
                 )
 
     def revertir(self):
