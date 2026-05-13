@@ -793,20 +793,22 @@ def recibo_pago_pdf(request, pago_id):
 @transaction.atomic
 def editar_cuota(request, cuota_id):
     cuota = get_object_or_404(CuotaPlan, id=cuota_id)
+    cuenta = cuota.plan.cuenta
 
-    form = EditarCuotaForm(
-        request.POST or None,
-        instance=cuota
-    )
+    if request.method == "POST":
+        form = EditarCuotaForm(request.POST, instance=cuota)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"Cuota {cuota.numero} actualizada correctamente.")
+            return redirect("cuentas:cuenta_corriente_detalle", cuenta_id=cuenta.id)
+    else:
+        form = EditarCuotaForm(instance=cuota)
 
-    if request.method == "POST" and form.is_valid():
-        form.save()
-        messages.success(request, "Cuota actualizada correctamente.")
-
-    return redirect(
-        "cuentas:cuenta_corriente_detalle",
-        cuenta_id=cuota.plan.cuenta.id
-    )
+    return render(request, "cuentas/editar_cuota.html", {
+        "form": form,
+        "cuota": cuota,
+        "cuenta": cuenta,
+    })
 
 
 # ==========================================================

@@ -24,21 +24,21 @@
         {% csrf_token %}
 
         <div class="row g-4 mb-4">
-            <div class="col-md-4">
+            <div class="col-md-6">
                 <label class="form-label">Cuota Nº</label>
                 <input type="text" class="form-control" value="{{ cuota.numero }}" disabled>
             </div>
-            <div class="col-md-4">
-                <label class="form-label">Monto</label>
-                <input type="text" class="form-control" value="$ {{ cuota.monto }}" disabled>
-            </div>
-            <div class="col-md-4">
+            <div class="col-md-6">
                 <label class="form-label">Estado</label>
                 <input type="text" class="form-control" value="{{ cuota.get_estado_display }}" disabled>
             </div>
         </div>
 
-        <div class="mb-4">
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger small">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <div class="mb-3">
             <label class="form-label">Vencimiento</label>
             {{ form.vencimiento }}
             {% if form.vencimiento.errors %}
@@ -46,12 +46,24 @@
             {% endif %}
         </div>
 
+        <div class="mb-4">
+            <label class="form-label">Monto</label>
+            {{ form.monto }}
+            {% if form.monto.errors %}
+            <div class="text-danger small mt-1">{{ form.monto.errors }}</div>
+            {% endif %}
+            <small class="text-muted">
+                Pagado hasta el momento: $ {{ cuota.total_pagado|floatformat:0 }}.
+                El monto nuevo no puede ser menor a lo ya pagado.
+            </small>
+        </div>
+
         <hr class="my-4">
 
         <div class="d-flex gap-3">
             <button type="submit" class="btn btn-primary">
                 <i data-lucide="save" style="width:16px;height:16px;margin-right:6px;"></i>
-                Guardar fecha
+                Guardar cambios
             </button>
             <a href="{% url 'cuentas:cuenta_corriente_detalle' cuenta.id %}" class="btn btn-secondary">Cancelar</a>
         </div>
