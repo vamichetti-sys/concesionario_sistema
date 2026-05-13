@@ -549,6 +549,7 @@ def crear_plan_pago(request, cuenta_id):
             # Recrear cuotas con fecha y monto individuales del POST
             plan.cuotas.all().delete()
             fecha = plan.fecha_inicio
+            ultimo_numero = 0
 
             for i in range(1, int(plan.cantidad_cuotas) + 1):
                 idx = i - 1
@@ -574,7 +575,18 @@ def crear_plan_pago(request, cuenta_id):
                     monto=monto_cuota,
                     estado="pendiente"
                 )
+                ultimo_numero = i
                 fecha += timedelta(days=30)
+
+            # Cuota extra (opcional): se agrega como una cuota más al final.
+            if plan.cuota_extra and plan.cuota_extra > 0:
+                CuotaPlan.objects.create(
+                    plan=plan,
+                    numero=ultimo_numero + 1,
+                    vencimiento=fecha,
+                    monto=plan.cuota_extra,
+                    estado="pendiente"
+                )
 
             cuenta.recalcular_saldo()
 

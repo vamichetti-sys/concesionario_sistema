@@ -327,6 +327,26 @@ class PlanPago(models.Model):
     fecha_inicio = models.DateField()
     monto_financiado = models.DecimalField(max_digits=14, decimal_places=2, default=0)
 
+    # Monto base sobre el cual se cuotifica. Si está en 0, se usa el cálculo
+    # automático (monto_financiado - anticipo). Si se carga un valor > 0,
+    # se usa ese número directo como base de las cuotas.
+    cuotificacion = models.DecimalField(
+        "Cuotificación (monto a cuotificar)",
+        max_digits=14,
+        decimal_places=2,
+        default=0,
+        help_text="Monto sobre el cual se calculan las cuotas. Si queda en 0 se usa (financiado − anticipo).",
+    )
+
+    # Importe de una cuota adicional al final del plan (opcional).
+    cuota_extra = models.DecimalField(
+        "Cuota extra",
+        max_digits=14,
+        decimal_places=2,
+        default=0,
+        help_text="Si se carga, se agrega una cuota adicional con este importe al final del plan.",
+    )
+
     tipo_plan = models.CharField(
         max_length=20,
         choices=TIPOS_PLAN,
@@ -372,20 +392,28 @@ class PlanPago(models.Model):
     # PROPIEDAD: total con interés de financiación
     # ======================================================
     @property
+    def base_cuotificacion(self):
+        """Monto base sobre el que se cuotifica antes del interés."""
+        if self.cuotificacion and self.cuotificacion > 0:
+            return self.cuotificacion
+        base = (self.monto_financiado or Decimal('0')) - (self.anticipo or Decimal('0'))
+        return base if base > 0 else Decimal('0')
+
+    @property
     def total_con_interes(self):
         """
-        Base sobre la que se cuotifica: (monto_financiado - anticipo)
-        + el interés de financiación aplicado a esa base.
-        El anticipo se descuenta antes de calcular las cuotas — no se
-        prorratea dentro de ellas.
+        Base a cuotificar + interés + cuota extra (si tiene).
+        Determina el "debe" del plan en la cuenta corriente.
         """
-        base = (self.monto_financiado or Decimal('0')) - (self.anticipo or Decimal('0'))
-        if base < 0:
-            base = Decimal('0')
+        base = self.base_cuotificacion
         if self.interes_financiacion and self.interes_financiacion > 0:
             factor = Decimal('1') + (self.interes_financiacion / Decimal('100'))
-            return (base * factor).quantize(Decimal('0.01'))
-        return base.quantize(Decimal('0.01'))
+            total = base * factor
+        else:
+            total = base
+        if self.cuota_extra and self.cuota_extra > 0:
+            total += self.cuota_extra
+        return total.quantize(Decimal('0.01'))
 
     def save(self, *args, **kwargs):
         es_nuevo = self.pk is None

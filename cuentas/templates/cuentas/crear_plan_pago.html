@@ -55,6 +55,34 @@
                 {{ form.anticipo }}
                 <small class="text-muted">Si hay anticipo se genera un recibo automáticamente.</small>
             </div>
+
+            <!-- A CUOTIFICAR (financiado − anticipo) -->
+            <div class="col-12" id="resumen-cuotificacion" style="display:none;">
+                <div class="p-3 rounded d-flex justify-content-between align-items-center"
+                     style="background:#eff6ff;border:1px solid #bfdbfe;">
+                    <div>
+                        <small class="text-muted d-block">Monto a cuotificar (financiado − anticipo)</small>
+                        <span class="fw-bold" style="font-size:18px;color:#1d4ed8;" id="txt-monto-a-cuotificar">—</span>
+                    </div>
+                    <small class="text-muted" style="max-width:60%;">
+                        Podés sobreescribir este valor abajo en <em>Cuotificación</em>.
+                    </small>
+                </div>
+            </div>
+
+            <!-- CUOTIFICACIÓN (override manual) -->
+            <div class="col-md-6">
+                <label class="form-label fw-semibold">Cuotificación</label>
+                {{ form.cuotificacion }}
+                <small class="text-muted">Si lo dejás vacío, se usa (financiado − anticipo).</small>
+            </div>
+
+            <!-- CUOTA EXTRA -->
+            <div class="col-md-6">
+                <label class="form-label fw-semibold">Cuota extra</label>
+                {{ form.cuota_extra }}
+                <small class="text-muted">Suma como una cuota adicional al final del plan.</small>
+            </div>
         </div>
 
         <!-- ===============================
@@ -228,6 +256,9 @@ document.addEventListener('DOMContentLoaded', function () {
     const fechaInicio        = document.getElementById('id_fecha_inicio');
     const anticipoInput      = document.getElementById('id_anticipo');
     const interesFinanc      = document.getElementById('id_interes_financiacion');
+    const cuotificacionInput = document.getElementById('id_cuotificacion');
+    const cuotaExtraInput    = document.getElementById('id_cuota_extra');
+    const resumenCuotif      = document.getElementById('resumen-cuotificacion');
 
     const preview            = document.getElementById('preview-cuotas');
     const lista              = document.getElementById('lista-cuotas');
@@ -254,25 +285,45 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // ==============================
-    // CALCULAR TOTAL CON INTERÉS
-    // (resta el anticipo antes de aplicar el interés y la cuotificación)
+    // CÁLCULO DEL TOTAL A CUOTIFICAR
+    // - Si "Cuotificación" está cargada > 0, se usa ese número como base
+    // - Si no, base = monto_financiado − anticipo
+    // - Se aplica el interés sobre la base
+    // - La "cuota extra" NO entra en la cuotificación, se suma al final
     // ==============================
-    function calcularTotalConInteres() {
+    function calcularBaseCuotif() {
         const montoBruto = parseFloat(montoFinanciado.value) || 0;
         const anticipo   = parseFloat(anticipoInput ? anticipoInput.value : 0) || 0;
-        const monto      = Math.max(montoBruto - anticipo, 0);
-        const interes    = parseFloat(interesFinanc.value) || 0;
+        const override   = parseFloat(cuotificacionInput ? cuotificacionInput.value : 0) || 0;
+        const automatico = Math.max(montoBruto - anticipo, 0);
 
-        if (monto <= 0) {
-            resumenInteres.style.display = 'none';
-            return monto;
+        // Caja "Monto a cuotificar (financiado − anticipo)"
+        if (resumenCuotif) {
+            if (anticipo > 0 && automatico > 0) {
+                document.getElementById('txt-monto-a-cuotificar').textContent = formatPesos(automatico);
+                resumenCuotif.style.display = 'block';
+            } else {
+                resumenCuotif.style.display = 'none';
+            }
         }
 
-        const montoInteres = monto * (interes / 100);
-        const total        = monto + montoInteres;
+        return override > 0 ? override : automatico;
+    }
 
-        if (interes > 0 || anticipo > 0) {
-            document.getElementById('txt-monto-base').textContent    = formatPesos(monto);
+    function calcularTotalConInteres() {
+        const base    = calcularBaseCuotif();
+        const interes = parseFloat(interesFinanc.value) || 0;
+
+        if (base <= 0) {
+            resumenInteres.style.display = 'none';
+            return 0;
+        }
+
+        const montoInteres = base * (interes / 100);
+        const total        = base + montoInteres;
+
+        if (interes > 0) {
+            document.getElementById('txt-monto-base').textContent    = formatPesos(base);
             document.getElementById('txt-interes-monto').textContent = formatPesos(montoInteres);
             document.getElementById('txt-total-interes').textContent = formatPesos(total);
             resumenInteres.style.display = 'block';
@@ -427,7 +478,8 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    [montoFinanciado, interesFinanc].forEach(el => {
+    [montoFinanciado, interesFinanc, cuotificacionInput, cuotaExtraInput].forEach(el => {
+        if (!el) return;
         el.addEventListener('input', () => {
             calcularMontoCuota();
             generarPreviewCuotas();

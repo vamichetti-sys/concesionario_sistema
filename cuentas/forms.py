@@ -21,8 +21,10 @@ class PlanPagoForm(forms.ModelForm):
             'monto_financiado',
             'moneda',
             'anticipo',
+            'cuotificacion',
             'cantidad_cuotas',
             'monto_cuota',
+            'cuota_extra',
             'fecha_inicio',
             'interes_financiacion',
             'interes_mora_mensual',
@@ -44,6 +46,20 @@ class PlanPagoForm(forms.ModelForm):
             ),
             'anticipo': forms.NumberInput(
                 attrs={'class': 'form-control', 'step': '0.01'}
+            ),
+            'cuotificacion': forms.NumberInput(
+                attrs={
+                    'class': 'form-control',
+                    'step': '0.01',
+                    'placeholder': 'Dejar vacío para usar (financiado − anticipo)'
+                }
+            ),
+            'cuota_extra': forms.NumberInput(
+                attrs={
+                    'class': 'form-control',
+                    'step': '0.01',
+                    'placeholder': 'Importe de una cuota adicional al final (opcional)'
+                }
             ),
             'cantidad_cuotas': forms.NumberInput(
                 attrs={'class': 'form-control'}
