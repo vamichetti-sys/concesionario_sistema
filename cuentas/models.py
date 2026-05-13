@@ -373,11 +373,19 @@ class PlanPago(models.Model):
     # ======================================================
     @property
     def total_con_interes(self):
-        """Monto financiado + interés de financiación aplicado."""
+        """
+        Base sobre la que se cuotifica: (monto_financiado - anticipo)
+        + el interés de financiación aplicado a esa base.
+        El anticipo se descuenta antes de calcular las cuotas — no se
+        prorratea dentro de ellas.
+        """
+        base = (self.monto_financiado or Decimal('0')) - (self.anticipo or Decimal('0'))
+        if base < 0:
+            base = Decimal('0')
         if self.interes_financiacion and self.interes_financiacion > 0:
             factor = Decimal('1') + (self.interes_financiacion / Decimal('100'))
-            return (self.monto_financiado * factor).quantize(Decimal('0.01'))
-        return self.monto_financiado
+            return (base * factor).quantize(Decimal('0.01'))
+        return base.quantize(Decimal('0.01'))
 
     def save(self, *args, **kwargs):
         es_nuevo = self.pk is None

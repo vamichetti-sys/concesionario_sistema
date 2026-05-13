@@ -255,10 +255,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // ==============================
     // CALCULAR TOTAL CON INTERÉS
+    // (resta el anticipo antes de aplicar el interés y la cuotificación)
     // ==============================
     function calcularTotalConInteres() {
-        const monto   = parseFloat(montoFinanciado.value) || 0;
-        const interes = parseFloat(interesFinanc.value) || 0;
+        const montoBruto = parseFloat(montoFinanciado.value) || 0;
+        const anticipo   = parseFloat(anticipoInput ? anticipoInput.value : 0) || 0;
+        const monto      = Math.max(montoBruto - anticipo, 0);
+        const interes    = parseFloat(interesFinanc.value) || 0;
 
         if (monto <= 0) {
             resumenInteres.style.display = 'none';
@@ -268,7 +271,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const montoInteres = monto * (interes / 100);
         const total        = monto + montoInteres;
 
-        if (interes > 0) {
+        if (interes > 0 || anticipo > 0) {
             document.getElementById('txt-monto-base').textContent    = formatPesos(monto);
             document.getElementById('txt-interes-monto').textContent = formatPesos(montoInteres);
             document.getElementById('txt-total-interes').textContent = formatPesos(total);
@@ -417,7 +420,11 @@ document.addEventListener('DOMContentLoaded', function () {
     tipoPlan.addEventListener('change', toggleCuotas);
 
     if (anticipoInput) {
-        anticipoInput.addEventListener('input', toggleAnticipoPago);
+        anticipoInput.addEventListener('input', () => {
+            toggleAnticipoPago();
+            calcularMontoCuota();
+            generarPreviewCuotas();
+        });
     }
 
     [montoFinanciado, interesFinanc].forEach(el => {
