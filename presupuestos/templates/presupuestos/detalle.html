@@ -41,8 +41,11 @@
                     <i data-lucide="car" style="width:28px;height:28px;color:#3b82f6;"></i>
                 </div>
                 <div>
-                    <div class="fw-bold fs-5">{{ p.vehiculo.marca }} {{ p.vehiculo.modelo }}</div>
-                    <div class="text-muted">{{ p.vehiculo.anio }} · {{ p.vehiculo.dominio }}</div>
+                    <div class="fw-bold fs-5">
+                        {{ p.vehiculo_display }}
+                        {% if p.es_0km %}<span class="badge bg-info ms-2" style="font-size:11px;">0KM</span>{% endif %}
+                    </div>
+                    <div class="text-muted">{{ p.vehiculo_subdetalle }}</div>
                 </div>
             </div>
         </div>

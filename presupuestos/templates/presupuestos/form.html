@@ -53,10 +53,41 @@
                     Vehículo y Precios
                 </h5>
                 <div class="row g-3">
-                    <div class="col-md-12">
-                        <label class="form-label">Vehículo *</label>
+                    <div class="col-12">
+                        <div class="form-check">
+                            {{ form.es_0km }}
+                            <label class="form-check-label fw-semibold" for="id_es_0km">
+                                Es 0km (no está en stock)
+                            </label>
+                            <div class="form-text small">
+                                Tildá esta opción si el presupuesto es por un 0km que todavía
+                                no figura en el listado de vehículos.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-12" id="bloque-vehiculo-stock">
+                        <label class="form-label">Vehículo del stock</label>
                         {{ form.vehiculo }}
                     </div>
+
+                    <div id="bloque-vehiculo-0km" style="display:none;" class="col-12">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Marca y modelo *</label>
+                                {{ form.vehiculo_descripcion }}
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Año</label>
+                                {{ form.vehiculo_anio }}
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Color</label>
+                                {{ form.vehiculo_color }}
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="col-md-4">
                         <label class="form-label">Precio de lista *</label>
                         {{ form.precio_lista }}
@@ -200,6 +231,26 @@
 
 <script>
     if (typeof lucide !== 'undefined') lucide.createIcons();
+
+    // Toggle 0km vs vehículo del stock
+    (function() {
+        const es0kmInput   = document.getElementById('id_es_0km');
+        const bloqueStock  = document.getElementById('bloque-vehiculo-stock');
+        const bloque0km    = document.getElementById('bloque-vehiculo-0km');
+        const selectVeh    = document.getElementById('id_vehiculo');
+        if (!es0kmInput || !bloqueStock || !bloque0km) return;
+
+        function actualizar() {
+            const es0km = es0kmInput.checked;
+            bloqueStock.style.display = es0km ? 'none' : '';
+            bloque0km.style.display = es0km ? '' : 'none';
+            if (es0km && selectVeh) {
+                selectVeh.value = '';
+            }
+        }
+        es0kmInput.addEventListener('change', actualizar);
+        actualizar();
+    })();
 </script>
 
 {% endblock %}

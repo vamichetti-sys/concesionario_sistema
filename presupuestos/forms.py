@@ -9,7 +9,9 @@ class PresupuestoForm(forms.ModelForm):
         model = Presupuesto
         fields = [
             'nombre_cliente', 'telefono_cliente', 'email_cliente', 'cliente',
-            'vehiculo', 'precio_lista', 'descuento_porcentaje', 'precio_final', 'moneda',
+            'es_0km', 'vehiculo',
+            'vehiculo_descripcion', 'vehiculo_anio', 'vehiculo_color',
+            'precio_lista', 'descuento_porcentaje', 'precio_final', 'moneda',
             'forma_pago', 'anticipo', 'cantidad_cuotas', 'monto_cuota', 'interes_descripcion',
             'toma_usado', 'usado_descripcion', 'usado_valor',
             'gastos_transferencia', 'otros_gastos', 'gastos_descripcion',
@@ -20,7 +22,14 @@ class PresupuestoForm(forms.ModelForm):
             'telefono_cliente': forms.TextInput(attrs={'class': 'form-control'}),
             'email_cliente': forms.EmailInput(attrs={'class': 'form-control'}),
             'cliente': forms.Select(attrs={'class': 'form-select'}),
+            'es_0km': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'vehiculo': forms.Select(attrs={'class': 'form-select'}),
+            'vehiculo_descripcion': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ej: Volkswagen Polo Track 1.6'
+            }),
+            'vehiculo_anio': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '2026'}),
+            'vehiculo_color': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Color'}),
             'precio_lista': forms.NumberInput(attrs={'class': 'form-control'}),
             'descuento_porcentaje': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'precio_final': forms.NumberInput(attrs={'class': 'form-control'}),
@@ -44,5 +53,25 @@ class PresupuestoForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['vehiculo'].queryset = Vehiculo.objects.filter(estado='stock')
+        self.fields['vehiculo'].required = False
+        self.fields['vehiculo'].empty_label = "— Seleccionar del stock —"
         self.fields['cliente'].queryset = Cliente.objects.all()
         self.fields['cliente'].required = False
+
+    def clean(self):
+        cleaned = super().clean()
+        vehiculo = cleaned.get('vehiculo')
+        es_0km = cleaned.get('es_0km')
+        descripcion = (cleaned.get('vehiculo_descripcion') or '').strip()
+
+        if not vehiculo and not es_0km and not descripcion:
+            raise forms.ValidationError(
+                "Tenés que elegir un vehículo del stock o marcar 'Es 0km' "
+                "con descripción del modelo."
+            )
+        if es_0km and not descripcion:
+            self.add_error(
+                'vehiculo_descripcion',
+                "Cargá la marca y modelo del 0km."
+            )
+        return cleaned

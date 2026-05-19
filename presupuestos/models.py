@@ -16,10 +16,27 @@ class Presupuesto(models.Model):
         related_name='presupuestos'
     )
 
-    # Vehículo
+    # Vehículo del stock (opcional: si el presupuesto es por un 0km
+    # u otro auto que todavía no está en stock, se completan los
+    # campos manuales de abajo).
     vehiculo = models.ForeignKey(
-        Vehiculo, on_delete=models.CASCADE, related_name='presupuestos'
+        Vehiculo,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='presupuestos',
     )
+
+    # Datos manuales del vehículo (para 0km o autos fuera de stock)
+    es_0km = models.BooleanField('Es 0km', default=False)
+    vehiculo_descripcion = models.CharField(
+        'Descripción del vehículo',
+        max_length=255,
+        blank=True,
+        help_text='Marca / Modelo / Versión cuando el vehículo no está en stock.',
+    )
+    vehiculo_anio = models.CharField('Año', max_length=10, blank=True)
+    vehiculo_color = models.CharField('Color', max_length=80, blank=True)
 
     # Precios
     precio_lista = models.DecimalField('Precio de lista', max_digits=12, decimal_places=2)
@@ -84,6 +101,32 @@ class Presupuesto(models.Model):
 
     def __str__(self):
         return f"Presupuesto #{self.numero} — {self.nombre_cliente}"
+
+    @property
+    def vehiculo_display(self):
+        """Texto descriptivo del vehículo, tanto si es del stock como si es 0km."""
+        if self.vehiculo:
+            return f"{self.vehiculo.marca} {self.vehiculo.modelo}".strip()
+        return self.vehiculo_descripcion or "Vehículo sin especificar"
+
+    @property
+    def vehiculo_subdetalle(self):
+        """Línea secundaria: año + dominio para stock, año + color para 0km."""
+        if self.vehiculo:
+            partes = []
+            if self.vehiculo.anio:
+                partes.append(str(self.vehiculo.anio))
+            if self.vehiculo.dominio:
+                partes.append(self.vehiculo.dominio)
+            return " · ".join(partes)
+        partes = []
+        if self.vehiculo_anio:
+            partes.append(self.vehiculo_anio)
+        if self.vehiculo_color:
+            partes.append(self.vehiculo_color)
+        if self.es_0km:
+            partes.append("0 km")
+        return " · ".join(partes)
 
     @property
     def total_a_pagar(self):

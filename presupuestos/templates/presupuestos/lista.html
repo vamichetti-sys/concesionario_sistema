@@ -97,8 +97,11 @@
                         {% endif %}
                     </td>
                     <td>
-                        <div class="fw-semibold">{{ p.vehiculo.marca }} {{ p.vehiculo.modelo }}</div>
-                        <small class="text-muted">{{ p.vehiculo.anio }} · {{ p.vehiculo.dominio }}</small>
+                        <div class="fw-semibold">{{ p.vehiculo_display }}</div>
+                        <small class="text-muted">
+                            {{ p.vehiculo_subdetalle }}
+                            {% if p.es_0km %}<span class="badge bg-info ms-1" style="font-size:10px;">0KM</span>{% endif %}
+                        </small>
                     </td>
                     <td class="text-end">
                         <span class="fw-bold">${{ p.precio_final|floatformat:0 }}</span>
