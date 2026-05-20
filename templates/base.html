@@ -675,6 +675,12 @@
                 <i data-lucide="shield-check"></i>
                 <span>Auditoría</span>
             </a>
+            {% if user.username == USUARIO_PRINCIPAL %}
+            <a href="{% url 'proyectos:dashboard' %}" class="nav-link {% if '/proyectos/' in request.path %}active{% endif %}">
+                <i data-lucide="kanban-square"></i>
+                <span>Proyectos</span>
+            </a>
+            {% endif %}
         </div>
     </div>
     {% endif %}

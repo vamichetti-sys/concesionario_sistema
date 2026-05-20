@@ -1,0 +1,174 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Tareas{% endblock %}
+
+{% block content %}
+<style>
+    .chip {
+        display: inline-flex;
+        align-items: center;
+        padding: 6px 12px;
+        border-radius: 20px;
+        background: #f3f4f6;
+        font-size: 12px;
+        color: #374151;
+        text-decoration: none;
+        margin: 2px 4px 2px 0;
+        border: 1px solid transparent;
+        transition: all .15s ease;
+    }
+    .chip:hover { background: #e5e7eb; color: #1a1a2e; }
+    .chip.active {
+        background: rgba(232,130,10,0.12);
+        color: #e8820a;
+        border-color: rgba(232,130,10,0.4);
+        font-weight: 600;
+    }
+    .badge-prioridad-alta { background: rgba(239,68,68,.12); color: #dc2626; }
+    .badge-prioridad-media { background: rgba(245,158,11,.12); color: #d97706; }
+    .badge-prioridad-baja { background: rgba(16,185,129,.12); color: #059669; }
+    .badge-estado-pend { background: rgba(107,114,128,.12); color: #4b5563; }
+    .badge-estado-curso { background: rgba(59,130,246,.12); color: #2563eb; }
+    .badge-estado-hecha { background: rgba(16,185,129,.12); color: #059669; }
+    .badge-estado-bloq { background: rgba(239,68,68,.12); color: #dc2626; }
+    .tarea-row-vencida td { background: rgba(239,68,68,.05); }
+    .dot-proy { width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:8px; vertical-align:middle; }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 style="margin:0;">Tareas</h2>
+    <a href="{% url 'proyectos:tarea_crear' %}" class="btn btn-primary">
+        <i data-lucide="plus" style="width:16px; height:16px;"></i> Nueva tarea
+    </a>
+</div>
+
+<!-- FILTROS -->
+<div class="card p-3 mb-3">
+    <form method="get" class="row g-3 align-items-end">
+        <div class="col-md-4">
+            <label class="form-label">Buscar</label>
+            <input type="text" name="q" value="{{ filtros.q }}" class="form-control" placeholder="Texto en título o descripción">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Proyecto</label>
+            <select name="proyecto" class="form-select">
+                <option value="">— Todos —</option>
+                {% for p in proyectos %}
+                    <option value="{{ p.pk }}" {% if filtros.proyecto == p.pk|stringformat:"s" %}selected{% endif %}>{{ p.nombre }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3 d-flex gap-2">
+            <button type="submit" class="btn btn-primary">Filtrar</button>
+            <a href="{% url 'proyectos:tarea_lista' %}" class="btn btn-secondary">Limpiar</a>
+        </div>
+    </form>
+
+    <hr>
+
+    <!-- Chips de estado -->
+    <div class="mb-2">
+        <small class="text-muted d-block mb-1">Estado:</small>
+        <a class="chip {% if not filtros.estado %}active{% endif %}"
+           href="?q={{ filtros.q }}&proyecto={{ filtros.proyecto }}&prioridad={{ filtros.prioridad }}">Todos</a>
+        {% for key, label in estados %}
+        <a class="chip {% if filtros.estado == key %}active{% endif %}"
+           href="?q={{ filtros.q }}&proyecto={{ filtros.proyecto }}&prioridad={{ filtros.prioridad }}&estado={{ key }}">{{ label }}</a>
+        {% endfor %}
+    </div>
+
+    <!-- Chips de prioridad -->
+    <div>
+        <small class="text-muted d-block mb-1">Prioridad:</small>
+        <a class="chip {% if not filtros.prioridad %}active{% endif %}"
+           href="?q={{ filtros.q }}&proyecto={{ filtros.proyecto }}&estado={{ filtros.estado }}">Todas</a>
+        {% for key, label in prioridades %}
+        <a class="chip {% if filtros.prioridad == key %}active{% endif %}"
+           href="?q={{ filtros.q }}&proyecto={{ filtros.proyecto }}&estado={{ filtros.estado }}&prioridad={{ key }}">{{ label }}</a>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- TABLA -->
+<div class="card p-3">
+    {% if tareas %}
+    <table class="table table-striped mb-0">
+        <thead>
+            <tr>
+                <th>Título</th>
+                <th>Proyecto</th>
+                <th>Estado</th>
+                <th>Prioridad</th>
+                <th>Deadline</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for t in tareas %}
+            <tr class="{% if t.esta_vencida %}tarea-row-vencida{% endif %}">
+                <td>
+                    <strong>{{ t.titulo }}</strong>
+                    {% if t.descripcion %}
+                        <div class="text-muted" style="font-size:12px;">{{ t.descripcion|truncatechars:60 }}</div>
+                    {% endif %}
+                </td>
+                <td>
+                    <span class="dot-proy" style="background: {{ t.proyecto.color }};"></span>
+                    {{ t.proyecto.nombre }}
+                </td>
+                <td>
+                    <span class="badge badge-estado-{{ t.estado }}">{{ t.get_estado_display }}</span>
+                </td>
+                <td>
+                    <span class="badge badge-prioridad-{{ t.prioridad }}">{{ t.get_prioridad_display }}</span>
+                </td>
+                <td>
+                    {% if t.deadline %}
+                        {% if t.esta_vencida %}
+                            <span class="text-danger">⚠ {{ t.deadline|date:"d/m H:i" }}</span>
+                        {% else %}
+                            {{ t.deadline|date:"d/m H:i" }}
+                        {% endif %}
+                    {% else %}
+                        <span class="text-muted">—</span>
+                    {% endif %}
+                </td>
+                <td class="text-end">
+                    <select class="form-select form-select-sm cambiar-estado"
+                            data-url="{% url 'proyectos:tarea_cambiar_estado' t.pk %}"
+                            style="width: 120px; display:inline-block;">
+                        {% for key, label in estados %}
+                            <option value="{{ key }}" {% if t.estado == key %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                    <a href="{% url 'proyectos:tarea_editar' t.pk %}" class="btn btn-sm btn-outline-secondary">Editar</a>
+                    <form method="post" action="{% url 'proyectos:tarea_eliminar' t.pk %}" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-danger">Eliminar</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+        <p class="text-muted mb-0">No hay tareas con esos filtros.</p>
+    {% endif %}
+</div>
+
+<script>
+    document.querySelectorAll('.cambiar-estado').forEach(function(sel){
+        sel.addEventListener('change', function(){
+            const url = this.dataset.url;
+            const estado = this.value;
+            const csrf = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            fetch(url, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrf, 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'estado=' + encodeURIComponent(estado)
+            }).then(r => r.json()).then(() => location.reload());
+        });
+    });
+</script>
+{% endblock %}

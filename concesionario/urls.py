@@ -124,6 +124,11 @@ urlpatterns = [
     # BOT WHATSAPP (TWILIO)
     # ===============================
     path('whatsapp/', include('whatsapp_bot.urls')),
+
+    # ===============================
+    # 📌 PROYECTOS (módulo personal)
+    # ===============================
+    path('proyectos/', include('proyectos.urls', namespace='proyectos')),
 ]
 
 # ==========================================================

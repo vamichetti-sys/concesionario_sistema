@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+
+{% block title %}Mis Proyectos{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 style="margin:0;">Mis Proyectos</h2>
+    <a href="{% url 'proyectos:proyecto_crear' %}" class="btn btn-primary">
+        <i data-lucide="plus" style="width:16px; height:16px;"></i>
+        Nuevo proyecto
+    </a>
+</div>
+
+<div class="card p-3">
+    {% if proyectos %}
+    <table class="table mb-0">
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Tareas</th>
+                <th>Progreso</th>
+                <th>Estado</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in proyectos %}
+            <tr>
+                <td>
+                    <div class="d-flex align-items-center gap-2">
+                        <span style="width:14px; height:14px; border-radius:4px; background: {{ p.color }};"></span>
+                        <a href="{% url 'proyectos:proyecto_detail' p.pk %}" style="text-decoration:none; color:#1a1a2e;">
+                            <strong>{{ p.nombre }}</strong>
+                        </a>
+                    </div>
+                </td>
+                <td>{{ p.total_tareas }}</td>
+                <td style="width: 200px;">
+                    <div style="height:8px; background:#f3f4f6; border-radius:6px; overflow:hidden;">
+                        <div style="height:100%; width:{{ p.progreso }}%; background:{{ p.color }};"></div>
+                    </div>
+                    <small class="text-muted">{{ p.progreso }}%</small>
+                </td>
+                <td>
+                    {% if p.activo %}
+                        <span class="badge bg-success">Activo</span>
+                    {% else %}
+                        <span class="badge bg-secondary">Archivado</span>
+                    {% endif %}
+                </td>
+                <td class="text-end">
+                    <a href="{% url 'proyectos:proyecto_editar' p.pk %}" class="btn btn-sm btn-outline-secondary">Editar</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+        <p class="text-muted mb-0">Todavía no creaste proyectos.</p>
+    {% endif %}
+</div>
+{% endblock %}

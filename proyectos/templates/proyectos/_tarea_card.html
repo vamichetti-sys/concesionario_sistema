@@ -1,0 +1,20 @@
+{% load humanize %}
+<div class="tarea-card {% if t.esta_vencida %}vencida{% endif %}">
+    <div class="d-flex justify-content-between align-items-start">
+        <div class="titulo">{{ t.titulo }}</div>
+        <span class="badge badge-prioridad-{{ t.prioridad }}">{{ t.get_prioridad_display }}</span>
+    </div>
+    {% if t.deadline %}
+        <div class="meta">
+            {% if t.esta_vencida %}
+                ⚠ Venció {{ t.deadline|naturaltime }}
+            {% else %}
+                {{ t.deadline|date:"d/m H:i" }}
+            {% endif %}
+        </div>
+    {% endif %}
+    <div class="d-flex justify-content-end gap-1 mt-2">
+        <a href="{% url 'proyectos:tarea_editar' t.pk %}" class="btn btn-sm btn-outline-secondary"
+           style="padding: 2px 8px; font-size: 11px;">Editar</a>
+    </div>
+</div>

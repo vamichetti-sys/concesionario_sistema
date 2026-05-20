@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% block title %}Calendario - Proyectos{% endblock %}
+
+{% block content %}
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet">
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 style="margin:0;">Calendario</h2>
+    <div class="d-flex gap-2">
+        <a href="{% url 'proyectos:tarea_crear' %}" class="btn btn-primary">
+            <i data-lucide="plus" style="width:16px; height:16px;"></i> Nueva tarea
+        </a>
+        <a href="{% url 'proyectos:dashboard' %}" class="btn btn-secondary">Volver al panel</a>
+    </div>
+</div>
+
+<div class="card p-3">
+    <div id="calendario-proyectos"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/locales/es.global.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const el = document.getElementById('calendario-proyectos');
+        const calendar = new FullCalendar.Calendar(el, {
+            locale: 'es',
+            initialView: 'dayGridMonth',
+            firstDay: 1,
+            height: 'auto',
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek,listWeek'
+            },
+            buttonText: {
+                today: 'Hoy',
+                month: 'Mes',
+                week: 'Semana',
+                list: 'Lista'
+            },
+            events: "{% url 'proyectos:calendario_eventos_json' %}",
+            eventDidMount: function(info) {
+                // Tooltip simple con info adicional
+                const props = info.event.extendedProps || {};
+                let tt = info.event.title;
+                if (props.proyecto) tt += ' · ' + props.proyecto;
+                if (props.prioridad) tt += ' · ' + props.prioridad;
+                info.el.setAttribute('title', tt);
+            },
+            eventClick: function(info) {
+                // Si es una tarea, abrir el editor
+                const id = info.event.id || '';
+                if (id.startsWith('tarea-')) {
+                    const pk = id.replace('tarea-', '');
+                    window.location = '/proyectos/tareas/' + pk + '/editar/';
+                }
+            }
+        });
+        calendar.render();
+    });
+</script>
+{% endblock %}

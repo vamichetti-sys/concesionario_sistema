@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 style="margin:0;">{{ page_title }}</h2>
+    <a href="{% url 'proyectos:proyecto_lista' %}" class="btn btn-secondary">Volver</a>
+</div>
+
+<div class="card p-4" style="max-width: 700px;">
+    <form method="post">
+        {% csrf_token %}
+
+        <div class="mb-3">
+            <label class="form-label">Nombre *</label>
+            {{ form.nombre }}
+            {% if form.nombre.errors %}
+                <div class="text-danger" style="font-size:12px;">{{ form.nombre.errors }}</div>
+            {% endif %}
+        </div>
+
+        <div class="mb-3 d-flex align-items-center gap-3">
+            <div>
+                <label class="form-label">Color</label>
+                {{ form.color }}
+            </div>
+            <small class="text-muted">Se usa como acento en cards, gráficos y calendario.</small>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Descripción</label>
+            {{ form.descripcion }}
+        </div>
+
+        <div class="form-check mb-3">
+            {{ form.activo }}
+            <label class="form-check-label" for="{{ form.activo.id_for_label }}">
+                Proyecto activo
+            </label>
+        </div>
+
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">Guardar</button>
+            {% if modo == 'editar' and proyecto %}
+                <a href="{% url 'proyectos:proyecto_detail' proyecto.pk %}" class="btn btn-secondary">Cancelar</a>
+                <form method="post" action="{% url 'proyectos:proyecto_eliminar' proyecto.pk %}" class="d-inline" style="margin-left:auto;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Eliminar</button>
+                </form>
+            {% else %}
+                <a href="{% url 'proyectos:proyecto_lista' %}" class="btn btn-secondary">Cancelar</a>
+            {% endif %}
+        </div>
+    </form>
+</div>
+{% endblock %}

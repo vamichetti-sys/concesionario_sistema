@@ -88,7 +88,15 @@ INSTALLED_APPS = [
     "crm.apps.CrmConfig",
     "gastos_mensuales",
     "whatsapp_bot",
+    "proyectos",
 ]
+
+# ==========================================================
+# USUARIO PRINCIPAL (módulo "Proyectos")
+# Solo este username puede ver/usar el módulo personal de proyectos.
+# Se puede sobreescribir por env var en Render.
+# ==========================================================
+USUARIO_PRINCIPAL = os.getenv("USUARIO_PRINCIPAL", "Vamichetti")
 
 # ==========================================================
 # MIDDLEWARE
@@ -213,6 +221,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "proyectos.context_processors.usuario_principal",
             ],
         },
     },

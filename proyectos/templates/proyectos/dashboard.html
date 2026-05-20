@@ -1,0 +1,273 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Proyectos - Dashboard{% endblock %}
+
+{% block content %}
+<style>
+    .accent-color { color: #e8820a; }
+    .metric-card {
+        padding: 18px;
+        border-radius: 14px;
+        background: #fff;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    .metric-card .metric-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 10px;
+        display: flex; align-items: center; justify-content: center;
+        background: rgba(232, 130, 10, 0.10);
+        color: #e8820a;
+    }
+    .metric-card h3 {
+        font-size: 24px;
+        font-weight: 700;
+        margin: 0;
+        color: #1a1a2e;
+    }
+    .metric-card span {
+        font-size: 12px;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .proyecto-card {
+        background: #fff;
+        border-radius: 14px;
+        padding: 18px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+        border-left: 4px solid #e8820a;
+        transition: transform .15s ease;
+    }
+    .proyecto-card:hover { transform: translateY(-2px); }
+    .progreso-bar {
+        height: 8px;
+        border-radius: 6px;
+        background: #f3f4f6;
+        overflow: hidden;
+    }
+    .progreso-bar > div {
+        height: 100%;
+        border-radius: 6px;
+    }
+    .tarea-row {
+        display: flex; align-items: center; gap: 10px;
+        padding: 10px 12px;
+        border-radius: 10px;
+        background: #f9fafb;
+        margin-bottom: 8px;
+    }
+    .tarea-row.vencida { background: rgba(239, 68, 68, 0.08); border-left: 3px solid #ef4444; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; flex: 0 0 auto; }
+    .side-panel {
+        background: #fff;
+        border-radius: 14px;
+        padding: 18px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+    }
+    .side-panel h5 { font-size: 15px; margin-bottom: 12px; }
+    .recordatorio-item {
+        padding: 10px 12px;
+        border-radius: 10px;
+        background: rgba(232,130,10,0.06);
+        margin-bottom: 8px;
+        font-size: 13px;
+    }
+    .badge-prioridad-alta { background: rgba(239,68,68,.12); color: #dc2626; }
+    .badge-prioridad-media { background: rgba(245,158,11,.12); color: #d97706; }
+    .badge-prioridad-baja { background: rgba(16,185,129,.12); color: #059669; }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 style="margin:0;">Mis Proyectos</h2>
+        <small class="text-muted">Panel personal de gestión</small>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'proyectos:tarea_crear' %}" class="btn btn-primary">
+            <i data-lucide="plus" style="width:16px; height:16px;"></i>
+            Nueva tarea
+        </a>
+        <a href="{% url 'proyectos:proyecto_crear' %}" class="btn btn-secondary">
+            Nuevo proyecto
+        </a>
+        <a href="{% url 'proyectos:calendario' %}" class="btn btn-secondary">
+            <i data-lucide="calendar" style="width:16px; height:16px;"></i>
+            Calendario
+        </a>
+    </div>
+</div>
+
+<!-- MÉTRICAS -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="metric-card">
+            <div>
+                <h3>{{ metricas.total_proyectos }}</h3>
+                <span>Proyectos activos</span>
+            </div>
+            <div class="metric-icon"><i data-lucide="folder"></i></div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="metric-card">
+            <div>
+                <h3>{{ metricas.total_tareas_pend }}</h3>
+                <span>Tareas pendientes</span>
+            </div>
+            <div class="metric-icon"><i data-lucide="list-checks"></i></div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="metric-card">
+            <div>
+                <h3 class="text-danger">{{ metricas.total_vencidas }}</h3>
+                <span>Vencidas</span>
+            </div>
+            <div class="metric-icon" style="background:rgba(239,68,68,.1); color:#dc2626;">
+                <i data-lucide="alert-triangle"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="metric-card">
+            <div>
+                <h3>{{ metricas.total_recordatorios }}</h3>
+                <span>Recordatorios 48h</span>
+            </div>
+            <div class="metric-icon"><i data-lucide="bell"></i></div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <!-- COL IZQ: PROYECTOS + LISTAS -->
+    <div class="col-lg-8">
+        <!-- Proyectos activos -->
+        <div class="mb-4">
+            <h5 class="mb-3">Proyectos activos</h5>
+            {% if proyectos_activos %}
+            <div class="row g-3">
+                {% for p in proyectos_activos %}
+                <div class="col-md-6">
+                    <div class="proyecto-card" style="border-left-color: {{ p.color }};">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <a href="{% url 'proyectos:proyecto_detail' p.pk %}" class="text-decoration-none">
+                                <h6 style="margin:0; color:#1a1a2e;">{{ p.nombre }}</h6>
+                            </a>
+                            <span class="badge bg-secondary">{{ p.total_tareas }} tareas</span>
+                        </div>
+                        {% if p.descripcion %}
+                            <p class="text-muted" style="font-size:12px; margin-bottom:10px;">
+                                {{ p.descripcion|truncatechars:90 }}
+                            </p>
+                        {% endif %}
+                        <div class="d-flex align-items-center justify-content-between mb-1">
+                            <small class="text-muted">Progreso</small>
+                            <small class="fw-bold">{{ p.progreso }}%</small>
+                        </div>
+                        <div class="progreso-bar">
+                            <div style="width: {{ p.progreso }}%; background: {{ p.color }};"></div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="alert alert-warning">
+                Todavía no creaste proyectos.
+                <a href="{% url 'proyectos:proyecto_crear' %}">Crear el primero</a>.
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Vencidas -->
+        {% if tareas_vencidas %}
+        <div class="mb-4">
+            <h5 class="mb-3 text-danger">⚠ Vencidas ({{ tareas_vencidas.count }})</h5>
+            {% for t in tareas_vencidas %}
+            <div class="tarea-row vencida">
+                <div class="dot" style="background: {{ t.proyecto.color }};"></div>
+                <div class="flex-grow-1">
+                    <strong>{{ t.titulo }}</strong>
+                    <small class="text-muted d-block">
+                        {{ t.proyecto.nombre }} · vencía {{ t.deadline|naturaltime }}
+                    </small>
+                </div>
+                <a href="{% url 'proyectos:tarea_editar' t.pk %}" class="btn btn-sm btn-outline-secondary">Editar</a>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Hoy -->
+        <div class="mb-4">
+            <h5 class="mb-3">Hoy</h5>
+            {% if tareas_hoy %}
+                {% for t in tareas_hoy %}
+                <div class="tarea-row">
+                    <div class="dot" style="background: {{ t.proyecto.color }};"></div>
+                    <div class="flex-grow-1">
+                        <strong>{{ t.titulo }}</strong>
+                        <small class="text-muted d-block">
+                            {{ t.proyecto.nombre }} · {{ t.deadline|time:"H:i" }}
+                        </small>
+                    </div>
+                    <span class="badge badge-prioridad-{{ t.prioridad }}">{{ t.get_prioridad_display }}</span>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p class="text-muted">Sin tareas con deadline hoy.</p>
+            {% endif %}
+        </div>
+
+        <!-- Esta semana -->
+        <div class="mb-4">
+            <h5 class="mb-3">Esta semana</h5>
+            {% if tareas_semana %}
+                {% for t in tareas_semana %}
+                <div class="tarea-row">
+                    <div class="dot" style="background: {{ t.proyecto.color }};"></div>
+                    <div class="flex-grow-1">
+                        <strong>{{ t.titulo }}</strong>
+                        <small class="text-muted d-block">
+                            {{ t.proyecto.nombre }} · {{ t.deadline|date:"D d/m H:i" }}
+                        </small>
+                    </div>
+                    <span class="badge badge-prioridad-{{ t.prioridad }}">{{ t.get_prioridad_display }}</span>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p class="text-muted">Sin tareas próximas en los próximos 7 días.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- COL DER: RECORDATORIOS PRÓXIMOS -->
+    <div class="col-lg-4">
+        <div class="side-panel">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h5>Recordatorios (48hs)</h5>
+                <a href="{% url 'proyectos:recordatorio_lista' %}" class="text-decoration-none" style="font-size:12px;">Ver todos</a>
+            </div>
+            {% if recordatorios_proximos %}
+                {% for r in recordatorios_proximos %}
+                <div class="recordatorio-item">
+                    <strong>{{ r.titulo }}</strong>
+                    <div class="text-muted" style="font-size:11px;">
+                        {{ r.fecha_hora|date:"d/m H:i" }}
+                        {% if r.tarea %} · {{ r.tarea.titulo }}{% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p class="text-muted" style="font-size:13px;">Nada en las próximas 48 horas.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

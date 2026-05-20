@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}{{ proyecto.nombre }}{% endblock %}
+
+{% block content %}
+<style>
+    .proyecto-header {
+        background: #fff;
+        border-radius: 14px;
+        padding: 22px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+        border-left: 6px solid {{ proyecto.color }};
+        margin-bottom: 20px;
+    }
+    .col-kanban {
+        background: #f9fafb;
+        border-radius: 12px;
+        padding: 14px;
+        min-height: 200px;
+    }
+    .col-kanban h6 {
+        margin-bottom: 12px;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #6b7280;
+    }
+    .tarea-card {
+        background: #fff;
+        padding: 12px;
+        border-radius: 10px;
+        margin-bottom: 10px;
+        box-shadow: 0 1px 4px rgba(0,0,0,.04);
+        border-left: 3px solid {{ proyecto.color }};
+    }
+    .tarea-card.vencida { border-left-color: #ef4444; background: rgba(239,68,68,.05); }
+    .tarea-card .titulo { font-weight: 600; font-size: 14px; color: #1a1a2e; }
+    .tarea-card .meta { font-size: 11px; color: #6b7280; margin-top: 4px; }
+    .badge-prioridad-alta { background: rgba(239,68,68,.12); color: #dc2626; }
+    .badge-prioridad-media { background: rgba(245,158,11,.12); color: #d97706; }
+    .badge-prioridad-baja { background: rgba(16,185,129,.12); color: #059669; }
+</style>
+
+<div class="proyecto-header">
+    <div class="d-flex justify-content-between align-items-start">
+        <div>
+            <div class="d-flex align-items-center gap-3 mb-2">
+                <span style="width:24px; height:24px; border-radius:6px; background:{{ proyecto.color }};"></span>
+                <h2 style="margin:0;">{{ proyecto.nombre }}</h2>
+                {% if not proyecto.activo %}
+                    <span class="badge bg-secondary">Archivado</span>
+                {% endif %}
+            </div>
+            {% if proyecto.descripcion %}
+                <p class="text-muted" style="margin-bottom: 8px;">{{ proyecto.descripcion }}</p>
+            {% endif %}
+            <small class="text-muted">Creado {{ proyecto.created_at|naturaltime }}</small>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'proyectos:tarea_crear' %}?proyecto={{ proyecto.pk }}" class="btn btn-primary">
+                <i data-lucide="plus" style="width:16px; height:16px;"></i> Nueva tarea
+            </a>
+            <a href="{% url 'proyectos:proyecto_editar' proyecto.pk %}" class="btn btn-secondary">Editar</a>
+        </div>
+    </div>
+    <div class="mt-3">
+        <div class="d-flex justify-content-between align-items-center">
+            <small class="text-muted">Progreso · {{ proyecto.tareas_hechas }}/{{ proyecto.total_tareas }}</small>
+            <strong>{{ proyecto.progreso }}%</strong>
+        </div>
+        <div style="height:8px; background:#f3f4f6; border-radius:6px; overflow:hidden; margin-top:6px;">
+            <div style="height:100%; width:{{ proyecto.progreso }}%; background:{{ proyecto.color }};"></div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-3">
+        <div class="col-kanban">
+            <h6>Pendientes ({{ tareas_por_estado.pend.count }})</h6>
+            {% for t in tareas_por_estado.pend %}
+                {% include 'proyectos/_tarea_card.html' with t=t %}
+            {% empty %}
+                <small class="text-muted">Sin tareas.</small>
+            {% endfor %}
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="col-kanban">
+            <h6>En curso ({{ tareas_por_estado.curso.count }})</h6>
+            {% for t in tareas_por_estado.curso %}
+                {% include 'proyectos/_tarea_card.html' with t=t %}
+            {% empty %}
+                <small class="text-muted">Sin tareas.</small>
+            {% endfor %}
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="col-kanban">
+            <h6>Bloqueadas ({{ tareas_por_estado.bloq.count }})</h6>
+            {% for t in tareas_por_estado.bloq %}
+                {% include 'proyectos/_tarea_card.html' with t=t %}
+            {% empty %}
+                <small class="text-muted">Sin tareas.</small>
+            {% endfor %}
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="col-kanban">
+            <h6>Hechas ({{ tareas_por_estado.hecha.count }})</h6>
+            {% for t in tareas_por_estado.hecha %}
+                {% include 'proyectos/_tarea_card.html' with t=t %}
+            {% empty %}
+                <small class="text-muted">Sin tareas.</small>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
