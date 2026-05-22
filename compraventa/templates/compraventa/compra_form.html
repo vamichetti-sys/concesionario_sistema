@@ -47,3 +47,29 @@
 </script>
 
 {% endblock %}
+
+{% block extra_js %}
+<script>
+    // ==========================================================
+    // 🔍 Buscador en el desplegable de vehículo y proveedor
+    // (jQuery + select2 ya están cargados en base.html)
+    // ==========================================================
+    $(function () {
+        $('#id_vehiculo').select2({
+            placeholder: 'Buscá por marca, modelo o dominio...',
+            width: '100%',
+            language: {
+                noResults: function () { return 'No se encontró el vehículo'; }
+            }
+        });
+        $('#id_proveedor').select2({
+            placeholder: 'Seleccionar proveedor...',
+            width: '100%',
+            allowClear: true,
+            language: {
+                noResults: function () { return 'No se encontró el proveedor'; }
+            }
+        });
+    });
+</script>
+{% endblock %}

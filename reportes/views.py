@@ -1,4 +1,5 @@
 from django.contrib.auth.decorators import login_required, permission_required
+from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
 from django.db.models import Sum, Q
 from datetime import date
@@ -219,10 +220,13 @@ def editar_ficha_reporte(request, vehiculo_id):
         form = FichaReporteInternoForm(request.POST, instance=ficha)
         if form.is_valid():
             form.save()
+            messages.success(request, "Ficha interna guardada correctamente.")
             return redirect(
                 "reportes:editar_ficha_reporte",
                 vehiculo_id=vehiculo.id
             )
+        else:
+            messages.error(request, "No se pudo guardar la ficha. Revisá los datos ingresados.")
     else:
         form = FichaReporteInternoForm(instance=ficha)
 
@@ -258,6 +262,9 @@ def agregar_gasto_reporte(request, ficha_id):
             gasto = form.save(commit=False)
             gasto.ficha = ficha
             gasto.save()
+            messages.success(request, "Gasto agregado correctamente.")
+        else:
+            messages.error(request, "No se pudo agregar el gasto. Revisá los datos ingresados.")
 
     return redirect(
         "reportes:editar_ficha_reporte",
@@ -277,6 +284,7 @@ def eliminar_gasto_reporte(request, gasto_id):
     gasto = get_object_or_404(GastoReporteInterno, id=gasto_id)
     vehiculo_id = gasto.ficha.vehiculo.id
     gasto.delete()
+    messages.success(request, "Gasto eliminado correctamente.")
 
     return redirect(
         "reportes:editar_ficha_reporte",

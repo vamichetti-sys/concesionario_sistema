@@ -238,21 +238,67 @@ def cambiar_estado_vehiculo(request, vehiculo_id):
         if nuevo_estado == "vendido":
             from ventas.models import Venta
             from gestoria.models import Gestoria
+            from reportes.models import FichaReporteInterno
+
+            # ===============================
+            # PRECIO DE VENTA (preguntado en el modal)
+            # Si no llega, usamos el precio de lista del vehículo.
+            # ===============================
+            precio_raw = (request.POST.get("precio_venta") or "").strip().replace("$", "").replace(" ", "")
+            if "," in precio_raw:
+                precio_raw = precio_raw.replace(".", "").replace(",", ".")
+            try:
+                precio_venta = Decimal(precio_raw) if precio_raw else vehiculo.precio
+            except Exception:
+                precio_venta = vehiculo.precio
+
+            # Fecha de venta (opcional en el modal). Si no llega, usamos hoy.
+            fecha_raw = (request.POST.get("fecha_venta") or "").strip()
+            try:
+                fecha_venta = date.fromisoformat(fecha_raw) if fecha_raw else date.today()
+            except ValueError:
+                fecha_venta = date.today()
 
             venta, creada = Venta.objects.get_or_create(
                 vehiculo=vehiculo,
                 defaults={
                     "estado": "confirmada",
-                    "precio_venta": vehiculo.precio,
+                    "precio_venta": precio_venta,
                 }
             )
 
+            # Aunque la venta ya existiera, registramos el precio acordado y la confirmamos.
+            campos_venta = []
             if not creada and venta.estado != "confirmada":
                 venta.estado = "confirmada"
-                venta.save(update_fields=["estado"])
+                campos_venta.append("estado")
+            if venta.precio_venta != precio_venta:
+                venta.precio_venta = precio_venta
+                campos_venta.append("precio_venta")
+            if campos_venta:
+                venta.save(update_fields=campos_venta)
 
             vehiculo.estado = "vendido"
             vehiculo.save(update_fields=["estado"])
+
+            # ===============================
+            # VINCULAR CON REPORTE INTERNO
+            # El precio de venta queda registrado automáticamente en la
+            # ficha interna del vehículo (para el cálculo de ganancia).
+            # ===============================
+            ficha, _ = FichaReporteInterno.objects.get_or_create(vehiculo=vehiculo)
+            ficha.precio_venta = precio_venta
+            ficha.fecha_venta = fecha_venta
+            if venta.cliente and not ficha.comprador:
+                ficha.comprador = str(venta.cliente)
+            # Si todavía no se cargó el precio de compra, lo tomamos de compra-venta.
+            if ficha.precio_compra is None:
+                operacion = getattr(vehiculo, "operacion_compra", None)
+                if operacion and operacion.precio_compra:
+                    ficha.precio_compra = operacion.precio_compra
+                    if not ficha.fecha_compra:
+                        ficha.fecha_compra = operacion.fecha_compra
+            ficha.save()
 
             if venta.cliente:
                 Gestoria.objects.get_or_create(
