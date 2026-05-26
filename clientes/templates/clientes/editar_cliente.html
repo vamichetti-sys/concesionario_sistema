@@ -22,6 +22,11 @@
         {% csrf_token %}
 
         <div class="row g-4">
+            <div class="col-12">
+                <label class="form-label">Nombre y apellido</label>
+                {{ form.nombre_completo }}
+            </div>
+
             <div class="col-md-6">
                 <label class="form-label">Teléfono</label>
                 {{ form.telefono }}
