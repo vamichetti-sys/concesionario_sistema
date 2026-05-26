@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}Contraseñas{% endblock %}
+
+{% block content %}
+
+<!-- ENCABEZADO -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-bold mb-1">
+            <i data-lucide="key-round" style="width:22px;height:22px;margin-right:6px;"></i>
+            Contraseñas
+        </h3>
+        <p class="text-muted mb-0">Gestor interno de credenciales</p>
+    </div>
+    <a href="{% url 'contrasenas:crear' %}" class="btn btn-primary">
+        <i data-lucide="plus" style="width:16px;height:16px;margin-right:6px;"></i>
+        Nueva contraseña
+    </a>
+</div>
+
+<!-- BUSCADOR -->
+<div class="card p-3 mb-4">
+    <form method="GET">
+        <div class="input-group">
+            <span class="input-group-text" style="background:#fff;border-right:none;">
+                <i data-lucide="search" style="width:18px;height:18px;color:#9ca3af;"></i>
+            </span>
+            <input type="text" name="q" class="form-control" style="border-left:none;"
+                   placeholder="Buscar por servicio o usuario..." value="{{ query|default:'' }}">
+            <button type="submit" class="btn btn-primary">Buscar</button>
+            {% if query %}
+            <a href="{% url 'contrasenas:lista' %}" class="btn btn-secondary">Limpiar</a>
+            {% endif %}
+        </div>
+    </form>
+</div>
+
+<!-- TABLA -->
+<div class="card p-0">
+    {% if contrasenas %}
+    <div class="table-responsive">
+        <table class="table align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Servicio</th>
+                    <th>Usuario</th>
+                    <th>Contraseña</th>
+                    <th>URL</th>
+                    <th class="text-end">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in contrasenas %}
+                <tr>
+                    <td>
+                        <span class="fw-semibold">{{ c.servicio }}</span>
+                        {% if c.notas %}<br><small class="text-muted">{{ c.notas|truncatechars:50 }}</small>{% endif %}
+                    </td>
+                    <td>
+                        <span>{{ c.usuario|default:"–" }}</span>
+                    </td>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <code class="js-pass" data-pass="{{ c.contrasena }}">••••••••</code>
+                            <button type="button" class="btn btn-sm btn-outline-secondary js-toggle" title="Mostrar/ocultar">
+                                <i data-lucide="eye" style="width:14px;height:14px;"></i>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary js-copy" data-pass="{{ c.contrasena }}" title="Copiar">
+                                <i data-lucide="copy" style="width:14px;height:14px;"></i>
+                            </button>
+                        </div>
+                    </td>
+                    <td>
+                        {% if c.url %}
+                        <a href="{{ c.url }}" target="_blank" rel="noopener" class="text-decoration-none">
+                            <i data-lucide="external-link" style="width:14px;height:14px;"></i>
+                        </a>
+                        {% else %}–{% endif %}
+                    </td>
+                    <td class="text-end">
+                        <div class="d-flex gap-2 justify-content-end">
+                            <a href="{% url 'contrasenas:editar' c.pk %}" class="btn btn-secondary btn-sm" title="Editar">
+                                <i data-lucide="pencil" style="width:14px;height:14px;"></i>
+                            </a>
+                            <form method="POST" action="{% url 'contrasenas:eliminar' c.pk %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-outline-danger btn-sm" title="Eliminar">
+                                    <i data-lucide="trash-2" style="width:14px;height:14px;"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="p-5 text-center">
+        <i data-lucide="key-round" style="width:48px;height:48px;color:#9ca3af;margin-bottom:12px;"></i>
+        <p class="text-muted mb-3">No hay contraseñas guardadas</p>
+        <a href="{% url 'contrasenas:crear' %}" class="btn btn-primary">
+            <i data-lucide="plus" style="width:16px;height:16px;margin-right:6px;"></i>
+            Agregar la primera
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.querySelectorAll('.js-toggle').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var code = btn.closest('td').querySelector('.js-pass');
+            if (code.textContent === '••••••••') {
+                code.textContent = code.dataset.pass;
+            } else {
+                code.textContent = '••••••••';
+            }
+        });
+    });
+
+    document.querySelectorAll('.js-copy').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            navigator.clipboard.writeText(btn.dataset.pass).then(function () {
+                var icon = btn.querySelector('i');
+                btn.classList.add('btn-success');
+                btn.classList.remove('btn-outline-secondary');
+                setTimeout(function () {
+                    btn.classList.remove('btn-success');
+                    btn.classList.add('btn-outline-secondary');
+                }, 1000);
+            });
+        });
+    });
+
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+</script>
+{% endblock %}

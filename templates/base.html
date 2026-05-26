@@ -659,10 +659,20 @@
             <i data-lucide="chevron-down" class="chevron"></i>
         </div>
         <div class="sidebar-category-items" style="max-height:400px;">
-            <a href="/reportes/" class="nav-link {% if '/reportes/' in request.path %}active{% endif %}">
+            <a href="/reportes/" class="nav-link {% if request.path == '/reportes/' or '/reportes/web/' in request.path %}active{% endif %}">
                 <i data-lucide="bar-chart-3"></i>
                 <span>Reportes</span>
             </a>
+            {% if perms.reportes.view_fichareporteinterno %}
+            <a href="{% url 'reportes:control_stock' %}" class="nav-link {% if '/interno/stock/' in request.path %}active{% endif %}">
+                <i data-lucide="package"></i>
+                <span>Control Interno</span>
+            </a>
+            <a href="{% url 'reportes:reporte_ganancias' %}" class="nav-link {% if '/interno/reporte/' in request.path %}active{% endif %}">
+                <i data-lucide="trending-up"></i>
+                <span>Reporte de Ganancias</span>
+            </a>
+            {% endif %}
             <a href="/cuentas-internas/" class="nav-link {% if '/cuentas-internas/' in request.path %}active{% endif %}">
                 <i data-lucide="wallet"></i>
                 <span>Cuentas Internas</span>
@@ -679,6 +689,12 @@
                 <i data-lucide="shield-check"></i>
                 <span>Auditoría</span>
             </a>
+            {% if request.user.username|lower == 'hamichetti' or request.user.username|lower == 'vamichetti' %}
+            <a href="/contrasenas/" class="nav-link {% if '/contrasenas/' in request.path %}active{% endif %}">
+                <i data-lucide="key-round"></i>
+                <span>Contraseñas</span>
+            </a>
+            {% endif %}
             {% if user.username == USUARIO_PRINCIPAL %}
             <a href="{% url 'proyectos:dashboard' %}" class="nav-link {% if '/proyectos/' in request.path %}active{% endif %}">
                 <i data-lucide="kanban-square"></i>

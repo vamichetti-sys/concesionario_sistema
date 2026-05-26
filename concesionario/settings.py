@@ -89,6 +89,7 @@ INSTALLED_APPS = [
     "gastos_mensuales",
     "whatsapp_bot",
     "proyectos",
+    "contrasenas",
 ]
 
 # ==========================================================
@@ -97,6 +98,15 @@ INSTALLED_APPS = [
 # Se puede sobreescribir por env var en Render.
 # ==========================================================
 USUARIO_PRINCIPAL = os.getenv("USUARIO_PRINCIPAL", "Vamichetti")
+
+# ==========================================================
+# GESTIÓN INTERNA
+# Usuarios con acceso al dashboard de gestión y al módulo de
+# Contraseñas (Hamichetti = Hugo y Vamichetti). Configurable por env.
+# ==========================================================
+USUARIOS_GESTION_INTERNA = [
+    u.strip() for u in os.getenv("USUARIOS_GESTION_INTERNA", "Hamichetti,Vamichetti").split(",") if u.strip()
+]
 
 # ==========================================================
 # MIDDLEWARE

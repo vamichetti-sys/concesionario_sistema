@@ -11,7 +11,19 @@
         Volver a reportes
     </a>
     <h3 class="fw-bold mb-1">Control de Stock</h3>
-    <p class="text-muted mb-0">Gestión interna de vehículos y control económico</p>
+    <p class="text-muted mb-2">Gestión interna de vehículos y control económico</p>
+
+    <!-- CAMBIO DE UNIDAD + ACCESOS -->
+    <div class="d-flex flex-wrap align-items-center gap-2">
+        <div class="btn-group btn-group-sm" role="group" aria-label="Unidad">
+            <a href="?unidad=HA" class="btn {% if unidad == 'HA' %}btn-primary{% else %}btn-outline-secondary{% endif %}">Hamichetti</a>
+            <a href="?unidad=VA" class="btn {% if unidad == 'VA' %}btn-primary{% else %}btn-outline-secondary{% endif %}">Vamichetti</a>
+        </div>
+        <a href="{% url 'reportes:reporte_ganancias' %}" class="btn btn-sm btn-secondary">
+            <i data-lucide="trending-up" style="width:14px;height:14px;margin-right:6px;"></i>
+            Reporte de ganancias
+        </a>
+    </div>
 </div>
 
 <!-- ===============================

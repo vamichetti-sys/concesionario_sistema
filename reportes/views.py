@@ -172,6 +172,11 @@ def reporte_interno_vamichetti(request):
     raise_exception=True
 )
 def control_stock(request):
+    # 🔄 Permite cambiar de unidad desde la misma pantalla (?unidad=HA|VA)
+    unidad_param = (request.GET.get("unidad") or "").upper()
+    if unidad_param in ("HA", "VA"):
+        request.session["unidad_activa"] = unidad_param
+
     # 🔑 tomar la unidad activa desde sesión
     unidad = request.session.get("unidad_activa", "HA")
     query = request.GET.get("q", "")
@@ -197,6 +202,7 @@ def control_stock(request):
             "page_title": "Control de Stock",
             "vehiculos": vehiculos,
             "query": query,
+            "unidad": unidad,
         }
     )
 
