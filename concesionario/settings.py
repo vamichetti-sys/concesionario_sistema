@@ -91,6 +91,7 @@ INSTALLED_APPS = [
     "proyectos",
     "contrasenas",
     "gastos_personales",
+    "permisos",
 ]
 
 # ==========================================================
@@ -123,6 +124,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "auditoria.middleware.AuditoriaMiddleware",
     "auditoria.middleware.NoBrowserCacheMiddleware",
+    "permisos.middleware.PermisosMiddleware",
 ]
 
 # ==========================================================
@@ -233,6 +235,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "proyectos.context_processors.usuario_principal",
+                "permisos.context_processors.secciones_permitidas",
             ],
         },
     },

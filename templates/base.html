@@ -542,6 +542,7 @@
 
     <div class="sidebar-divider"></div>
 
+    {% if secciones_permitidas.operaciones %}
     <!-- OPERACIONES -->
     <div class="sidebar-category">
         <div class="sidebar-category-header" onclick="toggleCategory(this)">
@@ -575,7 +576,9 @@
             </a>
         </div>
     </div>
+    {% endif %}
 
+    {% if secciones_permitidas.clientes %}
     <!-- CLIENTES -->
     <div class="sidebar-category">
         <div class="sidebar-category-header" onclick="toggleCategory(this)">
@@ -597,7 +600,9 @@
             </a>
         </div>
     </div>
+    {% endif %}
 
+    {% if secciones_permitidas.documentacion %}
     <!-- DOCUMENTACIÓN -->
     <div class="sidebar-category">
         <div class="sidebar-category-header" onclick="toggleCategory(this)">
@@ -624,7 +629,9 @@
             </a>
         </div>
     </div>
+    {% endif %}
 
+    {% if secciones_permitidas.administracion %}
     <!-- ADMINISTRACIÓN -->
     <div class="sidebar-category">
         <div class="sidebar-category-header" onclick="toggleCategory(this)">
@@ -650,6 +657,7 @@
             </a>
         </div>
     </div>
+    {% endif %}
 
     {% if user.username == 'Vamichetti' or user.username == 'Hamichetti' %}
     <!-- GESTIÓN INTERNA -->
@@ -708,6 +716,10 @@
             <a href="/gastos-personales/" class="nav-link {% if '/gastos-personales/' in request.path %}active{% endif %}">
                 <i data-lucide="receipt"></i>
                 <span>Gastos Personales</span>
+            </a>
+            <a href="/permisos/" class="nav-link {% if '/permisos/' in request.path %}active{% endif %}">
+                <i data-lucide="shield"></i>
+                <span>Permisos</span>
             </a>
         </div>
     </div>
