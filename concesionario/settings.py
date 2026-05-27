@@ -90,6 +90,7 @@ INSTALLED_APPS = [
     "whatsapp_bot",
     "proyectos",
     "contrasenas",
+    "gastos_personales",
 ]
 
 # ==========================================================

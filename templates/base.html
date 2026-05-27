@@ -685,18 +685,30 @@
                 <i data-lucide="shield-check"></i>
                 <span>Auditoría</span>
             </a>
-            {% if request.user.username|lower == 'hamichetti' or request.user.username|lower == 'vamichetti' %}
-            <a href="/contrasenas/" class="nav-link {% if '/contrasenas/' in request.path %}active{% endif %}">
-                <i data-lucide="key-round"></i>
-                <span>Contraseñas</span>
-            </a>
-            {% endif %}
             {% if user.username == USUARIO_PRINCIPAL %}
             <a href="{% url 'proyectos:dashboard' %}" class="nav-link {% if '/proyectos/' in request.path %}active{% endif %}">
                 <i data-lucide="kanban-square"></i>
                 <span>Proyectos</span>
             </a>
             {% endif %}
+        </div>
+    </div>
+
+    <!-- GESTIÓN PERSONAL -->
+    <div class="sidebar-category">
+        <div class="sidebar-category-header" onclick="toggleCategory(this)">
+            <span>Gestión Personal</span>
+            <i data-lucide="chevron-down" class="chevron"></i>
+        </div>
+        <div class="sidebar-category-items" style="max-height:400px;">
+            <a href="/contrasenas/" class="nav-link {% if '/contrasenas/' in request.path %}active{% endif %}">
+                <i data-lucide="key-round"></i>
+                <span>Contraseñas</span>
+            </a>
+            <a href="/gastos-personales/" class="nav-link {% if '/gastos-personales/' in request.path %}active{% endif %}">
+                <i data-lucide="receipt"></i>
+                <span>Gastos Personales</span>
+            </a>
         </div>
     </div>
     {% endif %}
