@@ -8,149 +8,69 @@
 {% include "inicio/_dashboard_top.html" %}
 
 <!-- ===============================
-     RESUMEN GESTIÓN INTERNA
+     ACCESOS GESTIÓN INTERNA
 =============================== -->
 <div class="d-flex align-items-center gap-2 mb-3 mt-2">
     <i data-lucide="lock" style="width:20px;height:20px;color:#8b5cf6;"></i>
-    <h5 class="fw-bold mb-0">Resumen de Gestión Interna</h5>
+    <h5 class="fw-bold mb-0">Gestión Interna</h5>
 </div>
 
-<!-- KPIs -->
-<div class="row g-4 mb-4">
-
-    <!-- GANANCIA DEL MES -->
-    <div class="col-md-3">
-        <a href="{% url 'reportes:reporte_ganancias' %}" class="text-decoration-none text-reset">
-            <div class="card p-4 h-100" style="position:relative;">
-                <div class="d-flex justify-content-between align-items-start mb-3">
-                    <span class="text-muted" style="font-size:13px;">Ganancia del mes</span>
-                    <div style="width:40px;height:40px;background:rgba(16,185,129,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
-                        <i data-lucide="trending-up" style="width:20px;height:20px;color:#10b981;"></i>
-                    </div>
-                </div>
-                <h3 class="fw-bold mb-1 text-success">${{ ganancia_total_mes|floatformat:0 }}</h3>
-                <small class="text-muted">HA ${{ ganancia_ha|floatformat:0 }} &middot; VA ${{ ganancia_va|floatformat:0 }}</small>
-                <div style="position:absolute;top:0;left:0;width:4px;height:100%;background:#10b981;border-radius:14px 0 0 14px;"></div>
+<div class="row g-3 mb-4">
+    <div class="col-md">
+        <a href="{% url 'reportes:control_stock' %}" class="quick-access-card">
+            <div class="quick-access-icon" style="background:rgba(59,130,246,0.1);">
+                <i data-lucide="package" style="width:22px;height:22px;color:#3b82f6;"></i>
+            </div>
+            <div class="quick-access-text">
+                <strong>Control de Stock</strong>
+                <small>Reporte interno</small>
             </div>
         </a>
     </div>
-
-    <!-- CHEQUES A DEPOSITAR -->
-    <div class="col-md-3">
-        <a href="/cheques/" class="text-decoration-none text-reset">
-            <div class="card p-4 h-100" style="position:relative;">
-                <div class="d-flex justify-content-between align-items-start mb-3">
-                    <span class="text-muted" style="font-size:13px;">Cheques a depositar</span>
-                    <div style="width:40px;height:40px;background:rgba(59,130,246,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
-                        <i data-lucide="banknote" style="width:20px;height:20px;color:#3b82f6;"></i>
-                    </div>
-                </div>
-                <h3 class="fw-bold mb-1">${{ cheques_total_monto|floatformat:0 }}</h3>
-                <small class="text-muted">{{ cheques_total_cant }} cheque{{ cheques_total_cant|pluralize:"s" }}
-                    {% if cheques_vencido_cant > 0 %}<span class="text-danger fw-semibold">&bull; {{ cheques_vencido_cant }} vencido{{ cheques_vencido_cant|pluralize:"s" }}</span>{% endif %}
-                </small>
-                <div style="position:absolute;top:0;left:0;width:4px;height:100%;background:#3b82f6;border-radius:14px 0 0 14px;"></div>
+    <div class="col-md">
+        <a href="/cuentas-internas/" class="quick-access-card">
+            <div class="quick-access-icon" style="background:rgba(139,92,246,0.1);">
+                <i data-lucide="wallet" style="width:22px;height:22px;color:#8b5cf6;"></i>
+            </div>
+            <div class="quick-access-text">
+                <strong>Cuentas Internas</strong>
+                <small>Saldos y movimientos</small>
             </div>
         </a>
     </div>
-
-    <!-- CUENTAS INTERNAS -->
-    <div class="col-md-3">
-        <a href="/cuentas-internas/" class="text-decoration-none text-reset">
-            <div class="card p-4 h-100" style="position:relative;">
-                <div class="d-flex justify-content-between align-items-start mb-3">
-                    <span class="text-muted" style="font-size:13px;">Saldo cuentas internas</span>
-                    <div style="width:40px;height:40px;background:rgba(139,92,246,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
-                        <i data-lucide="wallet" style="width:20px;height:20px;color:#8b5cf6;"></i>
-                    </div>
-                </div>
-                <h3 class="fw-bold mb-1">${{ cuentas_internas_saldo|floatformat:0 }}</h3>
-                <small class="text-muted">{{ cuentas_internas_count }} cuenta{{ cuentas_internas_count|pluralize:"s" }} activa{{ cuentas_internas_count|pluralize:"s" }}</small>
-                <div style="position:absolute;top:0;left:0;width:4px;height:100%;background:#8b5cf6;border-radius:14px 0 0 14px;"></div>
+    <div class="col-md">
+        <a href="/cheques/" class="quick-access-card">
+            <div class="quick-access-icon" style="background:rgba(16,185,129,0.1);">
+                <i data-lucide="banknote" style="width:22px;height:22px;color:#10b981;"></i>
+            </div>
+            <div class="quick-access-text">
+                <strong>Cheques</strong>
+                <small>A depositar y cobros</small>
             </div>
         </a>
     </div>
-
-    <!-- GASTOS DEL MES -->
-    <div class="col-md-3">
-        <a href="/gastos-mensuales/" class="text-decoration-none text-reset">
-            <div class="card p-4 h-100" style="position:relative;">
-                <div class="d-flex justify-content-between align-items-start mb-3">
-                    <span class="text-muted" style="font-size:13px;">Gastos del mes</span>
-                    <div style="width:40px;height:40px;background:rgba(239,68,68,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
-                        <i data-lucide="trending-down" style="width:20px;height:20px;color:#ef4444;"></i>
-                    </div>
-                </div>
-                <h3 class="fw-bold mb-1">${{ gastos_total|floatformat:0 }}</h3>
-                <small class="text-muted">Pendiente <span class="text-danger fw-semibold">${{ gastos_pendiente|floatformat:0 }}</span></small>
-                <div style="position:absolute;top:0;left:0;width:4px;height:100%;background:#ef4444;border-radius:14px 0 0 14px;"></div>
+    <div class="col-md">
+        <a href="/gastos-mensuales/" class="quick-access-card">
+            <div class="quick-access-icon" style="background:rgba(245,158,11,0.1);">
+                <i data-lucide="trending-down" style="width:22px;height:22px;color:#f59e0b;"></i>
+            </div>
+            <div class="quick-access-text">
+                <strong>Control de Gastos</strong>
+                <small>Gastos mensuales</small>
             </div>
         </a>
     </div>
-
-</div>
-
-<!-- DETALLE -->
-<div class="row g-4 mb-4">
-
-    <!-- GANANCIA POR UNIDAD -->
-    <div class="col-md-5">
-        <div class="card p-4 h-100">
-            <div class="d-flex align-items-center gap-2 mb-3">
-                <i data-lucide="pie-chart" style="width:20px;height:20px;color:#10b981;"></i>
-                <h6 class="fw-bold mb-0">Ganancia del mes por unidad</h6>
+    <div class="col-md">
+        <a href="/contrasenas/" class="quick-access-card">
+            <div class="quick-access-icon" style="background:rgba(239,68,68,0.1);">
+                <i data-lucide="key-round" style="width:22px;height:22px;color:#ef4444;"></i>
             </div>
-            <div class="list-group list-group-flush">
-                <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                    <span class="fw-semibold">Hamichetti</span>
-                    <span class="fw-bold text-success">${{ ganancia_ha|floatformat:0 }}</span>
-                </div>
-                <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                    <span class="fw-semibold">Vamichetti</span>
-                    <span class="fw-bold text-success">${{ ganancia_va|floatformat:0 }}</span>
-                </div>
-                <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                    <span class="fw-bold">Total</span>
-                    <span class="fw-bold text-success">${{ ganancia_total_mes|floatformat:0 }}</span>
-                </div>
+            <div class="quick-access-text">
+                <strong>Contraseñas</strong>
+                <small>Credenciales</small>
             </div>
-            <a href="{% url 'reportes:control_stock' %}" class="btn btn-secondary btn-sm mt-3 w-100">Ir a Control Interno</a>
-        </div>
+        </a>
     </div>
-
-    <!-- ACTIVIDAD RECIENTE (AUDITORÍA) -->
-    <div class="col-md-7">
-        <div class="card p-4 h-100">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <div class="d-flex align-items-center gap-2">
-                    <i data-lucide="shield-check" style="width:20px;height:20px;color:#3b82f6;"></i>
-                    <h6 class="fw-bold mb-0">Actividad reciente</h6>
-                </div>
-                <a href="/auditoria/" class="btn btn-secondary btn-sm">Ver auditoría</a>
-            </div>
-
-            {% if ultimos_logs %}
-            <div class="list-group list-group-flush">
-                {% for log in ultimos_logs %}
-                <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                    <div>
-                        <span class="fw-semibold">{{ log.usuario_texto|default:"Sistema" }}</span>
-                        <span class="text-muted">&middot; {{ log.get_accion_display }}{% if log.modelo %} {{ log.modelo }}{% endif %}</span>
-                        {% if log.descripcion %}<br><small class="text-muted">{{ log.descripcion|truncatechars:60 }}</small>{% endif %}
-                    </div>
-                    <small class="text-muted text-nowrap ms-2">{{ log.fecha|date:"d/m H:i" }}</small>
-                </div>
-                {% endfor %}
-            </div>
-            {% else %}
-            <div class="text-center py-4">
-                <i data-lucide="check-circle" style="width:32px;height:32px;color:#9ca3af;margin-bottom:8px;"></i>
-                <p class="text-muted mb-0">Sin actividad registrada</p>
-            </div>
-            {% endif %}
-        </div>
-    </div>
-
 </div>
 
 <script>

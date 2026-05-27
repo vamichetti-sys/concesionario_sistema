@@ -225,58 +225,8 @@ def inicio(request):
     # resumen de Gestión Interna en vez de la vista operativa.
     # ==========================================================
     if request.user.username.lower() in ("hamichetti", "vamichetti"):
-        from decimal import Decimal
-        from reportes.models import FichaReporteInterno
-        from cuentas_internas.models import CuentaInterna
-        from cheques.models import Cheque
-        from gastos_mensuales.models import GastoMensual
-        from auditoria.models import LogActividad
-
-        # Ganancia del mes por unidad (reporte interno)
-        fichas_mes = FichaReporteInterno.objects.filter(
-            fecha_venta__year=hoy.year,
-            fecha_venta__month=hoy.month,
-            precio_compra__isnull=False,
-            precio_venta__isnull=False,
-        ).select_related("vehiculo").prefetch_related("gastos")
-
-        ganancia_ha = Decimal("0")
-        ganancia_va = Decimal("0")
-        for f in fichas_mes:
-            g = f.ganancia or Decimal("0")
-            if f.vehiculo.unidad == "HA":
-                ganancia_ha += g
-            elif f.vehiculo.unidad == "VA":
-                ganancia_va += g
-
-        # Cuentas internas
-        cuentas_qs = CuentaInterna.objects.filter(activa=True)
-        cuentas_internas_saldo = cuentas_qs.aggregate(t=Sum("saldo"))["t"] or 0
-        cuentas_internas_count = cuentas_qs.count()
-
-        # Cheques a depositar
-        rangos_cheques, cheques_total_monto, cheques_total_cant = Cheque.resumen_por_vencimiento()
-
-        # Gastos del mes actual
-        gastos_qs = GastoMensual.objects.filter(mes=hoy.month, anio=hoy.year)
-        gastos_total = gastos_qs.aggregate(t=Sum("monto"))["t"] or 0
-        gastos_pagado = gastos_qs.filter(pagado=True).aggregate(t=Sum("monto"))["t"] or 0
-
-        context.update({
-            "ganancia_ha": ganancia_ha,
-            "ganancia_va": ganancia_va,
-            "ganancia_total_mes": ganancia_ha + ganancia_va,
-            "cuentas_internas_saldo": cuentas_internas_saldo,
-            "cuentas_internas_count": cuentas_internas_count,
-            "cheques_total_monto": cheques_total_monto,
-            "cheques_total_cant": cheques_total_cant,
-            "cheques_vencido_monto": rangos_cheques["vencido"]["monto"],
-            "cheques_vencido_cant": rangos_cheques["vencido"]["cantidad"],
-            "gastos_total": gastos_total,
-            "gastos_pagado": gastos_pagado,
-            "gastos_pendiente": gastos_total - gastos_pagado,
-            "ultimos_logs": LogActividad.objects.all()[:8],
-        })
+        # El dashboard solo agrega accesos directos a Gestión Interna;
+        # no necesita datos extra (los links están fijos en el template).
         return render(request, "inicio/inicio_gestion.html", context)
 
     return render(request, "inicio/inicio.html", context)
