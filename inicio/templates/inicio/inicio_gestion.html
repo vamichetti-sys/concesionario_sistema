@@ -73,6 +73,69 @@
     </div>
 </div>
 
+<!-- ===============================
+     RESUMEN DE DEUDAS
+=============================== -->
+<div class="d-flex align-items-center gap-2 mb-3 mt-2">
+    <i data-lucide="alert-triangle" style="width:20px;height:20px;color:#ef4444;"></i>
+    <h5 class="fw-bold mb-0">Resumen de deudas</h5>
+</div>
+
+<div class="row g-4 mb-4">
+
+    <!-- CUENTAS CORRIENTES (clientes nos deben) -->
+    <div class="col-md-4">
+        <a href="/cuentas/" class="text-decoration-none text-reset">
+            <div class="card p-4 h-100" style="position:relative;">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <span class="text-muted" style="font-size:13px;">Cuentas corrientes</span>
+                    <div style="width:40px;height:40px;background:rgba(239,68,68,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                        <i data-lucide="credit-card" style="width:20px;height:20px;color:#ef4444;"></i>
+                    </div>
+                </div>
+                <h3 class="fw-bold mb-1 text-danger">${{ total_deuda|floatformat:0 }}</h3>
+                <small class="text-muted">{{ cantidad_deudores }} cliente{{ cantidad_deudores|pluralize:"s" }} con deuda</small>
+                <div style="position:absolute;top:0;left:0;width:4px;height:100%;background:#ef4444;border-radius:14px 0 0 14px;"></div>
+            </div>
+        </a>
+    </div>
+
+    <!-- DEUDAS DE REVENTAS (revendedores nos deben) -->
+    <div class="col-md-4">
+        <a href="/reventa/" class="text-decoration-none text-reset">
+            <div class="card p-4 h-100" style="position:relative;">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <span class="text-muted" style="font-size:13px;">Deudas de reventas</span>
+                    <div style="width:40px;height:40px;background:rgba(245,158,11,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                        <i data-lucide="repeat" style="width:20px;height:20px;color:#f59e0b;"></i>
+                    </div>
+                </div>
+                <h3 class="fw-bold mb-1" style="color:#d97706;">${{ deuda_reventa|floatformat:0 }}</h3>
+                <small class="text-muted">{{ reventa_count }} revendedor{{ reventa_count|pluralize:"es" }} con deuda</small>
+                <div style="position:absolute;top:0;left:0;width:4px;height:100%;background:#f59e0b;border-radius:14px 0 0 14px;"></div>
+            </div>
+        </a>
+    </div>
+
+    <!-- DEUDA DE COMPRA-VENTA (nosotros debemos a proveedores) -->
+    <div class="col-md-4">
+        <a href="{% url 'compraventa:home' %}" class="text-decoration-none text-reset">
+            <div class="card p-4 h-100" style="position:relative;">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <span class="text-muted" style="font-size:13px;">Deuda de compra-venta</span>
+                    <div style="width:40px;height:40px;background:rgba(59,130,246,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                        <i data-lucide="building-2" style="width:20px;height:20px;color:#3b82f6;"></i>
+                    </div>
+                </div>
+                <h3 class="fw-bold mb-1" style="color:#2563eb;">${{ deuda_compraventa|floatformat:0 }}</h3>
+                <small class="text-muted">{{ compraventa_count }} unidad{{ compraventa_count|pluralize:"es" }} adeudada{{ compraventa_count|pluralize:"s" }}</small>
+                <div style="position:absolute;top:0;left:0;width:4px;height:100%;background:#3b82f6;border-radius:14px 0 0 14px;"></div>
+            </div>
+        </a>
+    </div>
+
+</div>
+
 <script>
     if (typeof lucide !== 'undefined') {
         lucide.createIcons();

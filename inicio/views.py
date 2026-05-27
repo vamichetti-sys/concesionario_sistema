@@ -225,8 +225,34 @@ def inicio(request):
     # resumen de Gestión Interna en vez de la vista operativa.
     # ==========================================================
     if request.user.username.lower() in ("hamichetti", "vamichetti"):
-        # El dashboard solo agrega accesos directos a Gestión Interna;
-        # no necesita datos extra (los links están fijos en el template).
+        from decimal import Decimal
+        from django.db.models import Value, DecimalField
+        from django.db.models.functions import Coalesce
+        from reventa.models import CuentaRevendedor
+        from compraventa.models import DeudaProveedor
+
+        # Deuda de reventas: lo que los revendedores nos deben (saldo > 0)
+        rev_qs = CuentaRevendedor.objects.filter(saldo__gt=0)
+        deuda_reventa = rev_qs.aggregate(t=Sum("saldo"))["t"] or 0
+        reventa_count = rev_qs.count()
+
+        # Deuda de compra-venta: lo que nosotros debemos a proveedores
+        deudas_cv = DeudaProveedor.objects.annotate(
+            pagado=Coalesce(
+                Sum("pagos__monto"),
+                Value(Decimal("0")),
+                output_field=DecimalField(max_digits=14, decimal_places=2),
+            )
+        )
+        deuda_compraventa = sum(((d.monto_total or 0) - d.pagado) for d in deudas_cv)
+        compraventa_count = sum(1 for d in deudas_cv if (d.monto_total or 0) - d.pagado > 0)
+
+        context.update({
+            "deuda_reventa": deuda_reventa,
+            "reventa_count": reventa_count,
+            "deuda_compraventa": deuda_compraventa,
+            "compraventa_count": compraventa_count,
+        })
         return render(request, "inicio/inicio_gestion.html", context)
 
     return render(request, "inicio/inicio.html", context)
