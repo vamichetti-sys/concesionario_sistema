@@ -6,8 +6,10 @@
 <div class="card p-4" style="max-width:520px;">
     <h4 class="fw-bold mb-3">Eliminar gasto</h4>
     <p class="mb-4">
-        ¿Seguro que querés eliminar <strong>{{ obj.concepto }}</strong>
-        (${{ obj.monto|floatformat:0 }})? Esta acción no se puede deshacer.
+        ¿Seguro que querés eliminar el gasto de
+        <strong>{{ gasto.categoria.nombre }}</strong>
+        de ${{ gasto.monto|floatformat:0 }} ({{ gasto.mes }}/{{ gasto.anio }})?
+        Esta acción no se puede deshacer.
     </p>
     <form method="post" data-no-confirm>
         {% csrf_token %}
@@ -16,7 +18,7 @@
                 <i data-lucide="trash-2" style="width:16px;height:16px;margin-right:6px;"></i>
                 Eliminar
             </button>
-            <a href="{% url 'gastos_personales:lista' %}" class="btn btn-secondary">Cancelar</a>
+            <a href="{% url 'gastos_personales:resumen' %}?mes={{ gasto.mes }}&anio={{ gasto.anio }}" class="btn btn-secondary">Cancelar</a>
         </div>
     </form>
 </div>

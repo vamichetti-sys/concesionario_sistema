@@ -1,27 +1,35 @@
 from django.db import models
 from django.contrib.auth.models import User
 
+from gastos_mensuales.models import CategoriaGasto
+
 
 class GastoPersonal(models.Model):
     """
-    Gasto personal de un usuario. Cada usuario ve y gestiona solo los
-    propios (filtrado por `usuario` en las vistas).
+    Gasto personal de un usuario, con la misma estructura que el Control de
+    Gastos (categoría fija/variable, mes/año, pagado), pero PRIVADO por
+    usuario: cada uno ve y gestiona solo los propios.
     """
     usuario = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="gastos_personales"
     )
-    fecha = models.DateField("Fecha")
-    concepto = models.CharField("Concepto", max_length=200)
-    categoria = models.CharField("Categoría", max_length=100, blank=True)
-    monto = models.DecimalField("Monto", max_digits=12, decimal_places=2)
-    notas = models.TextField("Notas", blank=True)
-
+    categoria = models.ForeignKey(
+        CategoriaGasto, on_delete=models.PROTECT, related_name="gastos_personales",
+        null=True, blank=True,  # nullable a nivel DB para migrar filas viejas; el form lo exige.
+    )
+    descripcion = models.CharField(max_length=200, blank=True, null=True)
+    monto = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    mes = models.PositiveSmallIntegerField(default=1)
+    anio = models.PositiveIntegerField(default=2026)
+    pagado = models.BooleanField(default=False)
+    fecha_pago = models.DateField(null=True, blank=True)
+    observaciones = models.TextField(blank=True, null=True)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ["-fecha", "-id"]
+        ordering = ["-anio", "-mes", "categoria__nombre"]
         verbose_name = "Gasto personal"
         verbose_name_plural = "Gastos personales"
 
     def __str__(self):
-        return f"{self.concepto} - ${self.monto}"
+        return f"{self.categoria.nombre} – ${self.monto} ({self.mes}/{self.anio})"

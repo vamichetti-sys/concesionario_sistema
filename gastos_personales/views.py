@@ -1,43 +1,92 @@
+from datetime import date
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.db.models import Sum
-from django.utils import timezone
+from django.urls import reverse
+from decimal import Decimal
 
+from gastos_mensuales.models import CategoriaGasto
 from .models import GastoPersonal
 from .forms import GastoPersonalForm
 from .decorators import solo_gestion_personal
 
+MESES = ["", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+         "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
+
 
 @solo_gestion_personal
-def lista_gastos(request):
-    # Cada usuario ve solo sus propios gastos personales.
-    gastos = GastoPersonal.objects.filter(usuario=request.user)
-    hoy = timezone.now().date()
-    total_mes = gastos.filter(
-        fecha__year=hoy.year, fecha__month=hoy.month
-    ).aggregate(t=Sum("monto"))["t"] or 0
-    total_general = gastos.aggregate(t=Sum("monto"))["t"] or 0
-    return render(request, "gastos_personales/lista.html", {
+def resumen_mensual(request):
+    hoy = date.today()
+    mes = int(request.GET.get("mes", hoy.month))
+    anio = int(request.GET.get("anio", hoy.year))
+
+    # Solo los gastos del usuario logueado
+    gastos = GastoPersonal.objects.filter(
+        usuario=request.user, mes=mes, anio=anio,
+    ).select_related("categoria").order_by("categoria__nombre")
+
+    total_fijos = gastos.filter(categoria__es_fijo=True).aggregate(t=Sum("monto"))["t"] or Decimal("0")
+    total_variables = gastos.filter(categoria__es_fijo=False).aggregate(t=Sum("monto"))["t"] or Decimal("0")
+    total_general = total_fijos + total_variables
+    total_pagado = gastos.filter(pagado=True).aggregate(t=Sum("monto"))["t"] or Decimal("0")
+    total_pendiente = total_general - total_pagado
+
+    por_categoria = (
+        gastos.values("categoria__nombre", "categoria__es_fijo")
+        .annotate(total=Sum("monto"))
+        .order_by("-total")
+    )
+
+    anios_disponibles = list(
+        GastoPersonal.objects.filter(usuario=request.user)
+        .values_list("anio", flat=True).distinct().order_by("-anio")
+    )
+    if hoy.year not in anios_disponibles:
+        anios_disponibles = [hoy.year] + anios_disponibles
+
+    mes_anterior = mes - 1 if mes > 1 else 12
+    anio_anterior = anio if mes > 1 else anio - 1
+    total_mes_anterior = GastoPersonal.objects.filter(
+        usuario=request.user, mes=mes_anterior, anio=anio_anterior,
+    ).aggregate(t=Sum("monto"))["t"] or Decimal("0")
+
+    variacion = None
+    if total_mes_anterior > 0:
+        variacion = ((total_general - total_mes_anterior) / total_mes_anterior * 100)
+
+    return render(request, "gastos_personales/resumen.html", {
         "gastos": gastos,
-        "total_mes": total_mes,
+        "mes": mes,
+        "anio": anio,
+        "mes_nombre": MESES[mes] if 1 <= mes <= 12 else "",
+        "total_fijos": total_fijos,
+        "total_variables": total_variables,
         "total_general": total_general,
-        "hoy": hoy,
+        "total_pagado": total_pagado,
+        "total_pendiente": total_pendiente,
+        "por_categoria": por_categoria,
+        "anios_disponibles": anios_disponibles,
+        "meses_choices": list(enumerate(MESES))[1:],
+        "variacion": variacion,
+        "mes_anterior_nombre": MESES[mes_anterior] if 1 <= mes_anterior <= 12 else "",
     })
 
 
 @solo_gestion_personal
-def crear_gasto(request):
+def agregar_gasto(request):
+    hoy = date.today()
     if request.method == "POST":
         form = GastoPersonalForm(request.POST)
         if form.is_valid():
             gasto = form.save(commit=False)
             gasto.usuario = request.user
             gasto.save()
-            messages.success(request, "Gasto personal agregado correctamente.")
-            return redirect("gastos_personales:lista")
+            messages.success(request, f"Gasto \"{gasto.categoria.nombre}\" registrado.")
+            return redirect(f"{reverse('gastos_personales:resumen')}?mes={gasto.mes}&anio={gasto.anio}")
     else:
-        form = GastoPersonalForm(initial={"fecha": timezone.now().date()})
-    return render(request, "gastos_personales/form.html", {"form": form})
+        form = GastoPersonalForm(initial={"mes": hoy.month, "anio": hoy.year})
+    return render(request, "gastos_personales/form.html", {"form": form, "titulo": "Registrar gasto personal"})
 
 
 @solo_gestion_personal
@@ -47,12 +96,12 @@ def editar_gasto(request, pk):
         form = GastoPersonalForm(request.POST, instance=gasto)
         if form.is_valid():
             form.save()
-            messages.success(request, "Gasto actualizado correctamente.")
-            return redirect("gastos_personales:lista")
+            messages.success(request, "Gasto actualizado.")
+            return redirect(f"{reverse('gastos_personales:resumen')}?mes={gasto.mes}&anio={gasto.anio}")
     else:
         form = GastoPersonalForm(instance=gasto)
     return render(request, "gastos_personales/form.html", {
-        "form": form, "editando": True, "obj": gasto,
+        "form": form, "titulo": f"Editar gasto – {gasto.categoria.nombre}", "gasto": gasto,
     })
 
 
@@ -60,7 +109,52 @@ def editar_gasto(request, pk):
 def eliminar_gasto(request, pk):
     gasto = get_object_or_404(GastoPersonal, pk=pk, usuario=request.user)
     if request.method == "POST":
+        mes, anio = gasto.mes, gasto.anio
         gasto.delete()
-        messages.success(request, "Gasto eliminado correctamente.")
-        return redirect("gastos_personales:lista")
-    return render(request, "gastos_personales/eliminar.html", {"obj": gasto})
+        messages.success(request, "Gasto eliminado.")
+        return redirect(f"{reverse('gastos_personales:resumen')}?mes={mes}&anio={anio}")
+    return render(request, "gastos_personales/eliminar.html", {"gasto": gasto})
+
+
+@solo_gestion_personal
+def marcar_pagado(request, pk):
+    gasto = get_object_or_404(GastoPersonal, pk=pk, usuario=request.user)
+    if request.method == "POST":
+        gasto.pagado = not gasto.pagado
+        gasto.fecha_pago = date.today() if gasto.pagado else None
+        gasto.save(update_fields=["pagado", "fecha_pago"])
+        estado = "pagado" if gasto.pagado else "pendiente"
+        messages.success(request, f"Gasto marcado como {estado}.")
+    return redirect(f"{reverse('gastos_personales:resumen')}?mes={gasto.mes}&anio={gasto.anio}")
+
+
+@solo_gestion_personal
+def duplicar_fijos(request):
+    if request.method == "POST":
+        mes = int(request.POST.get("mes_destino", 0))
+        anio = int(request.POST.get("anio_destino", 0))
+        if not (1 <= mes <= 12 and anio > 0):
+            messages.error(request, "Mes o año inválido.")
+            return redirect("gastos_personales:resumen")
+
+        mes_origen = mes - 1 if mes > 1 else 12
+        anio_origen = anio if mes > 1 else anio - 1
+
+        fijos_origen = GastoPersonal.objects.filter(
+            usuario=request.user, mes=mes_origen, anio=anio_origen, categoria__es_fijo=True,
+        )
+        if not fijos_origen.exists():
+            messages.warning(request, f"No hay gastos fijos en {MESES[mes_origen]} {anio_origen}.")
+            return redirect(f"{reverse('gastos_personales:resumen')}?mes={mes}&anio={anio}")
+
+        if GastoPersonal.objects.filter(usuario=request.user, mes=mes, anio=anio, categoria__es_fijo=True).exists():
+            messages.info(request, "Ya existen gastos fijos para este mes.")
+            return redirect(f"{reverse('gastos_personales:resumen')}?mes={mes}&anio={anio}")
+
+        for g in fijos_origen:
+            GastoPersonal.objects.create(
+                usuario=request.user, categoria=g.categoria, descripcion=g.descripcion,
+                monto=g.monto, mes=mes, anio=anio,
+            )
+        messages.success(request, "Gastos fijos copiados del mes anterior.")
+    return redirect(f"{reverse('gastos_personales:resumen')}?mes={mes}&anio={anio}")
