@@ -136,6 +136,107 @@
 
 </div>
 
+<!-- ===============================
+     DOCUMENTACIÓN VENCIDA + CALENDARIO
+=============================== -->
+<div class="row g-4 mb-4">
+
+    <!-- DOCUMENTACIÓN VENCIDA -->
+    <div class="col-md-6">
+        <div class="card p-4 h-100">
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <i data-lucide="alert-octagon" style="width:20px;height:20px;color:#ef4444;"></i>
+                <h6 class="fw-bold mb-0">Documentación vencida</h6>
+            </div>
+
+            {% if docs_vtv_vencida or docs_verif_vencida %}
+            <div class="list-group list-group-flush">
+                {% for v in docs_vtv_vencida %}
+                <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="badge bg-danger me-2">VTV</span>
+                        <span class="fw-semibold">{{ v.vehiculo.marca }} {{ v.vehiculo.modelo }}</span>
+                        <small class="text-muted">({{ v.vehiculo.dominio }})</small>
+                    </div>
+                    <small class="text-danger fw-semibold">Venció {{ v.vtv_vencimiento|date:"d/m/Y" }}</small>
+                </div>
+                {% endfor %}
+                {% for v in docs_verif_vencida %}
+                <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="badge bg-warning text-dark me-2">Verif.</span>
+                        <span class="fw-semibold">{{ v.vehiculo.marca }} {{ v.vehiculo.modelo }}</span>
+                        <small class="text-muted">({{ v.vehiculo.dominio }})</small>
+                    </div>
+                    <small class="text-danger fw-semibold">Venció {{ v.verificacion_vencimiento|date:"d/m/Y" }}</small>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <i data-lucide="check-circle" style="width:32px;height:32px;color:#10b981;margin-bottom:8px;"></i>
+                <p class="text-muted mb-0">No hay documentación vencida</p>
+            </div>
+            {% endif %}
+
+            <a href="/documentacion/" class="btn btn-secondary btn-sm mt-3 w-100">Ver documentación</a>
+        </div>
+    </div>
+
+    <!-- CALENDARIO: PRÓXIMOS TURNOS Y VENCIMIENTOS -->
+    <div class="col-md-6">
+        <div class="card p-4 h-100">
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <i data-lucide="calendar-clock" style="width:20px;height:20px;color:#f59e0b;"></i>
+                <h6 class="fw-bold mb-0">Próximos turnos y vencimientos</h6>
+            </div>
+
+            {% if turnos_vtv or turnos_verificacion or turnos_autopartes or vencimientos_vtv or vencimientos_verificacion %}
+            <div class="list-group list-group-flush">
+                {% for t in turnos_vtv %}
+                <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                    <div><span class="badge bg-danger me-2">Turno VTV</span><span class="fw-semibold">{{ t.vehiculo.marca }} {{ t.vehiculo.modelo }}</span></div>
+                    <small class="text-muted">{{ t.vtv_turno|date:"d/m" }}</small>
+                </div>
+                {% endfor %}
+                {% for t in turnos_verificacion %}
+                <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                    <div><span class="badge bg-warning text-dark me-2">Turno Verif.</span><span class="fw-semibold">{{ t.vehiculo.marca }} {{ t.vehiculo.modelo }}</span></div>
+                    <small class="text-muted">{{ t.verificacion_turno|date:"d/m" }}</small>
+                </div>
+                {% endfor %}
+                {% for t in turnos_autopartes %}
+                <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                    <div><span class="badge bg-info text-dark me-2">Turno Autopartes</span><span class="fw-semibold">{{ t.vehiculo.marca }} {{ t.vehiculo.modelo }}</span></div>
+                    <small class="text-muted">{{ t.autopartes_turno|date:"d/m" }}</small>
+                </div>
+                {% endfor %}
+                {% for v in vencimientos_vtv %}
+                <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                    <div><span class="badge bg-light text-danger border me-2">Vence VTV</span><span class="fw-semibold">{{ v.vehiculo.dominio }}</span></div>
+                    <small class="text-muted">{{ v.vtv_vencimiento|date:"d/m/Y" }}</small>
+                </div>
+                {% endfor %}
+                {% for v in vencimientos_verificacion %}
+                <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                    <div><span class="badge bg-light text-warning border me-2">Vence Verif.</span><span class="fw-semibold">{{ v.vehiculo.dominio }}</span></div>
+                    <small class="text-muted">{{ v.verificacion_vencimiento|date:"d/m/Y" }}</small>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <i data-lucide="calendar-check" style="width:32px;height:32px;color:#10b981;margin-bottom:8px;"></i>
+                <p class="text-muted mb-0">Sin turnos ni vencimientos próximos</p>
+            </div>
+            {% endif %}
+
+            <a href="/calendario/" class="btn btn-secondary btn-sm mt-3 w-100">Ver calendario</a>
+        </div>
+    </div>
+
+</div>
+
 <script>
     if (typeof lucide !== 'undefined') {
         lucide.createIcons();

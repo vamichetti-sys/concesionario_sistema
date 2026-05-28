@@ -247,11 +247,24 @@ def inicio(request):
         deuda_compraventa = sum(((d.monto_total or 0) - d.pagado) for d in deudas_cv)
         compraventa_count = sum(1 for d in deudas_cv if (d.monto_total or 0) - d.pagado > 0)
 
+        # Documentación VENCIDA (vehículos en stock con VTV / verificación pasadas)
+        docs_vtv_vencida = (
+            FichaVehicular.objects.filter(vehiculo__estado="stock", vtv_vencimiento__lt=hoy)
+            .select_related("vehiculo").order_by("vtv_vencimiento")
+        )
+        docs_verif_vencida = (
+            FichaVehicular.objects.filter(vehiculo__estado="stock", verificacion_vencimiento__lt=hoy)
+            .select_related("vehiculo").order_by("verificacion_vencimiento")
+        )
+
         context.update({
             "deuda_reventa": deuda_reventa,
             "reventa_count": reventa_count,
             "deuda_compraventa": deuda_compraventa,
             "compraventa_count": compraventa_count,
+            "docs_vtv_vencida": docs_vtv_vencida,
+            "docs_verif_vencida": docs_verif_vencida,
+            # (turnos_* y vencimientos_* ya vienen del contexto base)
         })
         return render(request, "inicio/inicio_gestion.html", context)
 
