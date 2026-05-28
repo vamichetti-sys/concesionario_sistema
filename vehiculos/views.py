@@ -2,6 +2,7 @@ from decimal import Decimal
 from datetime import date
 
 from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
 from django.http import JsonResponse, HttpResponse
 from django.template.loader import render_to_string
 from django.contrib import messages
@@ -836,7 +837,9 @@ def agregar_gasto_extra(request, vehiculo_id):
         )
         messages.success(request, f"Gasto \"{concepto}\" agregado.")
 
-    return redirect("vehiculos:ficha_completa", vehiculo_id=vehiculo.id)
+    # Redirige a la sección de gastos adicionales para que el usuario vea
+    # el nuevo registro y su botón eliminar (estaba más abajo en la ficha).
+    return redirect(reverse("vehiculos:ficha_completa", args=[vehiculo.id]) + "#gastos-adicionales")
 
 
 # ==========================================================
@@ -851,7 +854,7 @@ def eliminar_gasto_extra(request, pk):
         gasto.delete()
         messages.success(request, "Gasto eliminado.")
 
-    return redirect("vehiculos:ficha_completa", vehiculo_id=vehiculo_id)
+    return redirect(reverse("vehiculos:ficha_completa", args=[vehiculo_id]) + "#gastos-adicionales")
 
 
 # ==========================================================
