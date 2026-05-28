@@ -2,14 +2,24 @@ from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpResponse
 
+from django.conf import settings
+
 from vehiculos.models import FichaVehicular
 from calendario.models import Evento
+from agenda_pagos.models import PagoFuturo
 
 from datetime import date
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
+
+
+def _es_admin_agenda(user):
+    """Solo Hamichetti / Vamichetti ven los pagos de la Agenda en el calendario."""
+    permitidos = getattr(settings, "USUARIOS_GESTION_INTERNA", ["Hamichetti", "Vamichetti"])
+    permitidos = {u.lower() for u in permitidos}
+    return user.is_authenticated and (user.is_superuser or user.username.lower() in permitidos)
 
 # ==========================================================
 # 📅 VISTA CALENDARIO
@@ -124,8 +134,32 @@ def api_calendario_vencimientos(request):
                 "vehiculo_info": f"{evento.vehiculo.marca} {evento.vehiculo.modelo} ({evento.vehiculo.dominio})",
                 "url": f"/vehiculos/ficha-completa/{evento.vehiculo.id}/"
             })
-        
+
         eventos[event_id] = evento_data
+
+    # ==================================================
+    # 🔹 AGENDA DE PAGOS (solo admins: Hamichetti / Vamichetti)
+    # ==================================================
+    if _es_admin_agenda(request.user):
+        hoy = date.today()
+        pagos = PagoFuturo.objects.select_related("categoria").all()
+        for p in pagos:
+            event_id = f"pago-{p.id}"
+            # Color: verde si ya está pagado, rojo si vencido, naranja si está por vencer.
+            if p.pagado:
+                color = "#198754"  # verde
+            elif p.fecha_vencimiento < hoy:
+                color = "#dc3545"  # rojo (vencido)
+            else:
+                color = "#f59e0b"  # naranja (pendiente)
+            eventos[event_id] = {
+                "id": event_id,
+                "start": p.fecha_vencimiento,
+                "title": f"Pago: {p.descripcion} (${p.monto:.0f})",
+                "allDay": True,
+                "color": color,
+                "url": f"/agenda-pagos/",
+            }
 
     return JsonResponse(list(eventos.values()), safe=False)
 
@@ -197,6 +231,22 @@ def calendario_pdf_mensual(request, anio, mes):
                 "fecha": evento.fecha,
                 "tipo": "Turno",
                 "detalle": evento.titulo
+            })
+
+    # ==================================================
+    # 🔹 AGENDA DE PAGOS (solo admins)
+    # ==================================================
+    if _es_admin_agenda(request.user):
+        pagos = PagoFuturo.objects.filter(
+            fecha_vencimiento__year=anio,
+            fecha_vencimiento__month=mes,
+        )
+        for p in pagos:
+            estado = "Pagado" if p.pagado else "Pendiente"
+            eventos_pdf.append({
+                "fecha": p.fecha_vencimiento,
+                "tipo": f"Pago ({estado})",
+                "detalle": f"{p.descripcion} — ${p.monto:.0f}",
             })
 
     # Orden cronológico final
