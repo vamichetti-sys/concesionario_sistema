@@ -93,5 +93,27 @@ class Cheque(models.Model):
         
         total_monto = sum(r['monto'] for r in rangos.values())
         total_cantidad = sum(r['cantidad'] for r in rangos.values())
-        
+
         return rangos, total_monto, total_cantidad
+
+    @classmethod
+    def crear_desde_cobro(cls, *, cliente, monto, fecha_deposito=None,
+                          banco_emision="", numero_cheque="", titular_cheque="",
+                          nro_factura="", creado_por=None, observaciones=""):
+        """
+        Crea un cheque 'a depositar' a partir de un cobro (cuenta corriente
+        o reventa) pagado con cheque. Queda disponible automáticamente en
+        Gestión de Cheques.
+        """
+        return cls.objects.create(
+            cliente=(cliente or "").strip() or "Sin nombre",
+            nro_factura=nro_factura or "",
+            banco_emision=banco_emision or "",
+            numero_cheque=numero_cheque or "",
+            titular_cheque=(titular_cheque or cliente or "").strip(),
+            monto=monto,
+            fecha_deposito=fecha_deposito or date.today(),
+            estado="a_depositar",
+            creado_por=creado_por,
+            observaciones=observaciones or "",
+        )
