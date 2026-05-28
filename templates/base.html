@@ -643,6 +643,12 @@
                 <i data-lucide="receipt"></i>
                 <span>Facturación</span>
             </a>
+            {% if request.user.username|lower == 'hamichetti' or request.user.username|lower == 'vamichetti' %}
+            <a href="/agenda-pagos/" class="nav-link {% if '/agenda-pagos/' in request.path %}active{% endif %}">
+                <i data-lucide="calendar-clock"></i>
+                <span>Agenda de Pagos</span>
+            </a>
+            {% endif %}
             <a href="/asistencia/" class="nav-link {% if '/asistencia/' in request.path %}active{% endif %}">
                 <i data-lucide="user-check"></i>
                 <span>Asistencia</span>

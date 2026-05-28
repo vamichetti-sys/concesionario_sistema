@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+
+<div class="mb-4">
+    <a href="{% url 'agenda_pagos:lista' %}" class="text-muted text-decoration-none d-inline-flex align-items-center mb-2" style="font-size:14px;">
+        <i data-lucide="arrow-left" style="width:16px;height:16px;margin-right:6px;"></i>
+        Volver a Agenda de Pagos
+    </a>
+    <h3 class="fw-bold mb-1">{{ titulo }}</h3>
+    <p class="text-muted mb-0">Programá un gasto futuro. Al marcarlo como pagado se cargará automáticamente en el módulo elegido.</p>
+</div>
+
+<div class="card p-4" style="max-width:780px;">
+    <form method="post">
+        {% csrf_token %}
+
+        <div class="row g-3">
+            <div class="col-md-8">
+                <label class="form-label">Descripción *</label>
+                {{ form.descripcion }}
+                {% if form.descripcion.errors %}<div class="text-danger small">{{ form.descripcion.errors|join:" " }}</div>{% endif %}
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Monto *</label>
+                {{ form.monto }}
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">Fecha de vencimiento *</label>
+                {{ form.fecha_vencimiento }}
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Categoría (tipo de pago)</label>
+                {{ form.categoria }}
+                <small class="text-muted">Necesaria si va a Control de Gastos.</small>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Destino al pagar *</label>
+                {{ form.destino }}
+            </div>
+
+            <div class="col-md-12" id="bloque-cuenta-interna">
+                <label class="form-label">Cuenta interna destino</label>
+                {{ form.cuenta_interna }}
+                <small class="text-muted">Solo si el destino es <strong>Cuentas Internas</strong>.</small>
+            </div>
+
+            <div class="col-md-12">
+                <label class="form-label">Observaciones</label>
+                {{ form.observaciones }}
+            </div>
+        </div>
+
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger mt-3">{{ form.non_field_errors|join:" " }}</div>
+        {% endif %}
+
+        <hr class="my-4">
+
+        <div class="d-flex gap-3">
+            <button type="submit" class="btn btn-primary">
+                <i data-lucide="save" style="width:16px;height:16px;margin-right:6px;"></i>
+                Guardar
+            </button>
+            <a href="{% url 'agenda_pagos:lista' %}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+    // Mostrar/ocultar cuenta interna según destino
+    (function () {
+        var destino = document.getElementById('id_destino');
+        var bloque = document.getElementById('bloque-cuenta-interna');
+        function toggle() {
+            if (!destino || !bloque) return;
+            bloque.style.display = destino.value === 'cuentas_internas' ? '' : 'none';
+        }
+        if (destino) destino.addEventListener('change', toggle);
+        toggle();
+    })();
+</script>
+{% endblock %}

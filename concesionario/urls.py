@@ -120,6 +120,7 @@ urlpatterns = [
     path('contrasenas/', include('contrasenas.urls')),
     path('gastos-personales/', include('gastos_personales.urls')),
     path('permisos/', include('permisos.urls')),
+    path('agenda-pagos/', include('agenda_pagos.urls')),
     path('community/', include('community.urls')),
     path('auditoria/', include('auditoria.urls')),
 

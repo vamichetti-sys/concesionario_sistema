@@ -257,6 +257,20 @@ def inicio(request):
             .select_related("vehiculo").order_by("verificacion_vencimiento")
         )
 
+        # Agenda de Pagos: vencidos + próximos 7 días
+        from agenda_pagos.models import PagoFuturo
+        pagos_vencidos = (
+            PagoFuturo.objects.filter(pagado=False, fecha_vencimiento__lt=hoy)
+            .select_related("categoria", "cuenta_interna").order_by("fecha_vencimiento")[:8]
+        )
+        pagos_proximos = (
+            PagoFuturo.objects.filter(
+                pagado=False,
+                fecha_vencimiento__gte=hoy,
+                fecha_vencimiento__lte=hoy + timedelta(days=7),
+            ).select_related("categoria", "cuenta_interna").order_by("fecha_vencimiento")[:8]
+        )
+
         context.update({
             "deuda_reventa": deuda_reventa,
             "reventa_count": reventa_count,
@@ -264,6 +278,8 @@ def inicio(request):
             "compraventa_count": compraventa_count,
             "docs_vtv_vencida": docs_vtv_vencida,
             "docs_verif_vencida": docs_verif_vencida,
+            "pagos_vencidos": pagos_vencidos,
+            "pagos_proximos": pagos_proximos,
             # (turnos_* y vencimientos_* ya vienen del contexto base)
         })
         return render(request, "inicio/inicio_gestion.html", context)

@@ -92,6 +92,7 @@ INSTALLED_APPS = [
     "contrasenas",
     "gastos_personales",
     "permisos",
+    "agenda_pagos",
 ]
 
 # ==========================================================

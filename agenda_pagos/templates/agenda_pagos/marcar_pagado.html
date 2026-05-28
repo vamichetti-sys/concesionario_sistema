@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Marcar pagado{% endblock %}
+
+{% block content %}
+
+<div class="mb-4">
+    <a href="{% url 'agenda_pagos:lista' %}" class="text-muted text-decoration-none d-inline-flex align-items-center mb-2" style="font-size:14px;">
+        <i data-lucide="arrow-left" style="width:16px;height:16px;margin-right:6px;"></i>
+        Volver a la agenda
+    </a>
+    <h3 class="fw-bold mb-1">Marcar como pagado</h3>
+    <p class="text-muted mb-0">
+        <strong>{{ obj.descripcion }}</strong> — ${{ obj.monto|floatformat:0 }}
+        &middot; vencía el {{ obj.fecha_vencimiento|date:"d/m/Y" }}
+    </p>
+</div>
+
+<div class="card p-4" style="max-width:600px;">
+    <div class="alert alert-info mb-4">
+        <i data-lucide="info" style="width:16px;height:16px;margin-right:4px;"></i>
+        Al confirmar, se crea automáticamente el registro en
+        <strong>{{ obj.get_destino_display }}</strong>{% if obj.cuenta_interna %} ({{ obj.cuenta_interna.nombre }}){% endif %}.
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label">Fecha de pago *</label>
+                {{ form.fecha_pago }}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Forma de pago *</label>
+                {{ form.forma_pago }}
+            </div>
+            <div class="col-12">
+                <label class="form-label">Observaciones</label>
+                {{ form.observaciones }}
+            </div>
+        </div>
+
+        <hr class="my-4">
+
+        <div class="d-flex gap-3">
+            <button type="submit" class="btn btn-success">
+                <i data-lucide="check" style="width:16px;height:16px;margin-right:6px;"></i>
+                Confirmar pago
+            </button>
+            <a href="{% url 'agenda_pagos:lista' %}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+</script>
+{% endblock %}
