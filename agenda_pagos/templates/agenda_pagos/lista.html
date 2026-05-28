@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Agenda de Pagos{% endblock %}
+{% block title %}Agenda de Pagos – {{ mes_nombre }} {{ anio }}{% endblock %}
 
 {% block content %}
 
@@ -10,7 +10,7 @@
             <i data-lucide="calendar-clock" style="width:22px;height:22px;margin-right:6px;"></i>
             Agenda de Pagos
         </h3>
-        <p class="text-muted mb-0">Gastos programados a futuro. Al marcarlos pagados, se cargan automáticamente en su módulo.</p>
+        <p class="text-muted mb-0">Pagos mensuales programados. Al tildar el casillero ✓ se marcan como pagados y se cargan en su módulo destino.</p>
     </div>
     <a href="{% url 'agenda_pagos:crear' %}" class="btn btn-primary">
         <i data-lucide="plus" style="width:16px;height:16px;margin-right:6px;"></i>
@@ -18,12 +18,12 @@
     </a>
 </div>
 
-<!-- INDICADORES -->
+<!-- INDICADORES (globales, no filtrados por mes) -->
 <div class="row g-3 mb-4">
     <div class="col-6 col-md-4">
         <div class="card p-3" style="position:relative;">
             <div class="d-flex justify-content-between align-items-start mb-2">
-                <span class="text-muted" style="font-size:13px;">Total pendiente</span>
+                <span class="text-muted" style="font-size:13px;">Total pendiente (todos)</span>
                 <div style="width:36px;height:36px;background:rgba(245,158,11,0.1);border-radius:8px;display:flex;align-items:center;justify-content:center;">
                     <i data-lucide="hourglass" style="width:18px;height:18px;color:#f59e0b;"></i>
                 </div>
@@ -42,7 +42,7 @@
                 </div>
             </div>
             <h4 class="fw-bold mb-0 text-danger">${{ total_vencido|floatformat:0 }}</h4>
-            <small class="text-danger">{{ cant_vencido }} pago{{ cant_vencido|pluralize:"s" }} vencido{{ cant_vencido|pluralize:"s" }}</small>
+            <small class="text-danger">{{ cant_vencido }} vencido{{ cant_vencido|pluralize:"s" }}</small>
             <div style="position:absolute;top:0;left:0;width:4px;height:100%;background:#ef4444;border-radius:14px 0 0 14px;"></div>
         </div>
     </div>
@@ -61,14 +61,38 @@
     </div>
 </div>
 
-<!-- FILTROS -->
+<!-- SELECTOR DE MES + FILTROS -->
 <div class="card p-3 mb-3">
-    <div class="d-flex flex-wrap gap-2">
-        <a href="?filtro=pendientes" class="btn btn-sm {% if filtro == 'pendientes' %}btn-primary{% else %}btn-outline-secondary{% endif %}">Pendientes</a>
-        <a href="?filtro=vencidos" class="btn btn-sm {% if filtro == 'vencidos' %}btn-danger{% else %}btn-outline-secondary{% endif %}">Vencidos</a>
-        <a href="?filtro=pagados" class="btn btn-sm {% if filtro == 'pagados' %}btn-success{% else %}btn-outline-secondary{% endif %}">Pagados</a>
-        <a href="?filtro=todos" class="btn btn-sm {% if filtro == 'todos' %}btn-secondary{% else %}btn-outline-secondary{% endif %}">Todos</a>
-    </div>
+    <form method="GET" class="row g-2 align-items-end">
+        <div class="col-md-3">
+            <label class="form-label" style="font-size:12px;">Mes</label>
+            <select name="mes" class="form-select">
+                {% for num, nombre in meses_choices %}
+                <option value="{{ num }}" {% if num == mes %}selected{% endif %}>{{ nombre }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label" style="font-size:12px;">Año</label>
+            <select name="anio" class="form-select">
+                {% for a in anios_disponibles %}
+                <option value="{{ a }}" {% if a == anio %}selected{% endif %}>{{ a }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label" style="font-size:12px;">Filtro</label>
+            <select name="filtro" class="form-select">
+                <option value="pendientes" {% if filtro == 'pendientes' %}selected{% endif %}>Pendientes del mes</option>
+                <option value="vencidos" {% if filtro == 'vencidos' %}selected{% endif %}>Vencidos (todos)</option>
+                <option value="pagados" {% if filtro == 'pagados' %}selected{% endif %}>Pagados del mes</option>
+                <option value="todos" {% if filtro == 'todos' %}selected{% endif %}>Todos del mes</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-primary w-100">Aplicar</button>
+        </div>
+    </form>
 </div>
 
 <!-- TABLA -->
@@ -78,18 +102,33 @@
         <table class="table align-middle mb-0">
             <thead>
                 <tr>
+                    <th style="width:60px;" class="text-center">✓</th>
                     <th>Descripción</th>
                     <th>Categoría</th>
                     <th>Destino</th>
                     <th>Vencimiento</th>
                     <th class="text-end">Monto</th>
-                    <th class="text-center">Estado</th>
+                    <th>Pagado por / fecha</th>
                     <th class="text-end">Acciones</th>
                 </tr>
             </thead>
             <tbody>
                 {% for p in pagos %}
                 <tr {% if p.vencido %}style="background:rgba(239,68,68,0.04);"{% endif %}>
+                    <!-- CHECKBOX MARCAR PAGADO -->
+                    <td class="text-center">
+                        {% if not p.pagado %}
+                        <form method="post" action="{% url 'agenda_pagos:marcar_pagado_rapido' p.pk %}" data-no-confirm style="display:inline;">
+                            {% csrf_token %}
+                            <input type="checkbox" class="form-check-input" style="width:22px;height:22px;cursor:pointer;"
+                                   title="Marcar como pagado (usa fecha de hoy)"
+                                   onchange="this.form.submit()">
+                        </form>
+                        {% else %}
+                        <input type="checkbox" class="form-check-input" checked disabled style="width:22px;height:22px;">
+                        {% endif %}
+                    </td>
+
                     <td>
                         <span class="fw-semibold">{{ p.descripcion }}</span>
                         {% if p.observaciones %}<br><small class="text-muted">{{ p.observaciones|truncatechars:60 }}</small>{% endif %}
@@ -100,28 +139,28 @@
                             <span class="badge bg-info text-dark">Cuentas Internas</span>
                             {% if p.cuenta_interna %}<br><small class="text-muted">{{ p.cuenta_interna.nombre }}</small>{% endif %}
                         {% else %}
-                            <span class="badge bg-warning text-dark">Control de Gastos</span>
+                            <span class="badge bg-warning text-dark">Gastos Personales</span>
                         {% endif %}
                     </td>
                     <td>
                         {{ p.fecha_vencimiento|date:"d/m/Y" }}
-                        {% if p.vencido %}<br><small class="text-danger fw-semibold">vencido hace {{ p.dias_restantes|stringformat:"d"|cut:"-" }} d</small>{% endif %}
+                        {% if p.vencido %}<br><small class="text-danger fw-semibold">vencido</small>{% endif %}
                         {% if p.vence_hoy %}<br><small class="text-warning fw-semibold">vence hoy</small>{% endif %}
                     </td>
                     <td class="text-end fw-bold">${{ p.monto|floatformat:0 }}</td>
-                    <td class="text-center">
+                    <td>
                         {% if p.pagado %}
-                            <span class="badge bg-success">Pagado</span>
-                            {% if p.fecha_pago %}<br><small class="text-muted">{{ p.fecha_pago|date:"d/m/Y" }}</small>{% endif %}
+                            <strong>{{ p.pagado_por.username|default:"–" }}</strong><br>
+                            <small class="text-muted">{{ p.fecha_pago|date:"d/m/Y" }}{% if p.forma_pago %} · {{ p.get_forma_pago_display }}{% endif %}</small>
                         {% else %}
-                            <span class="badge bg-secondary">Pendiente</span>
+                            <small class="text-muted">–</small>
                         {% endif %}
                     </td>
                     <td class="text-end">
                         <div class="d-flex gap-1 justify-content-end">
                             {% if not p.pagado %}
-                            <a href="{% url 'agenda_pagos:marcar_pagado' p.pk %}" class="btn btn-success btn-sm" title="Marcar como pagado">
-                                <i data-lucide="check" style="width:14px;height:14px;"></i>
+                            <a href="{% url 'agenda_pagos:marcar_pagado' p.pk %}" class="btn btn-outline-success btn-sm" title="Pagar con detalle (elegir fecha y forma)">
+                                <i data-lucide="check-square" style="width:14px;height:14px;"></i>
                             </a>
                             <a href="{% url 'agenda_pagos:editar' p.pk %}" class="btn btn-secondary btn-sm" title="Editar">
                                 <i data-lucide="edit" style="width:14px;height:14px;"></i>
@@ -130,9 +169,9 @@
                                 <i data-lucide="trash-2" style="width:14px;height:14px;"></i>
                             </a>
                             {% else %}
-                            <form method="post" action="{% url 'agenda_pagos:deshacer_pago' p.pk %}" data-no-confirm>
+                            <form method="post" action="{% url 'agenda_pagos:deshacer_pago' p.pk %}" data-no-confirm style="display:inline;">
                                 {% csrf_token %}
-                                <button type="submit" class="btn btn-outline-warning btn-sm" title="Deshacer pago (borra el registro en el módulo destino)">
+                                <button type="submit" class="btn btn-outline-warning btn-sm" title="Deshacer pago (borra el registro destino)">
                                     <i data-lucide="rotate-ccw" style="width:14px;height:14px;"></i>
                                 </button>
                             </form>
@@ -147,10 +186,10 @@
     {% else %}
     <div class="p-5 text-center">
         <i data-lucide="calendar-clock" style="width:48px;height:48px;color:#9ca3af;margin-bottom:12px;"></i>
-        <p class="text-muted mb-3">No hay pagos en este filtro</p>
+        <p class="text-muted mb-3">No hay pagos para mostrar con este filtro.</p>
         <a href="{% url 'agenda_pagos:crear' %}" class="btn btn-primary">
             <i data-lucide="plus" style="width:16px;height:16px;margin-right:6px;"></i>
-            Agregar el primero
+            Agregar un pago futuro
         </a>
     </div>
     {% endif %}

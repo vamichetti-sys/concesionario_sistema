@@ -9,15 +9,15 @@ class PagoFuturo(models.Model):
     """
     Pago futuro programado en la Agenda de Pagos.
     Al marcarse como pagado, se crea automáticamente el registro
-    correspondiente en el módulo destino (Cuentas Internas o Control de
-    Gastos), y queda vinculado para evitar duplicaciones.
+    correspondiente en el módulo destino (Cuentas Internas o
+    Gastos Personales) y queda vinculado para no duplicar y poder revertir.
     """
 
     DESTINO_CUENTAS_INTERNAS = "cuentas_internas"
-    DESTINO_CONTROL_GASTOS = "control_gastos"
+    DESTINO_GASTOS_PERSONALES = "gastos_personales"
     DESTINO_CHOICES = [
         (DESTINO_CUENTAS_INTERNAS, "Cuentas Internas"),
-        (DESTINO_CONTROL_GASTOS, "Control de Gastos"),
+        (DESTINO_GASTOS_PERSONALES, "Gastos Personales"),
     ]
 
     FORMA_PAGO_CHOICES = [
@@ -39,7 +39,7 @@ class PagoFuturo(models.Model):
 
     destino = models.CharField(
         "Destino al marcar pagado", max_length=20, choices=DESTINO_CHOICES,
-        default=DESTINO_CONTROL_GASTOS,
+        default=DESTINO_GASTOS_PERSONALES,
     )
 
     cuenta_interna = models.ForeignKey(
@@ -55,11 +55,16 @@ class PagoFuturo(models.Model):
 
     pagado = models.BooleanField(default=False)
     fecha_pago = models.DateField(null=True, blank=True)
+    pagado_por = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="pagos_futuros_pagados",
+        help_text="Usuario que marcó el pago como pagado.",
+    )
 
     observaciones = models.TextField(blank=True)
 
     # Referencias a registros creados al pagar (para no duplicar y poder revertir)
-    gasto_mensual_id = models.PositiveIntegerField(null=True, blank=True)
+    gasto_personal_id = models.PositiveIntegerField(null=True, blank=True)
     movimiento_interno_id = models.PositiveIntegerField(null=True, blank=True)
 
     creado_por = models.ForeignKey(

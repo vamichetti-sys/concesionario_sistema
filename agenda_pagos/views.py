@@ -7,7 +7,7 @@ from django.db import transaction
 from django.db.models import Sum
 from django.urls import reverse
 
-from gastos_mensuales.models import GastoMensual
+from gastos_personales.models import GastoPersonal
 from cuentas_internas.models import MovimientoInterno
 
 from .models import PagoFuturo
@@ -15,37 +15,75 @@ from .forms import PagoFuturoForm, MarcarPagadoForm
 from .decorators import solo_admins
 
 
+MESES = ["", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+         "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
+
+
 @solo_admins
 def lista_pagos(request):
-    filtro = request.GET.get("filtro", "pendientes")  # pendientes | vencidos | pagados | todos
     hoy = date.today()
+    # Filtro: pendientes (default) | vencidos | pagados | todos
+    filtro = request.GET.get("filtro", "pendientes")
+    # Mes/año (default mes corriente)
+    try:
+        mes = int(request.GET.get("mes", hoy.month))
+        anio = int(request.GET.get("anio", hoy.year))
+    except ValueError:
+        mes, anio = hoy.month, hoy.year
 
-    qs = PagoFuturo.objects.all().select_related("categoria", "cuenta_interna")
+    qs = PagoFuturo.objects.all().select_related("categoria", "cuenta_interna", "pagado_por")
+
+    # Filtro por mes: pendientes/pagados se muestran cuando su vencimiento o pago cae en el mes elegido.
     if filtro == "pendientes":
-        qs = qs.filter(pagado=False).order_by("fecha_vencimiento")
+        qs = qs.filter(
+            pagado=False,
+            fecha_vencimiento__year=anio,
+            fecha_vencimiento__month=mes,
+        ).order_by("fecha_vencimiento")
     elif filtro == "vencidos":
         qs = qs.filter(pagado=False, fecha_vencimiento__lt=hoy).order_by("fecha_vencimiento")
     elif filtro == "pagados":
-        qs = qs.filter(pagado=True).order_by("-fecha_pago", "-id")
-    # 'todos' deja el orden por defecto
+        qs = qs.filter(
+            pagado=True,
+            fecha_pago__year=anio,
+            fecha_pago__month=mes,
+        ).order_by("-fecha_pago", "-id")
+    else:  # todos
+        qs = qs.filter(fecha_vencimiento__year=anio, fecha_vencimiento__month=mes)
 
-    # Indicadores
-    pendientes = PagoFuturo.objects.filter(pagado=False)
-    total_pendiente = pendientes.aggregate(t=Sum("monto"))["t"] or Decimal("0")
-    cant_pendiente = pendientes.count()
+    # Indicadores globales (no filtrados por mes)
+    pendientes_all = PagoFuturo.objects.filter(pagado=False)
+    total_pendiente = pendientes_all.aggregate(t=Sum("monto"))["t"] or Decimal("0")
+    cant_pendiente = pendientes_all.count()
 
-    vencidos = pendientes.filter(fecha_vencimiento__lt=hoy)
+    vencidos = pendientes_all.filter(fecha_vencimiento__lt=hoy)
     total_vencido = vencidos.aggregate(t=Sum("monto"))["t"] or Decimal("0")
     cant_vencido = vencidos.count()
 
-    proximos_7 = pendientes.filter(fecha_vencimiento__gte=hoy, fecha_vencimiento__lte=hoy + timedelta(days=7))
+    proximos_7 = pendientes_all.filter(
+        fecha_vencimiento__gte=hoy,
+        fecha_vencimiento__lte=hoy + timedelta(days=7),
+    )
     cant_prox = proximos_7.count()
     total_prox = proximos_7.aggregate(t=Sum("monto"))["t"] or Decimal("0")
+
+    # Años disponibles para navegar
+    anios = list(
+        PagoFuturo.objects.values_list("fecha_vencimiento__year", flat=True)
+        .distinct().order_by("-fecha_vencimiento__year")
+    )
+    if hoy.year not in anios:
+        anios = [hoy.year] + anios
 
     return render(request, "agenda_pagos/lista.html", {
         "pagos": qs,
         "filtro": filtro,
         "hoy": hoy,
+        "mes": mes,
+        "anio": anio,
+        "mes_nombre": MESES[mes] if 1 <= mes <= 12 else "",
+        "meses_choices": list(enumerate(MESES))[1:],
+        "anios_disponibles": anios,
         "total_pendiente": total_pendiente,
         "cant_pendiente": cant_pendiente,
         "total_vencido": total_vencido,
@@ -74,7 +112,7 @@ def crear_pago(request):
 def editar_pago(request, pk):
     obj = get_object_or_404(PagoFuturo, pk=pk)
     if obj.pagado:
-        messages.info(request, "Este pago ya fue marcado como pagado; para cambiarlo, primero deshacé el pago.")
+        messages.info(request, "Este pago ya fue marcado como pagado; deshacelo primero para editarlo.")
         return redirect("agenda_pagos:lista")
     if request.method == "POST":
         form = PagoFuturoForm(request.POST, instance=obj)
@@ -97,9 +135,46 @@ def eliminar_pago(request, pk):
     return render(request, "agenda_pagos/eliminar.html", {"obj": obj})
 
 
+def _crear_registro_destino(pago, request_user, fecha_pago, observaciones):
+    """Crea el registro en el módulo destino y vincula su id al PagoFuturo."""
+    if pago.destino == PagoFuturo.DESTINO_GASTOS_PERSONALES:
+        # Necesita una categoría
+        if not pago.categoria:
+            return False, "Falta una categoría. Editá el pago y elegí una para Gastos Personales."
+        gp = GastoPersonal.objects.create(
+            usuario=request_user,
+            categoria=pago.categoria,
+            descripcion=pago.descripcion,
+            monto=pago.monto,
+            mes=fecha_pago.month,
+            anio=fecha_pago.year,
+            pagado=True,
+            fecha_pago=fecha_pago,
+            observaciones=(observaciones or pago.observaciones or ""),
+        )
+        pago.gasto_personal_id = gp.id
+        return True, None
+    elif pago.destino == PagoFuturo.DESTINO_CUENTAS_INTERNAS:
+        if not pago.cuenta_interna:
+            return False, "Falta la cuenta interna destino. Editá el pago y elegila."
+        mov = MovimientoInterno.objects.create(
+            cuenta=pago.cuenta_interna,
+            tipo="debe",
+            monto=pago.monto,
+            concepto=pago.descripcion,
+            fecha=fecha_pago,
+            observaciones=(observaciones or pago.observaciones or ""),
+            creado_por=request_user,
+        )
+        pago.movimiento_interno_id = mov.id
+        return True, None
+    return False, "Destino desconocido."
+
+
 @solo_admins
 @transaction.atomic
 def marcar_pagado(request, pk):
+    """Marcado completo con form (fecha + forma de pago + observaciones)."""
     obj = get_object_or_404(PagoFuturo, pk=pk)
     if obj.pagado:
         messages.info(request, "Este pago ya está marcado como pagado.")
@@ -112,50 +187,18 @@ def marcar_pagado(request, pk):
             forma_pago = form.cleaned_data["forma_pago"]
             obs = form.cleaned_data.get("observaciones") or ""
 
-            # Crear el registro en el módulo destino.
-            if obj.destino == PagoFuturo.DESTINO_CONTROL_GASTOS:
-                # Necesita una categoría para GastoMensual.
-                if not obj.categoria:
-                    messages.error(request, "Falta una categoría para mandar este pago a Control de Gastos. Editalo y elegí una.")
-                    return redirect("agenda_pagos:lista")
-                gm = GastoMensual.objects.create(
-                    categoria=obj.categoria,
-                    descripcion=obj.descripcion,
-                    monto=obj.monto,
-                    mes=fecha_pago.month,
-                    anio=fecha_pago.year,
-                    unidad="ambas",
-                    pagado=True,
-                    fecha_pago=fecha_pago,
-                    observaciones=(obs or obj.observaciones or ""),
-                    creado_por=request.user,
-                )
-                obj.gasto_mensual_id = gm.id
-
-            elif obj.destino == PagoFuturo.DESTINO_CUENTAS_INTERNAS:
-                if not obj.cuenta_interna:
-                    messages.error(request, "Falta la cuenta interna destino. Editalo y elegila.")
-                    return redirect("agenda_pagos:lista")
-                # Un pago saliente (concesionaria paga) → tipo 'haber' o 'debe' depende de la lectura.
-                # Convención del módulo: 'debe' = cargo a esa cuenta. Lo registramos como 'debe'.
-                mov = MovimientoInterno.objects.create(
-                    cuenta=obj.cuenta_interna,
-                    tipo="debe",
-                    monto=obj.monto,
-                    concepto=obj.descripcion,
-                    fecha=fecha_pago,
-                    observaciones=(obs or obj.observaciones or ""),
-                    creado_por=request.user,
-                )
-                obj.movimiento_interno_id = mov.id
+            ok, err = _crear_registro_destino(obj, request.user, fecha_pago, obs)
+            if not ok:
+                messages.error(request, err)
+                return redirect("agenda_pagos:lista")
 
             obj.pagado = True
             obj.fecha_pago = fecha_pago
             obj.forma_pago = forma_pago
+            obj.pagado_por = request.user
             if obs:
                 obj.observaciones = ((obj.observaciones or "") + ("\n" if obj.observaciones else "") + obs).strip()
             obj.save()
-
             messages.success(request, f"Pago marcado como pagado y cargado en {obj.get_destino_display()}.")
             return redirect("agenda_pagos:lista")
     else:
@@ -165,19 +208,50 @@ def marcar_pagado(request, pk):
 
 
 @solo_admins
+@transaction.atomic
+def marcar_pagado_rapido(request, pk):
+    """
+    Marcado rápido vía checkbox: usa fecha de hoy + forma_pago efectivo.
+    Crea el registro destino con esos defaults y registra quién pagó.
+    """
+    obj = get_object_or_404(PagoFuturo, pk=pk)
+    if request.method != "POST":
+        return redirect("agenda_pagos:lista")
+    if obj.pagado:
+        return redirect("agenda_pagos:lista")
+
+    fecha_pago = date.today()
+    ok, err = _crear_registro_destino(obj, request.user, fecha_pago, "")
+    if not ok:
+        messages.error(request, err)
+        return redirect("agenda_pagos:lista")
+
+    obj.pagado = True
+    obj.fecha_pago = fecha_pago
+    obj.forma_pago = "efectivo"
+    obj.pagado_por = request.user
+    obj.save()
+    messages.success(
+        request,
+        f"Pago marcado por {request.user.username} el {fecha_pago:%d/%m/%Y} → {obj.get_destino_display()}.",
+    )
+    return redirect("agenda_pagos:lista")
+
+
+@solo_admins
 def deshacer_pago(request, pk):
     """Revierte el 'pagado' y borra el registro creado en el módulo destino."""
     obj = get_object_or_404(PagoFuturo, pk=pk)
     if request.method == "POST":
-        # Borrar el registro destino si existe
-        if obj.gasto_mensual_id:
-            GastoMensual.objects.filter(pk=obj.gasto_mensual_id).delete()
-            obj.gasto_mensual_id = None
+        if obj.gasto_personal_id:
+            GastoPersonal.objects.filter(pk=obj.gasto_personal_id).delete()
+            obj.gasto_personal_id = None
         if obj.movimiento_interno_id:
             MovimientoInterno.objects.filter(pk=obj.movimiento_interno_id).delete()
             obj.movimiento_interno_id = None
         obj.pagado = False
         obj.fecha_pago = None
+        obj.pagado_por = None
         obj.save()
         messages.success(request, "Pago revertido. El registro destino fue eliminado.")
     return redirect("agenda_pagos:lista")
