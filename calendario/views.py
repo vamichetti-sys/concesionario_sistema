@@ -139,23 +139,28 @@ def api_calendario_vencimientos(request):
 
     # ==================================================
     # 🔹 AGENDA DE PAGOS (solo admins: Hamichetti / Vamichetti)
+    # Control de Gastos → violeta · Gastos Personales → cyan/teal
+    # En ambos casos: si está pagado se muestra en verde.
     # ==================================================
     if _es_admin_agenda(request.user):
-        hoy = date.today()
         pagos = PagoFuturo.objects.select_related("categoria").all()
         for p in pagos:
             event_id = f"pago-{p.id}"
-            # Color: verde si ya está pagado, rojo si vencido, naranja si está por vencer.
             if p.pagado:
                 color = "#198754"  # verde
-            elif p.fecha_vencimiento < hoy:
-                color = "#dc3545"  # rojo (vencido)
+            elif p.destino == PagoFuturo.DESTINO_CONTROL_GASTOS:
+                color = "#8b5cf6"  # violeta — Control de Gastos
             else:
-                color = "#f59e0b"  # naranja (pendiente)
+                color = "#14b8a6"  # teal — Gastos Personales
+            destino_label = (
+                "Control de Gastos"
+                if p.destino == PagoFuturo.DESTINO_CONTROL_GASTOS
+                else "Gastos Personales"
+            )
             eventos[event_id] = {
                 "id": event_id,
                 "start": p.fecha_vencimiento,
-                "title": f"Pago: {p.descripcion} (${p.monto:.0f})",
+                "title": f"Pago ({destino_label}): {p.descripcion} (${p.monto:.0f})",
                 "allDay": True,
                 "color": color,
                 "url": f"/agenda-pagos/",
