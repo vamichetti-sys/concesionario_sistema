@@ -556,13 +556,28 @@
   <p class="text-muted mb-3">No hay gastos adicionales registrados.</p>
   {% endif %}
 
-  <!-- NOTA: Los gastos extras se agregan desde la ficha completa -->
-  <div class="d-flex gap-2">
-    <a href="{% url 'vehiculos:ficha_completa' vehiculo.id %}" class="btn btn-secondary btn-sm">
-      <i data-lucide="external-link" style="width:14px;height:14px;margin-right:4px;"></i>
-      Abrir ficha completa para agregar gastos extras
-    </a>
-  </div>
+  <!-- AGREGAR GASTO EXTRA DESDE EL MODAL -->
+  <form method="post" action="{% url 'vehiculos:agregar_gasto_extra' vehiculo.id %}" class="row g-2 align-items-end">
+    {% csrf_token %}
+    <div class="col-md-4">
+      <label class="form-label" style="font-size:12px;">Concepto *</label>
+      <input type="text" name="concepto" class="form-control" placeholder="Ej: Reparacion frenos" required>
+    </div>
+    <div class="col-md-3">
+      <label class="form-label" style="font-size:12px;">Monto *</label>
+      <input type="number" name="monto" class="form-control" step="0.01" min="0" placeholder="0" required>
+    </div>
+    <div class="col-md-3">
+      <label class="form-label" style="font-size:12px;">Observaciones</label>
+      <input type="text" name="observaciones" class="form-control" placeholder="Opcional">
+    </div>
+    <div class="col-md-2 d-grid">
+      <button type="submit" class="btn btn-primary">
+        <i data-lucide="plus" style="width:14px;height:14px;margin-right:4px;"></i>
+        Agregar
+      </button>
+    </div>
+  </form>
 </div>
 
 <!-- ================= TAB: FICHA TÉCNICA ================= -->
