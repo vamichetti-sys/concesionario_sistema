@@ -33,5 +33,13 @@
 {% block extra_js %}
 <script>
     if (typeof lucide !== 'undefined') lucide.createIcons();
+    // Buscador en el desplegable de Categoría.
+    $(function () {
+        $('#id_categoria').select2({
+            placeholder: 'Buscá una categoría...',
+            width: '100%',
+            language: { noResults: function () { return 'No se encontró esa categoría'; } }
+        });
+    });
 </script>
 {% endblock %}
