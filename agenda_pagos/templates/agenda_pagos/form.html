@@ -32,19 +32,14 @@
                 {{ form.fecha_vencimiento }}
             </div>
             <div class="col-md-4">
-                <label class="form-label">Categoría (tipo de pago)</label>
+                <label class="form-label">Categoría (tipo de pago) *</label>
                 {{ form.categoria }}
-                <small class="text-muted">Necesaria si va a Gastos Personales.</small>
+                <small class="text-muted">Ej: Alquiler, Sueldos, Celular, Impuestos...</small>
             </div>
             <div class="col-md-4">
                 <label class="form-label">Destino al pagar *</label>
                 {{ form.destino }}
-            </div>
-
-            <div class="col-md-12" id="bloque-cuenta-interna">
-                <label class="form-label">Cuenta interna destino</label>
-                {{ form.cuenta_interna }}
-                <small class="text-muted">Solo si el destino es <strong>Cuentas Internas</strong>.</small>
+                <small class="text-muted"><strong>Control de Gastos</strong> = gasto de la concesionaria · <strong>Gastos Personales</strong> = gasto del usuario que paga.</small>
             </div>
 
             <div class="col-md-12">
@@ -74,16 +69,5 @@
 {% block extra_js %}
 <script>
     if (typeof lucide !== 'undefined') lucide.createIcons();
-    // Mostrar/ocultar cuenta interna según destino
-    (function () {
-        var destino = document.getElementById('id_destino');
-        var bloque = document.getElementById('bloque-cuenta-interna');
-        function toggle() {
-            if (!destino || !bloque) return;
-            bloque.style.display = destino.value === 'cuentas_internas' ? '' : 'none';
-        }
-        if (destino) destino.addEventListener('change', toggle);
-        toggle();
-    })();
 </script>
 {% endblock %}

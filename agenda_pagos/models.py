@@ -2,21 +2,21 @@ from django.db import models
 from django.contrib.auth.models import User
 
 from gastos_mensuales.models import CategoriaGasto
-from cuentas_internas.models import CuentaInterna
 
 
 class PagoFuturo(models.Model):
     """
-    Pago futuro programado en la Agenda de Pagos.
-    Al marcarse como pagado, se crea automáticamente el registro
-    correspondiente en el módulo destino (Cuentas Internas o
-    Gastos Personales) y queda vinculado para no duplicar y poder revertir.
+    Pago futuro programado en la Agenda de Pagos (alquiler, impuestos,
+    celular, sueldos, etc.). Al marcarse como pagado, se crea
+    automáticamente el registro en el módulo destino:
+    - Control de Gastos → si es un gasto de la concesionaria.
+    - Gastos Personales → si es un gasto personal del usuario que paga.
     """
 
-    DESTINO_CUENTAS_INTERNAS = "cuentas_internas"
+    DESTINO_CONTROL_GASTOS = "control_gastos"
     DESTINO_GASTOS_PERSONALES = "gastos_personales"
     DESTINO_CHOICES = [
-        (DESTINO_CUENTAS_INTERNAS, "Cuentas Internas"),
+        (DESTINO_CONTROL_GASTOS, "Control de Gastos"),
         (DESTINO_GASTOS_PERSONALES, "Gastos Personales"),
     ]
 
@@ -34,18 +34,13 @@ class PagoFuturo(models.Model):
     categoria = models.ForeignKey(
         CategoriaGasto, on_delete=models.PROTECT, related_name="pagos_futuros",
         null=True, blank=True,
-        help_text="Tipo de pago (alquiler, sueldos, servicios, etc.)",
+        help_text="Tipo de pago (alquiler, sueldos, celular, etc.)",
     )
 
     destino = models.CharField(
         "Destino al marcar pagado", max_length=20, choices=DESTINO_CHOICES,
-        default=DESTINO_GASTOS_PERSONALES,
-    )
-
-    cuenta_interna = models.ForeignKey(
-        CuentaInterna, on_delete=models.SET_NULL, related_name="pagos_futuros",
-        null=True, blank=True,
-        help_text="Cuenta interna destino (solo si destino = Cuentas Internas).",
+        default=DESTINO_CONTROL_GASTOS,
+        help_text="Control de Gastos = gasto de la concesionaria · Gastos Personales = gasto del usuario que paga.",
     )
 
     forma_pago = models.CharField(
@@ -64,8 +59,8 @@ class PagoFuturo(models.Model):
     observaciones = models.TextField(blank=True)
 
     # Referencias a registros creados al pagar (para no duplicar y poder revertir)
+    gasto_mensual_id = models.PositiveIntegerField(null=True, blank=True)
     gasto_personal_id = models.PositiveIntegerField(null=True, blank=True)
-    movimiento_interno_id = models.PositiveIntegerField(null=True, blank=True)
 
     creado_por = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True, blank=True,
@@ -80,8 +75,6 @@ class PagoFuturo(models.Model):
 
     def __str__(self):
         return f"{self.descripcion} — ${self.monto} ({self.fecha_vencimiento})"
-
-    # ----------------------- helpers de estado -----------------------
 
     @property
     def vencido(self):

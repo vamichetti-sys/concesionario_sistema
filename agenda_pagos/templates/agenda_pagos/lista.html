@@ -135,11 +135,12 @@
                     </td>
                     <td>{% if p.categoria %}<span class="badge" style="background:rgba(139,92,246,0.1);color:#7c3aed;">{{ p.categoria.nombre }}</span>{% else %}<small class="text-muted">–</small>{% endif %}</td>
                     <td>
-                        {% if p.destino == 'cuentas_internas' %}
-                            <span class="badge bg-info text-dark">Cuentas Internas</span>
-                            {% if p.cuenta_interna %}<br><small class="text-muted">{{ p.cuenta_interna.nombre }}</small>{% endif %}
+                        {% if p.destino == 'control_gastos' %}
+                            <span class="badge bg-warning text-dark">Control de Gastos</span>
+                            <br><small class="text-muted">Concesionaria</small>
                         {% else %}
-                            <span class="badge bg-warning text-dark">Gastos Personales</span>
+                            <span class="badge bg-info text-dark">Gastos Personales</span>
+                            <br><small class="text-muted">Personal de quien paga</small>
                         {% endif %}
                     </td>
                     <td>

@@ -1,7 +1,6 @@
 from django import forms
 
 from gastos_mensuales.models import CategoriaGasto
-from cuentas_internas.models import CuentaInterna
 from .models import PagoFuturo
 
 
@@ -10,38 +9,23 @@ class PagoFuturoForm(forms.ModelForm):
         model = PagoFuturo
         fields = [
             "descripcion", "monto", "fecha_vencimiento",
-            "categoria", "destino", "cuenta_interna",
+            "categoria", "destino",
             "observaciones",
         ]
         widgets = {
-            "descripcion": forms.TextInput(attrs={"class": "form-control", "placeholder": "Ej: Alquiler local, Internet, ..."}),
+            "descripcion": forms.TextInput(attrs={"class": "form-control", "placeholder": "Ej: Alquiler local, Celular, Impuestos..."}),
             "monto": forms.NumberInput(attrs={"class": "form-control", "step": "0.01", "min": "0"}),
             "fecha_vencimiento": forms.DateInput(format="%Y-%m-%d", attrs={"class": "form-control", "type": "date"}),
             "categoria": forms.Select(attrs={"class": "form-select"}),
             "destino": forms.Select(attrs={"class": "form-select"}),
-            "cuenta_interna": forms.Select(attrs={"class": "form-select"}),
             "observaciones": forms.Textarea(attrs={"class": "form-control", "rows": 2, "placeholder": "Notas opcionales"}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["categoria"].queryset = CategoriaGasto.objects.filter(activa=True)
-        self.fields["cuenta_interna"].queryset = CuentaInterna.objects.filter(activa=True)
         self.fields["categoria"].required = False
-        self.fields["cuenta_interna"].required = False
         self.fields["observaciones"].required = False
-
-    def clean(self):
-        cleaned = super().clean()
-        destino = cleaned.get("destino")
-        cuenta = cleaned.get("cuenta_interna")
-        if destino == PagoFuturo.DESTINO_CUENTAS_INTERNAS and not cuenta:
-            raise forms.ValidationError(
-                "Si el destino es Cuentas Internas, elegí la cuenta interna a la que se va a cargar el pago."
-            )
-        if destino != PagoFuturo.DESTINO_CUENTAS_INTERNAS:
-            cleaned["cuenta_interna"] = None
-        return cleaned
 
 
 class MarcarPagadoForm(forms.Form):
