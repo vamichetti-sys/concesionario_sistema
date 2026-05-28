@@ -65,10 +65,6 @@
 
                     {% if perms.reportes.view_fichareporteinterno %}
                     <div class="d-flex flex-wrap gap-2">
-                        <a href="{% url 'reportes:control_stock' %}" class="btn btn-secondary">
-                            <i data-lucide="package" style="width:16px;height:16px;margin-right:6px;"></i>
-                            Control de stock
-                        </a>
                         <a href="{% url 'reportes:reporte_ganancias' %}" class="btn btn-secondary">
                             <i data-lucide="trending-up" style="width:16px;height:16px;margin-right:6px;"></i>
                             Reporte de ganancias

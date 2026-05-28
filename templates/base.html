@@ -680,7 +680,7 @@
             {% if perms.reportes.view_fichareporteinterno %}
             <a href="{% url 'reportes:control_stock' %}" class="nav-link {% if '/interno/stock/' in request.path %}active{% endif %}">
                 <i data-lucide="package"></i>
-                <span>Control Interno</span>
+                <span>Control de Stock</span>
             </a>
             {% endif %}
             <a href="/cuentas-internas/" class="nav-link {% if '/cuentas-internas/' in request.path %}active{% endif %}">
