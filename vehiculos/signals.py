@@ -88,6 +88,42 @@ CAMPOS_GC = [
 
 
 @receiver(post_save, sender=FichaVehicular)
+def sync_vendedor_a_compraventa(sender, instance, **kwargs):
+    """
+    Cuando se setea el vendedor (proveedor / agencia) en la ficha
+    vehicular, se asegura de que exista una CompraVentaOperacion
+    para ese vehículo con ese proveedor. Si ya existe pero con otro
+    proveedor, lo actualiza. Si el vendedor está vacío no hace nada
+    (no borra la operación existente, para no perder histórico).
+
+    De esta forma el vehículo aparece automáticamente en la pantalla
+    de Compra-Venta del proveedor, aunque el precio de compra se cargue
+    después desde el flujo regular.
+    """
+    if not instance.vendedor_id:
+        return
+    if not instance.vehiculo_id:
+        return
+    try:
+        from compraventa.models import CompraVentaOperacion
+    except Exception:
+        return
+
+    op, creada = CompraVentaOperacion.objects.get_or_create(
+        vehiculo_id=instance.vehiculo_id,
+        defaults={
+            "origen": CompraVentaOperacion.ORIGEN_PROVEEDOR,
+            "proveedor_id": instance.vendedor_id,
+            "estado": CompraVentaOperacion.PENDIENTE,
+        },
+    )
+    if not creada and (op.proveedor_id != instance.vendedor_id or op.origen != CompraVentaOperacion.ORIGEN_PROVEEDOR):
+        op.proveedor_id = instance.vendedor_id
+        op.origen = CompraVentaOperacion.ORIGEN_PROVEEDOR
+        op.save(update_fields=["proveedor", "origen"])
+
+
+@receiver(post_save, sender=FichaVehicular)
 def sync_gastos_concesionario_fijos(sender, instance, **kwargs):
     """
     Al guardar la ficha, sincroniza los campos gc_* con GastoReporteInterno.
