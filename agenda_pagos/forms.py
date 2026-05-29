@@ -51,3 +51,9 @@ class MarcarPagadoForm(forms.Form):
         required=False,
         widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "Opcional"}),
     )
+    agregar_mes_siguiente = forms.BooleanField(
+        required=False,
+        label="Agendar también el mes siguiente",
+        widget=forms.CheckboxInput(attrs={"class": "form-check-input"}),
+        help_text="Si está tildado, se crea un nuevo pago en la agenda con la misma descripción y vencimiento +1 mes.",
+    )

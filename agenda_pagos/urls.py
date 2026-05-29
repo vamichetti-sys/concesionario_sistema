@@ -9,7 +9,6 @@ urlpatterns = [
     path("<int:pk>/editar/", views.editar_pago, name="editar"),
     path("<int:pk>/eliminar/", views.eliminar_pago, name="eliminar"),
     path("<int:pk>/pagar/", views.marcar_pagado, name="marcar_pagado"),
-    path("<int:pk>/pagar-rapido/", views.marcar_pagado_rapido, name="marcar_pagado_rapido"),
     path("<int:pk>/deshacer/", views.deshacer_pago, name="deshacer_pago"),
     path("copiar-mes-anterior/", views.copiar_mes_anterior, name="copiar_mes_anterior"),
 ]

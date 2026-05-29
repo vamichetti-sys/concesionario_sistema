@@ -116,12 +116,13 @@ def _borrar_destino(pago):
     pago.save(update_fields=["gasto_mensual_id", "gasto_personal_id"])
 
 
-def _crear_recurrente_si_corresponde(pago, request_user):
-    """Si el pago es recurrente mensual, crea el del mes siguiente (si todavía no existe)."""
-    if not pago.es_recurrente_mensual:
-        return None
+def _crear_proximo_mes(pago, request_user):
+    """
+    Crea el pago del mes siguiente (misma descripción, +1 mes) si todavía
+    no existe uno con la misma descripción/destino/fecha. Devuelve el
+    nuevo PagoFuturo o None si no se creó.
+    """
     next_fecha = pago.proxima_fecha_mensual
-    # Evitar duplicación: misma descripción, mismo destino, misma fecha de vencimiento.
     if PagoFuturo.objects.filter(
         descripcion=pago.descripcion,
         destino=pago.destino,
@@ -130,11 +131,11 @@ def _crear_recurrente_si_corresponde(pago, request_user):
         return None
     nuevo = PagoFuturo.objects.create(
         descripcion=pago.descripcion,
-        monto=pago.monto,
+        monto=0,  # se completa cuando se pague
         fecha_vencimiento=next_fecha,
         categoria=pago.categoria,
         destino=pago.destino,
-        es_recurrente_mensual=True,
+        es_recurrente_mensual=pago.es_recurrente_mensual,
         observaciones=pago.observaciones,
         creado_por=request_user,
     )
@@ -278,6 +279,7 @@ def marcar_pagado(request, pk):
             fecha_pago = form.cleaned_data["fecha_pago"]
             forma_pago = form.cleaned_data["forma_pago"]
             obs = form.cleaned_data.get("observaciones") or ""
+            agregar_mes_sig = form.cleaned_data.get("agregar_mes_siguiente", False)
 
             obj.monto = monto  # el monto real se carga acá
             obj.pagado = True
@@ -293,8 +295,13 @@ def marcar_pagado(request, pk):
                 messages.error(request, err)
                 return redirect("agenda_pagos:lista")
 
-            nuevo = _crear_recurrente_si_corresponde(obj, request.user)
-            extra = f" Se creó el del mes siguiente ({nuevo.fecha_vencimiento:%d/%m/%Y})." if nuevo else ""
+            extra = ""
+            if agregar_mes_sig:
+                nuevo = _crear_proximo_mes(obj, request.user)
+                if nuevo:
+                    extra = f" Se agendó el del mes siguiente ({nuevo.fecha_vencimiento:%d/%m/%Y})."
+                else:
+                    extra = " (El del mes siguiente ya existía, no se duplicó.)"
             messages.success(request, f"Pago de ${monto:.0f} cargado en {obj.get_destino_display()}.{extra}")
             return redirect("agenda_pagos:lista")
     else:
@@ -302,35 +309,14 @@ def marcar_pagado(request, pk):
             "monto": obj.monto if obj.monto else None,
             "fecha_pago": date.today(),
             "forma_pago": "transferencia",
+            "agregar_mes_siguiente": obj.es_recurrente_mensual,
         })
 
     return render(request, "agenda_pagos/marcar_pagado.html", {"form": form, "obj": obj})
 
 
-@solo_admins
-@transaction.atomic
-def marcar_pagado_rapido(request, pk):
-    obj = get_object_or_404(PagoFuturo, pk=pk)
-    if request.method != "POST":
-        return redirect("agenda_pagos:lista")
-    if obj.pagado:
-        return redirect("agenda_pagos:lista")
-
-    obj.pagado = True
-    obj.fecha_pago = date.today()
-    obj.forma_pago = "efectivo"
-    obj.pagado_por = request.user
-    obj.save()
-
-    ok, err = _sync_destino(obj, request.user)
-    if not ok:
-        messages.error(request, err)
-        return redirect("agenda_pagos:lista")
-
-    nuevo = _crear_recurrente_si_corresponde(obj, request.user)
-    extra = f" Se generó el del mes siguiente ({nuevo.fecha_vencimiento:%d/%m/%Y})." if nuevo else ""
-    messages.success(request, f"Pago marcado por {request.user.username} → {obj.get_destino_display()}.{extra}")
-    return redirect("agenda_pagos:lista")
+# (marcar_pagado_rapido fue removido: ahora todo pago pasa por
+#  marcar_pagado que pide monto + pregunta si agendar el mes siguiente.)
 
 
 @solo_admins
