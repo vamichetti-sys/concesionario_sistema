@@ -364,7 +364,9 @@ def cuenta_corriente_detalle(request, cuenta_id):
     cuotas      = plan.cuotas.all().order_by("numero") if plan else []
     movimientos = cuenta.movimientos.order_by("-fecha")
 
-    vehiculos = Vehiculo.objects.all()
+    # Para el modal de Vincular vehículo: mostrar solo los disponibles
+    # (en stock, temporales o en reventa). Los vendidos no se vinculan.
+    vehiculos = Vehiculo.objects.exclude(estado="vendido").order_by("marca", "modelo")
 
     gestoria_debe = (
         movimientos.filter(origen="gestoria", tipo="debe")
