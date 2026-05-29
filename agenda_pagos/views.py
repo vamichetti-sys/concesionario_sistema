@@ -348,20 +348,21 @@ def deshacer_pago(request, pk):
 
 
 @solo_admins
-@transaction.atomic
 def copiar_mes_anterior(request):
-    """Copia los pagos del mes anterior al mes/año destino."""
-    if request.method != "POST":
-        return redirect("agenda_pagos:lista")
+    """
+    GET: muestra los pagos del mes anterior con checkboxes para elegir
+         cuáles copiar. Los recurrentes vienen pre-tildados.
+    POST: copia solo los pagos cuyos PKs fueron tildados.
+    """
+    hoy = date.today()
+    # Tomar destino del query (o del POST si está)
     try:
-        mes = int(request.POST.get("mes_destino", 0))
-        anio = int(request.POST.get("anio_destino", 0))
+        mes = int(request.GET.get("mes", request.POST.get("mes_destino", hoy.month)))
+        anio = int(request.GET.get("anio", request.POST.get("anio_destino", hoy.year)))
     except ValueError:
-        messages.error(request, "Mes/año destino inválido.")
-        return redirect("agenda_pagos:lista")
+        mes, anio = hoy.month, hoy.year
     if not (1 <= mes <= 12 and anio > 0):
-        messages.error(request, "Mes/año destino inválido.")
-        return redirect("agenda_pagos:lista")
+        mes, anio = hoy.month, hoy.year
 
     mes_origen = 12 if mes == 1 else mes - 1
     anio_origen = anio - 1 if mes == 1 else anio
@@ -369,35 +370,54 @@ def copiar_mes_anterior(request):
     pagos_origen = PagoFuturo.objects.filter(
         fecha_vencimiento__year=anio_origen,
         fecha_vencimiento__month=mes_origen,
-    )
+    ).select_related("categoria").order_by("fecha_vencimiento")
 
-    creados = 0
+    # Cuáles ya existen en el mes destino (para mostrar y excluir)
+    last_day = calendar.monthrange(anio, mes)[1]
+    pagos_info = []
     for p in pagos_origen:
-        # Misma "día del mes" pero clamped al último día del mes destino.
-        last_day = calendar.monthrange(anio, mes)[1]
         nueva_fecha = date(anio, mes, min(p.fecha_vencimiento.day, last_day))
-        # Evitar duplicados (misma descripción + destino + fecha).
-        if PagoFuturo.objects.filter(
+        ya_existe = PagoFuturo.objects.filter(
             descripcion=p.descripcion,
             destino=p.destino,
             fecha_vencimiento=nueva_fecha,
-        ).exists():
-            continue
-        nuevo = PagoFuturo.objects.create(
-            descripcion=p.descripcion,
-            monto=p.monto,
-            fecha_vencimiento=nueva_fecha,
-            categoria=p.categoria,
-            destino=p.destino,
-            es_recurrente_mensual=p.es_recurrente_mensual,
-            observaciones=p.observaciones,
-            creado_por=request.user,
-        )
-        _sync_destino(nuevo, request.user)
-        creados += 1
+        ).exists()
+        pagos_info.append({"pago": p, "nueva_fecha": nueva_fecha, "ya_existe": ya_existe})
 
-    if creados > 0:
-        messages.success(request, f"Se copiaron {creados} pago{'s' if creados != 1 else ''} del mes anterior.")
-    else:
-        messages.info(request, "No había pagos para copiar (o ya estaban cargados).")
-    return redirect(f"{reverse('agenda_pagos:lista')}?mes={mes}&anio={anio}")
+    if request.method == "POST":
+        seleccionados = set(request.POST.getlist("pagos_seleccionados"))
+        creados = 0
+        with transaction.atomic():
+            for info in pagos_info:
+                p = info["pago"]
+                if str(p.pk) not in seleccionados:
+                    continue
+                if info["ya_existe"]:
+                    continue
+                nuevo = PagoFuturo.objects.create(
+                    descripcion=p.descripcion,
+                    monto=p.monto,
+                    fecha_vencimiento=info["nueva_fecha"],
+                    categoria=p.categoria,
+                    destino=p.destino,
+                    es_recurrente_mensual=p.es_recurrente_mensual,
+                    observaciones=p.observaciones,
+                    creado_por=request.user,
+                )
+                _sync_destino(nuevo, request.user)
+                creados += 1
+        if creados > 0:
+            messages.success(request, f"Se copiaron {creados} pago{'s' if creados != 1 else ''} al {MESES[mes]} {anio}.")
+        else:
+            messages.info(request, "No se copió ningún pago.")
+        return redirect(f"{reverse('agenda_pagos:lista')}?mes={mes}&anio={anio}")
+
+    return render(request, "agenda_pagos/copiar_mes_anterior.html", {
+        "pagos_info": pagos_info,
+        "mes_destino": mes,
+        "anio_destino": anio,
+        "mes_origen": mes_origen,
+        "anio_origen": anio_origen,
+        "mes_destino_nombre": MESES[mes],
+        "mes_origen_nombre": MESES[mes_origen],
+    })

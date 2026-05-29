@@ -18,15 +18,10 @@
             <i data-lucide="plus" style="width:14px;height:14px;margin-right:4px;"></i>
             Cargar un pago
         </a>
-        <form method="post" action="/agenda-pagos/copiar-mes-anterior/" data-no-confirm style="display:inline;">
-            {% csrf_token %}
-            <input type="hidden" name="mes_destino" value="{{ hoy.month }}">
-            <input type="hidden" name="anio_destino" value="{{ hoy.year }}">
-            <button type="submit" class="btn btn-outline-primary btn-sm">
-                <i data-lucide="copy" style="width:14px;height:14px;margin-right:4px;"></i>
-                Copiar del mes pasado
-            </button>
-        </form>
+        <a href="/agenda-pagos/copiar-mes-anterior/?mes={{ hoy.month }}&anio={{ hoy.year }}" class="btn btn-outline-primary btn-sm">
+            <i data-lucide="copy" style="width:14px;height:14px;margin-right:4px;"></i>
+            Elegir del mes pasado
+        </a>
     </div>
 </div>
 {% endif %}

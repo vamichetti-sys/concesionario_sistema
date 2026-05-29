@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}Copiar del mes anterior{% endblock %}
+
+{% block content %}
+
+<div class="mb-4">
+    <a href="{% url 'agenda_pagos:lista' %}?mes={{ mes_destino }}&anio={{ anio_destino }}" class="text-muted text-decoration-none d-inline-flex align-items-center mb-2" style="font-size:14px;">
+        <i data-lucide="arrow-left" style="width:16px;height:16px;margin-right:6px;"></i>
+        Volver a la agenda
+    </a>
+    <h3 class="fw-bold mb-1">Copiar pagos del mes anterior</h3>
+    <p class="text-muted mb-0">
+        Elegí qué pagos de <strong>{{ mes_origen_nombre }} {{ anio_origen }}</strong> querés copiar a <strong>{{ mes_destino_nombre }} {{ anio_destino }}</strong>.
+        Los marcados como <strong>mensual recurrente</strong> vienen pre-tildados.
+    </p>
+</div>
+
+<div class="card p-0">
+    {% if pagos_info %}
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="mes_destino" value="{{ mes_destino }}">
+        <input type="hidden" name="anio_destino" value="{{ anio_destino }}">
+
+        <div class="p-3 d-flex justify-content-between align-items-center border-bottom">
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-select-all">Seleccionar todos</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-select-none">Ninguno</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-select-recurrentes">Solo recurrentes</button>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">
+                <i data-lucide="copy" style="width:14px;height:14px;margin-right:4px;"></i>
+                Copiar los tildados
+            </button>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th style="width:50px;" class="text-center">✓</th>
+                        <th>Descripción</th>
+                        <th>Categoría</th>
+                        <th>Destino</th>
+                        <th>Nueva fecha</th>
+                        <th class="text-end">Monto</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for info in pagos_info %}
+                    <tr {% if info.ya_existe %}style="opacity:0.5;"{% endif %}>
+                        <td class="text-center">
+                            <input type="checkbox" class="form-check-input pago-check"
+                                   name="pagos_seleccionados" value="{{ info.pago.pk }}"
+                                   data-recurrente="{% if info.pago.es_recurrente_mensual %}1{% else %}0{% endif %}"
+                                   {% if info.pago.es_recurrente_mensual and not info.ya_existe %}checked{% endif %}
+                                   {% if info.ya_existe %}disabled{% endif %}>
+                        </td>
+                        <td>
+                            <span class="fw-semibold">{{ info.pago.descripcion }}</span>
+                            {% if info.pago.es_recurrente_mensual %}
+                            <span class="badge bg-primary ms-1"><i data-lucide="repeat" style="width:10px;height:10px;"></i> Mensual</span>
+                            {% endif %}
+                        </td>
+                        <td>{% if info.pago.categoria %}<small>{{ info.pago.categoria.nombre }}</small>{% else %}–{% endif %}</td>
+                        <td>
+                            {% if info.pago.destino == 'control_gastos' %}
+                                <span class="badge bg-warning text-dark">Control de Gastos</span>
+                            {% else %}
+                                <span class="badge bg-info text-dark">Gastos Personales</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ info.nueva_fecha|date:"d/m/Y" }}</td>
+                        <td class="text-end">{% if info.pago.monto %}${{ info.pago.monto|floatformat:0 }}{% else %}<small class="text-muted">— a definir</small>{% endif %}</td>
+                        <td>
+                            {% if info.ya_existe %}
+                            <span class="badge bg-secondary">Ya existe</span>
+                            {% else %}
+                            <span class="badge bg-success-subtle text-success">A copiar</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </form>
+    {% else %}
+    <div class="p-5 text-center">
+        <i data-lucide="inbox" style="width:48px;height:48px;color:#9ca3af;margin-bottom:12px;"></i>
+        <p class="text-muted mb-0">No hay pagos en {{ mes_origen_nombre }} {{ anio_origen }} para copiar.</p>
+        <a href="{% url 'agenda_pagos:lista' %}?mes={{ mes_destino }}&anio={{ anio_destino }}" class="btn btn-secondary mt-3">Volver</a>
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+    const checks = document.querySelectorAll('.pago-check:not([disabled])');
+    document.getElementById('btn-select-all')?.addEventListener('click', () => checks.forEach(c => c.checked = true));
+    document.getElementById('btn-select-none')?.addEventListener('click', () => checks.forEach(c => c.checked = false));
+    document.getElementById('btn-select-recurrentes')?.addEventListener('click', () => {
+        checks.forEach(c => c.checked = c.dataset.recurrente === '1');
+    });
+</script>
+{% endblock %}
