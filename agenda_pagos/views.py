@@ -218,6 +218,8 @@ def crear_pago(request):
         if form.is_valid():
             obj = form.save(commit=False)
             obj.creado_por = request.user
+            if obj.monto is None:
+                obj.monto = 0
             obj.save()
             ok, err = _sync_destino(obj, request.user)
             if not ok:
@@ -237,7 +239,10 @@ def editar_pago(request, pk):
     if request.method == "POST":
         form = PagoFuturoForm(request.POST, instance=obj)
         if form.is_valid():
-            form.save()
+            obj = form.save(commit=False)
+            if obj.monto is None:
+                obj.monto = 0
+            obj.save()
             _sync_destino(obj, request.user)
             messages.success(request, "Pago actualizado.")
             return redirect("agenda_pagos:lista")
