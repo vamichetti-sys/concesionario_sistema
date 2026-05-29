@@ -10,20 +10,31 @@
             <i data-lucide="calendar-clock" style="width:22px;height:22px;margin-right:6px;"></i>
             Agenda de Pagos
         </h3>
-        <p class="text-muted mb-0">Pagos mensuales programados. Al tildar el casillero ✓ se marcan como pagados y se cargan en su módulo destino.</p>
+        <p class="text-muted mb-0">Pagos mensuales programados. Al tildar el casillero ✓ se pide el monto y se carga en el módulo destino.</p>
     </div>
-    <a href="{% url 'agenda_pagos:crear' %}" class="btn btn-primary">
-        <i data-lucide="plus" style="width:16px;height:16px;margin-right:6px;"></i>
-        Nuevo pago
-    </a>
+    <div class="d-flex gap-2">
+        <form method="post" action="{% url 'agenda_pagos:copiar_mes_anterior' %}" data-no-confirm>
+            {% csrf_token %}
+            <input type="hidden" name="mes_destino" value="{{ mes }}">
+            <input type="hidden" name="anio_destino" value="{{ anio }}">
+            <button type="submit" class="btn btn-outline-primary">
+                <i data-lucide="copy" style="width:16px;height:16px;margin-right:6px;"></i>
+                Copiar del mes anterior
+            </button>
+        </form>
+        <a href="{% url 'agenda_pagos:crear' %}" class="btn btn-primary">
+            <i data-lucide="plus" style="width:16px;height:16px;margin-right:6px;"></i>
+            Nuevo pago
+        </a>
+    </div>
 </div>
 
-<!-- INDICADORES (globales, no filtrados por mes) -->
+<!-- INDICADORES -->
 <div class="row g-3 mb-4">
     <div class="col-6 col-md-4">
         <div class="card p-3" style="position:relative;">
             <div class="d-flex justify-content-between align-items-start mb-2">
-                <span class="text-muted" style="font-size:13px;">Total pendiente (todos)</span>
+                <span class="text-muted" style="font-size:13px;">Total pendiente</span>
                 <div style="width:36px;height:36px;background:rgba(245,158,11,0.1);border-radius:8px;display:flex;align-items:center;justify-content:center;">
                     <i data-lucide="hourglass" style="width:18px;height:18px;color:#f59e0b;"></i>
                 </div>
@@ -115,15 +126,12 @@
             <tbody>
                 {% for p in pagos %}
                 <tr {% if p.vencido %}style="background:rgba(239,68,68,0.04);"{% endif %}>
-                    <!-- CHECKBOX MARCAR PAGADO -->
+                    <!-- CHECKBOX: link al form que pide el monto -->
                     <td class="text-center">
                         {% if not p.pagado %}
-                        <form method="post" action="{% url 'agenda_pagos:marcar_pagado_rapido' p.pk %}" data-no-confirm style="display:inline;">
-                            {% csrf_token %}
-                            <input type="checkbox" class="form-check-input" style="width:22px;height:22px;cursor:pointer;"
-                                   title="Marcar como pagado (usa fecha de hoy)"
-                                   onchange="this.form.submit()">
-                        </form>
+                        <a href="{% url 'agenda_pagos:marcar_pagado' p.pk %}" title="Marcar como pagado (te pide el monto)">
+                            <input type="checkbox" class="form-check-input" style="width:22px;height:22px;cursor:pointer;" onclick="event.preventDefault();window.location.href=this.parentElement.href;">
+                        </a>
                         {% else %}
                         <input type="checkbox" class="form-check-input" checked disabled style="width:22px;height:22px;">
                         {% endif %}
@@ -131,16 +139,19 @@
 
                     <td>
                         <span class="fw-semibold">{{ p.descripcion }}</span>
+                        {% if p.es_recurrente_mensual %}
+                        <span class="badge bg-primary ms-1" title="Se autogenera mes a mes al pagarse">
+                            <i data-lucide="repeat" style="width:10px;height:10px;"></i> Mensual
+                        </span>
+                        {% endif %}
                         {% if p.observaciones %}<br><small class="text-muted">{{ p.observaciones|truncatechars:60 }}</small>{% endif %}
                     </td>
                     <td>{% if p.categoria %}<span class="badge" style="background:rgba(139,92,246,0.1);color:#7c3aed;">{{ p.categoria.nombre }}</span>{% else %}<small class="text-muted">–</small>{% endif %}</td>
                     <td>
                         {% if p.destino == 'control_gastos' %}
                             <span class="badge bg-warning text-dark">Control de Gastos</span>
-                            <br><small class="text-muted">Concesionaria</small>
                         {% else %}
                             <span class="badge bg-info text-dark">Gastos Personales</span>
-                            <br><small class="text-muted">Personal de quien paga</small>
                         {% endif %}
                     </td>
                     <td>
@@ -148,7 +159,9 @@
                         {% if p.vencido %}<br><small class="text-danger fw-semibold">vencido</small>{% endif %}
                         {% if p.vence_hoy %}<br><small class="text-warning fw-semibold">vence hoy</small>{% endif %}
                     </td>
-                    <td class="text-end fw-bold">${{ p.monto|floatformat:0 }}</td>
+                    <td class="text-end fw-bold">
+                        {% if p.monto %}${{ p.monto|floatformat:0 }}{% else %}<small class="text-muted">— a definir</small>{% endif %}
+                    </td>
                     <td>
                         {% if p.pagado %}
                             <strong>{{ p.pagado_por.username|default:"–" }}</strong><br>
@@ -160,9 +173,6 @@
                     <td class="text-end">
                         <div class="d-flex gap-1 justify-content-end">
                             {% if not p.pagado %}
-                            <a href="{% url 'agenda_pagos:marcar_pagado' p.pk %}" class="btn btn-outline-success btn-sm" title="Pagar con detalle (elegir fecha y forma)">
-                                <i data-lucide="check-square" style="width:14px;height:14px;"></i>
-                            </a>
                             <a href="{% url 'agenda_pagos:editar' p.pk %}" class="btn btn-secondary btn-sm" title="Editar">
                                 <i data-lucide="edit" style="width:14px;height:14px;"></i>
                             </a>
@@ -172,7 +182,7 @@
                             {% else %}
                             <form method="post" action="{% url 'agenda_pagos:deshacer_pago' p.pk %}" data-no-confirm style="display:inline;">
                                 {% csrf_token %}
-                                <button type="submit" class="btn btn-outline-warning btn-sm" title="Deshacer pago (borra el registro destino)">
+                                <button type="submit" class="btn btn-outline-warning btn-sm" title="Deshacer pago (revierte el registro destino a pendiente)">
                                     <i data-lucide="rotate-ccw" style="width:14px;height:14px;"></i>
                                 </button>
                             </form>

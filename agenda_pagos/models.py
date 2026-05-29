@@ -28,7 +28,10 @@ class PagoFuturo(models.Model):
     ]
 
     descripcion = models.CharField("Descripción", max_length=200)
-    monto = models.DecimalField("Monto", max_digits=14, decimal_places=2)
+    monto = models.DecimalField(
+        "Monto", max_digits=14, decimal_places=2, default=0,
+        help_text="Opcional al agendar. Se pregunta al marcar como pagado.",
+    )
     fecha_vencimiento = models.DateField("Fecha de vencimiento")
 
     categoria = models.ForeignKey(
@@ -46,6 +49,11 @@ class PagoFuturo(models.Model):
     forma_pago = models.CharField(
         "Forma de pago", max_length=20, choices=FORMA_PAGO_CHOICES, blank=True,
         help_text="Cargado al momento de marcar como pagado.",
+    )
+
+    es_recurrente_mensual = models.BooleanField(
+        "Pago mensual recurrente", default=False,
+        help_text="Si está activo, al marcarse como pagado se crea automáticamente el del mes siguiente.",
     )
 
     pagado = models.BooleanField(default=False)
@@ -90,3 +98,15 @@ class PagoFuturo(models.Model):
     def dias_restantes(self):
         from datetime import date
         return (self.fecha_vencimiento - date.today()).days
+
+    @property
+    def proxima_fecha_mensual(self):
+        """Fecha equivalente en el mes siguiente (respeta fin de mes corto)."""
+        import calendar
+        from datetime import date
+        f = self.fecha_vencimiento
+        year = f.year + (1 if f.month == 12 else 0)
+        month = 1 if f.month == 12 else f.month + 1
+        last_day = calendar.monthrange(year, month)[1]
+        day = min(f.day, last_day)
+        return date(year, month, day)

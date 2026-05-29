@@ -43,6 +43,15 @@
             </div>
 
             <div class="col-md-12">
+                <div class="form-check">
+                    {{ form.es_recurrente_mensual }}
+                    <label class="form-check-label" for="id_es_recurrente_mensual">
+                        <strong>Pago mensual recurrente</strong> — al marcarse pagado, se crea automáticamente el del mes siguiente.
+                    </label>
+                </div>
+            </div>
+
+            <div class="col-md-12">
                 <label class="form-label">Observaciones</label>
                 {{ form.observaciones }}
             </div>

@@ -1,3 +1,4 @@
+import calendar
 from datetime import date, timedelta
 from decimal import Decimal
 
@@ -18,6 +19,140 @@ from .decorators import solo_admins
 MESES = ["", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
          "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
 
+
+# ==========================================================
+# HELPERS
+# ==========================================================
+
+def _sync_destino(pago, default_user):
+    """
+    Asegura que exista el registro en el módulo destino y refleje el
+    estado actual del PagoFuturo. Si no existe, lo crea (incluso si el
+    pago todavía no está marcado pagado — para que aparezca como
+    pendiente en su módulo desde que se agenda). Si ya existe, lo
+    actualiza con los campos actuales del PagoFuturo.
+
+    Devuelve (ok, error_message).
+    """
+    if not pago.categoria:
+        return False, "Falta una categoría. Editá el pago y elegí una."
+
+    # Mes/año del registro destino: usamos la fecha de pago si existe,
+    # si no la fecha de vencimiento (para que aparezca en el mes correcto
+    # antes de pagarse).
+    fecha_ref = pago.fecha_pago or pago.fecha_vencimiento
+    mes = fecha_ref.month
+    anio = fecha_ref.year
+
+    if pago.destino == PagoFuturo.DESTINO_CONTROL_GASTOS:
+        if pago.gasto_mensual_id and GastoMensual.objects.filter(pk=pago.gasto_mensual_id).exists():
+            GastoMensual.objects.filter(pk=pago.gasto_mensual_id).update(
+                categoria=pago.categoria,
+                descripcion=pago.descripcion,
+                monto=pago.monto,
+                mes=mes, anio=anio,
+                pagado=pago.pagado,
+                fecha_pago=pago.fecha_pago,
+                observaciones=pago.observaciones or "",
+            )
+        else:
+            gm = GastoMensual.objects.create(
+                categoria=pago.categoria,
+                descripcion=pago.descripcion,
+                monto=pago.monto,
+                mes=mes, anio=anio,
+                unidad="ambas",
+                pagado=pago.pagado,
+                fecha_pago=pago.fecha_pago,
+                observaciones=pago.observaciones or "",
+                creado_por=pago.creado_por or default_user,
+            )
+            pago.gasto_mensual_id = gm.id
+            pago.save(update_fields=["gasto_mensual_id"])
+        return True, None
+
+    if pago.destino == PagoFuturo.DESTINO_GASTOS_PERSONALES:
+        # Para Gastos Personales necesitamos un usuario. Mientras no esté
+        # pagado, lo asignamos al usuario que creó el pago (admin).
+        # Al pagarlo, lo reasignamos a pagado_por.
+        user_destino = pago.pagado_por or pago.creado_por or default_user
+        if pago.gasto_personal_id and GastoPersonal.objects.filter(pk=pago.gasto_personal_id).exists():
+            GastoPersonal.objects.filter(pk=pago.gasto_personal_id).update(
+                usuario=user_destino,
+                categoria=pago.categoria,
+                descripcion=pago.descripcion,
+                monto=pago.monto,
+                mes=mes, anio=anio,
+                pagado=pago.pagado,
+                fecha_pago=pago.fecha_pago,
+                observaciones=pago.observaciones or "",
+            )
+        else:
+            gp = GastoPersonal.objects.create(
+                usuario=user_destino,
+                categoria=pago.categoria,
+                descripcion=pago.descripcion,
+                monto=pago.monto,
+                mes=mes, anio=anio,
+                pagado=pago.pagado,
+                fecha_pago=pago.fecha_pago,
+                observaciones=pago.observaciones or "",
+            )
+            pago.gasto_personal_id = gp.id
+            pago.save(update_fields=["gasto_personal_id"])
+        return True, None
+
+    return False, "Destino desconocido."
+
+
+def _borrar_destino(pago):
+    """Borra el registro destino asociado al PagoFuturo (si existe)."""
+    if pago.gasto_mensual_id:
+        GastoMensual.objects.filter(pk=pago.gasto_mensual_id).delete()
+        pago.gasto_mensual_id = None
+    if pago.gasto_personal_id:
+        GastoPersonal.objects.filter(pk=pago.gasto_personal_id).delete()
+        pago.gasto_personal_id = None
+    pago.save(update_fields=["gasto_mensual_id", "gasto_personal_id"])
+
+
+def _crear_recurrente_si_corresponde(pago, request_user):
+    """Si el pago es recurrente mensual, crea el del mes siguiente (si todavía no existe)."""
+    if not pago.es_recurrente_mensual:
+        return None
+    next_fecha = pago.proxima_fecha_mensual
+    # Evitar duplicación: misma descripción, mismo destino, misma fecha de vencimiento.
+    if PagoFuturo.objects.filter(
+        descripcion=pago.descripcion,
+        destino=pago.destino,
+        fecha_vencimiento=next_fecha,
+    ).exists():
+        return None
+    nuevo = PagoFuturo.objects.create(
+        descripcion=pago.descripcion,
+        monto=pago.monto,
+        fecha_vencimiento=next_fecha,
+        categoria=pago.categoria,
+        destino=pago.destino,
+        es_recurrente_mensual=True,
+        observaciones=pago.observaciones,
+        creado_por=request_user,
+    )
+    _sync_destino(nuevo, request_user)
+    return nuevo
+
+
+def _next_month_date(fecha):
+    """Misma fecha pero en el mes siguiente (clamp al último día)."""
+    year = fecha.year + (1 if fecha.month == 12 else 0)
+    month = 1 if fecha.month == 12 else fecha.month + 1
+    last_day = calendar.monthrange(year, month)[1]
+    return date(year, month, min(fecha.day, last_day))
+
+
+# ==========================================================
+# VISTAS
+# ==========================================================
 
 @solo_admins
 def lista_pagos(request):
@@ -76,6 +211,7 @@ def lista_pagos(request):
 
 
 @solo_admins
+@transaction.atomic
 def crear_pago(request):
     if request.method == "POST":
         form = PagoFuturoForm(request.POST)
@@ -83,7 +219,11 @@ def crear_pago(request):
             obj = form.save(commit=False)
             obj.creado_por = request.user
             obj.save()
-            messages.success(request, "Pago futuro agregado a la agenda.")
+            ok, err = _sync_destino(obj, request.user)
+            if not ok:
+                messages.warning(request, f"Pago agendado pero no se pudo crear el registro en el módulo destino: {err}")
+            else:
+                messages.success(request, f"Pago agendado y cargado en {obj.get_destino_display()} como pendiente.")
             return redirect("agenda_pagos:lista")
     else:
         form = PagoFuturoForm(initial={"fecha_vencimiento": date.today()})
@@ -91,15 +231,14 @@ def crear_pago(request):
 
 
 @solo_admins
+@transaction.atomic
 def editar_pago(request, pk):
     obj = get_object_or_404(PagoFuturo, pk=pk)
-    if obj.pagado:
-        messages.info(request, "Este pago ya fue marcado como pagado; deshacelo primero para editarlo.")
-        return redirect("agenda_pagos:lista")
     if request.method == "POST":
         form = PagoFuturoForm(request.POST, instance=obj)
         if form.is_valid():
             form.save()
+            _sync_destino(obj, request.user)
             messages.success(request, "Pago actualizado.")
             return redirect("agenda_pagos:lista")
     else:
@@ -108,57 +247,15 @@ def editar_pago(request, pk):
 
 
 @solo_admins
+@transaction.atomic
 def eliminar_pago(request, pk):
     obj = get_object_or_404(PagoFuturo, pk=pk)
     if request.method == "POST":
+        _borrar_destino(obj)
         obj.delete()
-        messages.success(request, "Pago eliminado de la agenda.")
+        messages.success(request, "Pago eliminado de la agenda y del módulo destino.")
         return redirect("agenda_pagos:lista")
     return render(request, "agenda_pagos/eliminar.html", {"obj": obj})
-
-
-def _crear_registro_destino(pago, request_user, fecha_pago, observaciones):
-    """
-    Crea el registro en el módulo destino y vincula su id al PagoFuturo.
-    - Control de Gastos → crea un GastoMensual (gasto de la concesionaria).
-    - Gastos Personales → crea un GastoPersonal del usuario que paga.
-    """
-    if pago.destino == PagoFuturo.DESTINO_CONTROL_GASTOS:
-        if not pago.categoria:
-            return False, "Falta una categoría. Editá el pago y elegí una para Control de Gastos."
-        gm = GastoMensual.objects.create(
-            categoria=pago.categoria,
-            descripcion=pago.descripcion,
-            monto=pago.monto,
-            mes=fecha_pago.month,
-            anio=fecha_pago.year,
-            unidad="ambas",
-            pagado=True,
-            fecha_pago=fecha_pago,
-            observaciones=(observaciones or pago.observaciones or ""),
-            creado_por=request_user,
-        )
-        pago.gasto_mensual_id = gm.id
-        return True, None
-
-    if pago.destino == PagoFuturo.DESTINO_GASTOS_PERSONALES:
-        if not pago.categoria:
-            return False, "Falta una categoría. Editá el pago y elegí una para Gastos Personales."
-        gp = GastoPersonal.objects.create(
-            usuario=request_user,
-            categoria=pago.categoria,
-            descripcion=pago.descripcion,
-            monto=pago.monto,
-            mes=fecha_pago.month,
-            anio=fecha_pago.year,
-            pagado=True,
-            fecha_pago=fecha_pago,
-            observaciones=(observaciones or pago.observaciones or ""),
-        )
-        pago.gasto_personal_id = gp.id
-        return True, None
-
-    return False, "Destino desconocido."
 
 
 @solo_admins
@@ -172,15 +269,12 @@ def marcar_pagado(request, pk):
     if request.method == "POST":
         form = MarcarPagadoForm(request.POST)
         if form.is_valid():
+            monto = form.cleaned_data["monto"]
             fecha_pago = form.cleaned_data["fecha_pago"]
             forma_pago = form.cleaned_data["forma_pago"]
             obs = form.cleaned_data.get("observaciones") or ""
 
-            ok, err = _crear_registro_destino(obj, request.user, fecha_pago, obs)
-            if not ok:
-                messages.error(request, err)
-                return redirect("agenda_pagos:lista")
-
+            obj.monto = monto  # el monto real se carga acá
             obj.pagado = True
             obj.fecha_pago = fecha_pago
             obj.forma_pago = forma_pago
@@ -188,10 +282,22 @@ def marcar_pagado(request, pk):
             if obs:
                 obj.observaciones = ((obj.observaciones or "") + ("\n" if obj.observaciones else "") + obs).strip()
             obj.save()
-            messages.success(request, f"Pago marcado como pagado y cargado en {obj.get_destino_display()}.")
+
+            ok, err = _sync_destino(obj, request.user)
+            if not ok:
+                messages.error(request, err)
+                return redirect("agenda_pagos:lista")
+
+            nuevo = _crear_recurrente_si_corresponde(obj, request.user)
+            extra = f" Se creó el del mes siguiente ({nuevo.fecha_vencimiento:%d/%m/%Y})." if nuevo else ""
+            messages.success(request, f"Pago de ${monto:.0f} cargado en {obj.get_destino_display()}.{extra}")
             return redirect("agenda_pagos:lista")
     else:
-        form = MarcarPagadoForm(initial={"fecha_pago": date.today(), "forma_pago": "transferencia"})
+        form = MarcarPagadoForm(initial={
+            "monto": obj.monto if obj.monto else None,
+            "fecha_pago": date.today(),
+            "forma_pago": "transferencia",
+        })
 
     return render(request, "agenda_pagos/marcar_pagado.html", {"form": form, "obj": obj})
 
@@ -205,37 +311,88 @@ def marcar_pagado_rapido(request, pk):
     if obj.pagado:
         return redirect("agenda_pagos:lista")
 
-    fecha_pago = date.today()
-    ok, err = _crear_registro_destino(obj, request.user, fecha_pago, "")
+    obj.pagado = True
+    obj.fecha_pago = date.today()
+    obj.forma_pago = "efectivo"
+    obj.pagado_por = request.user
+    obj.save()
+
+    ok, err = _sync_destino(obj, request.user)
     if not ok:
         messages.error(request, err)
         return redirect("agenda_pagos:lista")
 
-    obj.pagado = True
-    obj.fecha_pago = fecha_pago
-    obj.forma_pago = "efectivo"
-    obj.pagado_por = request.user
-    obj.save()
-    messages.success(
-        request,
-        f"Pago marcado por {request.user.username} el {fecha_pago:%d/%m/%Y} → {obj.get_destino_display()}.",
-    )
+    nuevo = _crear_recurrente_si_corresponde(obj, request.user)
+    extra = f" Se generó el del mes siguiente ({nuevo.fecha_vencimiento:%d/%m/%Y})." if nuevo else ""
+    messages.success(request, f"Pago marcado por {request.user.username} → {obj.get_destino_display()}.{extra}")
     return redirect("agenda_pagos:lista")
 
 
 @solo_admins
+@transaction.atomic
 def deshacer_pago(request, pk):
     obj = get_object_or_404(PagoFuturo, pk=pk)
     if request.method == "POST":
-        if obj.gasto_mensual_id:
-            GastoMensual.objects.filter(pk=obj.gasto_mensual_id).delete()
-            obj.gasto_mensual_id = None
-        if obj.gasto_personal_id:
-            GastoPersonal.objects.filter(pk=obj.gasto_personal_id).delete()
-            obj.gasto_personal_id = None
         obj.pagado = False
         obj.fecha_pago = None
         obj.pagado_por = None
         obj.save()
-        messages.success(request, "Pago revertido. El registro destino fue eliminado.")
+        _sync_destino(obj, request.user)  # actualiza el registro a pendiente
+        messages.success(request, "Pago revertido a pendiente.")
     return redirect("agenda_pagos:lista")
+
+
+@solo_admins
+@transaction.atomic
+def copiar_mes_anterior(request):
+    """Copia los pagos del mes anterior al mes/año destino."""
+    if request.method != "POST":
+        return redirect("agenda_pagos:lista")
+    try:
+        mes = int(request.POST.get("mes_destino", 0))
+        anio = int(request.POST.get("anio_destino", 0))
+    except ValueError:
+        messages.error(request, "Mes/año destino inválido.")
+        return redirect("agenda_pagos:lista")
+    if not (1 <= mes <= 12 and anio > 0):
+        messages.error(request, "Mes/año destino inválido.")
+        return redirect("agenda_pagos:lista")
+
+    mes_origen = 12 if mes == 1 else mes - 1
+    anio_origen = anio - 1 if mes == 1 else anio
+
+    pagos_origen = PagoFuturo.objects.filter(
+        fecha_vencimiento__year=anio_origen,
+        fecha_vencimiento__month=mes_origen,
+    )
+
+    creados = 0
+    for p in pagos_origen:
+        # Misma "día del mes" pero clamped al último día del mes destino.
+        last_day = calendar.monthrange(anio, mes)[1]
+        nueva_fecha = date(anio, mes, min(p.fecha_vencimiento.day, last_day))
+        # Evitar duplicados (misma descripción + destino + fecha).
+        if PagoFuturo.objects.filter(
+            descripcion=p.descripcion,
+            destino=p.destino,
+            fecha_vencimiento=nueva_fecha,
+        ).exists():
+            continue
+        nuevo = PagoFuturo.objects.create(
+            descripcion=p.descripcion,
+            monto=p.monto,
+            fecha_vencimiento=nueva_fecha,
+            categoria=p.categoria,
+            destino=p.destino,
+            es_recurrente_mensual=p.es_recurrente_mensual,
+            observaciones=p.observaciones,
+            creado_por=request.user,
+        )
+        _sync_destino(nuevo, request.user)
+        creados += 1
+
+    if creados > 0:
+        messages.success(request, f"Se copiaron {creados} pago{'s' if creados != 1 else ''} del mes anterior.")
+    else:
+        messages.info(request, "No había pagos para copiar (o ya estaban cargados).")
+    return redirect(f"{reverse('agenda_pagos:lista')}?mes={mes}&anio={anio}")

@@ -7,6 +7,30 @@
 
 {% include "inicio/_dashboard_top.html" %}
 
+{% if agenda_mes_sin_cargar %}
+<div class="alert alert-warning d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <i data-lucide="alert-triangle" style="width:18px;height:18px;margin-right:6px;"></i>
+        <strong>Empezó el mes</strong> — todavía no hay pagos cargados para este mes en la Agenda.
+    </div>
+    <div class="d-flex gap-2">
+        <a href="/agenda-pagos/nuevo/" class="btn btn-primary btn-sm">
+            <i data-lucide="plus" style="width:14px;height:14px;margin-right:4px;"></i>
+            Cargar un pago
+        </a>
+        <form method="post" action="/agenda-pagos/copiar-mes-anterior/" data-no-confirm style="display:inline;">
+            {% csrf_token %}
+            <input type="hidden" name="mes_destino" value="{{ hoy.month }}">
+            <input type="hidden" name="anio_destino" value="{{ hoy.year }}">
+            <button type="submit" class="btn btn-outline-primary btn-sm">
+                <i data-lucide="copy" style="width:14px;height:14px;margin-right:4px;"></i>
+                Copiar del mes pasado
+            </button>
+        </form>
+    </div>
+</div>
+{% endif %}
+
 <!-- ===============================
      ACCESOS GESTIÓN INTERNA
 =============================== -->
