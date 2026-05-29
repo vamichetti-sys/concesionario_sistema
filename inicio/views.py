@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, login_not_required
 from django.db.models import Sum, Count, Q
 from django.utils import timezone
 from datetime import timedelta
@@ -18,6 +18,7 @@ from vehiculos.services import actualizar_gastos_por_vencimientos
 # ==========================================================
 # 🔐 INGRESO (LOGIN)
 # ==========================================================
+@login_not_required  # única vista pública del sistema
 def ingreso(request):
     if request.method == 'POST':
         usuario = request.POST.get('username', '').strip()

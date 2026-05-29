@@ -121,6 +121,10 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    # 🔒 Fuerza login en TODAS las vistas (excepto las que tengan
+    # @login_not_required). Reemplaza tener que poner @login_required
+    # en cada view del sistema.
+    "django.contrib.auth.middleware.LoginRequiredMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "auditoria.middleware.AuditoriaMiddleware",

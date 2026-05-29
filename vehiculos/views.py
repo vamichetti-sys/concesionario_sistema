@@ -230,8 +230,35 @@ def reingresar_a_stock(request, vehiculo_id):
 def cambiar_estado_vehiculo(request, vehiculo_id):
     vehiculo = get_object_or_404(Vehiculo, id=vehiculo_id)
 
+    # Estados que pueden setearse desde el dropdown.
+    ESTADOS_VALIDOS = {"stock", "temporal", "vendido", "reventa"}
+
     if request.method == "POST":
         nuevo_estado = request.POST.get("estado")
+
+        # ===============================
+        # VALIDACIÓN
+        # ===============================
+        if nuevo_estado not in ESTADOS_VALIDOS:
+            messages.error(request, "Estado inválido.")
+            return redirect("vehiculos:lista_vehiculos")
+
+        if nuevo_estado == vehiculo.estado:
+            return redirect("vehiculos:lista_vehiculos")
+
+        # Bloqueo de seguridad: si el auto está VENDIDO y se intenta
+        # cambiar a stock/temporal/reventa desde acá, redirigimos al
+        # flujo correcto (Reingresar a stock) que pide confirmación
+        # explícita antes de borrar la venta.
+        if vehiculo.estado == "vendido" and hasattr(vehiculo, "venta"):
+            if nuevo_estado != "vendido":
+                messages.error(
+                    request,
+                    "Para sacar este auto del estado VENDIDO usá el botón "
+                    "'Reingresar' (pide confirmación porque borra la venta y "
+                    "cierra la cuenta corriente)."
+                )
+                return redirect("vehiculos:lista_vehiculos")
 
         # ===============================
         # MARCAR COMO VENDIDO
@@ -354,31 +381,16 @@ def cambiar_estado_vehiculo(request, vehiculo_id):
             return redirect("reventa:lista")
 
         # ===============================
-        # REVERTIR VENTA / VOLVER A STOCK
+        # CAMBIO SEGURO ENTRE STOCK / TEMPORAL
+        # (no toca venta/gestoría/cuenta corriente)
         # ===============================
-        vehiculo.estado = nuevo_estado
-        vehiculo.save(update_fields=["estado"])
-
-        # ELIMINAR LA VENTA SI EXISTE
-        if hasattr(vehiculo, "venta"):
-            venta = vehiculo.venta
-            # Desvincular cuenta corriente (no se borra, queda el historial)
-            from cuentas.models import CuentaCorriente
-            CuentaCorriente.objects.filter(venta=venta).update(
-                venta=None, estado="cerrada"
+        if nuevo_estado in ("stock", "temporal"):
+            vehiculo.estado = nuevo_estado
+            vehiculo.save(update_fields=["estado"])
+            messages.success(
+                request,
+                f"Estado actualizado a {dict(Vehiculo.ESTADOS).get(nuevo_estado, nuevo_estado)}."
             )
-            # Desvincular facturas (no se borran, quedan como historial)
-            from facturacion.models import FacturaRegistrada
-            FacturaRegistrada.objects.filter(venta=venta).update(venta=None)
-            venta.delete()
-
-        from gestoria.models import Gestoria
-        Gestoria.objects.filter(vehiculo=vehiculo).delete()
-
-        messages.success(
-            request,
-            "Estado actualizado. La unidad volvió a stock y la venta fue eliminada."
-        )
 
     return redirect("vehiculos:lista_vehiculos")
 
@@ -580,13 +592,10 @@ def guardar_ficha_vehicular(request, vehiculo_id):
             ficha.prenda_estado = request.POST.get("prenda_estado") or ficha.prenda_estado
             ficha.prenda_obs = request.POST.get("prenda_obs") or ficha.prenda_obs
 
-            # Gastos concesionario.
-            # Solo aceptamos un valor del POST si:
-            #   - viene explícitamente en el POST (no None) Y
-            #   - es > 0, o el valor previo también era 0
-            # Esto evita que un guardado del modal (donde a veces los inputs
-            # se renderizan vacíos por bugs de carga) zerifique todos los
-            # gc_* que ya estaban guardados.
+            # Gastos concesionario: tomamos el valor del POST tal cual.
+            # Si el usuario manda 0, el campo se va a 0 (y el signal
+            # se encarga de remover el GastoReporteInterno asociado).
+            # Si el campo no viene en el POST, no se toca.
             campos_gc = [
                 "gc_service", "gc_mecanica", "gc_chapa_pintura", "gc_tapizado",
                 "gc_neumaticos", "gc_vidrios", "gc_cerrajeria", "gc_lavado",
@@ -596,16 +605,11 @@ def guardar_ficha_vehicular(request, vehiculo_id):
                 if campo not in request.POST:
                     continue
                 valor_raw = (request.POST.get(campo, "") or "").replace(",", ".").strip()
-                if not valor_raw:
-                    continue
                 try:
-                    nuevo = Decimal(valor_raw)
+                    nuevo = Decimal(valor_raw) if valor_raw else Decimal("0")
                 except Exception:
                     continue
-                previo = gastos_preservar.get(campo) or Decimal("0")
-                if nuevo > 0 or Decimal(previo or 0) == 0:
-                    setattr(ficha, campo, nuevo)
-                # else: el POST manda 0 pero antes había valor — preservamos.
+                setattr(ficha, campo, nuevo)
 
             ficha.save()
 
