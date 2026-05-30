@@ -363,15 +363,17 @@ class PlanPago(models.Model):
         max_digits=5,
         decimal_places=2,
         default=0,
+        blank=True,
         help_text="Porcentaje de interés aplicado al monto financiado. Ej: 40 = 40%"
     )
 
-    # 🔹 Interés por mora de cuota (mensual)
+    # 🔹 Interés por mora de cuota (mensual) — opcional
     interes_mora_mensual = models.DecimalField(
         max_digits=5,
         decimal_places=2,
         default=0,
-        help_text="Porcentaje de mora mensual por cuota vencida. Ej: 4 = 4%"
+        blank=True,
+        help_text="Porcentaje de mora mensual por cuota vencida (opcional). Ej: 4 = 4%"
     )
 
     interes_descripcion = models.TextField(blank=True)

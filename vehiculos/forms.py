@@ -228,6 +228,8 @@ class FichaVehicularForm(forms.ModelForm):
 
             'f08_estado',
             'cedula_estado',
+            'informe',
+            'radicacion_anterior',
 
             'verificacion_estado',
             'verificacion_vencimiento',
@@ -292,6 +294,8 @@ class FichaVehicularForm(forms.ModelForm):
             'patentes_vto5': 'Vencimiento 5',
             'f08_estado': 'Formulario 08',
             'cedula_estado': 'Cédula',
+            'informe': 'Informe',
+            'radicacion_anterior': 'Radicación anterior',
             'verificacion_estado': 'Verificación policial',
             'verificacion_vencimiento': 'Vencimiento verificación',
             'verificacion_turno': 'Turno verificación policial',
@@ -351,6 +355,8 @@ class FichaVehicularForm(forms.ModelForm):
             'patentes_estado': forms.Select(attrs={'class': 'form-control'}),
             'f08_estado': forms.Select(attrs={'class': 'form-control'}),
             'cedula_estado': forms.Select(attrs={'class': 'form-control'}),
+            'informe': forms.Select(attrs={'class': 'form-control'}),
+            'radicacion_anterior': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: CABA, La Plata, Rojas...'}),
             'verificacion_estado': forms.Select(attrs={'class': 'form-control'}),
             'autopartes_estado': forms.Select(attrs={'class': 'form-control'}),
             'vtv_estado': forms.Select(attrs={'class': 'form-control'}),

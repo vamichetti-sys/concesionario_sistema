@@ -1,5 +1,6 @@
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
+from django.utils import timezone
 from decimal import Decimal
 
 from vehiculos.models import GastoConcesionario, FichaVehicular
@@ -18,13 +19,79 @@ def _get_gasto_reporte_model():
 
 
 # ==========================================================
+# Helpers para Control de Gastos (GastoMensual)
+# ==========================================================
+CATEGORIA_GASTOS_VEHICULOS = "Gastos de vehículos"
+
+
+def _get_categoria_vehiculos():
+    """
+    Devuelve (o crea) la categoría 'Gastos de vehículos' usada para
+    espejar los gastos del concesionario en Control de Gastos.
+    """
+    from gastos_mensuales.models import CategoriaGasto
+    cat, _ = CategoriaGasto.objects.get_or_create(
+        nombre=CATEGORIA_GASTOS_VEHICULOS,
+        defaults={
+            "es_fijo": False,
+            "activa": True,
+            "descripcion": "Espejo automático de gastos cargados a vehículos del concesionario.",
+        },
+    )
+    return cat
+
+
+def _sync_gastomensual(tag, descripcion, monto, fecha=None):
+    """
+    Crea / actualiza / elimina un GastoMensual identificado por el tag.
+    El tag se guarda al final de la descripción (formato '... [GC#42]').
+    Si monto <= 0, elimina el registro.
+    """
+    from gastos_mensuales.models import GastoMensual
+
+    fecha = fecha or timezone.now().date()
+    mes = fecha.month
+    anio = fecha.year
+
+    existente = GastoMensual.objects.filter(descripcion__contains=tag).first()
+
+    if monto and monto > 0:
+        cat = _get_categoria_vehiculos()
+        descripcion_full = f"{descripcion} {tag}"
+        if existente:
+            existente.descripcion = descripcion_full
+            existente.monto = monto
+            existente.mes = mes
+            existente.anio = anio
+            existente.categoria = cat
+            existente.save(update_fields=["descripcion", "monto", "mes", "anio", "categoria"])
+        else:
+            GastoMensual.objects.create(
+                categoria=cat,
+                descripcion=descripcion_full,
+                monto=monto,
+                mes=mes,
+                anio=anio,
+            )
+    elif existente:
+        existente.delete()
+
+
+def _delete_gastomensual(tag):
+    from gastos_mensuales.models import GastoMensual
+    GastoMensual.objects.filter(descripcion__contains=tag).delete()
+
+
+# ==========================================================
 # SYNC: GastoConcesionario → GastoReporteInterno
 # ==========================================================
 @receiver(post_save, sender=GastoConcesionario)
 def sync_gasto_extra_a_reporte(sender, instance, created, **kwargs):
     """
-    Al crear/editar un gasto extra, lo sincroniza en reportes.
-    Usa el tag 'gc_extra_{pk}' en el concepto para identificarlo.
+    Al crear/editar un gasto extra:
+      1) lo sincroniza en reportes (GastoReporteInterno).
+      2) lo refleja automáticamente en Control de Gastos (GastoMensual).
+    Usa el tag '[GC#{pk}]' en el concepto/descripción para identificarlo.
     """
     GastoReporteInterno = _get_gasto_reporte_model()
     ficha_reporte = _get_ficha_reporte(instance.vehiculo)
@@ -49,21 +116,35 @@ def sync_gasto_extra_a_reporte(sender, instance, created, **kwargs):
             monto=instance.monto,
         )
 
+    # 🔹 Espejo en Control de Gastos
+    patente = getattr(instance.vehiculo, "patente", None) or getattr(instance.vehiculo, "marca", "") or "Vehículo"
+    descripcion = f"{instance.concepto} – {patente}"
+    _sync_gastomensual(
+        tag=tag,
+        descripcion=descripcion,
+        monto=instance.monto,
+        fecha=instance.fecha,
+    )
+
 
 @receiver(post_delete, sender=GastoConcesionario)
 def delete_gasto_extra_de_reporte(sender, instance, **kwargs):
-    """Al eliminar un gasto extra, lo borra de reportes."""
+    """Al eliminar un gasto extra, lo borra de reportes y de Control de Gastos."""
     GastoReporteInterno = _get_gasto_reporte_model()
     try:
         ficha_reporte = _get_ficha_reporte(instance.vehiculo)
     except Exception:
-        return
+        ficha_reporte = None
 
     tag = f"[GC#{instance.pk}]"
-    GastoReporteInterno.objects.filter(
-        ficha=ficha_reporte,
-        concepto__contains=tag,
-    ).delete()
+    if ficha_reporte:
+        GastoReporteInterno.objects.filter(
+            ficha=ficha_reporte,
+            concepto__contains=tag,
+        ).delete()
+
+    # 🔹 Espejo en Control de Gastos
+    _delete_gastomensual(tag)
 
 
 # ==========================================================
@@ -132,17 +213,23 @@ def sync_gastos_concesionario_fijos(sender, instance, **kwargs):
     GastoReporteInterno = _get_gasto_reporte_model()
     ficha_reporte = _get_ficha_reporte(instance.vehiculo)
 
+    patente_vehiculo = getattr(instance.vehiculo, "patente", None) or getattr(instance.vehiculo, "marca", "") or "Vehículo"
+
     for campo, label in CAMPOS_GC:
         monto = getattr(instance, campo, None) or Decimal("0")
-        tag = f"[GCF:{campo}]"
+        # tag específico por ficha+campo, para que vehículos distintos
+        # no se pisen entre sí en Control de Gastos
+        tag_reporte = f"[GCF:{campo}]"
+        tag_mensual = f"[GCF:{campo}#{instance.pk}]"
 
+        # ---- Espejo en reportes (FichaReporteInterno) ----
         existente = GastoReporteInterno.objects.filter(
             ficha=ficha_reporte,
-            concepto__contains=tag,
+            concepto__contains=tag_reporte,
         ).first()
 
         if monto > 0:
-            concepto = f"{label} {tag}"
+            concepto = f"{label} {tag_reporte}"
             if existente:
                 existente.concepto = concepto
                 existente.monto = monto
@@ -154,5 +241,11 @@ def sync_gastos_concesionario_fijos(sender, instance, **kwargs):
                     monto=monto,
                 )
         elif existente:
-            # Si el monto es 0, eliminar el gasto del reporte
             existente.delete()
+
+        # ---- Espejo en Control de Gastos (GastoMensual) ----
+        _sync_gastomensual(
+            tag=tag_mensual,
+            descripcion=f"{label} – {patente_vehiculo}",
+            monto=monto,
+        )

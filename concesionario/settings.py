@@ -93,6 +93,7 @@ INSTALLED_APPS = [
     "gastos_personales",
     "permisos",
     "agenda_pagos",
+    "financiacion",
 ]
 
 # ==========================================================

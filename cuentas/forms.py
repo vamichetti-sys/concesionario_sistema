@@ -13,6 +13,19 @@ from .models import (
 # PLAN DE PAGO
 # ==========================================================
 class PlanPagoForm(forms.ModelForm):
+    interes_financiacion = forms.DecimalField(
+        required=False,
+        min_value=Decimal('0'),
+        max_digits=5,
+        decimal_places=2,
+    )
+    interes_mora_mensual = forms.DecimalField(
+        required=False,
+        min_value=Decimal('0'),
+        max_digits=5,
+        decimal_places=2,
+    )
+
     class Meta:
         model = PlanPago
         fields = [
@@ -87,7 +100,8 @@ class PlanPagoForm(forms.ModelForm):
                 attrs={
                     'class': 'form-control',
                     'step': '0.01',
-                    'min': '0'
+                    'min': '0',
+                    'placeholder': 'Opcional — dejar vacío si no aplica'
                 }
             ),
             'interes_descripcion': forms.Textarea(
@@ -107,6 +121,10 @@ class PlanPagoForm(forms.ModelForm):
         cantidad_cuotas         = cleaned_data.get('cantidad_cuotas')
         interes_financiacion    = cleaned_data.get('interes_financiacion') or Decimal('0')
         interes_mora            = cleaned_data.get('interes_mora_mensual') or Decimal('0')
+
+        # Normalizamos: ambos intereses son opcionales — si vienen vacíos, quedan en 0
+        cleaned_data['interes_financiacion'] = interes_financiacion
+        cleaned_data['interes_mora_mensual'] = interes_mora
 
         if monto_financiado <= 0:
             self.add_error('monto_financiado', 'El monto financiado debe ser mayor a cero.')

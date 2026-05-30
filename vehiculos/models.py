@@ -173,6 +173,16 @@ class FichaVehicular(models.Model):
     f08_estado = models.CharField(max_length=20, choices=F08_ORIGEN, blank=True, null=True, verbose_name="Formulario 08 (origen)")
     cedula_estado = models.CharField(max_length=20, choices=ESTADO_DOC, blank=True, null=True)
 
+    # Estado registral del título (lo que informa el reporte de dominio)
+    INFORME_CHOICES = [
+        ("prendado", "Prendado"),
+        ("sucesion", "Sucesión"),
+        ("inhibido", "Inhibido"),
+        ("embargado", "Embargado"),
+    ]
+    informe = models.CharField(max_length=20, choices=INFORME_CHOICES, blank=True, null=True, verbose_name="Informe")
+    radicacion_anterior = models.CharField(max_length=200, blank=True, null=True, verbose_name="Radicación anterior")
+
     verificacion_estado = models.CharField(max_length=20, choices=ESTADO_DOC, blank=True, null=True)
     verificacion_vencimiento = models.DateField(blank=True, null=True)
 

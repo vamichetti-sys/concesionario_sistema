@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-5">
+    <div class="d-flex align-items-center gap-3 mb-4">
+        <i data-lucide="landmark" style="width:32px;height:32px;color:#2563eb;"></i>
+        <h2 class="fw-bold mb-0">Financiación</h2>
+    </div>
+
+    <div class="alert alert-info d-flex align-items-start gap-3" role="alert" style="border-radius:12px;">
+        <i data-lucide="construction" style="width:24px;height:24px;flex-shrink:0;"></i>
+        <div>
+            <div class="fw-bold mb-1">Módulo en construcción</div>
+            <div style="font-size:14px;">
+                Acá vas a poder cargar préstamos y créditos tomados (banco, mutual, tarjeta, particulares),
+                con monto total, cuotas, vencimientos y saldo pendiente.
+                <br>Lo armamos cuando quieras arrancar.
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
