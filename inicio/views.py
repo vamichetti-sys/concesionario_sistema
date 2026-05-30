@@ -301,6 +301,15 @@ def inicio(request):
         })
         return render(request, "inicio/inicio_gestion.html", context)
 
+    # ==========================================================
+    # 🪟 DASHBOARD PERSONALIZADO PARA LGAZABA
+    # Orden: botones ventas → recordatorios → resumen ventas →
+    # resumen gestoría → agenda pagos → turnos VTV/grabado →
+    # vencimientos próximos.
+    # ==========================================================
+    if request.user.username.lower() == "lgazaba":
+        return render(request, "inicio/inicio_lgazaba.html", context)
+
     return render(request, "inicio/inicio.html", context)
 
 

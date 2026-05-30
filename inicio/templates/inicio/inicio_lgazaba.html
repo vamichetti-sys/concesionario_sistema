@@ -1,0 +1,410 @@
+{% extends 'base.html' %}
+{% load static humanize %}
+
+{% block title %}Panel{% endblock %}
+
+{% block content %}
+
+<!-- ===============================
+     ENCABEZADO
+=============================== -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-1">Panel</h2>
+        <p class="text-muted mb-0">Resumen operativo</p>
+    </div>
+    <div class="text-muted" style="font-size:14px;">
+        <i data-lucide="calendar" style="width:16px;height:16px;margin-right:4px;"></i>
+        {{ hoy|date:"l, d M Y" }}
+    </div>
+</div>
+
+<style>
+    .quick-access-card {
+        display: flex; align-items: center; gap: 12px;
+        padding: 16px 18px; background: #fff;
+        border: 1px solid #e5e7eb; border-radius: 12px;
+        text-decoration: none; color: inherit;
+        transition: all .2s ease; height: 100%;
+    }
+    .quick-access-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        border-color: #3b82f6;
+    }
+    .quick-access-icon {
+        width: 44px; height: 44px; border-radius: 10px;
+        display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0;
+    }
+    .quick-access-text strong {
+        display: block; font-size: 14px; color: #111827;
+    }
+    .quick-access-text small { font-size: 11px; color: #6b7280; }
+    .mini-list-item {
+        display:flex; justify-content:space-between; align-items:center;
+        padding:8px 0; border-bottom:1px solid #f1f5f9; font-size:13px;
+    }
+    .mini-list-item:last-child { border-bottom:none; }
+</style>
+
+<!-- ===============================
+     1. BOTONES DE VENTAS
+=============================== -->
+<div class="row g-3 mb-4">
+    <div class="col-md">
+        <a href="{% url 'clientes:lista_clientes' %}" class="quick-access-card">
+            <div class="quick-access-icon" style="background:rgba(59,130,246,0.1);">
+                <i data-lucide="users" style="width:22px;height:22px;color:#3b82f6;"></i>
+            </div>
+            <div class="quick-access-text">
+                <strong>Clientes</strong>
+                <small>Gestión de clientes</small>
+            </div>
+        </a>
+    </div>
+    <div class="col-md">
+        <a href="{% url 'vehiculos:lista_vehiculos' %}" class="quick-access-card">
+            <div class="quick-access-icon" style="background:rgba(16,185,129,0.1);">
+                <i data-lucide="car" style="width:22px;height:22px;color:#10b981;"></i>
+            </div>
+            <div class="quick-access-text">
+                <strong>Vehículos</strong>
+                <small>Stock y fichas</small>
+            </div>
+        </a>
+    </div>
+    <div class="col-md">
+        <a href="{% url 'ventas:lista_unidades_vendidas' %}" class="quick-access-card">
+            <div class="quick-access-icon" style="background:rgba(245,158,11,0.1);">
+                <i data-lucide="trending-up" style="width:22px;height:22px;color:#f59e0b;"></i>
+            </div>
+            <div class="quick-access-text">
+                <strong>Ventas</strong>
+                <small>Unidades vendidas</small>
+            </div>
+        </a>
+    </div>
+    <div class="col-md">
+        <a href="{% url 'cuentas:lista_cuentas_corrientes' %}" class="quick-access-card">
+            <div class="quick-access-icon" style="background:rgba(239,68,68,0.1);">
+                <i data-lucide="credit-card" style="width:22px;height:22px;color:#ef4444;"></i>
+            </div>
+            <div class="quick-access-text">
+                <strong>Cuentas Ctes.</strong>
+                <small>Saldos y pagos</small>
+            </div>
+        </a>
+    </div>
+    <div class="col-md">
+        <a href="{% url 'boletos:panel' %}" class="quick-access-card">
+            <div class="quick-access-icon" style="background:rgba(139,92,246,0.1);">
+                <i data-lucide="file-text" style="width:22px;height:22px;color:#8b5cf6;"></i>
+            </div>
+            <div class="quick-access-text">
+                <strong>Boletos</strong>
+                <small>Compraventa y pagarés</small>
+            </div>
+        </a>
+    </div>
+</div>
+
+<!-- ===============================
+     2. RECORDATORIOS
+=============================== -->
+<div class="card p-4 mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="d-flex align-items-center gap-2">
+            <i data-lucide="sticky-note" style="width:20px;height:20px;color:#8b5cf6;"></i>
+            <h6 class="fw-bold mb-0">Recordatorios</h6>
+        </div>
+    </div>
+
+    <form method="post" action="{% url 'agregar_recordatorio' %}" class="row g-2 mb-3 align-items-end">
+        {% csrf_token %}
+        <div class="col">
+            <input type="text" name="texto" class="form-control" placeholder="Escribir recordatorio..." required>
+        </div>
+        <div class="col-auto">
+            <select name="prioridad" class="form-select" style="width:auto;">
+                <option value="normal">Normal</option>
+                <option value="alta">Alta</option>
+                <option value="baja">Baja</option>
+            </select>
+        </div>
+        <div class="col-auto">
+            <button type="submit" class="btn btn-primary">
+                <i data-lucide="plus" style="width:16px;height:16px;margin-right:4px;"></i>
+                Agregar
+            </button>
+        </div>
+    </form>
+
+    {% if recordatorios %}
+    <div class="list-group list-group-flush">
+        {% for r in recordatorios %}
+        <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-2">
+                <form method="post" action="{% url 'completar_recordatorio' pk=r.pk %}" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm p-0" style="border:none;background:none;" title="{% if r.completado %}Reactivar{% else %}Completar{% endif %}">
+                        {% if r.completado %}
+                        <i data-lucide="check-circle-2" style="width:20px;height:20px;color:#059669;"></i>
+                        {% else %}
+                        <i data-lucide="circle" style="width:20px;height:20px;color:#d1d5db;"></i>
+                        {% endif %}
+                    </button>
+                </form>
+                <div>
+                    <span class="{% if r.completado %}text-muted text-decoration-line-through{% endif %}">
+                        {{ r.texto }}
+                    </span>
+                    {% if r.prioridad == "alta" %}
+                    <span class="badge" style="background:rgba(239,68,68,0.1);color:#dc2626;font-size:10px;margin-left:4px;">Alta</span>
+                    {% endif %}
+                    <br>
+                    <small class="text-muted">
+                        {{ r.creado_por.get_full_name|default:r.creado_por.username }} &middot; {{ r.fecha_creacion|date:"d/m H:i" }}
+                    </small>
+                </div>
+            </div>
+            <form method="post" action="{% url 'eliminar_recordatorio' pk=r.pk %}" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm p-1" style="border:none;background:none;" title="Eliminar">
+                    <i data-lucide="x" style="width:16px;height:16px;color:#9ca3af;"></i>
+                </button>
+            </form>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-muted text-center mb-0">Sin recordatorios</p>
+    {% endif %}
+</div>
+
+<!-- ===============================
+     3. RESUMEN DE VENTAS GENERADAS
+=============================== -->
+<div class="card p-4 mb-4">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <div class="d-flex align-items-center gap-2">
+            <i data-lucide="trending-up" style="width:20px;height:20px;color:#f59e0b;"></i>
+            <h6 class="fw-bold mb-0">Resumen de ventas generadas</h6>
+        </div>
+        <a href="{% url 'ventas:lista_unidades_vendidas' %}" class="text-decoration-none" style="font-size:13px;">Ver todas →</a>
+    </div>
+
+    <div class="row g-3 mb-3">
+        <div class="col-md-4">
+            <div class="p-3" style="background:#fef3c7;border-radius:10px;">
+                <small class="text-muted d-block">Vendidos este mes</small>
+                <div class="fw-bold" style="font-size:24px;color:#92400e;">{{ vehiculos_vendidos_mes }}</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="p-3" style="background:#dbeafe;border-radius:10px;">
+                <small class="text-muted d-block">Ventas del mes</small>
+                <div class="fw-bold" style="font-size:24px;color:#1e40af;">{{ ventas_mes }}</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="p-3" style="background:#dcfce7;border-radius:10px;">
+                <small class="text-muted d-block">Ventas activas</small>
+                <div class="fw-bold" style="font-size:24px;color:#166534;">{{ ventas_activas }}</div>
+            </div>
+        </div>
+    </div>
+
+    {% if ultimas_ventas %}
+    <div>
+        <small class="text-muted text-uppercase fw-semibold">Últimas ventas confirmadas</small>
+        {% for v in ultimas_ventas %}
+        <div class="mini-list-item">
+            <div>
+                <span class="fw-semibold">{{ v.vehiculo.marca }} {{ v.vehiculo.modelo }}</span>
+                <span class="text-muted"> · {{ v.cliente.nombre_completo|default:"Sin cliente" }}</span>
+            </div>
+            <small class="text-muted">{{ v.fecha_venta|date:"d/m/Y" }}</small>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-muted text-center mb-0" style="font-size:13px;">Sin ventas confirmadas todavía.</p>
+    {% endif %}
+</div>
+
+<!-- ===============================
+     4. RESUMEN DE GESTORÍA
+=============================== -->
+<div class="card p-4 mb-4">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <div class="d-flex align-items-center gap-2">
+            <i data-lucide="clipboard-check" style="width:20px;height:20px;color:#3b82f6;"></i>
+            <h6 class="fw-bold mb-0">Resumen de gestoría</h6>
+        </div>
+        <a href="{% url 'gestoria:vigentes' %}" class="text-decoration-none" style="font-size:13px;">Ver todas →</a>
+    </div>
+
+    <div class="mb-3">
+        <span class="text-muted">Transferencias vigentes:</span>
+        <span class="fw-bold ms-2" style="font-size:20px;color:#1e40af;">{{ transferencias_vigentes }}</span>
+    </div>
+
+    {% if top_gestoria_vigente %}
+        {% for g in top_gestoria_vigente %}
+        <div class="mini-list-item">
+            <div>
+                <span class="fw-semibold">{{ g.vehiculo.marca }} {{ g.vehiculo.modelo }}</span>
+                <span class="text-muted"> · {{ g.cliente_actual|default:"Sin cliente" }}</span>
+            </div>
+            <a href="{% url 'gestoria:editar_gestoria' g.id %}" class="btn btn-sm btn-outline-primary py-0 px-2" style="font-size:11px;">Abrir</a>
+        </div>
+        {% endfor %}
+    {% else %}
+    <p class="text-muted text-center mb-0" style="font-size:13px;">No hay gestorías vigentes.</p>
+    {% endif %}
+</div>
+
+<!-- ===============================
+     5. AGENDA DE PAGOS
+=============================== -->
+<div class="card p-4 mb-4">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <div class="d-flex align-items-center gap-2">
+            <i data-lucide="calendar-clock" style="width:20px;height:20px;color:#dc2626;"></i>
+            <h6 class="fw-bold mb-0">Agenda de pagos</h6>
+        </div>
+        <a href="{% url 'agenda_pagos:lista' %}" class="text-decoration-none" style="font-size:13px;">Ver toda →</a>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-md-6">
+            <small class="text-muted text-uppercase fw-semibold">Vencidos</small>
+            {% if pagos_vencidos %}
+                {% for p in pagos_vencidos %}
+                <div class="mini-list-item">
+                    <div>
+                        <span class="fw-semibold">{{ p.descripcion }}</span>
+                        {% if p.monto %}<small class="text-muted"> · ${{ p.monto|intcomma }}</small>{% endif %}
+                    </div>
+                    <small class="text-danger">{{ p.fecha_vencimiento|date:"d/m" }}</small>
+                </div>
+                {% endfor %}
+            {% else %}
+            <p class="text-muted mb-0" style="font-size:13px;">Sin pagos vencidos.</p>
+            {% endif %}
+        </div>
+        <div class="col-md-6">
+            <small class="text-muted text-uppercase fw-semibold">Próximos (7 días)</small>
+            {% if pagos_proximos %}
+                {% for p in pagos_proximos %}
+                <div class="mini-list-item">
+                    <div>
+                        <span class="fw-semibold">{{ p.descripcion }}</span>
+                        {% if p.monto %}<small class="text-muted"> · ${{ p.monto|intcomma }}</small>{% endif %}
+                    </div>
+                    <small class="text-muted">{{ p.fecha_vencimiento|date:"d/m" }}</small>
+                </div>
+                {% endfor %}
+            {% else %}
+            <p class="text-muted mb-0" style="font-size:13px;">Sin pagos próximos.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- ===============================
+     6. TURNOS DE VTV / GRABADO
+=============================== -->
+<div class="card p-4 mb-4">
+    <div class="d-flex align-items-center gap-2 mb-3">
+        <i data-lucide="calendar-check" style="width:20px;height:20px;color:#10b981;"></i>
+        <h6 class="fw-bold mb-0">Turnos próximos (7 días)</h6>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-md-4">
+            <small class="text-muted text-uppercase fw-semibold">VTV</small>
+            {% if turnos_vtv %}
+                {% for t in turnos_vtv %}
+                <div class="mini-list-item">
+                    <span class="fw-semibold">{{ t.vehiculo.marca }} {{ t.vehiculo.modelo }}</span>
+                    <small class="text-muted">{{ t.vtv_turno|date:"d/m" }}</small>
+                </div>
+                {% endfor %}
+            {% else %}
+            <p class="text-muted mb-0" style="font-size:13px;">Sin turnos VTV.</p>
+            {% endif %}
+        </div>
+        <div class="col-md-4">
+            <small class="text-muted text-uppercase fw-semibold">Grabado de autopartes</small>
+            {% if turnos_autopartes %}
+                {% for t in turnos_autopartes %}
+                <div class="mini-list-item">
+                    <span class="fw-semibold">{{ t.vehiculo.marca }} {{ t.vehiculo.modelo }}</span>
+                    <small class="text-muted">{{ t.autopartes_turno|date:"d/m" }}</small>
+                </div>
+                {% endfor %}
+            {% else %}
+            <p class="text-muted mb-0" style="font-size:13px;">Sin turnos de grabado.</p>
+            {% endif %}
+        </div>
+        <div class="col-md-4">
+            <small class="text-muted text-uppercase fw-semibold">Verificación policial</small>
+            {% if turnos_verificacion %}
+                {% for t in turnos_verificacion %}
+                <div class="mini-list-item">
+                    <span class="fw-semibold">{{ t.vehiculo.marca }} {{ t.vehiculo.modelo }}</span>
+                    <small class="text-muted">{{ t.verificacion_turno|date:"d/m" }}</small>
+                </div>
+                {% endfor %}
+            {% else %}
+            <p class="text-muted mb-0" style="font-size:13px;">Sin turnos.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- ===============================
+     7. VENCIMIENTOS PRÓXIMOS
+=============================== -->
+<div class="card p-4 mb-4">
+    <div class="d-flex align-items-center gap-2 mb-3">
+        <i data-lucide="alert-triangle" style="width:20px;height:20px;color:#f59e0b;"></i>
+        <h6 class="fw-bold mb-0">Vencimientos próximos (30 días)</h6>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-md-6">
+            <small class="text-muted text-uppercase fw-semibold">VTV</small>
+            {% if vencimientos_vtv %}
+                {% for v in vencimientos_vtv %}
+                <div class="mini-list-item">
+                    <span class="fw-semibold">{{ v.vehiculo.marca }} {{ v.vehiculo.modelo }}</span>
+                    <small class="text-muted">{{ v.vtv_vencimiento|date:"d/m/Y" }}</small>
+                </div>
+                {% endfor %}
+            {% else %}
+            <p class="text-muted mb-0" style="font-size:13px;">Sin VTV venciendo pronto.</p>
+            {% endif %}
+        </div>
+        <div class="col-md-6">
+            <small class="text-muted text-uppercase fw-semibold">Verificación</small>
+            {% if vencimientos_verificacion %}
+                {% for v in vencimientos_verificacion %}
+                <div class="mini-list-item">
+                    <span class="fw-semibold">{{ v.vehiculo.marca }} {{ v.vehiculo.modelo }}</span>
+                    <small class="text-muted">{{ v.verificacion_vencimiento|date:"d/m/Y" }}</small>
+                </div>
+                {% endfor %}
+            {% else %}
+            <p class="text-muted mb-0" style="font-size:13px;">Sin verificaciones venciendo pronto.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+</script>
+{% endblock %}
