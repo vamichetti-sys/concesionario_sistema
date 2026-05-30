@@ -757,50 +757,71 @@
     </div>
   </div>
 
-  <!-- ═══════════ MEDIDAS (Silueta del vehículo) ═══════════ -->
-  <div class="ft-medidas-box mb-4">
-    <div class="row w-100 align-items-center">
-      <div class="col-md-7 text-center position-relative" style="min-height:160px;">
-        <!-- Silueta SVG -->
-        <svg viewBox="0 0 500 180" style="width:100%;max-width:440px;opacity:.15;" fill="#002855">
-          <path d="M60,130 Q30,130 25,110 L20,100 Q15,85 30,80 L100,65 Q130,45 180,35 L280,30 Q340,30 380,45 L430,65 Q470,75 475,90 L478,100 Q480,115 465,130 L440,130 Q435,105 410,105 Q385,105 380,130 L150,130 Q145,105 120,105 Q95,105 90,130 Z"/>
-          <circle cx="120" cy="130" r="22"/>
-          <circle cx="410" cy="130" r="22"/>
-        </svg>
+  <!-- ═══════════ MANTENIMIENTO ═══════════ -->
+  <div class="card p-3 mb-4" style="background:#f8fafc;border:1px solid #e2e8f0;">
+    <h6 class="fw-bold mb-3" style="color:#002855; font-size:14px;">
+      <i data-lucide="wrench" style="width:15px;height:15px;margin-right:4px;"></i> Mantenimiento
+    </h6>
+    <div class="row g-3">
+      <div class="col-md-4">
+        <label class="form-label" style="font-size:12px;">Último service – Fecha</label>
+        {{ ficha_tecnica_form.ultimo_service_fecha }}
+      </div>
+      <div class="col-md-2">
+        <label class="form-label" style="font-size:12px;">Service – Km</label>
+        {{ ficha_tecnica_form.ultimo_service_km }}
+      </div>
+      <div class="col-md-4">
+        <label class="form-label" style="font-size:12px;">Cambio de aceite – Fecha</label>
+        {{ ficha_tecnica_form.ultimo_cambio_aceite_fecha }}
+      </div>
+      <div class="col-md-2">
+        <label class="form-label" style="font-size:12px;">Aceite – Km</label>
+        {{ ficha_tecnica_form.ultimo_cambio_aceite_km }}
+      </div>
+      <div class="col-md-4">
+        <label class="form-label" style="font-size:12px;">Cambio de correa – Fecha</label>
+        {{ ficha_tecnica_form.ultimo_cambio_correa_fecha }}
+      </div>
+      <div class="col-md-2">
+        <label class="form-label" style="font-size:12px;">Correa – Km</label>
+        {{ ficha_tecnica_form.ultimo_cambio_correa_km }}
+      </div>
+    </div>
+  </div>
 
-        <!-- Largo (arriba) -->
-        <div style="position:absolute; top:0; left:50%; transform:translateX(-50%); display:flex; align-items:center; gap:6px;">
-          <span class="ft-dim-label">LARGO</span>
-          {{ ficha_tecnica_form.largo }}
-          <span class="ft-dim-label"><span>M</span></span>
-        </div>
-
-        <!-- Alto (derecha) -->
-        <div style="position:absolute; right:10px; top:50%; transform:translateY(-50%) rotate(90deg); display:flex; align-items:center; gap:6px;">
-          <span class="ft-dim-label">ALTO</span>
-          {{ ficha_tecnica_form.alto }}
-          <span class="ft-dim-label"><span>M</span></span>
-        </div>
-
-        <!-- Ancho (abajo) -->
-        <div style="position:absolute; bottom:0; left:50%; transform:translateX(-50%); display:flex; align-items:center; gap:6px;">
-          <span class="ft-dim-label">ANCHO</span>
-          {{ ficha_tecnica_form.ancho }}
-          <span class="ft-dim-label"><span>M</span></span>
-        </div>
+  <!-- ═══════════ HISTORIA / ESTADO ═══════════ -->
+  <div class="card p-3 mb-4" style="background:#fef9f3;border:1px solid #fde7c4;">
+    <h6 class="fw-bold mb-3" style="color:#b35900; font-size:14px;">
+      <i data-lucide="history" style="width:15px;height:15px;margin-right:4px;"></i> Historia y estado
+    </h6>
+    <div class="row g-3">
+      <div class="col-md-3">
+        <label class="form-label" style="font-size:12px;">¿Repintado?</label>
+        {{ ficha_tecnica_form.repintado }}
+      </div>
+      <div class="col-md-9">
+        <label class="form-label" style="font-size:12px;">Partes repintadas</label>
+        {{ ficha_tecnica_form.partes_repintadas }}
       </div>
 
-      <!-- Peso -->
-      <div class="col-md-5">
-        <div class="d-flex align-items-center gap-3 justify-content-center">
-          <div class="text-center">
-            <div style="font-size:11px; font-weight:700; color:#6c757d; text-transform:uppercase; letter-spacing:.5px;">PESO</div>
-            <div class="d-flex align-items-baseline gap-1 justify-content-center">
-              {{ ficha_tecnica_form.peso }}
-              <span style="font-size:14px; font-weight:700; color:#6c757d;">KG</span>
-            </div>
-          </div>
-        </div>
+      <div class="col-md-3">
+        <label class="form-label" style="font-size:12px;">¿Tuvo choque?</label>
+        {{ ficha_tecnica_form.chocado }}
+      </div>
+      <div class="col-md-9">
+        <label class="form-label" style="font-size:12px;">Detalles del choque</label>
+        {{ ficha_tecnica_form.detalles_choque }}
+      </div>
+
+      <div class="col-12">
+        <label class="form-label" style="font-size:12px;">Detalles que tiene (rayones, golpes, particularidades)</label>
+        {{ ficha_tecnica_form.detalles_estado }}
+      </div>
+
+      <div class="col-12">
+        <label class="form-label" style="font-size:12px; color:#dc2626;">¿Algo no funciona?</label>
+        {{ ficha_tecnica_form.no_funciona }}
       </div>
     </div>
   </div>

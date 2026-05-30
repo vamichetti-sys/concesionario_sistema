@@ -498,11 +498,25 @@ class FichaTecnica(models.Model):
     capacidad_baul = models.CharField(max_length=30, blank=True, null=True, verbose_name="Capacidad de baúl (L)")
     puertas = models.PositiveSmallIntegerField(blank=True, null=True, verbose_name="Cantidad de puertas")
 
-    # ── Medidas ────────────────────────────────────────────
-    largo = models.CharField(max_length=30, blank=True, null=True, verbose_name="Largo (m)")
-    ancho = models.CharField(max_length=30, blank=True, null=True, verbose_name="Ancho (m)")
-    alto = models.CharField(max_length=30, blank=True, null=True, verbose_name="Alto (m)")
-    peso = models.CharField(max_length=30, blank=True, null=True, verbose_name="Peso (kg)")
+    # ── Mantenimiento ──────────────────────────────────────
+    ultimo_service_fecha = models.DateField(blank=True, null=True, verbose_name="Último service – Fecha")
+    ultimo_service_km = models.PositiveIntegerField(blank=True, null=True, verbose_name="Último service – Km")
+    ultimo_cambio_aceite_fecha = models.DateField(blank=True, null=True, verbose_name="Cambio de aceite – Fecha")
+    ultimo_cambio_aceite_km = models.PositiveIntegerField(blank=True, null=True, verbose_name="Cambio de aceite – Km")
+    ultimo_cambio_correa_fecha = models.DateField(blank=True, null=True, verbose_name="Cambio de correa – Fecha")
+    ultimo_cambio_correa_km = models.PositiveIntegerField(blank=True, null=True, verbose_name="Cambio de correa – Km")
+
+    # ── Historia / Estado ──────────────────────────────────
+    REPINTADO_CHOICES = [("no", "No"), ("parcial", "Parcial"), ("si", "Sí, completo")]
+    repintado = models.CharField(max_length=10, choices=REPINTADO_CHOICES, blank=True, null=True, verbose_name="¿Repintado?")
+    partes_repintadas = models.CharField(max_length=200, blank=True, null=True, verbose_name="Partes repintadas")
+
+    CHOCADO_CHOICES = [("no", "No"), ("leve", "Leve"), ("importante", "Importante")]
+    chocado = models.CharField(max_length=15, choices=CHOCADO_CHOICES, blank=True, null=True, verbose_name="¿Tuvo choque?")
+    detalles_choque = models.TextField(blank=True, null=True, verbose_name="Detalles del choque")
+
+    detalles_estado = models.TextField(blank=True, null=True, verbose_name="Detalles (rayones, golpes, particularidades)")
+    no_funciona = models.TextField(blank=True, null=True, verbose_name="¿Algo no funciona?")
 
     # ── Equipamiento SI/NO ─────────────────────────────────
     SI_NO = [("si", "Sí"), ("no", "No")]
