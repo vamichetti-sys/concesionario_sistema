@@ -1,130 +1,278 @@
 {% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Reportes{% endblock %}
 
 {% block content %}
 
-<!-- ===============================
-     ENCABEZADO
-=============================== -->
-<div class="mb-4">
-    <h3 class="fw-bold mb-1">Reportes</h3>
-    <p class="text-muted mb-0">Análisis y seguimiento de información del sistema</p>
+<!-- ENCABEZADO + SELECTOR DE PERÍODO -->
+<div class="d-flex justify-content-between align-items-end flex-wrap gap-3 mb-4">
+    <div>
+        <h2 class="fw-bold mb-1">Reportes</h2>
+        <p class="text-muted mb-0">Ganancias · Cumplimiento de pagos · Deuda en concesionario</p>
+    </div>
+    <form method="get" class="d-flex gap-2 align-items-end">
+        <div>
+            <label class="form-label" style="font-size:12px;">Mes</label>
+            <select name="mes" class="form-select form-select-sm" style="width:130px;">
+                {% for m in "123456789101112"|make_list %}{% endfor %}
+                <option value="1"  {% if mes == 1 %}selected{% endif %}>Enero</option>
+                <option value="2"  {% if mes == 2 %}selected{% endif %}>Febrero</option>
+                <option value="3"  {% if mes == 3 %}selected{% endif %}>Marzo</option>
+                <option value="4"  {% if mes == 4 %}selected{% endif %}>Abril</option>
+                <option value="5"  {% if mes == 5 %}selected{% endif %}>Mayo</option>
+                <option value="6"  {% if mes == 6 %}selected{% endif %}>Junio</option>
+                <option value="7"  {% if mes == 7 %}selected{% endif %}>Julio</option>
+                <option value="8"  {% if mes == 8 %}selected{% endif %}>Agosto</option>
+                <option value="9"  {% if mes == 9 %}selected{% endif %}>Septiembre</option>
+                <option value="10" {% if mes == 10 %}selected{% endif %}>Octubre</option>
+                <option value="11" {% if mes == 11 %}selected{% endif %}>Noviembre</option>
+                <option value="12" {% if mes == 12 %}selected{% endif %}>Diciembre</option>
+            </select>
+        </div>
+        <div>
+            <label class="form-label" style="font-size:12px;">Año</label>
+            <select name="anio" class="form-select form-select-sm" style="width:100px;">
+                {% for a in anios_disponibles %}
+                <option value="{{ a }}" {% if a == anio %}selected{% endif %}>{{ a }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm">
+            <i data-lucide="filter" style="width:14px;height:14px;margin-right:4px;"></i>
+            Aplicar
+        </button>
+    </form>
 </div>
 
-<!-- ===============================
-     SELECTOR DE REPORTES
-=============================== -->
-<div class="row g-4 mb-4">
-    <div class="col-md-6">
-        <div class="card p-4 h-100">
-            <div class="d-flex align-items-start gap-3">
-                <div style="width:50px;height:50px;background:rgba(59,130,246,0.1);border-radius:12px;display:flex;align-items:center;justify-content:center;">
-                    <i data-lucide="bar-chart-3" style="width:24px;height:24px;color:#3b82f6;"></i>
-                </div>
-                <div class="flex-grow-1">
-                    <h5 class="fw-bold mb-1">Reporte Web</h5>
-                    <p class="text-muted mb-3" style="font-size:14px;">Información operativa del sistema: ventas y seguimiento general.</p>
-                    <a href="{% url 'reportes:reporte_web' %}" class="btn btn-primary">
-                        Ingresar
-                        <i data-lucide="arrow-right" style="width:16px;height:16px;margin-left:6px;"></i>
-                    </a>
-                </div>
+<style>
+    .rep-card { border-radius: 14px; }
+    .rep-kpi  { padding: 18px; border-radius: 12px; }
+    .rep-kpi small { font-size: 12px; }
+    .rep-kpi .num { font-size: 26px; font-weight: 800; line-height: 1; margin-top: 4px; }
+    .mini-row {
+        display:flex; justify-content:space-between; align-items:center;
+        padding:8px 0; border-bottom: 1px solid #f1f5f9; font-size: 13px;
+    }
+    .mini-row:last-child { border-bottom: none; }
+    .progress-mini {
+        height: 6px; border-radius: 999px; background:#e2e8f0; overflow:hidden;
+        margin-top: 4px;
+    }
+    .progress-mini > div {
+        height: 100%; border-radius: 999px;
+    }
+</style>
+
+<!-- ===========================================================
+     1) GANANCIAS MENSUALES / ANUALES
+=========================================================== -->
+<div class="card rep-card p-4 mb-4">
+    <div class="d-flex align-items-center gap-2 mb-3">
+        <i data-lucide="trending-up" style="width:22px;height:22px;color:#16a34a;"></i>
+        <h5 class="fw-bold mb-0">Ganancias</h5>
+        <span class="text-muted ms-2">venta − (compra + gastos del vehículo)</span>
+    </div>
+
+    <div class="row g-3 mb-3">
+        <div class="col-md-4">
+            <div class="rep-kpi" style="background:#ecfdf5;">
+                <small class="text-muted d-block">Ganancia del mes</small>
+                <div class="num" style="color:#15803d;">$ {{ ganan_mes.total_ganan|floatformat:0|intcomma }}</div>
+                <small class="text-muted">{{ ganan_mes.cantidad }} venta{{ ganan_mes.cantidad|pluralize:"s" }} confirmada{{ ganan_mes.cantidad|pluralize:"s" }}</small>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="rep-kpi" style="background:#eff6ff;">
+                <small class="text-muted d-block">Ventas del mes ($)</small>
+                <div class="num" style="color:#1d4ed8;">$ {{ ganan_mes.total_ventas|floatformat:0|intcomma }}</div>
+                <small class="text-muted">Costos: $ {{ ganan_mes.total_costos|floatformat:0|intcomma }}</small>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="rep-kpi" style="background:#fef9c3;">
+                <small class="text-muted d-block">Ganancia anual {{ anio }}</small>
+                <div class="num" style="color:#a16207;">$ {{ ganan_anio.total_ganan|floatformat:0|intcomma }}</div>
+                <small class="text-muted">Ventas: $ {{ ganan_anio.total_ventas|floatformat:0|intcomma }}</small>
             </div>
         </div>
     </div>
 
-    {% if perms.reportes.view_fichareporteinterno %}
-    <div class="col-md-6">
-        <div class="card p-4 h-100">
-            <div class="d-flex align-items-start gap-3">
-                <div style="width:50px;height:50px;background:rgba(139,92,246,0.1);border-radius:12px;display:flex;align-items:center;justify-content:center;">
-                    <i data-lucide="lock" style="width:24px;height:24px;color:#8b5cf6;"></i>
-                </div>
-                <div class="flex-grow-1">
-                    <h5 class="fw-bold mb-1">Reporte Interno</h5>
-                    <p class="text-muted mb-3" style="font-size:14px;">Control interno de stock, compras, ventas y resultados.</p>
-                    <a href="{% url 'reportes:reporte_interno' %}" class="btn btn-secondary">
-                        Ingresar
-                        <i data-lucide="arrow-right" style="width:16px;height:16px;margin-left:6px;"></i>
-                    </a>
-                </div>
+    <!-- Tabla mensual del año -->
+    <details class="mb-3">
+        <summary class="fw-semibold" style="cursor:pointer;">Ver ganancia mes a mes ({{ anio }})</summary>
+        <div class="mt-2" style="font-size:13px;">
+            {% for m in ganancias_por_mes %}
+            <div class="mini-row">
+                <span>{{ m.mes }}/{{ anio }}</span>
+                <span class="fw-semibold {% if m.ganancia > 0 %}text-success{% elif m.ganancia < 0 %}text-danger{% else %}text-muted{% endif %}">
+                    $ {{ m.ganancia|floatformat:0|intcomma }}
+                </span>
             </div>
+            {% endfor %}
         </div>
-    </div>
+    </details>
+
+    <!-- Detalle de ventas del mes -->
+    {% if detalle_mes %}
+    <details>
+        <summary class="fw-semibold" style="cursor:pointer;">Ver detalle de ventas del mes ({{ detalle_mes|length }})</summary>
+        <table class="table table-sm table-borderless mt-2" style="font-size:13px;">
+            <thead style="background:#f8fafc;">
+                <tr>
+                    <th>Vehículo</th>
+                    <th>Cliente</th>
+                    <th>Fecha</th>
+                    <th class="text-end">Venta</th>
+                    <th class="text-end">Costo + gastos</th>
+                    <th class="text-end">Ganancia</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for d in detalle_mes %}
+                <tr>
+                    <td>{{ d.venta.vehiculo.marca }} {{ d.venta.vehiculo.modelo }}</td>
+                    <td>{{ d.venta.cliente.nombre_completo|default:"—" }}</td>
+                    <td>{{ d.venta.fecha_venta|date:"d/m/Y" }}</td>
+                    <td class="text-end">$ {{ d.precio_venta|floatformat:0|intcomma }}</td>
+                    <td class="text-end text-muted">$ {{ d.costo_total|floatformat:0|intcomma }}</td>
+                    <td class="text-end fw-bold {% if d.ganancia > 0 %}text-success{% elif d.ganancia < 0 %}text-danger{% endif %}">
+                        $ {{ d.ganancia|floatformat:0|intcomma }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </details>
     {% endif %}
 </div>
 
-<!-- ===============================
-     ACCIONES DE CIERRE
-=============================== -->
-<div class="card p-4 mb-4">
+<!-- ===========================================================
+     2) CUMPLIMIENTO DE PAGOS DE CLIENTES
+=========================================================== -->
+<div class="card rep-card p-4 mb-4">
     <div class="d-flex align-items-center gap-2 mb-3">
-        <i data-lucide="calendar-check" style="width:20px;height:20px;color:#3b82f6;"></i>
-        <h5 class="fw-bold mb-0">Acciones de cierre</h5>
+        <i data-lucide="badge-check" style="width:22px;height:22px;color:#2563eb;"></i>
+        <h5 class="fw-bold mb-0">Cumplimiento de pagos</h5>
+        <span class="text-muted ms-2">planes activos</span>
     </div>
-    <div class="d-flex flex-wrap gap-2">
-        <a href="{% url 'reportes:cerrar_mes' %}" class="btn btn-primary">
-            <i data-lucide="calendar" style="width:16px;height:16px;margin-right:6px;"></i>
-            Cerrar mes {{ mes_actual }}/{{ anio_actual }}
-        </a>
-        <a href="{% url 'reportes:cerrar_anio' %}" class="btn btn-secondary">
-            <i data-lucide="calendar-range" style="width:16px;height:16px;margin-right:6px;"></i>
-            Cerrar año {{ anio_actual }}
-        </a>
-    </div>
-</div>
 
-<!-- ===============================
-     REPORTES GUARDADOS
-=============================== -->
-<div class="row g-4">
-    <!-- MENSUALES -->
-    <div class="col-md-6">
-        <div class="card p-4">
-            <div class="d-flex align-items-center gap-2 mb-4">
-                <i data-lucide="calendar" style="width:20px;height:20px;color:#10b981;"></i>
-                <h5 class="fw-bold mb-0">Reportes Mensuales</h5>
+    <div class="row g-3 mb-3">
+        <div class="col-md-3">
+            <div class="rep-kpi" style="background:#eff6ff;">
+                <small class="text-muted d-block">% global de cumplimiento</small>
+                <div class="num" style="color:#1d4ed8;">{{ pct_global }}%</div>
             </div>
-
-            {% if reportes_mensuales %}
-            {% for r in reportes_mensuales %}
-            <div class="d-flex justify-content-between align-items-center p-3 mb-2" style="background:#f8f9fa;border-radius:10px;">
-                <div class="d-flex align-items-center gap-2">
-                    <span class="badge bg-info">{{ r.mes }}/{{ r.anio }}</span>
-                </div>
-                <span class="fw-bold text-success">${{ r.total_facturado }}</span>
+        </div>
+        <div class="col-md-3">
+            <div class="rep-kpi" style="background:#ecfdf5;">
+                <small class="text-muted d-block">Cuotas pagadas</small>
+                <div class="num" style="color:#15803d;">{{ cuotas_pagadas_global }}</div>
+                <small class="text-muted">de {{ cuotas_totales_global }}</small>
             </div>
-            {% endfor %}
-            {% else %}
-            <div class="p-4 text-center" style="background:#f8f9fa;border-radius:12px;">
-                <i data-lucide="calendar-x" style="width:32px;height:32px;color:#9ca3af;margin-bottom:8px;"></i>
-                <p class="text-muted mb-0">No hay reportes mensuales</p>
+        </div>
+        <div class="col-md-3">
+            <div class="rep-kpi" style="background:#fef2f2;">
+                <small class="text-muted d-block">Cuotas vencidas</small>
+                <div class="num" style="color:#dc2626;">{{ cuotas_vencidas_global }}</div>
             </div>
-            {% endif %}
+        </div>
+        <div class="col-md-3">
+            <div class="rep-kpi" style="background:#f8fafc;">
+                <small class="text-muted d-block">Planes activos</small>
+                <div class="num" style="color:#0f172a;">{{ cumplimiento_clientes|length }}</div>
+            </div>
         </div>
     </div>
 
-    <!-- ANUALES -->
-    <div class="col-md-6">
-        <div class="card p-4">
-            <div class="d-flex align-items-center gap-2 mb-4">
-                <i data-lucide="calendar-range" style="width:20px;height:20px;color:#f59e0b;"></i>
-                <h5 class="fw-bold mb-0">Reportes Anuales</h5>
-            </div>
+    {% if cumplimiento_clientes %}
+    <table class="table table-sm table-borderless" style="font-size:13px;">
+        <thead style="background:#f8fafc;">
+            <tr>
+                <th>Cliente</th>
+                <th class="text-center">Cuotas</th>
+                <th class="text-center">Pagadas</th>
+                <th class="text-center">Vencidas</th>
+                <th style="width:30%;">% cumplimiento</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in cumplimiento_clientes %}
+            <tr>
+                <td>
+                    {{ r.cliente.nombre_completo|default:"Sin cliente" }}
+                    {% if r.plan.cuenta.venta %}<small class="text-muted"> · Venta #{{ r.plan.cuenta.venta.id }}</small>{% endif %}
+                </td>
+                <td class="text-center">{{ r.total }}</td>
+                <td class="text-center text-success fw-semibold">{{ r.pagadas }}</td>
+                <td class="text-center {% if r.vencidas > 0 %}text-danger fw-bold{% else %}text-muted{% endif %}">{{ r.vencidas }}</td>
+                <td>
+                    <div class="d-flex align-items-center gap-2">
+                        <strong style="min-width:40px; text-align:right;">{{ r.pct }}%</strong>
+                        <div class="progress-mini flex-grow-1">
+                            <div style="width:{{ r.pct }}%; background:{% if r.pct >= 80 %}#16a34a{% elif r.pct >= 50 %}#f59e0b{% else %}#dc2626{% endif %};"></div>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="text-muted mb-0">No hay planes de pago activos.</p>
+    {% endif %}
+</div>
 
-            {% if reportes_anuales %}
-            {% for r in reportes_anuales %}
-            <div class="d-flex justify-content-between align-items-center p-3 mb-2" style="background:#f8f9fa;border-radius:10px;">
-                <div class="d-flex align-items-center gap-2">
-                    <span class="badge bg-warning">{{ r.anio }}</span>
+<!-- ===========================================================
+     3) DEUDA EN CONCESIONARIO
+=========================================================== -->
+<div class="card rep-card p-4 mb-4">
+    <div class="d-flex align-items-center gap-2 mb-3">
+        <i data-lucide="alert-triangle" style="width:22px;height:22px;color:#dc2626;"></i>
+        <h5 class="fw-bold mb-0">Deuda en concesionario</h5>
+    </div>
+
+    <div class="row g-3">
+        <!-- Deuda a proveedores -->
+        <div class="col-md-6">
+            <div class="rep-kpi mb-3" style="background:#fef2f2;">
+                <small class="text-muted d-block">Deuda con proveedores (nosotros debemos)</small>
+                <div class="num" style="color:#b91c1c;">$ {{ deuda_proveedores|floatformat:0|intcomma }}</div>
+                <small class="text-muted">{{ detalle_proveedores|length }} deuda{{ detalle_proveedores|length|pluralize:"s" }} pendiente{{ detalle_proveedores|length|pluralize:"s" }}</small>
+            </div>
+            {% if detalle_proveedores %}
+            <small class="text-muted text-uppercase fw-semibold">Top deudas a proveedores</small>
+            {% for d in detalle_proveedores %}
+            <div class="mini-row">
+                <div>
+                    <span class="fw-semibold">{{ d.proveedor.nombre|default:"Proveedor" }}</span>
+                    {% if d.vehiculo %}<small class="text-muted"> · {{ d.vehiculo.marca }} {{ d.vehiculo.modelo }}</small>{% endif %}
                 </div>
-                <span class="fw-bold text-success">${{ r.total_facturado }}</span>
+                <span class="text-danger fw-bold">$ {{ d.saldo|floatformat:0|intcomma }}</span>
             </div>
             {% endfor %}
             {% else %}
-            <div class="p-4 text-center" style="background:#f8f9fa;border-radius:12px;">
-                <i data-lucide="calendar-x" style="width:32px;height:32px;color:#9ca3af;margin-bottom:8px;"></i>
-                <p class="text-muted mb-0">No hay reportes anuales</p>
+            <p class="text-muted mb-0" style="font-size:13px;">Sin deudas a proveedores.</p>
+            {% endif %}
+        </div>
+
+        <!-- Saldo a cobrar a clientes -->
+        <div class="col-md-6">
+            <div class="rep-kpi mb-3" style="background:#fff7ed;">
+                <small class="text-muted d-block">Saldo a cobrar a clientes</small>
+                <div class="num" style="color:#c2410c;">$ {{ total_a_cobrar|floatformat:0|intcomma }}</div>
+                <small class="text-muted">{{ top_clientes_deudores|length }} cuenta{{ top_clientes_deudores|length|pluralize:"s" }} con saldo positivo</small>
             </div>
+            {% if top_clientes_deudores %}
+            <small class="text-muted text-uppercase fw-semibold">Top clientes deudores</small>
+            {% for c in top_clientes_deudores %}
+            <div class="mini-row">
+                <span class="fw-semibold">{{ c.cliente.nombre_completo|default:"Sin cliente" }}</span>
+                <span class="text-warning fw-bold">$ {{ c.saldo|floatformat:0|intcomma }}</span>
+            </div>
+            {% endfor %}
+            {% else %}
+            <p class="text-muted mb-0" style="font-size:13px;">Sin clientes con saldo.</p>
             {% endif %}
         </div>
     </div>

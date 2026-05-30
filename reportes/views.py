@@ -35,22 +35,195 @@ def es_staff(user):
 # ==========================================================
 @login_required
 def lista_reportes(request):
-    reportes_mensuales = ReporteMensual.objects.all()
-    reportes_anuales = ReporteAnual.objects.all()
+    """
+    Home del módulo Reportes — 3 paneles:
+      1. Ganancias del mes y del año (venta − compra − gastos del vehículo)
+      2. Cumplimiento de pagos de clientes (cuotas pagadas vs totales)
+      3. Deuda en concesionario (a proveedores + saldo a cobrar a clientes)
+    """
+    from compraventa.models import CompraVentaOperacion, DeudaProveedor
+    from cuentas.models import CuotaPlan, CuentaCorriente, PlanPago
+    from vehiculos.models import FichaVehicular, GastoConcesionario
 
     hoy = date.today()
 
-    return render(
-        request,
-        "reportes/lista.html",
-        {
-            "page_title": "Reportes",
-            "reportes_mensuales": reportes_mensuales,
-            "reportes_anuales": reportes_anuales,
-            "anio_actual": hoy.year,
-            "mes_actual": hoy.month,
-        }
+    # Parametros de período (mes / año seleccionado vía querystring)
+    try:
+        mes = int(request.GET.get("mes", hoy.month))
+    except (TypeError, ValueError):
+        mes = hoy.month
+    try:
+        anio = int(request.GET.get("anio", hoy.year))
+    except (TypeError, ValueError):
+        anio = hoy.year
+
+    # ==========================================================
+    # 1) GANANCIAS — calculadas a partir de ventas confirmadas
+    # ==========================================================
+    GC_FIELDS = [
+        "gc_service", "gc_mecanica", "gc_chapa_pintura", "gc_tapizado",
+        "gc_neumaticos", "gc_vidrios", "gc_cerrajeria", "gc_lavado",
+        "gc_gnc", "gc_grabado_autopartes", "gc_vtv", "gc_verificacion",
+        "gc_patentes", "gc_otros",
+    ]
+
+    def _ganancia_venta(v):
+        if not v.vehiculo_id:
+            return Decimal("0"), Decimal("0"), Decimal("0")
+        # Precio compra (CompraVentaOperacion)
+        op = CompraVentaOperacion.objects.filter(vehiculo_id=v.vehiculo_id).first()
+        precio_compra = (op.precio_compra if op and op.precio_compra else Decimal("0"))
+        # Gastos del vehículo: gc_* en la ficha + GastoConcesionario sueltos
+        ficha = FichaVehicular.objects.filter(vehiculo_id=v.vehiculo_id).first()
+        gastos = Decimal("0")
+        if ficha:
+            for f in GC_FIELDS:
+                gastos += getattr(ficha, f, None) or Decimal("0")
+        gastos += GastoConcesionario.objects.filter(
+            vehiculo_id=v.vehiculo_id
+        ).aggregate(t=Sum("monto"))["t"] or Decimal("0")
+
+        precio_venta = v.precio_venta or Decimal("0")
+        ganancia = precio_venta - precio_compra - gastos
+        return precio_venta, precio_compra + gastos, ganancia
+
+    def _resumen_ventas(qs):
+        total_ventas  = Decimal("0")
+        total_costos  = Decimal("0")
+        total_ganan   = Decimal("0")
+        detalles = []
+        for v in qs.select_related("vehiculo", "cliente").order_by("-fecha_venta"):
+            pv, costo, gan = _ganancia_venta(v)
+            total_ventas += pv
+            total_costos += costo
+            total_ganan  += gan
+            detalles.append({
+                "venta": v,
+                "precio_venta": pv,
+                "costo_total": costo,
+                "ganancia": gan,
+            })
+        return total_ventas, total_costos, total_ganan, detalles
+
+    ventas_mes_qs = Venta.objects.filter(
+        estado="confirmada",
+        fecha_venta__year=anio,
+        fecha_venta__month=mes,
     )
+    tot_v_mes, tot_c_mes, tot_g_mes, detalle_mes = _resumen_ventas(ventas_mes_qs)
+
+    ventas_anio_qs = Venta.objects.filter(
+        estado="confirmada",
+        fecha_venta__year=anio,
+    )
+    tot_v_anio, tot_c_anio, tot_g_anio, _ = _resumen_ventas(ventas_anio_qs)
+
+    # Ganancia por mes (gráfico/listado del año seleccionado)
+    ganancias_por_mes = []
+    for m in range(1, 13):
+        qs_m = Venta.objects.filter(
+            estado="confirmada",
+            fecha_venta__year=anio,
+            fecha_venta__month=m,
+        )
+        _, _, g, _ = _resumen_ventas(qs_m)
+        ganancias_por_mes.append({"mes": m, "ganancia": g})
+
+    # ==========================================================
+    # 2) CUMPLIMIENTO DE PAGOS DE CLIENTES
+    # ==========================================================
+    planes_activos = PlanPago.objects.filter(estado="activo").select_related("cuenta", "cuenta__cliente")
+    cumplimiento_clientes = []
+    cuotas_totales_global  = 0
+    cuotas_pagadas_global  = 0
+    cuotas_vencidas_global = 0
+    for plan in planes_activos:
+        cuotas = plan.cuotas.all()
+        c_total    = cuotas.count()
+        c_pagadas  = cuotas.filter(estado="pagada").count()
+        c_vencidas = cuotas.filter(estado="pendiente", vencimiento__lt=hoy).count()
+        if c_total == 0:
+            continue
+        cuotas_totales_global  += c_total
+        cuotas_pagadas_global  += c_pagadas
+        cuotas_vencidas_global += c_vencidas
+        pct = round((c_pagadas / c_total) * 100, 1) if c_total else 0
+        cumplimiento_clientes.append({
+            "plan": plan,
+            "cliente": plan.cuenta.cliente if plan.cuenta_id else None,
+            "total": c_total,
+            "pagadas": c_pagadas,
+            "vencidas": c_vencidas,
+            "pct": pct,
+        })
+    cumplimiento_clientes.sort(key=lambda x: (x["vencidas"], -x["pct"]), reverse=True)
+
+    pct_global = (
+        round((cuotas_pagadas_global / cuotas_totales_global) * 100, 1)
+        if cuotas_totales_global else 0
+    )
+
+    # ==========================================================
+    # 3) DEUDA EN CONCESIONARIO
+    # ==========================================================
+    # 3a) Deuda a proveedores (lo que nosotros debemos)
+    deudas_prov = DeudaProveedor.objects.annotate(
+        total_pagado=Sum("pagos__monto"),
+    )
+    deuda_proveedores = Decimal("0")
+    detalle_proveedores = []
+    for d in deudas_prov.select_related("proveedor", "vehiculo"):
+        pagado = d.total_pagado or Decimal("0")
+        saldo = (d.monto_total or Decimal("0")) - pagado
+        if saldo > 0:
+            deuda_proveedores += saldo
+            detalle_proveedores.append({
+                "proveedor": d.proveedor,
+                "vehiculo": d.vehiculo,
+                "monto_total": d.monto_total or Decimal("0"),
+                "pagado": pagado,
+                "saldo": saldo,
+            })
+    detalle_proveedores.sort(key=lambda x: x["saldo"], reverse=True)
+
+    # 3b) Saldo a cobrar a clientes (lo que nos deben)
+    cuentas_a_cobrar = CuentaCorriente.objects.filter(saldo__gt=0).select_related("cliente")
+    total_a_cobrar = cuentas_a_cobrar.aggregate(t=Sum("saldo"))["t"] or Decimal("0")
+    top_clientes_deudores = cuentas_a_cobrar.order_by("-saldo")[:10]
+
+    context = {
+        "page_title": "Reportes",
+        "hoy": hoy,
+        "mes": mes,
+        "anio": anio,
+        "anios_disponibles": list(range(hoy.year - 4, hoy.year + 1))[::-1],
+        # Ganancias
+        "ganan_mes": {
+            "total_ventas":  tot_v_mes,
+            "total_costos":  tot_c_mes,
+            "total_ganan":   tot_g_mes,
+            "cantidad":      len(detalle_mes),
+        },
+        "ganan_anio": {
+            "total_ventas": tot_v_anio,
+            "total_costos": tot_c_anio,
+            "total_ganan":  tot_g_anio,
+        },
+        "detalle_mes": detalle_mes,
+        "ganancias_por_mes": ganancias_por_mes,
+        # Cumplimiento
+        "cumplimiento_clientes": cumplimiento_clientes,
+        "cuotas_totales_global": cuotas_totales_global,
+        "cuotas_pagadas_global": cuotas_pagadas_global,
+        "cuotas_vencidas_global": cuotas_vencidas_global,
+        "pct_global": pct_global,
+        # Deuda
+        "deuda_proveedores": deuda_proveedores,
+        "detalle_proveedores": detalle_proveedores[:15],
+        "total_a_cobrar": total_a_cobrar,
+        "top_clientes_deudores": top_clientes_deudores,
+    }
+    return render(request, "reportes/lista.html", context)
 
 
 # ==========================================================
