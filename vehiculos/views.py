@@ -1624,9 +1624,20 @@ def ficha_vehicular_pdf(request, vehiculo_id):
     vehiculo = get_object_or_404(Vehiculo, id=vehiculo_id)
     ficha = vehiculo.ficha
 
+    # ?seccion= permite descargar solo una parte de la ficha.
+    # Valores aceptados: 'completa' (default), 'documentacion', 'gastos',
+    # 'tecnica'. Se mantiene 'completa' como comportamiento histórico.
+    seccion_param = (request.GET.get("seccion") or "completa").lower()
+    _validos = {"completa", "documentacion", "gastos", "tecnica"}
+    if seccion_param not in _validos:
+        seccion_param = "completa"
+
+    def incluir(nombre):
+        return seccion_param == "completa" or seccion_param == nombre
+
     response = HttpResponse(content_type="application/pdf")
     response["Content-Disposition"] = (
-        f'inline; filename="ficha_vehicular_{vehiculo.id}.pdf"'
+        f'inline; filename="ficha_{seccion_param}_{vehiculo.id}.pdf"'
     )
 
     doc = SimpleDocTemplate(
@@ -1699,81 +1710,171 @@ def ficha_vehicular_pdf(request, vehiculo_id):
         elements.append(table)
 
     # ==================================================
-    # DATOS DEL VEHÍCULO
+    # DATOS DEL VEHÍCULO (siempre se imprimen como cabecera de contexto)
     # ==================================================
-    seccion("Datos del vehículo", [
-        ["Marca", vehiculo.marca],
-        ["Modelo", vehiculo.modelo],
-        ["Dominio", vehiculo.dominio or "-"],
-        ["Año", vehiculo.anio],
-        ["Kilometraje", vehiculo.kilometros or "-"],
-        ["Precio", f"$ {vehiculo.precio}"],
-        ["Número de carpeta", vehiculo.numero_carpeta or "-"],
-    ])
+    if incluir("documentacion") or incluir("tecnica") or seccion_param == "completa" or seccion_param == "gastos":
+        seccion("Datos del vehículo", [
+            ["Marca", vehiculo.marca],
+            ["Modelo", vehiculo.modelo],
+            ["Dominio", vehiculo.dominio or "-"],
+            ["Año", vehiculo.anio],
+            ["Kilometraje", vehiculo.kilometros or "-"],
+            ["Precio", f"$ {vehiculo.precio}"],
+            ["Número de carpeta", vehiculo.numero_carpeta or "-"],
+        ])
 
     # ==================================================
     # IDENTIFICACIÓN
     # ==================================================
-    seccion("Identificación", [
-        ["Número de motor", ficha.numero_motor or "-"],
-        ["Número de chasis", ficha.numero_chasis or "-"],
-        ["Fecha inscripción inicial", ficha.fecha_inscripcion_inicial or "-"],
-        ["Color", ficha.color or "-"],
-        ["Combustible", ficha.combustible or "-"],
-        ["Transmisión", ficha.transmision or "-"],
-    ])
+    if seccion_param == "completa" or seccion_param == "documentacion":
+        seccion("Identificación", [
+            ["Número de motor", ficha.numero_motor or "-"],
+            ["Número de chasis", ficha.numero_chasis or "-"],
+            ["Fecha inscripción inicial", ficha.fecha_inscripcion_inicial or "-"],
+            ["Color", ficha.color or "-"],
+            ["Combustible", ficha.combustible or "-"],
+            ["Transmisión", ficha.transmision or "-"],
+        ])
 
     # ==================================================
     # DOCUMENTACIÓN
     # ==================================================
-    seccion("Documentación", [
-        [
-            "Patentes",
-            f"{ficha.patentes_estado or '-'}"
-            + (f" – $ {ficha.patentes_monto}" if ficha.patentes_monto else "")
-        ],
-        ["Formulario 08", ficha.f08_estado or "-"],
-        ["Cédula", ficha.cedula_estado or "-"],
-        [
-            "Verificación policial",
-            f"{ficha.verificacion_estado or '-'}"
-            + (f" – {ficha.verificacion_vencimiento}" if ficha.verificacion_vencimiento else "")
-        ],
-        ["Grabado autopartes", ficha.autopartes_estado or "-"],
-        [
-            "VTV",
-            f"{ficha.vtv_estado or '-'}"
-            + (f" – {ficha.vtv_vencimiento}" if ficha.vtv_vencimiento else "")
-        ],
-    ])
+    if seccion_param == "completa" or seccion_param == "documentacion":
+        seccion("Documentación", [
+            [
+                "Patentes",
+                f"{ficha.patentes_estado or '-'}"
+                + (f" – $ {ficha.patentes_monto}" if ficha.patentes_monto else "")
+            ],
+            ["Formulario 08", ficha.get_f08_estado_display() if ficha.f08_estado else "-"],
+            ["Cédula", ficha.cedula_estado or "-"],
+            ["Informe", ficha.get_informe_display() if ficha.informe else "-"],
+            ["Radicación anterior", ficha.radicacion_anterior or "-"],
+            [
+                "Verificación policial",
+                f"{ficha.verificacion_estado or '-'}"
+                + (f" – {ficha.verificacion_vencimiento}" if ficha.verificacion_vencimiento else "")
+            ],
+            ["Grabado autopartes", ficha.autopartes_estado or "-"],
+            [
+                "VTV",
+                f"{ficha.vtv_estado or '-'}"
+                + (f" – {ficha.vtv_vencimiento}" if ficha.vtv_vencimiento else "")
+            ],
+        ])
 
     # ==================================================
     # GASTOS DE INGRESO
     # ==================================================
-    seccion("Gastos de ingreso", [
-        ["Formulario 08", f"$ {ficha.gasto_f08 or 0}"],
-        ["Informes", f"$ {ficha.gasto_informes or 0}"],
-        ["Patentes", f"$ {ficha.gasto_patentes or 0}"],
-        ["Infracciones", f"$ {ficha.gasto_infracciones or 0}"],
-        ["Verificación", f"$ {ficha.gasto_verificacion or 0}"],
-        ["Autopartes", f"$ {ficha.gasto_autopartes or 0}"],
-        ["VTV", f"$ {ficha.gasto_vtv or 0}"],
-        ["R-541", f"$ {ficha.gasto_r541 or 0}"],
-        ["Firmas", f"$ {ficha.gasto_firmas or 0}"],
-        ["TOTAL", f"$ {ficha.total_gastos or 0}"],
-    ])
+    if seccion_param == "completa" or seccion_param == "gastos":
+        seccion("Gastos de ingreso", [
+            ["Formulario 08", f"$ {ficha.gasto_f08 or 0}"],
+            ["Informes", f"$ {ficha.gasto_informes or 0}"],
+            ["Patentes", f"$ {ficha.gasto_patentes or 0}"],
+            ["Infracciones", f"$ {ficha.gasto_infracciones or 0}"],
+            ["Verificación", f"$ {ficha.gasto_verificacion or 0}"],
+            ["Autopartes", f"$ {ficha.gasto_autopartes or 0}"],
+            ["VTV", f"$ {ficha.gasto_vtv or 0}"],
+            ["R-541", f"$ {ficha.gasto_r541 or 0}"],
+            ["Firmas", f"$ {ficha.gasto_firmas or 0}"],
+            ["TOTAL", f"$ {ficha.total_gastos or 0}"],
+        ])
+
+        # Gastos del concesionario (gc_*)
+        seccion("Gastos del concesionario", [
+            ["Service",              f"$ {ficha.gc_service or 0}"],
+            ["Mecánica",             f"$ {ficha.gc_mecanica or 0}"],
+            ["Chapa y pintura",      f"$ {ficha.gc_chapa_pintura or 0}"],
+            ["Tapizado",             f"$ {ficha.gc_tapizado or 0}"],
+            ["Neumáticos",           f"$ {ficha.gc_neumaticos or 0}"],
+            ["Vidrios",              f"$ {ficha.gc_vidrios or 0}"],
+            ["Cerrajería",           f"$ {ficha.gc_cerrajeria or 0}"],
+            ["Lavado / Pulido",      f"$ {ficha.gc_lavado or 0}"],
+            ["GNC",                  f"$ {ficha.gc_gnc or 0}"],
+            ["Grabado autopartes",   f"$ {ficha.gc_grabado_autopartes or 0}"],
+            ["VTV",                  f"$ {ficha.gc_vtv or 0}"],
+            ["Verificación policial", f"$ {ficha.gc_verificacion or 0}"],
+            ["Patentes",             f"$ {ficha.gc_patentes or 0}"],
+            ["Otros",                f"$ {ficha.gc_otros or 0}"],
+        ])
 
     # ==================================================
     # OBSERVACIONES Y DATOS ADICIONALES
     # ==================================================
-    seccion("Observaciones", [
-        ["Observaciones", ficha.observaciones or "Sin observaciones"],
-        ["Segunda llave", f"{ficha.duplicado_llave_estado or '-'} - {ficha.duplicado_llave_obs or '-'}"],
-        ["Código de llave", f"{ficha.codigo_llave_estado or '-'} - {ficha.codigo_llave_obs or '-'}"],
-        ["Oblea GNC", f"{ficha.oblea_gnc_estado or '-'} - {ficha.oblea_gnc_obs or '-'}"],
-        ["Código de radio", f"{ficha.codigo_radio_estado or '-'} - {ficha.codigo_radio_obs or '-'}"],
-        ["Manuales", f"{ficha.manuales_estado or '-'} - {ficha.manuales_obs or '-'}"],
-    ])
+    if seccion_param == "completa" or seccion_param == "documentacion":
+        seccion("Observaciones", [
+            ["Observaciones", ficha.observaciones or "Sin observaciones"],
+            ["Segunda llave", f"{ficha.duplicado_llave_estado or '-'} - {ficha.duplicado_llave_obs or '-'}"],
+            ["Código de llave", f"{ficha.codigo_llave_estado or '-'} - {ficha.codigo_llave_obs or '-'}"],
+            ["Oblea GNC", f"{ficha.oblea_gnc_estado or '-'} - {ficha.oblea_gnc_obs or '-'}"],
+            ["Código de radio", f"{ficha.codigo_radio_estado or '-'} - {ficha.codigo_radio_obs or '-'}"],
+            ["Manuales", f"{ficha.manuales_estado or '-'} - {ficha.manuales_obs or '-'}"],
+        ])
+
+    # ==================================================
+    # FICHA TÉCNICA (mantenimiento + cubiertas + sistemas + granizo)
+    # ==================================================
+    if seccion_param == "completa" or seccion_param == "tecnica":
+        ftec = getattr(vehiculo, "ficha_tecnica", None)
+        if ftec is not None:
+            def _disp(field):
+                """Devuelve get_X_display() si existe, sino el valor crudo."""
+                getter = getattr(ftec, f"get_{field}_display", None)
+                if callable(getter):
+                    val = getter()
+                    return val if val else "-"
+                val = getattr(ftec, field, None)
+                return val if val not in (None, "") else "-"
+
+            seccion("Mantenimiento", [
+                ["Último service", f"{ftec.ultimo_service_fecha or '-'} / {ftec.ultimo_service_km or '-'} km"],
+                ["Cambio de aceite", f"{ftec.ultimo_cambio_aceite_fecha or '-'} / {ftec.ultimo_cambio_aceite_km or '-'} km"],
+                ["Cambio de correa", f"{ftec.ultimo_cambio_correa_fecha or '-'} / {ftec.ultimo_cambio_correa_km or '-'} km"],
+            ])
+
+            seccion("Historia y estado", [
+                ["¿Repintado?", _disp("repintado")],
+                ["Partes repintadas", ftec.partes_repintadas or "-"],
+                ["¿Tuvo choque?", _disp("chocado")],
+                ["Detalles del choque", ftec.detalles_choque or "-"],
+                ["Detalles (rayones, golpes)", ftec.detalles_estado or "-"],
+                ["¿Algo no funciona?", ftec.no_funciona or "-"],
+            ])
+
+            seccion("Cubiertas", [
+                ["Delantera izq.", _disp("cubierta_di")],
+                ["Delantera der.", _disp("cubierta_dd")],
+                ["Trasera izq.",   _disp("cubierta_ti")],
+                ["Trasera der.",   _disp("cubierta_td")],
+                ["Rueda de auxilio", _disp("cubierta_auxilio")],
+                ["Observaciones",  ftec.cubiertas_obs or "-"],
+            ])
+
+            seccion("Estado de sistemas", [
+                ["Motor",              _disp("estado_motor")],
+                ["Pérdida de fluidos", _disp("perdida_fluidos")],
+                ["Detalle fluidos",    ftec.perdida_fluidos_obs or "-"],
+                ["Suspensión",         _disp("estado_suspension")],
+                ["Sistema de frenos",  _disp("estado_frenos")],
+                ["Sistema eléctrico",  _disp("estado_electrico")],
+                ["Detalle eléctrico",  ftec.fallas_electrico_obs or "-"],
+                ["Faros y ópticas",    _disp("estado_faros_opticas")],
+                ["Tapizados",          _disp("estado_tapizados")],
+                ["Desgaste volante",   _disp("estado_volante")],
+                ["Vidrios",            _disp("estado_vidrios")],
+                ["Calefacción",        _disp("estado_calefaccion")],
+                ["Aire acondicionado", _disp("estado_aire")],
+            ])
+
+            seccion("Granizo", [
+                ["Nivel", _disp("granizo_estado")],
+                ["Detalles", ftec.granizo_obs or "-"],
+            ])
+
+            if ftec.observaciones_tecnicas:
+                seccion("Observaciones técnicas", [
+                    ["", ftec.observaciones_tecnicas],
+                ])
 
     # ==================================================
     # GENERAR PDF

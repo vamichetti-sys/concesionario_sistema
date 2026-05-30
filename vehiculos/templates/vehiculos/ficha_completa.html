@@ -23,10 +23,40 @@
 =============================== -->
 <div class="card p-3 mb-4">
     <div class="d-flex flex-wrap gap-2">
-        <a href="/vehiculos/pdf/{{ vehiculo.id }}/" class="btn btn-primary">
-            <i data-lucide="download" style="width:16px;height:16px;margin-right:6px;"></i>
-            Descargar PDF
-        </a>
+        <div class="dropdown">
+            <button class="btn btn-primary dropdown-toggle" type="button"
+                    data-bs-toggle="dropdown" aria-expanded="false">
+                <i data-lucide="download" style="width:16px;height:16px;margin-right:6px;"></i>
+                Descargar PDF
+            </button>
+            <ul class="dropdown-menu shadow-sm">
+                <li><h6 class="dropdown-header">Elegir contenido</h6></li>
+                <li>
+                    <a class="dropdown-item" href="/vehiculos/pdf/{{ vehiculo.id }}/?seccion=completa" target="_blank">
+                        <i data-lucide="file-text" style="width:14px;height:14px;margin-right:6px;"></i>
+                        Ficha completa
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="/vehiculos/pdf/{{ vehiculo.id }}/?seccion=documentacion" target="_blank">
+                        <i data-lucide="files" style="width:14px;height:14px;margin-right:6px;"></i>
+                        Solo documentación
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="/vehiculos/pdf/{{ vehiculo.id }}/?seccion=tecnica" target="_blank">
+                        <i data-lucide="settings-2" style="width:14px;height:14px;margin-right:6px;"></i>
+                        Ficha técnica (estado del vehículo)
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="/vehiculos/pdf/{{ vehiculo.id }}/?seccion=gastos" target="_blank">
+                        <i data-lucide="dollar-sign" style="width:14px;height:14px;margin-right:6px;"></i>
+                        Solo gastos del vehículo
+                    </a>
+                </li>
+            </ul>
+        </div>
 
         {% if vehiculo.estado == "vendido" and request.GET.from != "cuenta" %}
         <a href="/ventas/" class="btn btn-secondary">
