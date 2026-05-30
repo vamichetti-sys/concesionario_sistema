@@ -87,6 +87,30 @@ class LogActividad(models.Model):
             resultado.append((etiqueta, val_antes, val_despues))
         return resultado
 
+    def detalle_eliminacion(self):
+        """
+        Para acción='eliminar', devuelve lista de (etiqueta, valor)
+        con todos los campos relevantes del registro borrado.
+        Filtra los que están vacíos para que el detalle sea legible.
+        """
+        if self.accion != "eliminar" or not self.datos_antes:
+            return []
+        labels = self._labels_de_campos()
+        resultado = []
+        for campo, valor in self.datos_antes.items():
+            # Saltamos vacíos / None / strings vacíos para no ensuciar
+            if valor in (None, "", "None"):
+                continue
+            etiqueta = labels.get(
+                campo, campo.replace("_", " ").capitalize()
+            )
+            # Recortamos valores muy largos
+            valor_str = str(valor)
+            if len(valor_str) > 200:
+                valor_str = valor_str[:200] + "…"
+            resultado.append((etiqueta, valor_str))
+        return resultado
+
     def _labels_de_campos(self):
         """
         Resuelve verbose_name de cada campo del modelo afectado para mostrar

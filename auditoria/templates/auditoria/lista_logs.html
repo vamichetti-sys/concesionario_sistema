@@ -86,7 +86,44 @@
                         {% else %}{{ log.get_accion_display }}{% endif %}
                     </td>
                     <td>{{ log.modelo|default:"—" }}</td>
-                    <td>{{ log.descripcion }}</td>
+                    <td>
+                        <div>{{ log.descripcion }}</div>
+
+                        {% if log.accion == 'eliminar' %}
+                            {# ── Detalle de eliminación: snapshot completo del objeto borrado ── #}
+                            {% with detalle=log.detalle_eliminacion %}
+                            {% if detalle %}
+                            <div class="mt-2 p-2" style="background:#fef2f2;border:1px solid #fecaca;border-radius:6px;font-size:11px;">
+                                <div class="fw-bold text-danger mb-1" style="font-size:11px;">
+                                    <i data-lucide="trash-2" style="width:12px;height:12px;margin-right:3px;"></i>
+                                    Contenido del registro eliminado
+                                </div>
+                                {% for campo, valor in detalle %}
+                                <div class="mb-1">
+                                    <span class="fw-semibold text-muted">{{ campo }}:</span>
+                                    <span class="text-dark">{{ valor|default:"—" }}</span>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            {% endwith %}
+                        {% else %}
+                            {% with cambios=log.cambios %}
+                            {% if cambios %}
+                            <div class="mt-2 p-2" style="background:#f9fafb;border-radius:6px;font-size:11px;">
+                                {% for campo, antes, despues in cambios %}
+                                <div class="mb-1">
+                                    <span class="fw-semibold text-muted">{{ campo }}:</span>
+                                    <span class="text-danger text-decoration-line-through">{{ antes|default:"—" }}</span>
+                                    <span class="text-muted">→</span>
+                                    <span class="text-success fw-semibold">{{ despues|default:"—" }}</span>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            {% endwith %}
+                        {% endif %}
+                    </td>
                     <td><code style="font-size:11px;">{{ log.ip|default:"—" }}</code></td>
                 </tr>
                 {% endfor %}
