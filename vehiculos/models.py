@@ -153,6 +153,15 @@ class FichaVehicular(models.Model):
         ("no_tiene", "No tiene"),
     ]
 
+    # El Formulario 08 puede venir de distintos orígenes: el propio
+    # concesionario, el proveedor que nos lo vendió, o de una reventa.
+    F08_ORIGEN = [
+        ("concesionario", "Concesionario"),
+        ("proveedor", "Proveedor"),
+        ("reventa", "Reventa"),
+        ("no_tiene", "No tiene"),
+    ]
+
     patentes_estado = models.CharField(max_length=20, choices=ESTADO_DOC, blank=True, null=True)
     patentes_monto = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
     patentes_vto1 = models.DateField(blank=True, null=True)
@@ -161,7 +170,7 @@ class FichaVehicular(models.Model):
     patentes_vto4 = models.DateField(blank=True, null=True)
     patentes_vto5 = models.DateField(blank=True, null=True)
 
-    f08_estado = models.CharField(max_length=20, choices=ESTADO_DOC, blank=True, null=True)
+    f08_estado = models.CharField(max_length=20, choices=F08_ORIGEN, blank=True, null=True, verbose_name="Formulario 08 (origen)")
     cedula_estado = models.CharField(max_length=20, choices=ESTADO_DOC, blank=True, null=True)
 
     verificacion_estado = models.CharField(max_length=20, choices=ESTADO_DOC, blank=True, null=True)
