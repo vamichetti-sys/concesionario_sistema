@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}Agregar gasto{% endblock %}
+
+{% block content %}
+
+<div class="mb-4">
+    <a href="{% url 'cuentas:cuenta_corriente_detalle' cuenta.id %}" class="text-muted text-decoration-none d-inline-flex align-items-center mb-2" style="font-size:14px;">
+        <i data-lucide="arrow-left" style="width:16px;height:16px;margin-right:6px;"></i>
+        Volver a cuenta corriente
+    </a>
+    <h3 class="fw-bold mb-1">Agregar gasto</h3>
+    <p class="text-muted mb-0">
+        Suma un gasto extra al saldo de la cuenta sin tocar el plan de pago.<br>
+        Cliente: <strong>{{ cuenta.cliente }}</strong>
+        {% if cuenta.venta %} · Venta: <strong>#{{ cuenta.venta.id }}</strong>{% endif %}
+    </p>
+</div>
+
+<div class="card p-4" style="max-width:620px;">
+    <form method="post">
+        {% csrf_token %}
+
+        <div class="alert alert-info d-flex align-items-start gap-2" style="border-radius:10px; font-size:13px;">
+            <i data-lucide="info" style="width:18px;height:18px;flex-shrink:0;"></i>
+            <div>
+                Este gasto se imputa como un movimiento <strong>«Debe»</strong> en la cuenta corriente
+                y aumenta el saldo a cobrar. No modifica el plan de pago ni las cuotas existentes.
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Concepto <span class="text-danger">*</span></label>
+            <input type="text" name="concepto" class="form-control" required
+                   placeholder="Ej: Sellado, grabado de cristales, multa, etc.">
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Monto <span class="text-danger">*</span></label>
+            <div class="input-group">
+                <span class="input-group-text">$</span>
+                <input type="number" name="monto" class="form-control" step="0.01" min="0.01" required placeholder="0,00">
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Observaciones</label>
+            <textarea name="observaciones" class="form-control" rows="3" placeholder="Detalles opcionales..."></textarea>
+        </div>
+
+        <hr class="my-4">
+
+        <div class="d-flex gap-3">
+            <button type="submit" class="btn btn-warning">
+                <i data-lucide="plus-circle" style="width:16px;height:16px;margin-right:6px;"></i>
+                Agregar gasto
+            </button>
+            <a href="{% url 'cuentas:cuenta_corriente_detalle' cuenta.id %}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
+
+<script>
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+</script>
+
+{% endblock %}

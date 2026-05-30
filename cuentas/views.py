@@ -972,11 +972,61 @@ def pagar_cuota(request, cuota_id):
 
 
 # ==========================================================
-# AGREGAR GASTO A CUENTA (LEGACY)
+# AGREGAR GASTO A CUENTA
 # ==========================================================
 @login_required
+@transaction.atomic
 def agregar_gasto_cuenta(request, cuenta_id):
-    return redirect("cuentas:cuenta_corriente_detalle", cuenta_id=cuenta_id)
+    """
+    Permite cargar un gasto suelto sobre la cuenta corriente, sin tocar
+    el plan de pago. Se imputa como MovimientoCuenta tipo='debe',
+    origen='manual', y el saldo de la cuenta se recalcula.
+    """
+    cuenta = get_object_or_404(CuentaCorriente, id=cuenta_id)
+
+    if request.method == "POST":
+        concepto      = (request.POST.get("concepto") or "").strip()
+        monto_raw     = request.POST.get("monto")
+        observaciones = (request.POST.get("observaciones") or "").strip()
+
+        if not concepto:
+            messages.error(request, "Tenés que indicar un concepto para el gasto.")
+            return redirect("cuentas:agregar_gasto_cuenta", cuenta_id=cuenta.id)
+
+        try:
+            monto = _parse_monto_argentino(monto_raw)
+        except (ValueError, InvalidOperation):
+            messages.error(request, "Monto inválido.")
+            return redirect("cuentas:agregar_gasto_cuenta", cuenta_id=cuenta.id)
+
+        if monto <= 0:
+            messages.error(request, "El monto debe ser mayor a 0.")
+            return redirect("cuentas:agregar_gasto_cuenta", cuenta_id=cuenta.id)
+
+        descripcion = f"Gasto extra: {concepto}"
+        if observaciones:
+            descripcion = f"{descripcion} – {observaciones}"
+
+        MovimientoCuenta.objects.create(
+            cuenta=cuenta,
+            descripcion=descripcion[:255],
+            tipo="debe",
+            monto=monto,
+            origen="manual",
+        )
+        cuenta.recalcular_saldo()
+
+        messages.success(
+            request,
+            f"Gasto «{concepto}» agregado a la cuenta corriente por ${monto}."
+        )
+        return redirect("cuentas:cuenta_corriente_detalle", cuenta_id=cuenta.id)
+
+    return render(
+        request,
+        "cuentas/agregar_gasto_cuenta.html",
+        {"cuenta": cuenta}
+    )
 
 
 # ==========================================================

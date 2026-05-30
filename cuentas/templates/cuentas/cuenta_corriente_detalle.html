@@ -155,6 +155,12 @@
             Generar movimiento
         </a>
 
+        <a href="{% url 'cuentas:agregar_gasto_cuenta' cuenta.id %}" class="btn btn-warning"
+           title="Suma un gasto extra al saldo sin tocar el plan de pago">
+            <i data-lucide="plus-circle" style="width:16px;height:16px;margin-right:6px;"></i>
+            Agregar gasto
+        </a>
+
         {% if plan and plan.estado == "activo" %}
         <a href="{% url 'cuentas:crear_plan_pago' cuenta.id %}" class="btn btn-secondary">
             <i data-lucide="pencil" style="width:16px;height:16px;margin-right:6px;"></i>
