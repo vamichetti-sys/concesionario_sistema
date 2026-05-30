@@ -508,15 +508,6 @@ class FichaTecnica(models.Model):
         related_name="ficha_tecnica",
     )
 
-    # ── Especificaciones generales ─────────────────────────
-    tipo_vehiculo = models.CharField(max_length=50, blank=True, null=True, verbose_name="Tipo de vehículo")
-    potencia = models.CharField(max_length=50, blank=True, null=True, verbose_name="Potencia (HP)")
-    cilindrada = models.CharField(max_length=50, blank=True, null=True, verbose_name="Cilindrada")
-    direccion = models.CharField(max_length=50, blank=True, null=True, verbose_name="Dirección")
-    capacidad_tanque = models.CharField(max_length=30, blank=True, null=True, verbose_name="Tanque de combustible (L)")
-    capacidad_baul = models.CharField(max_length=30, blank=True, null=True, verbose_name="Capacidad de baúl (L)")
-    puertas = models.PositiveSmallIntegerField(blank=True, null=True, verbose_name="Cantidad de puertas")
-
     # ── Mantenimiento ──────────────────────────────────────
     ultimo_service_fecha = models.DateField(blank=True, null=True, verbose_name="Último service – Fecha")
     ultimo_service_km = models.PositiveIntegerField(blank=True, null=True, verbose_name="Último service – Km")
@@ -537,48 +528,61 @@ class FichaTecnica(models.Model):
     detalles_estado = models.TextField(blank=True, null=True, verbose_name="Detalles (rayones, golpes, particularidades)")
     no_funciona = models.TextField(blank=True, null=True, verbose_name="¿Algo no funciona?")
 
-    # ── Equipamiento SI/NO ─────────────────────────────────
-    SI_NO = [("si", "Sí"), ("no", "No")]
+    # ── Cubiertas (cada una individual + auxilio) ──────────
+    CUBIERTA_CHOICES = [
+        ("nueva", "Nueva"),
+        ("buena", "Buena"),
+        ("regular", "Regular"),
+        ("desgastada", "Desgastada"),
+        ("cambiar", "A cambiar"),
+    ]
+    cubierta_di = models.CharField(max_length=15, choices=CUBIERTA_CHOICES, blank=True, null=True, verbose_name="Cubierta delantera izq.")
+    cubierta_dd = models.CharField(max_length=15, choices=CUBIERTA_CHOICES, blank=True, null=True, verbose_name="Cubierta delantera der.")
+    cubierta_ti = models.CharField(max_length=15, choices=CUBIERTA_CHOICES, blank=True, null=True, verbose_name="Cubierta trasera izq.")
+    cubierta_td = models.CharField(max_length=15, choices=CUBIERTA_CHOICES, blank=True, null=True, verbose_name="Cubierta trasera der.")
+    cubierta_auxilio = models.CharField(max_length=15, choices=CUBIERTA_CHOICES, blank=True, null=True, verbose_name="Rueda de auxilio")
+    cubiertas_obs = models.TextField(blank=True, null=True, verbose_name="Observaciones cubiertas / auxilio")
 
-    abs_frenos = models.CharField(max_length=2, choices=SI_NO, blank=True, null=True, verbose_name="ABS")
-    airbag = models.CharField(max_length=2, choices=SI_NO, blank=True, null=True, verbose_name="Airbag")
-    airbags_laterales = models.CharField(max_length=2, choices=SI_NO, blank=True, null=True, verbose_name="Airbags laterales")
-    aire_acondicionado = models.CharField(max_length=2, choices=SI_NO, blank=True, null=True, verbose_name="Aire acondicionado")
-    cierre_centralizado = models.CharField(max_length=2, choices=SI_NO, blank=True, null=True, verbose_name="Cierre centralizado")
-    alzacristales = models.CharField(max_length=2, choices=SI_NO, blank=True, null=True, verbose_name="Alzacristales eléctricos")
-    alarma = models.CharField(max_length=2, choices=SI_NO, blank=True, null=True, verbose_name="Alarma")
-    sensor_estacionamiento = models.CharField(max_length=2, choices=SI_NO, blank=True, null=True, verbose_name="Sensor de estacionamiento")
-    camara_retroceso = models.CharField(max_length=2, choices=SI_NO, blank=True, null=True, verbose_name="Cámara de retroceso")
-    pantalla = models.CharField(max_length=2, choices=SI_NO, blank=True, null=True, verbose_name="Pantalla / Multimedia")
-    gps = models.CharField(max_length=2, choices=SI_NO, blank=True, null=True, verbose_name="GPS")
-    isofix = models.CharField(max_length=2, choices=SI_NO, blank=True, null=True, verbose_name="ISOFIX")
-    techo_solar = models.CharField(max_length=2, choices=SI_NO, blank=True, null=True, verbose_name="Techo solar / panorámico")
-    llantas_aleacion = models.CharField(max_length=2, choices=SI_NO, blank=True, null=True, verbose_name="Llantas de aleación")
-    control_crucero = models.CharField(max_length=2, choices=SI_NO, blank=True, null=True, verbose_name="Control crucero")
-    control_traccion = models.CharField(max_length=2, choices=SI_NO, blank=True, null=True, verbose_name="Control de tracción")
-    asientos_cuero = models.CharField(max_length=2, choices=SI_NO, blank=True, null=True, verbose_name="Asientos de cuero")
-    bluetooth = models.CharField(max_length=2, choices=SI_NO, blank=True, null=True, verbose_name="Bluetooth")
-
-    # ── Estado de componentes ──────────────────────────────
-    ESTADO_COMP = [
-        ("ok", "OK"),
+    # ── Estado de sistemas y componentes ───────────────────
+    ESTADO_GENERAL = [
+        ("bueno", "Bueno"),
         ("regular", "Regular"),
         ("malo", "Malo"),
-        ("na", "N/A"),
+        ("no_funciona", "No funciona"),
     ]
 
-    est_neumaticos = models.CharField(max_length=10, choices=ESTADO_COMP, blank=True, null=True, verbose_name="Neumáticos")
-    est_frenos = models.CharField(max_length=10, choices=ESTADO_COMP, blank=True, null=True, verbose_name="Frenos")
-    est_amortiguadores = models.CharField(max_length=10, choices=ESTADO_COMP, blank=True, null=True, verbose_name="Amortiguadores")
-    est_bateria = models.CharField(max_length=10, choices=ESTADO_COMP, blank=True, null=True, verbose_name="Batería")
-    est_escape = models.CharField(max_length=10, choices=ESTADO_COMP, blank=True, null=True, verbose_name="Escape / Silenciador")
-    est_chapa_pintura = models.CharField(max_length=10, choices=ESTADO_COMP, blank=True, null=True, verbose_name="Chapa y pintura")
-    est_tapizado = models.CharField(max_length=10, choices=ESTADO_COMP, blank=True, null=True, verbose_name="Tapizado")
-    est_vidrios = models.CharField(max_length=10, choices=ESTADO_COMP, blank=True, null=True, verbose_name="Vidrios / Cristales")
-    est_luces = models.CharField(max_length=10, choices=ESTADO_COMP, blank=True, null=True, verbose_name="Luces")
-    est_motor = models.CharField(max_length=10, choices=ESTADO_COMP, blank=True, null=True, verbose_name="Motor")
+    estado_motor = models.CharField(max_length=15, choices=ESTADO_GENERAL, blank=True, null=True, verbose_name="Estado del motor")
 
-    # ── Observaciones ──────────────────────────────────────
+    PERDIDA_FLUIDOS_CHOICES = [
+        ("no", "No"),
+        ("leve", "Leve"),
+        ("importante", "Importante"),
+    ]
+    perdida_fluidos = models.CharField(max_length=15, choices=PERDIDA_FLUIDOS_CHOICES, blank=True, null=True, verbose_name="Pérdida de fluidos")
+    perdida_fluidos_obs = models.CharField(max_length=200, blank=True, null=True, verbose_name="Detalle pérdida de fluidos")
+
+    estado_suspension       = models.CharField(max_length=15, choices=ESTADO_GENERAL, blank=True, null=True, verbose_name="Suspensión")
+    estado_frenos           = models.CharField(max_length=15, choices=ESTADO_GENERAL, blank=True, null=True, verbose_name="Sistema de frenos")
+    estado_electrico        = models.CharField(max_length=15, choices=ESTADO_GENERAL, blank=True, null=True, verbose_name="Sistema eléctrico")
+    fallas_electrico_obs    = models.CharField(max_length=200, blank=True, null=True, verbose_name="Detalle de fallas eléctricas")
+    estado_faros_opticas    = models.CharField(max_length=15, choices=ESTADO_GENERAL, blank=True, null=True, verbose_name="Faros y ópticas")
+    estado_tapizados        = models.CharField(max_length=15, choices=ESTADO_GENERAL, blank=True, null=True, verbose_name="Tapizados")
+    estado_volante          = models.CharField(max_length=15, choices=ESTADO_GENERAL, blank=True, null=True, verbose_name="Desgaste del volante")
+    estado_vidrios          = models.CharField(max_length=15, choices=ESTADO_GENERAL, blank=True, null=True, verbose_name="Vidrios")
+    estado_calefaccion      = models.CharField(max_length=15, choices=ESTADO_GENERAL, blank=True, null=True, verbose_name="Calefacción")
+    estado_aire             = models.CharField(max_length=15, choices=ESTADO_GENERAL, blank=True, null=True, verbose_name="Aire acondicionado")
+
+    # ── Granizo ────────────────────────────────────────────
+    GRANIZO_CHOICES = [
+        ("no", "No"),
+        ("leve", "Leve"),
+        ("moderado", "Moderado"),
+        ("severo", "Severo"),
+    ]
+    granizo_estado = models.CharField(max_length=15, choices=GRANIZO_CHOICES, blank=True, null=True, verbose_name="Granizo")
+    granizo_obs    = models.TextField(blank=True, null=True, verbose_name="Detalles del granizo (zonas afectadas)")
+
+    # ── Observaciones técnicas generales ───────────────────
     observaciones_tecnicas = models.TextField(blank=True, null=True, verbose_name="Observaciones técnicas")
 
     class Meta:

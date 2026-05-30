@@ -386,55 +386,56 @@ class FichaTecnicaForm(forms.ModelForm):
         model = FichaTecnica
         exclude = ['vehiculo']
 
+        # ▸ Estilos comunes para que se vea consistente y los textareas
+        #   sean grandes, claros y bien visibles (a pedido).
+        _OBS_CLS = 'form-control ficha-obs'
+        _SELECT_CLS = 'form-select'
+        _INPUT_CLS = 'form-control'
+
         widgets = {
-            'tipo_vehiculo': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Sedán, SUV, Pick Up...'}),
-            'potencia': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 150 HP'}),
-            'cilindrada': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 1.6 / 2.0T'}),
-            'direccion': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Hidráulica, Eléctrica'}),
-            'capacidad_tanque': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 55'}),
-            'capacidad_baul': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 420'}),
-            'puertas': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 4'}),
-            # Mantenimiento
-            'ultimo_service_fecha': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
-            'ultimo_service_km': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Km'}),
-            'ultimo_cambio_aceite_fecha': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
-            'ultimo_cambio_aceite_km': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Km'}),
-            'ultimo_cambio_correa_fecha': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
-            'ultimo_cambio_correa_km': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Km'}),
-            # Historia / Estado
-            'repintado': forms.Select(attrs={'class': 'form-control'}),
-            'partes_repintadas': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: paragolpes delantero, puerta derecha...'}),
-            'chocado': forms.Select(attrs={'class': 'form-control'}),
-            'detalles_choque': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Cuándo, dónde, qué se reparó...'}),
-            'detalles_estado': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Rayones, golpes leves, particularidades...'}),
-            'no_funciona': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Aire que no enfría, alguna luz fundida, etc.'}),
-            'abs_frenos': forms.Select(attrs={'class': 'form-control'}),
-            'airbag': forms.Select(attrs={'class': 'form-control'}),
-            'airbags_laterales': forms.Select(attrs={'class': 'form-control'}),
-            'aire_acondicionado': forms.Select(attrs={'class': 'form-control'}),
-            'cierre_centralizado': forms.Select(attrs={'class': 'form-control'}),
-            'alzacristales': forms.Select(attrs={'class': 'form-control'}),
-            'alarma': forms.Select(attrs={'class': 'form-control'}),
-            'sensor_estacionamiento': forms.Select(attrs={'class': 'form-control'}),
-            'camara_retroceso': forms.Select(attrs={'class': 'form-control'}),
-            'pantalla': forms.Select(attrs={'class': 'form-control'}),
-            'gps': forms.Select(attrs={'class': 'form-control'}),
-            'isofix': forms.Select(attrs={'class': 'form-control'}),
-            'techo_solar': forms.Select(attrs={'class': 'form-control'}),
-            'llantas_aleacion': forms.Select(attrs={'class': 'form-control'}),
-            'control_crucero': forms.Select(attrs={'class': 'form-control'}),
-            'control_traccion': forms.Select(attrs={'class': 'form-control'}),
-            'asientos_cuero': forms.Select(attrs={'class': 'form-control'}),
-            'bluetooth': forms.Select(attrs={'class': 'form-control'}),
-            'est_neumaticos': forms.Select(attrs={'class': 'form-control'}),
-            'est_frenos': forms.Select(attrs={'class': 'form-control'}),
-            'est_amortiguadores': forms.Select(attrs={'class': 'form-control'}),
-            'est_bateria': forms.Select(attrs={'class': 'form-control'}),
-            'est_escape': forms.Select(attrs={'class': 'form-control'}),
-            'est_chapa_pintura': forms.Select(attrs={'class': 'form-control'}),
-            'est_tapizado': forms.Select(attrs={'class': 'form-control'}),
-            'est_vidrios': forms.Select(attrs={'class': 'form-control'}),
-            'est_luces': forms.Select(attrs={'class': 'form-control'}),
-            'est_motor': forms.Select(attrs={'class': 'form-control'}),
-            'observaciones_tecnicas': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Detalles adicionales, trabajos realizados...'}),
+            # ── Mantenimiento ───────────────────────────────
+            'ultimo_service_fecha': forms.DateInput(format='%Y-%m-%d', attrs={'class': _INPUT_CLS, 'type': 'date'}),
+            'ultimo_service_km': forms.NumberInput(attrs={'class': _INPUT_CLS, 'placeholder': 'Km'}),
+            'ultimo_cambio_aceite_fecha': forms.DateInput(format='%Y-%m-%d', attrs={'class': _INPUT_CLS, 'type': 'date'}),
+            'ultimo_cambio_aceite_km': forms.NumberInput(attrs={'class': _INPUT_CLS, 'placeholder': 'Km'}),
+            'ultimo_cambio_correa_fecha': forms.DateInput(format='%Y-%m-%d', attrs={'class': _INPUT_CLS, 'type': 'date'}),
+            'ultimo_cambio_correa_km': forms.NumberInput(attrs={'class': _INPUT_CLS, 'placeholder': 'Km'}),
+
+            # ── Historia / Estado ──────────────────────────
+            'repintado': forms.Select(attrs={'class': _SELECT_CLS}),
+            'partes_repintadas': forms.TextInput(attrs={'class': _INPUT_CLS, 'placeholder': 'Ej: paragolpes delantero, puerta derecha...'}),
+            'chocado': forms.Select(attrs={'class': _SELECT_CLS}),
+            'detalles_choque': forms.Textarea(attrs={'class': _OBS_CLS, 'rows': 3, 'placeholder': 'Cuándo, dónde, qué se reparó...'}),
+            'detalles_estado': forms.Textarea(attrs={'class': _OBS_CLS, 'rows': 3, 'placeholder': 'Rayones, golpes leves, particularidades...'}),
+            'no_funciona': forms.Textarea(attrs={'class': _OBS_CLS, 'rows': 3, 'placeholder': 'Aire que no enfría, alguna luz fundida, etc.'}),
+
+            # ── Cubiertas ──────────────────────────────────
+            'cubierta_di': forms.Select(attrs={'class': _SELECT_CLS, 'data-tire': 'DI'}),
+            'cubierta_dd': forms.Select(attrs={'class': _SELECT_CLS, 'data-tire': 'DD'}),
+            'cubierta_ti': forms.Select(attrs={'class': _SELECT_CLS, 'data-tire': 'TI'}),
+            'cubierta_td': forms.Select(attrs={'class': _SELECT_CLS, 'data-tire': 'TD'}),
+            'cubierta_auxilio': forms.Select(attrs={'class': _SELECT_CLS, 'data-tire': 'AX'}),
+            'cubiertas_obs': forms.Textarea(attrs={'class': _OBS_CLS, 'rows': 3, 'placeholder': 'Observaciones sobre cubiertas o rueda de auxilio...'}),
+
+            # ── Estado sistemas ────────────────────────────
+            'estado_motor':           forms.Select(attrs={'class': _SELECT_CLS}),
+            'perdida_fluidos':        forms.Select(attrs={'class': _SELECT_CLS}),
+            'perdida_fluidos_obs':    forms.TextInput(attrs={'class': _INPUT_CLS, 'placeholder': 'Aceite, refrigerante, etc.'}),
+            'estado_suspension':      forms.Select(attrs={'class': _SELECT_CLS}),
+            'estado_frenos':          forms.Select(attrs={'class': _SELECT_CLS}),
+            'estado_electrico':       forms.Select(attrs={'class': _SELECT_CLS}),
+            'fallas_electrico_obs':   forms.TextInput(attrs={'class': _INPUT_CLS, 'placeholder': 'Detalles de fallas eléctricas'}),
+            'estado_faros_opticas':   forms.Select(attrs={'class': _SELECT_CLS}),
+            'estado_tapizados':       forms.Select(attrs={'class': _SELECT_CLS}),
+            'estado_volante':         forms.Select(attrs={'class': _SELECT_CLS}),
+            'estado_vidrios':         forms.Select(attrs={'class': _SELECT_CLS}),
+            'estado_calefaccion':     forms.Select(attrs={'class': _SELECT_CLS}),
+            'estado_aire':            forms.Select(attrs={'class': _SELECT_CLS}),
+
+            # ── Granizo ────────────────────────────────────
+            'granizo_estado': forms.Select(attrs={'class': _SELECT_CLS}),
+            'granizo_obs':    forms.Textarea(attrs={'class': _OBS_CLS, 'rows': 3, 'placeholder': 'Zonas afectadas (capot, techo, baúl...)'}),
+
+            # ── Observaciones generales ────────────────────
+            'observaciones_tecnicas': forms.Textarea(attrs={'class': _OBS_CLS, 'rows': 4, 'placeholder': 'Detalles adicionales, trabajos realizados...'}),
         }
