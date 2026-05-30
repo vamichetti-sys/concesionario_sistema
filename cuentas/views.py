@@ -659,6 +659,12 @@ def registrar_movimiento(request, cuenta_id):
         observaciones   = request.POST.get("observaciones", "")
         cuota_id        = request.POST.get("cuota_id")
 
+        # Datos específicos de cheque
+        cheque_banco       = (request.POST.get("cheque_banco") or "").strip()
+        cheque_numero      = (request.POST.get("cheque_numero") or "").strip()
+        cheque_fecha_cobro = (request.POST.get("cheque_fecha_cobro") or "").strip()
+        cheque_titular     = (request.POST.get("cheque_titular") or "").strip()
+
         try:
             monto = _parse_monto_argentino(monto_raw)
         except (ValueError, InvalidOperation):
@@ -669,6 +675,20 @@ def registrar_movimiento(request, cuenta_id):
             messages.error(request, "El monto debe ser mayor a 0.")
             return redirect("cuentas:registrar_movimiento", cuenta_id=cuenta.id)
 
+        # Validación cheque: los 4 campos son obligatorios
+        if forma_pago == "cheque":
+            faltan = []
+            if not cheque_banco:       faltan.append("banco")
+            if not cheque_numero:      faltan.append("nº de cheque")
+            if not cheque_fecha_cobro: faltan.append("fecha de cobro")
+            if not cheque_titular:     faltan.append("titular")
+            if faltan:
+                messages.error(
+                    request,
+                    "Para pagos con cheque debés completar: " + ", ".join(faltan) + "."
+                )
+                return redirect("cuentas:registrar_movimiento", cuenta_id=cuenta.id)
+
         saldo_anterior = cuenta.saldo
 
         pago = Pago.objects.create(
@@ -677,7 +697,39 @@ def registrar_movimiento(request, cuenta_id):
             forma_pago=forma_pago,
             observaciones=observaciones,
             saldo_anterior=saldo_anterior,
+            banco=cheque_banco if forma_pago == "cheque" else "",
+            numero_cheque=cheque_numero if forma_pago == "cheque" else "",
+            fecha_cobro_cheque=cheque_fecha_cobro if forma_pago == "cheque" else None,
+            titular_cheque=cheque_titular if forma_pago == "cheque" else "",
         )
+
+        # Si es cheque, replicar automáticamente al módulo Cheques
+        if forma_pago == "cheque":
+            try:
+                from cheques.models import Cheque
+                cheque = Cheque.objects.create(
+                    cliente=str(cuenta.cliente) if cuenta.cliente_id else "",
+                    banco_emision=cheque_banco,
+                    numero_cheque=cheque_numero,
+                    titular_cheque=cheque_titular,
+                    monto=monto,
+                    fecha_deposito=cheque_fecha_cobro,
+                    estado="a_depositar",
+                    observaciones=(
+                        f"Generado desde cuenta corriente #{cuenta.id} "
+                        f"(recibo {pago.numero_recibo})"
+                    ),
+                    creado_por=request.user if request.user.is_authenticated else None,
+                )
+                pago.cheque_vinculado = cheque
+                pago.save(update_fields=["cheque_vinculado"])
+            except Exception as exc:
+                # No bloqueamos el cobro si falla la sincronización a Cheques,
+                # pero avisamos al usuario.
+                messages.warning(
+                    request,
+                    f"El pago se registró pero no pudo vincularse al módulo Cheques: {exc}"
+                )
 
         if tipo_movimiento == "cuota" and cuota_id:
             cuota = get_object_or_404(CuotaPlan, id=cuota_id, plan__cuenta=cuenta)

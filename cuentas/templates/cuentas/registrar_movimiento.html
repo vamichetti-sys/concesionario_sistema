@@ -58,12 +58,39 @@
         <!-- FORMA DE PAGO -->
         <div class="mb-4">
             <label class="form-label">Forma de pago</label>
-            <select name="forma_pago" class="form-select" required>
+            <select name="forma_pago" id="forma_pago" class="form-select" required onchange="toggleCheque(this.value)">
                 <option value="">Seleccionar</option>
                 <option value="efectivo">Efectivo</option>
                 <option value="transferencia">Transferencia</option>
                 <option value="cheque">Cheque</option>
             </select>
+        </div>
+
+        <!-- DATOS DEL CHEQUE -->
+        <div class="mb-4 p-3" id="bloque-cheque" style="display:none; background:#fffbeb; border:1px solid #fde68a; border-radius:10px;">
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <i data-lucide="receipt" style="width:18px;height:18px;color:#b45309;"></i>
+                <strong style="color:#92400e;">Datos del cheque</strong>
+                <small class="text-muted ms-1">Se va a registrar automáticamente en el módulo Cheques.</small>
+            </div>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label" style="font-size:13px;">Banco</label>
+                    <input type="text" name="cheque_banco" id="cheque_banco" class="form-control" placeholder="Ej: Banco Galicia">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" style="font-size:13px;">Nº de cheque</label>
+                    <input type="text" name="cheque_numero" id="cheque_numero" class="form-control" placeholder="Ej: 00012345">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" style="font-size:13px;">Fecha de cobro</label>
+                    <input type="date" name="cheque_fecha_cobro" id="cheque_fecha_cobro" class="form-control">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" style="font-size:13px;">Titular del cheque</label>
+                    <input type="text" name="cheque_titular" id="cheque_titular" class="form-control" placeholder="Nombre del titular">
+                </div>
+            </div>
         </div>
 
         <!-- OBSERVACIONES -->
@@ -96,10 +123,26 @@ function toggleCuotas(valor) {
     if (valor !== "cuota") cuotaSelect.value = "";
 }
 
+function toggleCheque(valor) {
+    const bloque = document.getElementById("bloque-cheque");
+    const inputs = bloque.querySelectorAll("input");
+    const esCheque = valor === "cheque";
+    bloque.style.display = esCheque ? "block" : "none";
+    inputs.forEach(i => {
+        if (esCheque) {
+            i.setAttribute("required", "required");
+        } else {
+            i.removeAttribute("required");
+            i.value = "";
+        }
+    });
+}
+
 function validarMovimiento() {
     const tipo = document.getElementById("tipo_movimiento").value;
     const cuota = document.getElementById("cuota_id").value;
     const monto = parseFloat(document.getElementById("monto").value);
+    const formaPago = document.getElementById("forma_pago").value;
     const errorBox = document.getElementById("error-movimiento");
 
     errorBox.classList.add("d-none");
@@ -114,6 +157,17 @@ function validarMovimiento() {
         errorBox.innerText = "El monto debe ser mayor a 0.";
         errorBox.classList.remove("d-none");
         return false;
+    }
+    if (formaPago === "cheque") {
+        const banco   = document.getElementById("cheque_banco").value.trim();
+        const numero  = document.getElementById("cheque_numero").value.trim();
+        const fecha   = document.getElementById("cheque_fecha_cobro").value.trim();
+        const titular = document.getElementById("cheque_titular").value.trim();
+        if (!banco || !numero || !fecha || !titular) {
+            errorBox.innerText = "Para pagos con cheque debés completar banco, nº, fecha de cobro y titular.";
+            errorBox.classList.remove("d-none");
+            return false;
+        }
     }
     return true;
 }

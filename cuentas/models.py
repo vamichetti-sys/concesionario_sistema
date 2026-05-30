@@ -525,6 +525,15 @@ class Pago(models.Model):
     forma_pago = models.CharField(max_length=20, choices=FORMAS_PAGO)
     banco = models.CharField(max_length=100, blank=True)
     numero_cheque = models.CharField(max_length=100, blank=True)
+    fecha_cobro_cheque = models.DateField(null=True, blank=True)
+    titular_cheque = models.CharField(max_length=255, blank=True)
+    cheque_vinculado = models.ForeignKey(
+        "cheques.Cheque",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="pagos_origen",
+    )
 
     monto_total = models.DecimalField(max_digits=14, decimal_places=2)
     observaciones = models.TextField(blank=True)
