@@ -665,7 +665,7 @@
     </div>
     {% endif %}
 
-    {% if user.username == 'Vamichetti' or user.username == 'Hamichetti' %}
+    {% if user.username == 'Vamichetti' or user.username == 'Hamichetti' or user.username|lower == 'namichetti' %}
     <!-- GESTIÓN INTERNA -->
     <div class="sidebar-category">
         <div class="sidebar-category-header" onclick="toggleCategory(this)">
@@ -673,6 +673,7 @@
             <i data-lucide="chevron-down" class="chevron"></i>
         </div>
         <div class="sidebar-category-items" style="max-height:400px;">
+            {% if user.username == 'Vamichetti' or user.username == 'Hamichetti' %}
             <a href="/reportes/" class="nav-link {% if request.path == '/reportes/' or '/reportes/web/' in request.path %}active{% endif %}">
                 <i data-lucide="bar-chart-3"></i>
                 <span>Reportes</span>
@@ -691,16 +692,20 @@
                 <i data-lucide="banknote"></i>
                 <span>Cheques</span>
             </a>
+            {% endif %}
             <a href="/gastos-mensuales/" class="nav-link {% if '/gastos-mensuales/' in request.path %}active{% endif %}">
                 <i data-lucide="trending-down"></i>
                 <span>Control de Gastos</span>
             </a>
+            {% if user.username == 'Vamichetti' or user.username == 'Hamichetti' %}
             <a href="/auditoria/" class="nav-link {% if '/auditoria/' in request.path %}active{% endif %}">
                 <i data-lucide="shield-check"></i>
                 <span>Auditoría</span>
             </a>
+            {% endif %}
         </div>
     </div>
+    {% endif %}
 
     {% if user.username == USUARIO_PRINCIPAL %}
     <!-- PANEL PERSONAL -->
