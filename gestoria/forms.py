@@ -7,17 +7,12 @@ class GestoriaForm(forms.ModelForm):
         model = Gestoria
         fields = [
             # ===============================
-            # DOCUMENTACIÓN
-            # ===============================
-            "formulario_08",
-            "titulo",
-            "cedula",
-            "informe_dominio",
-
-            # ===============================
-            # ADMINISTRATIVO (AGREGADO)
+            # ADMINISTRATIVO
             # ===============================
             "monto_transferencia",
+            "pago_escribania",
+            "pago_cliente",
+            "pago_concesionaria",
             "pagado",
             "transferido",
 
@@ -30,29 +25,37 @@ class GestoriaForm(forms.ModelForm):
 
         widgets = {
             # ===============================
-            # CHECKBOXES DOCUMENTACIÓN
-            # ===============================
-            "formulario_08": forms.CheckboxInput(
-                attrs={"class": "form-check-input"}
-            ),
-            "titulo": forms.CheckboxInput(
-                attrs={"class": "form-check-input"}
-            ),
-            "cedula": forms.CheckboxInput(
-                attrs={"class": "form-check-input"}
-            ),
-            "informe_dominio": forms.CheckboxInput(
-                attrs={"class": "form-check-input"}
-            ),
-
-            # ===============================
-            # ADMINISTRATIVO (AGREGADO)
+            # ADMINISTRATIVO
             # ===============================
             "monto_transferencia": forms.NumberInput(
                 attrs={
                     "class": "form-control",
                     "step": "0.01",
                     "min": "0"
+                }
+            ),
+            "pago_escribania": forms.NumberInput(
+                attrs={
+                    "class": "form-control",
+                    "step": "0.01",
+                    "min": "0",
+                    "placeholder": "0,00",
+                }
+            ),
+            "pago_cliente": forms.NumberInput(
+                attrs={
+                    "class": "form-control",
+                    "step": "0.01",
+                    "min": "0",
+                    "placeholder": "0,00",
+                }
+            ),
+            "pago_concesionaria": forms.NumberInput(
+                attrs={
+                    "class": "form-control",
+                    "step": "0.01",
+                    "min": "0",
+                    "placeholder": "0,00",
                 }
             ),
             "pagado": forms.CheckboxInput(

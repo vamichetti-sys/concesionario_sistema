@@ -40,6 +40,29 @@ class Gestoria(models.Model):
         default=0
     )
 
+    # Distribución del costo de la transferencia: cuánto paga cada parte
+    pago_escribania = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        blank=True,
+        verbose_name="Pago escribanía"
+    )
+    pago_cliente = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        blank=True,
+        verbose_name="Pago cliente"
+    )
+    pago_concesionaria = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        blank=True,
+        verbose_name="Pago concesionaria"
+    )
+
     pagado = models.BooleanField(default=False)
     transferido = models.BooleanField(default=False)
 

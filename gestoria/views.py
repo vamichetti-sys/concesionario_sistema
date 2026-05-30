@@ -139,12 +139,21 @@ def editar_gestoria(request, gestoria_id):
     else:
         form = GestoriaForm(instance=gestoria)
 
+    # Resumen de documentación: leído de la FichaVehicular del vehículo
+    ficha = None
+    try:
+        from vehiculos.models import FichaVehicular
+        ficha = FichaVehicular.objects.filter(vehiculo=gestoria.vehiculo).first()
+    except Exception:
+        ficha = None
+
     return render(
         request,
         "gestoria/gestoria_form.html",
         {
             "gestoria": gestoria,
-            "form": form
+            "form": form,
+            "ficha": ficha,
         }
     )
 
