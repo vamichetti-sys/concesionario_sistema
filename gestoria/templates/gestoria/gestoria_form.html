@@ -141,6 +141,25 @@
                             </button>
                         </div>
                     </div>
+
+                    {% if recibos_pago_cliente %}
+                    <hr class="my-3">
+                    <small class="text-muted text-uppercase fw-semibold">Recibos generados</small>
+                    <div class="list-group list-group-flush mt-1">
+                        {% for r in recibos_pago_cliente %}
+                        <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="fw-semibold">{{ r.numero_recibo }}</span>
+                                <small class="text-muted">· {{ r.fecha|date:"d/m/Y" }} · ${{ r.monto_total|floatformat:0 }}</small>
+                            </div>
+                            <a href="{% url 'cuentas:recibo_pago_pdf' r.id %}" target="_blank" class="btn btn-sm btn-outline-success">
+                                <i data-lucide="printer" style="width:14px;height:14px;margin-right:4px;"></i>
+                                Imprimir recibo
+                            </a>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
                 </div>
 
                 <div id="resumen-pagos" class="p-3 mb-3" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;display:none;">

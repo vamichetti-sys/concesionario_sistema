@@ -207,6 +207,23 @@ def editar_gestoria(request, gestoria_id):
     except Exception:
         ficha = None
 
+    # Recibos de pago del cliente generados desde esta gestoría
+    recibos_pago_cliente = []
+    if gestoria.venta:
+        cuenta = getattr(gestoria.venta, "cuenta_corriente", None)
+        if cuenta:
+            from cuentas.models import MovimientoCuenta
+            movs = (
+                MovimientoCuenta.objects
+                .filter(
+                    cuenta=cuenta, origen="gestoria", tipo="haber",
+                    vehiculo=gestoria.vehiculo, pago__isnull=False,
+                )
+                .select_related("pago")
+                .order_by("-fecha")
+            )
+            recibos_pago_cliente = [m.pago for m in movs]
+
     return render(
         request,
         "gestoria/gestoria_form.html",
@@ -214,6 +231,7 @@ def editar_gestoria(request, gestoria_id):
             "gestoria": gestoria,
             "form": form,
             "ficha": ficha,
+            "recibos_pago_cliente": recibos_pago_cliente,
         }
     )
 
@@ -312,9 +330,10 @@ def generar_pago_cliente(request, gestoria_id):
     messages.success(
         request,
         f"Pago del cliente de ${monto} registrado y descontado de la "
-        f"cuenta corriente. Recibo {pago.numero_recibo} generado."
+        f"cuenta corriente. Recibo {pago.numero_recibo} generado — "
+        f"usá el botón «Imprimir recibo» para descargarlo."
     )
-    return redirect("cuentas:recibo_pago_pdf", pago_id=pago.id)
+    return redirect("gestoria:editar_gestoria", gestoria_id=gestoria.id)
 
 
 # ==========================================================
