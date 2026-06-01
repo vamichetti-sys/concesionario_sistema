@@ -172,6 +172,13 @@ class CuentaCorriente(models.Model):
             for cuota in plan.cuotas.all():
                 total += cuota.monto
 
+            # Gastos extra / ajustes manuales contraídos (con plan)
+            man_debe = (
+                self.movimientos.filter(origen__in=["manual", "ajuste"], tipo__in=["debe", "deuda"])
+                .aggregate(t=Sum("monto"))["t"] or Decimal("0")
+            )
+            total += man_debe
+
         # Gestoría debe (deuda original)
         gest_debe = (
             self.movimientos.filter(origen="gestoria", tipo="debe")
@@ -227,6 +234,19 @@ class CuentaCorriente(models.Model):
             gest_pendiente = gest_debe - gest_haber
             if gest_pendiente > 0:
                 total += gest_pendiente
+
+            # Gastos extra / ajustes manuales (no van por el plan ni gestoría)
+            man_debe = (
+                self.movimientos.filter(origen__in=["manual", "ajuste"], tipo__in=["debe", "deuda"])
+                .aggregate(t=Sum("monto"))["t"] or Decimal("0")
+            )
+            man_haber = (
+                self.movimientos.filter(origen__in=["manual", "ajuste"], tipo__in=["haber", "pago"])
+                .aggregate(t=Sum("monto"))["t"] or Decimal("0")
+            )
+            man_pendiente = man_debe - man_haber
+            if man_pendiente > 0:
+                total += man_pendiente
         else:
             total += max(self.saldo or Decimal("0"), Decimal("0"))
 
