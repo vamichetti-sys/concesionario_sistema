@@ -69,6 +69,35 @@
 </style>
 
 <!-- ===========================================================
+     ACCESOS A OTROS REPORTES
+=========================================================== -->
+<div class="card rep-card p-3 mb-4">
+    <div class="d-flex align-items-center gap-2 mb-2">
+        <i data-lucide="layout-grid" style="width:18px;height:18px;color:#475569;"></i>
+        <span class="fw-semibold">Más reportes</span>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        <a href="{% url 'reportes:reporte_ganancias' %}" class="btn btn-outline-secondary btn-sm">
+            <i data-lucide="trending-up" style="width:14px;height:14px;margin-right:4px;"></i> Ganancias
+        </a>
+        {% if perms.reportes.view_fichareporteinterno %}
+        <a href="{% url 'reportes:control_stock' %}" class="btn btn-outline-secondary btn-sm">
+            <i data-lucide="package" style="width:14px;height:14px;margin-right:4px;"></i> Control de Stock
+        </a>
+        {% endif %}
+        <a href="{% url 'reportes:reporte_interno' %}" class="btn btn-outline-secondary btn-sm">
+            <i data-lucide="file-bar-chart" style="width:14px;height:14px;margin-right:4px;"></i> Reporte Interno HA
+        </a>
+        <a href="{% url 'reportes:reporte_interno_vamichetti' %}" class="btn btn-outline-secondary btn-sm">
+            <i data-lucide="file-bar-chart-2" style="width:14px;height:14px;margin-right:4px;"></i> Reporte Interno VA
+        </a>
+        <a href="{% url 'reportes:reporte_web' %}" class="btn btn-outline-secondary btn-sm">
+            <i data-lucide="globe" style="width:14px;height:14px;margin-right:4px;"></i> Reporte Web
+        </a>
+    </div>
+</div>
+
+<!-- ===========================================================
      1) GANANCIAS MENSUALES / ANUALES
 =========================================================== -->
 <div class="card rep-card p-4 mb-4">
