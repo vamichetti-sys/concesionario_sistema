@@ -1,4 +1,86 @@
 <!-- ===============================
+     BUSCADOR DE MÓDULOS
+=============================== -->
+<div class="card p-2 mb-4" style="position:relative;">
+    <div class="input-group input-group-lg">
+        <span class="input-group-text bg-white border-0">
+            <i data-lucide="search" style="width:20px;height:20px;color:#6366f1;"></i>
+        </span>
+        <input id="moduleSearch" type="text" class="form-control border-0" autocomplete="off"
+               placeholder="Buscar módulo… (ej: clientes, alquileres, gestoría, ingresos)"
+               onkeydown="if(event.key==='Enter'){moduleSearchGo();}">
+    </div>
+    <div id="moduleResults" class="list-group shadow position-absolute"
+         style="z-index:1080; top:calc(100% - 4px); left:8px; right:8px; width:auto; max-height:340px; overflow:auto; display:none;"></div>
+</div>
+
+<script>
+(function(){
+    const MODULES = [
+        {n:"Inicio", u:"/", k:"panel dashboard home"},
+        {n:"Clientes", u:"/clientes/", k:""},
+        {n:"Vehículos", u:"/vehiculos/", k:"autos stock unidades"},
+        {n:"Ventas", u:"/ventas/", k:"vendidos"},
+        {n:"Cuentas Corrientes", u:"/cuentas/", k:"deuda saldo cliente"},
+        {n:"CRM", u:"/crm/", k:"prospectos"},
+        {n:"Reventa", u:"/reventa/", k:"revendedores"},
+        {n:"Boletos", u:"/boletos/", k:"compraventa pagaré"},
+        {n:"Presupuestos", u:"/presupuestos/", k:"cotizador"},
+        {n:"Gestoría", u:"/gestoria/", k:"transferencia tramite"},
+        {n:"Pagos Concesionario", u:"/gestoria/pagos-concesionario/", k:"gestoria"},
+        {n:"Documentación", u:"/documentacion/", k:""},
+        {n:"Deudas", u:"/deudas/", k:""},
+        {n:"Facturación", u:"/facturacion/", k:"iva factura"},
+        {n:"Agenda de Pagos", u:"/agenda-pagos/", k:"vencimientos cobros"},
+        {n:"Asistencia", u:"/asistencia/", k:"empleados"},
+        {n:"Calendario", u:"/calendario/", k:""},
+        {n:"Community", u:"/community/", k:"redes"},
+        {n:"Reportes", u:"/reportes/", k:"ganancias"},
+        {n:"Control de Stock", u:"/reportes/interno/stock/", k:""},
+        {n:"Cuentas Internas", u:"/cuentas-internas/", k:""},
+        {n:"Alquileres", u:"/cuentas-internas/alquileres/", k:"arrendatario inmueble"},
+        {n:"Cheques", u:"/cheques/", k:""},
+        {n:"Control de Gastos", u:"/gastos-mensuales/", k:"egresos"},
+        {n:"Control de Ingresos", u:"/gastos-mensuales/ingresos/", k:""},
+        {n:"Gastos Personales", u:"/gastos-personales/", k:""},
+        {n:"Ingresos Personales", u:"/gastos-personales/ingresos/", k:""},
+        {n:"Contraseñas", u:"/contrasenas/", k:"credenciales"},
+        {n:"Financiación", u:"/financiacion/", k:""},
+        {n:"Auditoría", u:"/auditoria/", k:""},
+    ];
+    const norm = s => (s||"").toLowerCase()
+        .normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+    const input = document.getElementById("moduleSearch");
+    const box = document.getElementById("moduleResults");
+    if(!input) return;
+
+    function render(list){
+        if(!list.length){ box.style.display="none"; return; }
+        box.innerHTML = list.map(m =>
+            `<a href="${m.u}" class="list-group-item list-group-item-action d-flex align-items-center gap-2">
+                <i data-lucide="corner-down-right" style="width:14px;height:14px;color:#9ca3af;"></i>${m.n}
+             </a>`).join("");
+        box.style.display="block";
+        if(typeof lucide!=="undefined") lucide.createIcons();
+    }
+    function matches(){
+        const q = norm(input.value.trim());
+        if(!q) return [];
+        return MODULES.filter(m => norm(m.n+" "+m.k).includes(q)).slice(0,8);
+    }
+    window.moduleSearchGo = function(){
+        const r = matches();
+        if(r.length){ window.location.href = r[0].u; }
+    };
+    input.addEventListener("input", ()=>render(matches()));
+    input.addEventListener("focus", ()=>render(matches()));
+    document.addEventListener("click", e=>{
+        if(!box.contains(e.target) && e.target!==input) box.style.display="none";
+    });
+})();
+</script>
+
+<!-- ===============================
      ENCABEZADO
 =============================== -->
 <div class="d-flex justify-content-between align-items-center mb-4">
