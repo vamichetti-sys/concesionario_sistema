@@ -1,12 +1,12 @@
-from datetime import date
-from decimal import Decimal
+from datetime import date, datetime
+from decimal import Decimal, InvalidOperation
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Q, Sum
 
-from .models import CuentaInterna, MovimientoInterno, Alquiler, PagoAlquiler
+from .models import CuentaInterna, MovimientoInterno, Alquiler, PagoAlquiler, EscalaAlquiler
 from .forms import (
     CuentaInternaForm, MovimientoInternoForm, AlquilerForm, PagoAlquilerForm,
 )
@@ -475,7 +475,45 @@ def alquiler_detalle(request, pk):
         'cronograma': cronograma,
         'meses_cobrados': meses_cobrados,
         'meses_total': len(cronograma),
+        'escalas': alq.escalas.all(),
     })
+
+
+@login_required
+def alquiler_escala_agregar(request, alquiler_id):
+    if not usuario_autorizado(request.user):
+        messages.error(request, 'No tenés permiso para acceder a esta sección.')
+        return redirect('inicio')
+    alq = get_object_or_404(Alquiler, pk=alquiler_id)
+    if request.method == 'POST':
+        vd = request.POST.get('vigente_desde')
+        raw = (request.POST.get('monto') or '').strip().replace(',', '.')
+        try:
+            fecha = datetime.strptime(vd, '%Y-%m-%d').date()
+            monto = Decimal(raw)
+            if monto < 0:
+                raise InvalidOperation
+            EscalaAlquiler.objects.create(
+                alquiler=alq, vigente_desde=fecha, monto=monto,
+                observaciones=(request.POST.get('observaciones') or '')[:200],
+            )
+            messages.success(request, 'Tramo de monto agregado.')
+        except (ValueError, TypeError, InvalidOperation):
+            messages.error(request, 'Fecha o monto inválido.')
+    return redirect('cuentas_internas:alquiler_detalle', pk=alq.pk)
+
+
+@login_required
+def alquiler_escala_eliminar(request, escala_id):
+    if not usuario_autorizado(request.user):
+        messages.error(request, 'No tenés permiso para acceder a esta sección.')
+        return redirect('inicio')
+    esc = get_object_or_404(EscalaAlquiler, pk=escala_id)
+    alq_pk = esc.alquiler_id
+    if request.method == 'POST':
+        esc.delete()
+        messages.success(request, 'Tramo eliminado.')
+    return redirect('cuentas_internas:alquiler_detalle', pk=alq_pk)
 
 
 @login_required

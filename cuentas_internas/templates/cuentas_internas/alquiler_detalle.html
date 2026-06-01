@@ -170,6 +170,50 @@
     </div>
 </div>
 
+<!-- MONTOS DEL CONTRATO (TRAMOS / AUMENTOS) -->
+<div class="card p-4 mt-4">
+    <div class="d-flex align-items-center gap-2 mb-2">
+        <i data-lucide="trending-up" style="width:20px;height:20px;color:#10b981;"></i>
+        <h6 class="fw-bold mb-0">Montos del contrato (aumentos)</h6>
+    </div>
+    <p class="text-muted mb-3" style="font-size:13px;">
+        Monto base: <strong>$ {{ alquiler.monto_mensual|floatformat:0 }}</strong>.
+        Cargá los aumentos acordados con la fecha desde la que rigen; el cronograma usa el monto vigente de cada mes.
+    </p>
+    {% if escalas %}
+    <div class="list-group list-group-flush mb-3">
+        {% for e in escalas %}
+        <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
+            <span>Desde <strong>{{ e.vigente_desde|date:"d/m/Y" }}</strong>: <span class="fw-bold">$ {{ e.monto|floatformat:0 }}</span>{% if e.observaciones %} <small class="text-muted">· {{ e.observaciones }}</small>{% endif %}</span>
+            <form method="post" action="{% url 'cuentas_internas:alquiler_escala_eliminar' e.pk %}" style="display:inline;" onsubmit="return confirm('¿Eliminar este tramo?');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-outline-danger"><i data-lucide="trash-2" style="width:13px;height:13px;"></i></button>
+            </form>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    <form method="post" action="{% url 'cuentas_internas:alquiler_escala_agregar' alquiler.pk %}" class="row g-2 align-items-end">
+        {% csrf_token %}
+        <div class="col-md-4">
+            <label class="form-label" style="font-size:12px;">Vigente desde</label>
+            <input type="date" name="vigente_desde" class="form-control form-control-sm" required>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label" style="font-size:12px;">Nuevo monto</label>
+            <div class="input-group input-group-sm">
+                <span class="input-group-text">$</span>
+                <input type="number" name="monto" step="0.01" min="0" class="form-control" placeholder="0,00" required>
+            </div>
+        </div>
+        <div class="col-md-4 d-grid">
+            <button type="submit" class="btn btn-success btn-sm">
+                <i data-lucide="plus" style="width:14px;height:14px;margin-right:4px;"></i>Agregar aumento
+            </button>
+        </div>
+    </form>
+</div>
+
 <!-- CRONOGRAMA MENSUAL DEL CONTRATO -->
 <div class="card p-4 mt-4">
     <div class="d-flex align-items-center gap-2 mb-3">

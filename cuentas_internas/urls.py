@@ -15,6 +15,8 @@ urlpatterns = [
     path('alquileres/<int:pk>/', views.alquiler_detalle, name='alquiler_detalle'),
     path('alquileres/<int:pk>/editar/', views.alquiler_editar, name='alquiler_editar'),
     path('alquileres/<int:pk>/eliminar/', views.alquiler_eliminar, name='alquiler_eliminar'),
+    path('alquileres/<int:alquiler_id>/escala/', views.alquiler_escala_agregar, name='alquiler_escala_agregar'),
+    path('alquileres/escala/<int:escala_id>/eliminar/', views.alquiler_escala_eliminar, name='alquiler_escala_eliminar'),
 
     # ===== CUENTAS INTERNAS =====
     path('cuentas/', views.lista_cuentas, name='lista'),

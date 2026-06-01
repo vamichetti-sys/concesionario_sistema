@@ -77,19 +77,9 @@ class Alquiler(models.Model):
     telefono = models.CharField('Teléfono', max_length=50, blank=True)
 
     monto_mensual = models.DecimalField('Monto mensual', max_digits=12, decimal_places=2, default=0,
-                                        help_text='Monto inicial. Si hay aumento programado, se ajusta solo.')
+                                        help_text='Monto inicial. Podés cargar aumentos por tramo más abajo.')
     dia_pago = models.PositiveSmallIntegerField('Día de pago', null=True, blank=True,
                                                 help_text='Día del mes en que se paga (1-31)')
-
-    # Aumento programado del alquiler (ej: cada 3 meses sube 10%)
-    aumento_porcentaje = models.DecimalField(
-        'Aumento (%)', max_digits=6, decimal_places=2, default=0, blank=True,
-        help_text='Porcentaje de aumento. Ej: 10 = 10%',
-    )
-    aumento_cada_meses = models.PositiveSmallIntegerField(
-        'Aumenta cada (meses)', null=True, blank=True,
-        help_text='Cada cuántos meses aumenta. Ej: 3 = trimestral. Vacío = sin aumento.',
-    )
 
     fecha_inicio = models.DateField('Inicio de contrato', null=True, blank=True)
     fecha_fin = models.DateField('Fin de contrato', null=True, blank=True)
@@ -141,31 +131,35 @@ class Alquiler(models.Model):
                 pagos[(p.periodo_anio, p.periodo_mes)] = p
 
         base = self.monto_mensual or Decimal("0")
-        pct = self.aumento_porcentaje or Decimal("0")
-        cada = self.aumento_cada_meses or 0
-        factor = Decimal("1") + (Decimal(pct) / Decimal("100"))
+        # Montos por tramo (vigentes desde una fecha). Ordenados ascendente.
+        escalas = [
+            ((e.vigente_desde.year, e.vigente_desde.month), e.monto)
+            for e in self.escalas.all().order_by("vigente_desde")
+        ]
+
+        def monto_de(y, m):
+            monto = base
+            for (ey, em), valor in escalas:
+                if (ey, em) <= (y, m):
+                    monto = valor
+                else:
+                    break
+            return monto
 
         filas = []
         y, m = self.fecha_inicio.year, self.fecha_inicio.month
         endy, endm = self.fecha_fin.year, self.fecha_fin.month
-        idx = 0
         guard = 0
         while (y, m) <= (endy, endm) and guard < 600:
             guard += 1
-            # Monto con aumento programado: cada `cada` meses sube `pct`%.
-            if cada and cada > 0 and pct:
-                monto = (base * (factor ** (idx // cada))).quantize(Decimal("0.01"))
-            else:
-                monto = base
             pago = pagos.get((y, m))
             filas.append({
                 "anio": y, "mes": m,
                 "label": f"{MESES[m]} {y}",
-                "monto": monto,
+                "monto": monto_de(y, m),
                 "pago": pago,
                 "cobrado": pago is not None,
             })
-            idx += 1
             m += 1
             if m > 12:
                 m = 1
@@ -174,10 +168,23 @@ class Alquiler(models.Model):
 
     @property
     def total_a_cobrar_contrato(self):
-        """Monto total del contrato = meses x monto mensual."""
+        """Monto total del contrato = suma de los montos de cada mes."""
         filas = self.cronograma()
         from decimal import Decimal
         return sum((f["monto"] or Decimal("0")) for f in filas)
+
+    @property
+    def monto_actual(self):
+        """Monto vigente este mes (según los tramos cargados)."""
+        from decimal import Decimal
+        monto = self.monto_mensual or Decimal("0")
+        hoy = date.today()
+        for e in self.escalas.all().order_by("vigente_desde"):
+            if (e.vigente_desde.year, e.vigente_desde.month) <= (hoy.year, hoy.month):
+                monto = e.monto
+            else:
+                break
+        return monto
 
     @property
     def proximo_vencimiento(self):
@@ -233,3 +240,19 @@ class PagoAlquiler(models.Model):
 
     def __str__(self):
         return f"{self.alquiler.nombre} - ${self.monto} ({self.periodo_label or self.fecha})"
+
+
+class EscalaAlquiler(models.Model):
+    """Monto del alquiler vigente desde una fecha (aumentos del contrato)."""
+    alquiler = models.ForeignKey(Alquiler, on_delete=models.CASCADE, related_name='escalas')
+    vigente_desde = models.DateField('Vigente desde')
+    monto = models.DecimalField('Monto', max_digits=12, decimal_places=2)
+    observaciones = models.CharField('Nota', max_length=200, blank=True)
+
+    class Meta:
+        ordering = ['vigente_desde']
+        verbose_name = 'Tramo de monto'
+        verbose_name_plural = 'Tramos de monto'
+
+    def __str__(self):
+        return f"{self.alquiler.nombre} - ${self.monto} desde {self.vigente_desde:%m/%Y}"
