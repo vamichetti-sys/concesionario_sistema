@@ -432,7 +432,23 @@ def alquiler_detalle(request, pk):
             pago.alquiler = alq
             pago.creado_por = request.user
             pago.save()
-            messages.success(request, f'Cobro de ${pago.monto} registrado.')
+
+            # La cobranza del alquiler se registra como Ingreso Personal del
+            # usuario que cobra (vinculado al pago: si se borra el cobro, se
+            # borra el ingreso por cascada).
+            from gastos_personales.models import IngresoPersonal
+            IngresoPersonal.objects.create(
+                usuario=request.user,
+                pago_alquiler=pago,
+                concepto=f"Alquiler – {alq.nombre}",
+                descripcion=alq.arrendatario or "",
+                monto=pago.monto,
+                mes=pago.periodo_mes or pago.fecha.month,
+                anio=pago.periodo_anio or pago.fecha.year,
+                fecha=pago.fecha,
+            )
+
+            messages.success(request, f'Cobro de ${pago.monto} registrado y cargado en Ingresos Personales.')
             return redirect('cuentas_internas:alquiler_detalle', pk=alq.pk)
     else:
         hoy = date.today()

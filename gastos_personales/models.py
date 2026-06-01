@@ -48,6 +48,14 @@ class IngresoPersonal(models.Model):
     anio = models.PositiveIntegerField(default=2026)
     fecha = models.DateField("Fecha", null=True, blank=True)
     observaciones = models.TextField(blank=True, null=True)
+
+    # Si proviene de la cobranza de un alquiler, queda vinculado (se borra
+    # automáticamente si se elimina el cobro).
+    pago_alquiler = models.ForeignKey(
+        "cuentas_internas.PagoAlquiler", on_delete=models.CASCADE,
+        null=True, blank=True, related_name="ingresos_personales",
+    )
+
     fecha_creacion = models.DateTimeField(auto_now_add=True)
 
     class Meta:
