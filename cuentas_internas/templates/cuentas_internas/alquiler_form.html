@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+
+<div class="mb-4">
+    <a href="{% if alquiler %}{% url 'cuentas_internas:alquiler_detalle' alquiler.pk %}{% else %}{% url 'cuentas_internas:alquileres_lista' %}{% endif %}" class="text-muted text-decoration-none d-inline-flex align-items-center mb-2" style="font-size:14px;">
+        <i data-lucide="arrow-left" style="width:16px;height:16px;margin-right:6px;"></i>
+        Volver
+    </a>
+    <h3 class="fw-bold mb-1">{{ titulo }}</h3>
+</div>
+
+<div class="card p-4" style="max-width:760px;">
+    <form method="post">
+        {% csrf_token %}
+        <div class="row g-3">
+            <div class="col-md-8">
+                <label class="form-label">Nombre / Inmueble *</label>
+                {{ form.nombre }}
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Monto mensual</label>
+                <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    {{ form.monto_mensual }}
+                </div>
+            </div>
+
+            <div class="col-md-8">
+                <label class="form-label">Dirección</label>
+                {{ form.direccion }}
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Día de pago</label>
+                {{ form.dia_pago }}
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label">Propietario</label>
+                {{ form.propietario }}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Teléfono</label>
+                {{ form.telefono }}
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label">Inicio de contrato</label>
+                {{ form.fecha_inicio }}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Fin de contrato</label>
+                {{ form.fecha_fin }}
+            </div>
+
+            <div class="col-12">
+                <label class="form-label">Observaciones</label>
+                {{ form.observaciones }}
+            </div>
+            <div class="col-12">
+                <div class="form-check">
+                    {{ form.activo }}
+                    <label class="form-check-label">Activo</label>
+                </div>
+            </div>
+        </div>
+
+        <hr class="my-4">
+        <div class="d-flex gap-3">
+            <button type="submit" class="btn btn-primary">
+                <i data-lucide="save" style="width:16px;height:16px;margin-right:6px;"></i>
+                Guardar
+            </button>
+            <a href="{% if alquiler %}{% url 'cuentas_internas:alquiler_detalle' alquiler.pk %}{% else %}{% url 'cuentas_internas:alquileres_lista' %}{% endif %}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
+
+<script>
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+</script>
+
+{% endblock %}

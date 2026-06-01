@@ -294,7 +294,7 @@
                 <small class="text-muted d-block" style="font-size:11px;">Saldo total</small>
                 <span class="fw-bold" style="font-size:18px;color:#7c3aed;">$ {{ cuentas_internas_total|floatformat:0 }}</span>
             </div>
-            <a href="/cuentas-internas/" class="btn btn-secondary btn-sm">Ver todas</a>
+            <a href="{% url 'cuentas_internas:lista' %}" class="btn btn-secondary btn-sm">Ver todas</a>
         </div>
     </div>
 

@@ -6,8 +6,10 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Q, Sum
 
-from .models import CuentaInterna, MovimientoInterno
-from .forms import CuentaInternaForm, MovimientoInternoForm
+from .models import CuentaInterna, MovimientoInterno, Alquiler, PagoAlquiler
+from .forms import (
+    CuentaInternaForm, MovimientoInternoForm, AlquilerForm, PagoAlquilerForm,
+)
 
 
 def usuario_autorizado(user):
@@ -249,3 +251,161 @@ def pdf_mensual(request):
         totales=totales if filas else None,
         pie=f"Generado el {hoy.strftime('%d/%m/%Y')}",
     )
+
+
+# ==========================================================
+# HUB: Cuentas Internas / Alquileres
+# ==========================================================
+@login_required
+def hub(request):
+    if not usuario_autorizado(request.user):
+        messages.error(request, 'No tenés permiso para acceder a esta sección.')
+        return redirect('inicio')
+
+    total_cuentas = CuentaInterna.objects.filter(activa=True).count()
+    total_alquileres = Alquiler.objects.filter(activo=True).count()
+    total_mensual_alquileres = (
+        Alquiler.objects.filter(activo=True).aggregate(t=Sum('monto_mensual'))['t'] or 0
+    )
+    return render(request, 'cuentas_internas/hub.html', {
+        'total_cuentas': total_cuentas,
+        'total_alquileres': total_alquileres,
+        'total_mensual_alquileres': total_mensual_alquileres,
+    })
+
+
+# ==========================================================
+# ALQUILERES
+# ==========================================================
+@login_required
+def alquileres_lista(request):
+    if not usuario_autorizado(request.user):
+        messages.error(request, 'No tenés permiso para acceder a esta sección.')
+        return redirect('inicio')
+
+    query = request.GET.get('q', '')
+    mostrar = request.GET.get('mostrar', 'activos')
+
+    alquileres = Alquiler.objects.all()
+    if mostrar == 'activos':
+        alquileres = alquileres.filter(activo=True)
+    elif mostrar == 'inactivos':
+        alquileres = alquileres.filter(activo=False)
+    if query:
+        alquileres = alquileres.filter(
+            Q(nombre__icontains=query) |
+            Q(direccion__icontains=query) |
+            Q(propietario__icontains=query)
+        )
+
+    total_mensual = (
+        Alquiler.objects.filter(activo=True).aggregate(t=Sum('monto_mensual'))['t'] or 0
+    )
+
+    return render(request, 'cuentas_internas/alquileres_lista.html', {
+        'alquileres': alquileres,
+        'query': query,
+        'mostrar': mostrar,
+        'total_mensual': total_mensual,
+        'hoy': date.today(),
+    })
+
+
+@login_required
+def alquiler_crear(request):
+    if not usuario_autorizado(request.user):
+        messages.error(request, 'No tenés permiso para acceder a esta sección.')
+        return redirect('inicio')
+
+    if request.method == 'POST':
+        form = AlquilerForm(request.POST)
+        if form.is_valid():
+            alq = form.save()
+            messages.success(request, f'Alquiler "{alq.nombre}" creado.')
+            return redirect('cuentas_internas:alquiler_detalle', pk=alq.pk)
+    else:
+        form = AlquilerForm()
+    return render(request, 'cuentas_internas/alquiler_form.html', {
+        'form': form, 'titulo': 'Nuevo alquiler',
+    })
+
+
+@login_required
+def alquiler_editar(request, pk):
+    if not usuario_autorizado(request.user):
+        messages.error(request, 'No tenés permiso para acceder a esta sección.')
+        return redirect('inicio')
+
+    alq = get_object_or_404(Alquiler, pk=pk)
+    if request.method == 'POST':
+        form = AlquilerForm(request.POST, instance=alq)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Alquiler actualizado.')
+            return redirect('cuentas_internas:alquiler_detalle', pk=alq.pk)
+    else:
+        form = AlquilerForm(instance=alq)
+    return render(request, 'cuentas_internas/alquiler_form.html', {
+        'form': form, 'titulo': f'Editar — {alq.nombre}', 'alquiler': alq,
+    })
+
+
+@login_required
+def alquiler_eliminar(request, pk):
+    if not usuario_autorizado(request.user):
+        messages.error(request, 'No tenés permiso para acceder a esta sección.')
+        return redirect('inicio')
+
+    alq = get_object_or_404(Alquiler, pk=pk)
+    if request.method == 'POST':
+        nombre = alq.nombre
+        alq.delete()
+        messages.success(request, f'Alquiler "{nombre}" eliminado.')
+        return redirect('cuentas_internas:alquileres_lista')
+    return render(request, 'cuentas_internas/alquiler_eliminar.html', {'alquiler': alq})
+
+
+@login_required
+def alquiler_detalle(request, pk):
+    if not usuario_autorizado(request.user):
+        messages.error(request, 'No tenés permiso para acceder a esta sección.')
+        return redirect('inicio')
+
+    alq = get_object_or_404(Alquiler, pk=pk)
+    pagos = alq.pagos.all()
+
+    if request.method == 'POST':
+        form = PagoAlquilerForm(request.POST)
+        if form.is_valid():
+            pago = form.save(commit=False)
+            pago.alquiler = alq
+            pago.creado_por = request.user
+            pago.save()
+            messages.success(request, f'Pago de ${pago.monto} registrado.')
+            return redirect('cuentas_internas:alquiler_detalle', pk=alq.pk)
+    else:
+        form = PagoAlquilerForm(initial={
+            'fecha': date.today(),
+            'monto': alq.monto_mensual or None,
+            'forma_pago': 'transferencia',
+        })
+
+    return render(request, 'cuentas_internas/alquiler_detalle.html', {
+        'alquiler': alq,
+        'pagos': pagos,
+        'form': form,
+    })
+
+
+@login_required
+def alquiler_pago_eliminar(request, pk):
+    if not usuario_autorizado(request.user):
+        messages.error(request, 'No tenés permiso para acceder a esta sección.')
+        return redirect('inicio')
+
+    pago = get_object_or_404(PagoAlquiler, pk=pk)
+    alquiler_pk = pago.alquiler_id
+    if request.method == 'POST':
+        pago.delete()
+        messages.success(request, 'Pago eliminado.')
+    return redirect('cuentas_internas:alquiler_detalle', pk=alquiler_pk)

@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{% block title %}{{ alquiler.nombre }}{% endblock %}
+
+{% block content %}
+
+<!-- ENCABEZADO -->
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-4">
+    <div>
+        <a href="{% url 'cuentas_internas:alquileres_lista' %}" class="text-muted text-decoration-none d-inline-flex align-items-center mb-2" style="font-size:14px;">
+            <i data-lucide="arrow-left" style="width:16px;height:16px;margin-right:6px;"></i>
+            Volver a Alquileres
+        </a>
+        <h3 class="fw-bold mb-1">{{ alquiler.nombre }} {% if not alquiler.activo %}<span class="badge bg-secondary">Inactivo</span>{% endif %}</h3>
+        <p class="text-muted mb-0">{{ alquiler.direccion }}</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'cuentas_internas:alquiler_editar' alquiler.pk %}" class="btn btn-secondary">
+            <i data-lucide="edit" style="width:16px;height:16px;margin-right:6px;"></i>Editar
+        </a>
+        <a href="{% url 'cuentas_internas:alquiler_eliminar' alquiler.pk %}" class="btn btn-outline-danger">
+            <i data-lucide="trash-2" style="width:16px;height:16px;"></i>
+        </a>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- DATOS + REGISTRAR PAGO -->
+    <div class="col-lg-5">
+        <div class="card p-4 mb-4">
+            <div class="row g-3" style="font-size:14px;">
+                <div class="col-6">
+                    <div class="text-muted" style="font-size:12px;">Monto mensual</div>
+                    <div class="fw-bold" style="font-size:20px;color:#10b981;">$ {{ alquiler.monto_mensual|floatformat:0 }}</div>
+                </div>
+                <div class="col-6">
+                    <div class="text-muted" style="font-size:12px;">Próximo pago</div>
+                    <div class="fw-semibold">{{ alquiler.proximo_vencimiento|date:"d/m/Y"|default:"—" }}</div>
+                </div>
+                <div class="col-6">
+                    <div class="text-muted" style="font-size:12px;">Propietario</div>
+                    <div class="fw-semibold">{{ alquiler.propietario|default:"—" }}</div>
+                </div>
+                <div class="col-6">
+                    <div class="text-muted" style="font-size:12px;">Teléfono</div>
+                    <div class="fw-semibold">{{ alquiler.telefono|default:"—" }}</div>
+                </div>
+                <div class="col-6">
+                    <div class="text-muted" style="font-size:12px;">Inicio</div>
+                    <div class="fw-semibold">{{ alquiler.fecha_inicio|date:"d/m/Y"|default:"—" }}</div>
+                </div>
+                <div class="col-6">
+                    <div class="text-muted" style="font-size:12px;">Fin</div>
+                    <div class="fw-semibold">{{ alquiler.fecha_fin|date:"d/m/Y"|default:"—" }}</div>
+                </div>
+                <div class="col-12">
+                    <div class="text-muted" style="font-size:12px;">Total pagado</div>
+                    <div class="fw-bold">$ {{ alquiler.total_pagado|floatformat:0 }}</div>
+                </div>
+                {% if alquiler.observaciones %}
+                <div class="col-12">
+                    <div class="text-muted" style="font-size:12px;">Observaciones</div>
+                    <div>{{ alquiler.observaciones }}</div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- REGISTRAR PAGO -->
+        <div class="card p-4">
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <i data-lucide="plus-circle" style="width:20px;height:20px;color:#10b981;"></i>
+                <h6 class="fw-bold mb-0">Registrar pago</h6>
+            </div>
+            <form method="post">
+                {% csrf_token %}
+                <div class="row g-2">
+                    <div class="col-6">
+                        <label class="form-label" style="font-size:12px;">Fecha</label>
+                        {{ form.fecha }}
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label" style="font-size:12px;">Período</label>
+                        {{ form.periodo }}
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label" style="font-size:12px;">Monto</label>
+                        {{ form.monto }}
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label" style="font-size:12px;">Forma de pago</label>
+                        {{ form.forma_pago }}
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label" style="font-size:12px;">Observaciones</label>
+                        {{ form.observaciones }}
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-success w-100 mt-3">
+                    <i data-lucide="check" style="width:16px;height:16px;margin-right:6px;"></i>
+                    Registrar pago
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- HISTORIAL DE PAGOS -->
+    <div class="col-lg-7">
+        <div class="card p-4 h-100">
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <i data-lucide="receipt" style="width:20px;height:20px;color:#3b82f6;"></i>
+                <h6 class="fw-bold mb-0">Historial de pagos</h6>
+            </div>
+            {% if pagos %}
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Período</th>
+                            <th>Forma</th>
+                            <th class="text-end">Monto</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in pagos %}
+                        <tr>
+                            <td>{{ p.fecha|date:"d/m/Y" }}</td>
+                            <td>{{ p.periodo|default:"—" }}</td>
+                            <td><span class="badge bg-light text-dark border">{{ p.get_forma_pago_display }}</span></td>
+                            <td class="text-end fw-bold">$ {{ p.monto|floatformat:0 }}</td>
+                            <td class="text-end">
+                                <form method="post" action="{% url 'cuentas_internas:alquiler_pago_eliminar' p.pk %}" style="display:inline;"
+                                      onsubmit="return confirm('¿Eliminar este pago?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar">
+                                        <i data-lucide="trash-2" style="width:14px;height:14px;"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <i data-lucide="receipt" style="width:32px;height:32px;color:#9ca3af;margin-bottom:8px;"></i>
+                <p class="text-muted mb-0">Todavía no hay pagos registrados.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+</script>
+
+{% endblock %}

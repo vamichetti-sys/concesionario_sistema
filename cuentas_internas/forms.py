@@ -1,5 +1,5 @@
 from django import forms
-from .models import CuentaInterna, MovimientoInterno
+from .models import CuentaInterna, MovimientoInterno, Alquiler, PagoAlquiler
 
 
 class CuentaInternaForm(forms.ModelForm):
@@ -24,5 +24,38 @@ class MovimientoInternoForm(forms.ModelForm):
             'monto': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'concepto': forms.TextInput(attrs={'class': 'form-control'}),
             'fecha': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
+            'observaciones': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+        }
+
+
+class AlquilerForm(forms.ModelForm):
+    class Meta:
+        model = Alquiler
+        fields = ['nombre', 'direccion', 'propietario', 'telefono',
+                  'monto_mensual', 'dia_pago', 'fecha_inicio', 'fecha_fin',
+                  'observaciones', 'activo']
+        widgets = {
+            'nombre': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Local centro'}),
+            'direccion': forms.TextInput(attrs={'class': 'form-control'}),
+            'propietario': forms.TextInput(attrs={'class': 'form-control'}),
+            'telefono': forms.TextInput(attrs={'class': 'form-control'}),
+            'monto_mensual': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0'}),
+            'dia_pago': forms.NumberInput(attrs={'class': 'form-control', 'min': '1', 'max': '31'}),
+            'fecha_inicio': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
+            'fecha_fin': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
+            'observaciones': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+            'activo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+
+
+class PagoAlquilerForm(forms.ModelForm):
+    class Meta:
+        model = PagoAlquiler
+        fields = ['fecha', 'periodo', 'monto', 'forma_pago', 'observaciones']
+        widgets = {
+            'fecha': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
+            'periodo': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Junio 2026'}),
+            'monto': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0'}),
+            'forma_pago': forms.Select(attrs={'class': 'form-select'}),
             'observaciones': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
         }
