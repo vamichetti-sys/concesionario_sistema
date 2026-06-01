@@ -1,20 +1,16 @@
 <!-- ===============================
      AGENDA DE PAGOS — VENCIDOS Y PRÓXIMOS
 =============================== -->
-<div class="card p-4 mb-4">
-    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+<div class="card p-3 mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
         <div class="d-flex align-items-center gap-2">
-            <i data-lucide="calendar-clock" style="width:20px;height:20px;color:#f59e0b;"></i>
-            <h6 class="fw-bold mb-0">Agenda de pagos — Vencidos y próximos</h6>
+            <i data-lucide="calendar-clock" style="width:18px;height:18px;color:#f59e0b;"></i>
+            <h6 class="fw-bold mb-0" style="font-size:15px;">Agenda de pagos — Vencidos y próximos</h6>
         </div>
         <div class="d-flex gap-2">
             <a href="{% url 'agenda_pagos:crear' %}" class="btn btn-primary btn-sm">
                 <i data-lucide="plus" style="width:14px;height:14px;margin-right:4px;"></i>
                 Agregar pago
-            </a>
-            <a href="{% url 'gastos_mensuales:agregar' %}" class="btn btn-warning btn-sm">
-                <i data-lucide="trending-down" style="width:14px;height:14px;margin-right:4px;"></i>
-                Agregar gasto
             </a>
             <a href="/agenda-pagos/" class="btn btn-secondary btn-sm">Ver agenda</a>
         </div>
@@ -38,7 +34,7 @@
                     </div>
                     <div class="text-end">
                         <span class="fw-bold text-danger">${{ p.monto|floatformat:0 }}</span>
-                        <br><a href="{% url 'agenda_pagos:marcar_pagado' p.pk %}" class="btn btn-sm btn-outline-success mt-1" title="Marcar pagado">
+                        <br><a href="{% url 'agenda_pagos:marcar_pagado' p.pk %}" class="btn btn-sm btn-outline-success mt-1" title="Registrar pago (pide el importe y lo marca pagado)">
                             <i data-lucide="check" style="width:12px;height:12px;"></i>
                         </a>
                     </div>
@@ -66,7 +62,7 @@
                     </div>
                     <div class="text-end">
                         <span class="fw-bold">${{ p.monto|floatformat:0 }}</span>
-                        <br><a href="{% url 'agenda_pagos:marcar_pagado' p.pk %}" class="btn btn-sm btn-outline-success mt-1" title="Marcar pagado">
+                        <br><a href="{% url 'agenda_pagos:marcar_pagado' p.pk %}" class="btn btn-sm btn-outline-success mt-1" title="Registrar pago (pide el importe y lo marca pagado)">
                             <i data-lucide="check" style="width:12px;height:12px;"></i>
                         </a>
                     </div>
@@ -82,16 +78,10 @@
     <div class="text-center py-4">
         <i data-lucide="check-circle" style="width:32px;height:32px;color:#10b981;margin-bottom:8px;"></i>
         <p class="text-muted mb-2">No hay pagos vencidos ni próximos a vencer.</p>
-        <div class="d-flex gap-2 justify-content-center">
-            <a href="{% url 'agenda_pagos:crear' %}" class="btn btn-primary btn-sm">
-                <i data-lucide="plus" style="width:14px;height:14px;margin-right:4px;"></i>
-                Agregar pago
-            </a>
-            <a href="{% url 'gastos_mensuales:agregar' %}" class="btn btn-warning btn-sm">
-                <i data-lucide="trending-down" style="width:14px;height:14px;margin-right:4px;"></i>
-                Agregar gasto
-            </a>
-        </div>
+        <a href="{% url 'agenda_pagos:crear' %}" class="btn btn-primary btn-sm">
+            <i data-lucide="plus" style="width:14px;height:14px;margin-right:4px;"></i>
+            Agregar pago
+        </a>
     </div>
     {% endif %}
 </div>

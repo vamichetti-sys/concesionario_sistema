@@ -203,14 +203,14 @@ def inicio(request):
     from agenda_pagos.models import PagoFuturo
     pagos_vencidos = (
         PagoFuturo.objects.filter(pagado=False, fecha_vencimiento__lt=hoy)
-        .select_related("categoria").order_by("fecha_vencimiento")[:8]
+        .select_related("categoria").order_by("fecha_vencimiento")[:5]
     )
     pagos_proximos = (
         PagoFuturo.objects.filter(
             pagado=False,
             fecha_vencimiento__gte=hoy,
             fecha_vencimiento__lte=hoy + timedelta(days=7),
-        ).select_related("categoria").order_by("fecha_vencimiento")[:8]
+        ).select_related("categoria").order_by("fecha_vencimiento")[:5]
     )
     # Alerta: si estamos al inicio del mes (hoy <= día 7) y no hay pagos cargados para este mes.
     es_admin_agenda = request.user.username.lower() in ("hamichetti", "vamichetti")
