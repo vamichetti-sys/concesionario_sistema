@@ -83,6 +83,7 @@
                         {% if g.venta and g.venta.cliente %}
                         <div class="fw-semibold">{{ g.venta.cliente.nombre_completo }}</div>
                         <small class="text-muted">DNI {{ g.venta.cliente.dni }}</small>
+                        {% if g.venta.cliente.telefono %}<br><small class="text-muted">Tel {{ g.venta.cliente.telefono }}</small>{% endif %}
                         {% else %}
                         <span class="text-muted">Cliente no vinculado</span>
                         {% endif %}

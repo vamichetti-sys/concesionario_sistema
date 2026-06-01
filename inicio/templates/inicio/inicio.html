@@ -65,6 +65,11 @@
 </div>
 {% endif %}
 
+{% include "inicio/_ventas_doc_alerta.html" %}
+
+<!-- AGENDA DE PAGOS (debajo de recordatorios / alertas) -->
+{% include "inicio/_agenda_pagos.html" %}
+
 <!-- ===============================
      RESUMEN CLAVE
 =============================== -->
@@ -354,6 +359,8 @@
 
 </div>
 
+{% include "inicio/_gestoria_observaciones.html" %}
+
 <!-- ===============================
      CRM – RECORDATORIOS
 =============================== -->
@@ -465,74 +472,6 @@
             </a>
         </div>
     </div>
-</div>
-
-<!-- ===============================
-     AGENDA DE PAGOS — VENCIDOS Y PRÓXIMOS
-=============================== -->
-<div class="card p-4 mb-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <div class="d-flex align-items-center gap-2">
-            <i data-lucide="calendar-clock" style="width:20px;height:20px;color:#f59e0b;"></i>
-            <h6 class="fw-bold mb-0">Agenda de pagos — Vencidos y próximos</h6>
-        </div>
-        <a href="/agenda-pagos/" class="btn btn-secondary btn-sm">Ver agenda</a>
-    </div>
-
-    {% if pagos_vencidos or pagos_proximos %}
-    <div class="row g-4">
-        <div class="col-md-6">
-            <h6 class="text-danger fw-semibold mb-2">
-                <i data-lucide="alert-octagon" style="width:14px;height:14px;"></i>
-                Vencidos
-            </h6>
-            {% if pagos_vencidos %}
-            <div class="list-group list-group-flush">
-                {% for p in pagos_vencidos %}
-                <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                    <div>
-                        <span class="fw-semibold">{{ p.descripcion }}</span>
-                        {% if p.categoria %}<small class="text-muted">— {{ p.categoria.nombre }}</small>{% endif %}
-                        <br><small class="text-danger">venció {{ p.fecha_vencimiento|date:"d/m/Y" }}</small>
-                    </div>
-                    <span class="fw-bold text-danger">${{ p.monto|floatformat:0 }}</span>
-                </div>
-                {% endfor %}
-            </div>
-            {% else %}
-            <p class="text-muted mb-0 small">Nada vencido. 🎉</p>
-            {% endif %}
-        </div>
-
-        <div class="col-md-6">
-            <h6 class="text-warning fw-semibold mb-2">
-                <i data-lucide="hourglass" style="width:14px;height:14px;"></i>
-                Vencen en 7 días
-            </h6>
-            {% if pagos_proximos %}
-            <div class="list-group list-group-flush">
-                {% for p in pagos_proximos %}
-                <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                    <div>
-                        <span class="fw-semibold">{{ p.descripcion }}</span>
-                        {% if p.categoria %}<small class="text-muted">— {{ p.categoria.nombre }}</small>{% endif %}
-                        <br><small class="text-muted">vence {{ p.fecha_vencimiento|date:"d/m/Y" }}</small>
-                    </div>
-                    <span class="fw-bold">${{ p.monto|floatformat:0 }}</span>
-                </div>
-                {% endfor %}
-            </div>
-            {% else %}
-            <p class="text-muted mb-0 small">Sin pagos próximos.</p>
-            {% endif %}
-        </div>
-    </div>
-    {% else %}
-    <div class="text-center py-4">
-        <i data-lucide="check-circle" style="width:32px;height:32px;color:#10b981;margin-bottom:8px;"></i>
-        <p class="text-muted mb-0">No hay pagos vencidos ni próximos a vencer.</p>
-    </div>
-    {% endif %}
 </div>
 
 <!-- ===============================

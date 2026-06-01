@@ -8,6 +8,7 @@ urlpatterns = [
     # PANTALLA PRINCIPAL
     # ==========================
     path("", views.lista_reportes, name="lista"),
+    path("pdf/mensual/", views.lista_reportes_pdf, name="lista_pdf"),
 
     # ==========================
     # REPORTE WEB (sistema)

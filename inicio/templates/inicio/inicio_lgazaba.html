@@ -182,6 +182,8 @@
     {% endif %}
 </div>
 
+{% include "inicio/_ventas_doc_alerta.html" %}
+
 <!-- ===============================
      3. RESUMEN DE VENTAS GENERADAS
 =============================== -->
@@ -265,6 +267,8 @@
     {% endif %}
 </div>
 
+{% include "inicio/_gestoria_observaciones.html" %}
+
 <!-- ===============================
      5. AGENDA DE PAGOS
 =============================== -->
@@ -274,7 +278,17 @@
             <i data-lucide="calendar-clock" style="width:20px;height:20px;color:#dc2626;"></i>
             <h6 class="fw-bold mb-0">Agenda de pagos</h6>
         </div>
-        <a href="{% url 'agenda_pagos:lista' %}" class="text-decoration-none" style="font-size:13px;">Ver toda →</a>
+        <div class="d-flex align-items-center gap-2">
+            <a href="{% url 'agenda_pagos:crear' %}" class="btn btn-primary btn-sm">
+                <i data-lucide="plus" style="width:14px;height:14px;margin-right:4px;"></i>
+                Agregar pago
+            </a>
+            <a href="{% url 'gastos_mensuales:agregar' %}" class="btn btn-warning btn-sm">
+                <i data-lucide="trending-down" style="width:14px;height:14px;margin-right:4px;"></i>
+                Agregar gasto
+            </a>
+            <a href="{% url 'agenda_pagos:lista' %}" class="text-decoration-none" style="font-size:13px;">Ver toda →</a>
+        </div>
     </div>
 
     <div class="row g-3">

@@ -158,7 +158,7 @@
         <a href="{% url 'cuentas:agregar_gasto_cuenta' cuenta.id %}" class="btn btn-warning"
            title="Suma un gasto extra al saldo sin tocar el plan de pago">
             <i data-lucide="plus-circle" style="width:16px;height:16px;margin-right:6px;"></i>
-            Agregar gasto
+            Gasto extra
         </a>
 
         {% if plan and plan.estado == "activo" %}
@@ -289,6 +289,15 @@
     {% else %}
     <p class="text-muted mb-0">No hay cuotas registradas.</p>
     {% endif %}
+
+    <!-- Gasto extra (disponible una vez creado el plan) -->
+    <div class="d-flex justify-content-end mt-4">
+        <a href="{% url 'cuentas:agregar_gasto_cuenta' cuenta.id %}" class="btn btn-warning"
+           title="Suma un gasto extra al saldo sin tocar el plan de pago">
+            <i data-lucide="plus-circle" style="width:16px;height:16px;margin-right:6px;"></i>
+            Gasto extra
+        </a>
+    </div>
 
     {% else %}
     <div class="p-4 text-center" style="background:#f8f9fa;border-radius:12px;">

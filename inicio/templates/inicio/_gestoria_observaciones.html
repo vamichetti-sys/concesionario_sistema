@@ -1,0 +1,35 @@
+<!-- ===============================
+     OBSERVACIONES DE GESTORÍA
+=============================== -->
+<div class="card p-4 mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="d-flex align-items-center gap-2">
+            <i data-lucide="message-square-warning" style="width:20px;height:20px;color:#8b5cf6;"></i>
+            <h6 class="fw-bold mb-0">Observaciones de gestoría</h6>
+        </div>
+        <a href="{% url 'gestoria:vigentes' %}" class="btn btn-secondary btn-sm">Ver gestorías</a>
+    </div>
+
+    {% if gestorias_observaciones %}
+    <div class="list-group list-group-flush">
+        {% for g in gestorias_observaciones %}
+        <a href="{% url 'gestoria:editar_gestoria' g.id %}" class="list-group-item list-group-item-action px-0">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <span class="fw-semibold">{{ g.vehiculo.marca }} {{ g.vehiculo.modelo }}</span>
+                    {% if g.vehiculo.dominio %}<small class="text-muted">({{ g.vehiculo.dominio }})</small>{% endif %}
+                    <span class="text-muted"> · {{ g.cliente_actual|default:"Sin cliente" }}</span>
+                    <div class="text-muted" style="font-size:13px;white-space:pre-line;">{{ g.observaciones }}</div>
+                </div>
+                <small class="text-muted ms-2">{{ g.fecha_creacion|date:"d/m/Y" }}</small>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-4">
+        <i data-lucide="check-circle" style="width:32px;height:32px;color:#10b981;margin-bottom:8px;"></i>
+        <p class="text-muted mb-0">Sin observaciones de gestoría cargadas</p>
+    </div>
+    {% endif %}
+</div>

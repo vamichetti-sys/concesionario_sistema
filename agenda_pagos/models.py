@@ -56,6 +56,12 @@ class PagoFuturo(models.Model):
         help_text="Si está activo, al marcarse como pagado se crea automáticamente el del mes siguiente.",
     )
 
+    recurrente_hasta = models.DateField(
+        "Recurrente hasta", null=True, blank=True,
+        help_text="Solo si es recurrente mensual: hasta qué fecha se sigue agendando "
+                  "(ej: fin de un crédito). Vacío = sin fecha de término.",
+    )
+
     pagado = models.BooleanField(default=False)
     fecha_pago = models.DateField(null=True, blank=True)
     pagado_por = models.ForeignKey(

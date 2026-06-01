@@ -170,3 +170,58 @@ def cambiar_estado_cheque(request, pk):
             messages.success(request, f'Estado actualizado a {cheque.get_estado_display()}.')
     
     return redirect('cheques:lista')
+
+# ==========================================================
+# PDF: cheques a cobrar (estado='a_depositar')
+# ==========================================================
+from django.contrib.auth.decorators import login_required as _login_required_pdf
+
+@_login_required_pdf
+def pdf_a_cobrar(request):
+    if not usuario_autorizado(request.user):
+        from django.contrib import messages as _msgs
+        from django.shortcuts import redirect as _redirect
+        _msgs.error(request, 'No tenés permiso para acceder a esta sección.')
+        return _redirect('inicio')
+
+    from datetime import date as _date
+    from decimal import Decimal as _Dec
+    from reportes.pdf_utils import render_pdf_listado
+    from .models import Cheque
+
+    hoy = _date.today()
+
+    qs = Cheque.objects.filter(estado='a_depositar').order_by('fecha_deposito', '-monto')
+
+    total = _Dec('0')
+    filas = []
+    for c in qs:
+        total += c.monto or _Dec('0')
+        dias = (c.fecha_deposito - hoy).days if c.fecha_deposito else 0
+        cuando = (
+            f"hoy" if dias == 0 else
+            f"en {dias} día(s)" if dias > 0 else
+            f"vencido hace {-dias} día(s)"
+        )
+        filas.append([
+            c.fecha_deposito.strftime('%d/%m/%Y') if c.fecha_deposito else '—',
+            cuando,
+            c.banco_emision or '—',
+            c.numero_cheque or '—',
+            c.titular_cheque or '—',
+            c.cliente or '—',
+            f"$ {(c.monto or 0):,.0f}".replace(',', '.'),
+        ])
+
+    totales = ['', '', '', '', '', 'TOTAL',
+               f"$ {total:,.0f}".replace(',', '.')]
+
+    return render_pdf_listado(
+        filename=f"cheques_a_cobrar_{hoy.strftime('%Y%m%d')}.pdf",
+        titulo="Cheques a Cobrar",
+        subtitulo=f"Listado al {hoy.strftime('%d/%m/%Y')} – {len(filas)} cheque(s) pendientes",
+        columnas=['Fecha cobro', 'Cuándo', 'Banco', 'Nº cheque', 'Titular', 'Cliente', 'Monto'],
+        filas=filas,
+        totales=totales if filas else None,
+        pie="Estado: A depositar",
+    )

@@ -1,3 +1,6 @@
+from datetime import date
+from decimal import Decimal
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -184,3 +187,65 @@ def eliminar_movimiento(request, pk):
         'movimiento': movimiento,
         'cuenta': cuenta,
     })
+
+# ==========================================================
+# PDF MENSUAL: movimientos del mes/año de todas las cuentas
+# ==========================================================
+@login_required
+def pdf_mensual(request):
+    if not usuario_autorizado(request.user):
+        messages.error(request, 'No tenés permiso para acceder a esta sección.')
+        return redirect('inicio')
+
+    from reportes.pdf_utils import render_pdf_listado, MESES_ES
+
+    hoy = date.today()
+    try:
+        mes = int(request.GET.get('mes', hoy.month))
+    except (TypeError, ValueError):
+        mes = hoy.month
+    try:
+        anio = int(request.GET.get('anio', hoy.year))
+    except (TypeError, ValueError):
+        anio = hoy.year
+
+    movs = (
+        MovimientoInterno.objects
+        .filter(fecha__year=anio, fecha__month=mes)
+        .select_related('cuenta')
+        .order_by('fecha', 'cuenta__nombre')
+    )
+
+    total_debe = Decimal('0')
+    total_haber = Decimal('0')
+    filas = []
+    for m in movs:
+        signo = m.monto if m.tipo == 'debe' else -m.monto
+        if m.tipo == 'debe':
+            total_debe += m.monto
+        else:
+            total_haber += m.monto
+        filas.append([
+            m.fecha.strftime('%d/%m/%Y'),
+            m.cuenta.nombre,
+            m.concepto or '-',
+            m.get_tipo_display(),
+            f"$ {m.monto:,.0f}".replace(',', '.'),
+        ])
+
+    saldo_neto = total_debe - total_haber
+    totales = [
+        '', '', 'TOTALES',
+        f"Debe: $ {total_debe:,.0f}".replace(',', '.'),
+        f"Neto: $ {saldo_neto:,.0f}".replace(',', '.'),
+    ]
+
+    return render_pdf_listado(
+        filename=f"cuentas_internas_{mes:02d}_{anio}.pdf",
+        titulo="Cuentas Internas",
+        subtitulo=f"{MESES_ES[mes]} {anio} – {len(filas)} movimiento(s)",
+        columnas=['Fecha', 'Cuenta', 'Concepto', 'Tipo', 'Monto'],
+        filas=filas,
+        totales=totales if filas else None,
+        pie=f"Generado el {hoy.strftime('%d/%m/%Y')}",
+    )

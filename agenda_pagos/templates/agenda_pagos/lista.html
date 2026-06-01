@@ -70,7 +70,7 @@
 <!-- SELECTOR DE MES + FILTROS -->
 <div class="card p-3 mb-3">
     <form method="GET" class="row g-2 align-items-end">
-        <div class="col-md-3">
+        <div class="col-md-2">
             <label class="form-label" style="font-size:12px;">Mes</label>
             <select name="mes" class="form-select">
                 {% for num, nombre in meses_choices %}
@@ -93,6 +93,15 @@
                 <option value="vencidos" {% if filtro == 'vencidos' %}selected{% endif %}>Vencidos (todos)</option>
                 <option value="pagados" {% if filtro == 'pagados' %}selected{% endif %}>Pagados del mes</option>
                 <option value="todos" {% if filtro == 'todos' %}selected{% endif %}>Todos del mes</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label" style="font-size:12px;">Categoría</label>
+            <select name="categoria" class="form-select">
+                <option value="">Todas las categorías</option>
+                {% for c in categorias %}
+                <option value="{{ c.id }}" {% if categoria_sel == c.id|stringformat:'s' %}selected{% endif %}>{{ c.nombre }}</option>
+                {% endfor %}
             </select>
         </div>
         <div class="col-md-2">

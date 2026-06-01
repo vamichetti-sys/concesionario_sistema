@@ -11,7 +11,7 @@
         <h2 class="fw-bold mb-1">Reportes</h2>
         <p class="text-muted mb-0">Ganancias · Cumplimiento de pagos · Deuda en concesionario</p>
     </div>
-    <form method="get" class="d-flex gap-2 align-items-end">
+    <form method="get" class="d-flex gap-2 align-items-end" id="filtro-reportes">
         <div>
             <label class="form-label" style="font-size:12px;">Mes</label>
             <select name="mes" class="form-select form-select-sm" style="width:130px;">
@@ -42,6 +42,10 @@
             <i data-lucide="filter" style="width:14px;height:14px;margin-right:4px;"></i>
             Aplicar
         </button>
+        <a href="{% url 'reportes:lista_pdf' %}?mes={{ mes }}&anio={{ anio }}" target="_blank" class="btn btn-outline-secondary btn-sm">
+            <i data-lucide="file-down" style="width:14px;height:14px;margin-right:4px;"></i>
+            PDF
+        </a>
     </form>
 </div>
 

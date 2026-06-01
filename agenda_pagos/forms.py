@@ -13,6 +13,7 @@ class PagoFuturoForm(forms.ModelForm):
         fields = [
             "descripcion", "monto", "fecha_vencimiento",
             "categoria", "destino", "es_recurrente_mensual",
+            "recurrente_hasta",
             "observaciones",
         ]
         widgets = {
@@ -21,7 +22,8 @@ class PagoFuturoForm(forms.ModelForm):
             "fecha_vencimiento": forms.DateInput(format="%Y-%m-%d", attrs={"class": "form-control", "type": "date"}),
             "categoria": forms.Select(attrs={"class": "form-select"}),
             "destino": forms.Select(attrs={"class": "form-select"}),
-            "es_recurrente_mensual": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+            "es_recurrente_mensual": forms.CheckboxInput(attrs={"class": "form-check-input", "id": "id_es_recurrente_mensual"}),
+            "recurrente_hasta": forms.DateInput(format="%Y-%m-%d", attrs={"class": "form-control", "type": "date"}),
             "observaciones": forms.Textarea(attrs={"class": "form-control", "rows": 2, "placeholder": "Notas opcionales"}),
         }
 
@@ -31,6 +33,14 @@ class PagoFuturoForm(forms.ModelForm):
         self.fields["categoria"].required = False
         self.fields["observaciones"].required = False
         self.fields["monto"].required = False  # se completa al marcar pagado
+        self.fields["recurrente_hasta"].required = False
+
+    def clean(self):
+        cleaned = super().clean()
+        # La fecha de término solo aplica si es recurrente.
+        if not cleaned.get("es_recurrente_mensual"):
+            cleaned["recurrente_hasta"] = None
+        return cleaned
 
 
 class MarcarPagadoForm(forms.Form):

@@ -51,6 +51,12 @@
                 </div>
             </div>
 
+            <div class="col-md-4" id="wrap_recurrente_hasta">
+                <label class="form-label">Recurrente hasta</label>
+                {{ form.recurrente_hasta }}
+                <small class="text-muted">Opcional. Fecha de término (ej: última cuota de un crédito). Vacío = sin límite.</small>
+            </div>
+
             <div class="col-md-12">
                 <label class="form-label">Observaciones</label>
                 {{ form.observaciones }}
@@ -85,6 +91,15 @@
             width: '100%',
             language: { noResults: function () { return 'No se encontró esa categoría'; } }
         });
+
+        // Mostrar "Recurrente hasta" solo si el pago es recurrente mensual.
+        function toggleRecurrenteHasta() {
+            var on = $('#id_es_recurrente_mensual').is(':checked');
+            $('#wrap_recurrente_hasta').toggle(on);
+            if (!on) { $('#id_recurrente_hasta').val(''); }
+        }
+        $('#id_es_recurrente_mensual').on('change', toggleRecurrenteHasta);
+        toggleRecurrenteHasta();
     });
 </script>
 {% endblock %}

@@ -8,7 +8,7 @@ from django.db import transaction
 from django.db.models import Sum
 from django.urls import reverse
 
-from gastos_mensuales.models import GastoMensual
+from gastos_mensuales.models import GastoMensual, CategoriaGasto
 from gastos_personales.models import GastoPersonal
 
 from .models import PagoFuturo
@@ -123,6 +123,9 @@ def _crear_proximo_mes(pago, request_user):
     nuevo PagoFuturo o None si no se creó.
     """
     next_fecha = pago.proxima_fecha_mensual
+    # Respeta la fecha de término del recurrente (ej: último mes de un crédito).
+    if pago.recurrente_hasta and next_fecha > pago.recurrente_hasta:
+        return None
     if PagoFuturo.objects.filter(
         descripcion=pago.descripcion,
         destino=pago.destino,
@@ -136,6 +139,7 @@ def _crear_proximo_mes(pago, request_user):
         categoria=pago.categoria,
         destino=pago.destino,
         es_recurrente_mensual=pago.es_recurrente_mensual,
+        recurrente_hasta=pago.recurrente_hasta,
         observaciones=pago.observaciones,
         creado_por=request_user,
     )
@@ -176,6 +180,11 @@ def lista_pagos(request):
     else:
         qs = qs.filter(fecha_vencimiento__year=anio, fecha_vencimiento__month=mes)
 
+    # Filtro opcional por categoría
+    categoria_sel = request.GET.get("categoria") or ""
+    if categoria_sel:
+        qs = qs.filter(categoria_id=categoria_sel)
+
     pendientes_all = PagoFuturo.objects.filter(pagado=False)
     total_pendiente = pendientes_all.aggregate(t=Sum("monto"))["t"] or Decimal("0")
     cant_pendiente = pendientes_all.count()
@@ -202,6 +211,8 @@ def lista_pagos(request):
         "mes_nombre": MESES[mes] if 1 <= mes <= 12 else "",
         "meses_choices": list(enumerate(MESES))[1:],
         "anios_disponibles": anios,
+        "categorias": CategoriaGasto.objects.filter(activa=True).order_by("nombre"),
+        "categoria_sel": categoria_sel,
         "total_pendiente": total_pendiente,
         "cant_pendiente": cant_pendiente,
         "total_vencido": total_vencido,
@@ -387,6 +398,7 @@ def copiar_mes_anterior(request):
                     categoria=p.categoria,
                     destino=p.destino,
                     es_recurrente_mensual=p.es_recurrente_mensual,
+                    recurrente_hasta=p.recurrente_hasta,
                     observaciones=p.observaciones,
                     creado_por=request.user,
                 )

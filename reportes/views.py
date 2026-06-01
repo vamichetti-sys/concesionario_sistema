@@ -34,6 +34,84 @@ def es_staff(user):
 # PANTALLA PRINCIPAL DE REPORTES
 # ==========================================================
 @login_required
+def lista_reportes_pdf(request):
+    """
+    PDF mensual del home de Reportes: resumen del mes seleccionado con
+    ventas confirmadas + ganancia + top deudas/cobros.
+    """
+    from datetime import date as _date
+    from decimal import Decimal as _Dec
+    from compraventa.models import CompraVentaOperacion, DeudaProveedor
+    from cuentas.models import CuentaCorriente
+    from vehiculos.models import FichaVehicular, GastoConcesionario
+    from reportes.pdf_utils import render_pdf_listado, MESES_ES
+
+    hoy = _date.today()
+    try:
+        mes = int(request.GET.get("mes", hoy.month))
+    except (TypeError, ValueError):
+        mes = hoy.month
+    try:
+        anio = int(request.GET.get("anio", hoy.year))
+    except (TypeError, ValueError):
+        anio = hoy.year
+
+    GC_FIELDS = [
+        "gc_service", "gc_mecanica", "gc_chapa_pintura", "gc_tapizado",
+        "gc_neumaticos", "gc_vidrios", "gc_cerrajeria", "gc_lavado",
+        "gc_gnc", "gc_grabado_autopartes", "gc_vtv", "gc_verificacion",
+        "gc_patentes", "gc_otros",
+    ]
+
+    def _ganancia(v):
+        op = CompraVentaOperacion.objects.filter(vehiculo_id=v.vehiculo_id).first()
+        precio_compra = (op.precio_compra if op and op.precio_compra else _Dec("0"))
+        ficha = FichaVehicular.objects.filter(vehiculo_id=v.vehiculo_id).first()
+        gastos = _Dec("0")
+        if ficha:
+            for f in GC_FIELDS:
+                gastos += getattr(ficha, f, None) or _Dec("0")
+        gastos += GastoConcesionario.objects.filter(
+            vehiculo_id=v.vehiculo_id
+        ).aggregate(t=Sum("monto"))["t"] or _Dec("0")
+        precio_venta = v.precio_venta or _Dec("0")
+        return precio_venta, precio_compra + gastos, precio_venta - precio_compra - gastos
+
+    ventas = Venta.objects.filter(
+        estado="confirmada", fecha_venta__year=anio, fecha_venta__month=mes,
+    ).select_related("vehiculo", "cliente").order_by("-fecha_venta")
+
+    filas = []
+    t_vta = _Dec("0"); t_cos = _Dec("0"); t_gan = _Dec("0")
+    for v in ventas:
+        pv, ct, gn = _ganancia(v)
+        t_vta += pv; t_cos += ct; t_gan += gn
+        filas.append([
+            v.fecha_venta.strftime("%d/%m/%Y") if v.fecha_venta else "—",
+            f"{v.vehiculo.marca} {v.vehiculo.modelo}" if v.vehiculo_id else "—",
+            (v.cliente.nombre_completo if v.cliente_id else "—") or "—",
+            f"$ {pv:,.0f}".replace(",", "."),
+            f"$ {ct:,.0f}".replace(",", "."),
+            f"$ {gn:,.0f}".replace(",", "."),
+        ])
+
+    totales = ["", "", "TOTALES",
+        f"$ {t_vta:,.0f}".replace(",", "."),
+        f"$ {t_cos:,.0f}".replace(",", "."),
+        f"$ {t_gan:,.0f}".replace(",", "."),
+    ]
+
+    return render_pdf_listado(
+        filename=f"reportes_{mes:02d}_{anio}.pdf",
+        titulo="Reporte mensual",
+        subtitulo=f"{MESES_ES[mes]} {anio} – {len(filas)} venta(s) confirmadas",
+        columnas=["Fecha", "Vehículo", "Cliente", "Venta", "Costo+Gastos", "Ganancia"],
+        filas=filas,
+        totales=totales if filas else None,
+        pie=f"Generado el {hoy.strftime('%d/%m/%Y')}",
+    )
+
+
 def lista_reportes(request):
     """
     Home del módulo Reportes — 3 paneles:

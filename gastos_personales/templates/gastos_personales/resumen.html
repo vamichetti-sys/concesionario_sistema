@@ -9,6 +9,11 @@
         <p class="text-muted mb-0">Tus gastos personales mensuales (privados, solo los ves vos)</p>
     </div>
     <div class="d-flex gap-2">
+        <a href="{% url 'gastos_personales:pdf_mensual' %}?mes={{ mes }}&anio={{ anio }}" target="_blank" class="btn btn-outline-secondary"
+           title="Descargar PDF del mes seleccionado">
+            <i data-lucide="file-down" style="width:16px;height:16px;margin-right:6px;"></i>
+            PDF mensual
+        </a>
         <a href="{% url 'gastos_mensuales:categorias' %}" class="btn btn-secondary">
             <i data-lucide="tag" style="width:16px;height:16px;margin-right:6px;"></i>
             Categorías
@@ -144,7 +149,18 @@
                                 {% endif %}
                             </td>
                             <td>{{ g.descripcion|default:"-" }}</td>
-                            <td class="text-end fw-bold">${{ g.monto|floatformat:0 }}</td>
+                            <td class="text-end">
+                                <form method="post" action="{% url 'gastos_personales:actualizar_monto' pk=g.pk %}" class="d-inline-flex align-items-center justify-content-end gap-1">
+                                    {% csrf_token %}
+                                    <span class="text-muted">$</span>
+                                    <input type="number" name="monto" value="{{ g.monto|stringformat:'.2f' }}"
+                                           step="0.01" min="0"
+                                           class="form-control form-control-sm text-end fw-bold"
+                                           style="width:120px;"
+                                           title="Editar monto (se guarda al salir del campo)"
+                                           onchange="this.form.submit()">
+                                </form>
+                            </td>
                             <td class="text-center">
                                 <form method="post" action="{% url 'gastos_personales:marcar_pagado' pk=g.pk %}" style="display:inline;">
                                     {% csrf_token %}

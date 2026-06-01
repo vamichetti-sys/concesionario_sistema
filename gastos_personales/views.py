@@ -4,7 +4,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.db.models import Sum
 from django.urls import reverse
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 
 from gastos_mensuales.models import CategoriaGasto
 from .models import GastoPersonal
@@ -129,6 +129,24 @@ def marcar_pagado(request, pk):
 
 
 @solo_gestion_personal
+def actualizar_monto(request, pk):
+    """Edición inline del monto desde la tabla de resumen."""
+    gasto = get_object_or_404(GastoPersonal, pk=pk, usuario=request.user)
+    if request.method == "POST":
+        raw = (request.POST.get("monto") or "").strip().replace(",", ".")
+        try:
+            monto = Decimal(raw)
+            if monto < 0:
+                raise InvalidOperation
+            gasto.monto = monto
+            gasto.save(update_fields=["monto"])
+            messages.success(request, "Monto actualizado.")
+        except (InvalidOperation, ValueError):
+            messages.error(request, "Monto inválido.")
+    return redirect(f"{reverse('gastos_personales:resumen')}?mes={gasto.mes}&anio={gasto.anio}")
+
+
+@solo_gestion_personal
 def duplicar_fijos(request):
     if request.method == "POST":
         mes = int(request.POST.get("mes_destino", 0))
@@ -158,3 +176,65 @@ def duplicar_fijos(request):
             )
         messages.success(request, "Gastos fijos copiados del mes anterior.")
     return redirect(f"{reverse('gastos_personales:resumen')}?mes={mes}&anio={anio}")
+
+
+# ==========================================================
+# PDF MENSUAL: gastos personales del usuario para mes/año
+# ==========================================================
+from django.contrib.auth.decorators import login_required as _login_required_pdf
+
+@_login_required_pdf
+def pdf_mensual(request):
+    from datetime import date
+    from decimal import Decimal
+    from reportes.pdf_utils import render_pdf_listado, MESES_ES
+    from .models import GastoPersonal
+
+    hoy = date.today()
+    try:
+        mes = int(request.GET.get("mes", hoy.month))
+    except (TypeError, ValueError):
+        mes = hoy.month
+    try:
+        anio = int(request.GET.get("anio", hoy.year))
+    except (TypeError, ValueError):
+        anio = hoy.year
+
+    qs = (
+        GastoPersonal.objects
+        .filter(usuario=request.user, mes=mes, anio=anio)
+        .select_related("categoria")
+        .order_by("categoria__nombre", "descripcion")
+    )
+
+    total = Decimal("0")
+    total_pagado = Decimal("0")
+    filas = []
+    for g in qs:
+        total += g.monto or Decimal("0")
+        if g.pagado:
+            total_pagado += g.monto or Decimal("0")
+        filas.append([
+            g.categoria.nombre if g.categoria_id else "—",
+            g.descripcion or "—",
+            f"$ {(g.monto or 0):,.0f}".replace(",", "."),
+            "Sí" if g.pagado else "No",
+            g.fecha_pago.strftime("%d/%m/%Y") if g.fecha_pago else "—",
+        ])
+
+    totales = [
+        "", "TOTAL",
+        f"$ {total:,.0f}".replace(",", "."),
+        f"Pagado: $ {total_pagado:,.0f}".replace(",", "."),
+        "",
+    ]
+
+    return render_pdf_listado(
+        filename=f"gastos_personales_{mes:02d}_{anio}.pdf",
+        titulo="Gastos Personales",
+        subtitulo=f"{MESES_ES[mes]} {anio} – {request.user.username} – {len(filas)} gasto(s)",
+        columnas=["Categoría", "Descripción", "Monto", "Pagado", "Fecha pago"],
+        filas=filas,
+        totales=totales if filas else None,
+        pie=f"Generado el {hoy.strftime('%d/%m/%Y')}",
+    )

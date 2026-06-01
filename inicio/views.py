@@ -67,6 +67,12 @@ def inicio(request):
     transferencias_vigentes = gestoria_vigente_qs.count()
     top_gestoria_vigente = gestoria_vigente_qs.order_by("-fecha_creacion")[:5]
 
+    # Gestorías vigentes con observaciones cargadas (para todos los dashboards)
+    gestorias_observaciones = (
+        gestoria_vigente_qs.exclude(observaciones="")
+        .order_by("-fecha_creacion")[:8]
+    )
+
     # =============================
     # ESTADO GENERAL
     # =============================
@@ -150,6 +156,26 @@ def inicio(request):
     ).count()
 
     # =============================
+    # VENTAS CON DOCUMENTACIÓN PENDIENTE
+    # (ventas confirmadas del año cuyo vehículo tiene VTV / verificación
+    #  vencida o sin cargar — alerta de falta de documentación)
+    # =============================
+    inicio_anio = hoy.replace(month=1, day=1)
+    ventas_doc_pendiente = (
+        Venta.objects.filter(estado="confirmada", fecha_venta__gte=inicio_anio)
+        .select_related("vehiculo", "cliente", "vehiculo__ficha")
+        .filter(
+            Q(vehiculo__ficha__isnull=True)
+            | Q(vehiculo__ficha__vtv_vencimiento__isnull=True)
+            | Q(vehiculo__ficha__vtv_vencimiento__lt=hoy)
+            | Q(vehiculo__ficha__verificacion_vencimiento__isnull=True)
+            | Q(vehiculo__ficha__verificacion_vencimiento__lt=hoy)
+        )
+        .order_by("-fecha_venta")
+    )
+    ventas_doc_pendiente_count = ventas_doc_pendiente.count()
+
+    # =============================
     # CRM – RECORDATORIOS
     # =============================
     crm_contactos_pendientes = Prospecto.objects.filter(
@@ -208,6 +234,7 @@ def inicio(request):
         # Gestoría
         "transferencias_vigentes": transferencias_vigentes,
         "top_gestoria_vigente": top_gestoria_vigente,
+        "gestorias_observaciones": gestorias_observaciones,
         
         # Stock y ventas
         "vehiculos_stock": vehiculos_stock,
@@ -230,6 +257,10 @@ def inicio(request):
         
         # Cuotas
         "cuotas_vencidas_count": cuotas_vencidas_count,
+
+        # Ventas con documentación pendiente
+        "ventas_doc_pendiente": ventas_doc_pendiente[:10],
+        "ventas_doc_pendiente_count": ventas_doc_pendiente_count,
 
         # CRM
         "crm_contactos_pendientes": crm_contactos_pendientes,
@@ -309,6 +340,38 @@ def inicio(request):
     # ==========================================================
     if request.user.username.lower() == "lgazaba":
         return render(request, "inicio/inicio_lgazaba.html", context)
+
+    # ==========================================================
+    # 🪟 DASHBOARD PERSONALIZADO PARA NAMICHETTI
+    # Orden: botones → recordatorios → atención requerida →
+    # agenda de pagos → resumen de facturación →
+    # turnos y vencimientos próximos. (Sin CRM)
+    # ==========================================================
+    if request.user.username.lower() == "namichetti":
+        from facturacion.models import FacturaRegistrada
+
+        facturas_mes_qs = FacturaRegistrada.objects.filter(
+            estado="valida",
+            fecha__year=hoy.year,
+            fecha__month=hoy.month,
+        )
+        fact_agg = facturas_mes_qs.aggregate(
+            total=Sum("monto"),
+            neto=Sum("monto_neto"),
+            iva=Sum("monto_iva"),
+        )
+        context.update({
+            "fact_mes_count": facturas_mes_qs.count(),
+            "fact_mes_total": fact_agg["total"] or 0,
+            "fact_mes_neto": fact_agg["neto"] or 0,
+            "fact_mes_iva": fact_agg["iva"] or 0,
+            "fact_ultimas": (
+                FacturaRegistrada.objects.filter(estado="valida")
+                .select_related("venta")
+                .order_by("-fecha", "-id")[:5]
+            ),
+        })
+        return render(request, "inicio/inicio_namichetti.html", context)
 
     return render(request, "inicio/inicio.html", context)
 

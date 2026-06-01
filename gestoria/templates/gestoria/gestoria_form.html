@@ -20,11 +20,21 @@
                     <small style="color:rgba(255,255,255,0.6);">Cliente</small>
                     <div class="fw-semibold">
                         {{ gestoria.cliente_actual }}
-                        {% if gestoria.venta and gestoria.venta.cliente %}
-                        · DNI {{ gestoria.venta.cliente.dni }}
-                        {% if gestoria.venta.cliente.telefono %}
-                        · <a href="tel:{{ gestoria.venta.cliente.telefono }}" class="text-white">{{ gestoria.venta.cliente.telefono }}</a>
+                        {% if gestoria.cliente_actual.dni %}
+                        · DNI {{ gestoria.cliente_actual.dni }}
                         {% endif %}
+                        {% if gestoria.cliente_actual.telefono %}
+                        · <a href="tel:{{ gestoria.cliente_actual.telefono }}" class="text-white">{{ gestoria.cliente_actual.telefono }}</a>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <small style="color:rgba(255,255,255,0.6);">Infracciones (gastos de ingreso)</small>
+                    <div class="fw-semibold">
+                        {% if gestoria.vehiculo.ficha.gasto_infracciones %}
+                        ${{ gestoria.vehiculo.ficha.gasto_infracciones|floatformat:0 }}
+                        {% else %}
+                        <span style="color:rgba(255,255,255,0.5);">Sin infracciones cargadas</span>
                         {% endif %}
                     </div>
                 </div>
