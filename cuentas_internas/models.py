@@ -72,7 +72,8 @@ class Alquiler(models.Model):
     nombre = models.CharField('Nombre / Inmueble', max_length=255,
                               help_text='Ej: Local centro, Galpón, Depósito anexo')
     direccion = models.CharField('Dirección', max_length=255, blank=True)
-    propietario = models.CharField('Propietario', max_length=255, blank=True)
+    arrendatario = models.CharField('Arrendatario / Inquilino', max_length=255, blank=True,
+                                    help_text='Quién alquila y paga el alquiler')
     telefono = models.CharField('Teléfono', max_length=50, blank=True)
 
     monto_mensual = models.DecimalField('Monto mensual', max_digits=12, decimal_places=2, default=0)
@@ -81,6 +82,10 @@ class Alquiler(models.Model):
 
     fecha_inicio = models.DateField('Inicio de contrato', null=True, blank=True)
     fecha_fin = models.DateField('Fin de contrato', null=True, blank=True)
+
+    contrato = models.FileField('Contrato escaneado', upload_to='alquileres/contratos/',
+                                null=True, blank=True,
+                                help_text='PDF o imagen del contrato firmado')
 
     observaciones = models.TextField('Observaciones', blank=True)
     activo = models.BooleanField('Activo', default=True)
@@ -102,6 +107,52 @@ class Alquiler(models.Model):
     @property
     def ultimo_pago(self):
         return self.pagos.order_by('-fecha', '-id').first()
+
+    @property
+    def pagado_mes_actual(self):
+        """True si ya hay un pago registrado en el mes/año en curso."""
+        hoy = date.today()
+        return self.pagos.filter(fecha__year=hoy.year, fecha__month=hoy.month).exists()
+
+    def cronograma(self):
+        """
+        Devuelve una fila por cada mes del contrato (de fecha_inicio a
+        fecha_fin) con el monto a cobrar y el pago asociado (si existe).
+        """
+        if not (self.fecha_inicio and self.fecha_fin):
+            return []
+        MESES = ["", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+                 "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
+        pagos = {}
+        for p in self.pagos.all():
+            if p.periodo_anio and p.periodo_mes:
+                pagos[(p.periodo_anio, p.periodo_mes)] = p
+        filas = []
+        y, m = self.fecha_inicio.year, self.fecha_inicio.month
+        endy, endm = self.fecha_fin.year, self.fecha_fin.month
+        guard = 0
+        while (y, m) <= (endy, endm) and guard < 600:
+            guard += 1
+            pago = pagos.get((y, m))
+            filas.append({
+                "anio": y, "mes": m,
+                "label": f"{MESES[m]} {y}",
+                "monto": self.monto_mensual,
+                "pago": pago,
+                "cobrado": pago is not None,
+            })
+            m += 1
+            if m > 12:
+                m = 1
+                y += 1
+        return filas
+
+    @property
+    def total_a_cobrar_contrato(self):
+        """Monto total del contrato = meses x monto mensual."""
+        filas = self.cronograma()
+        from decimal import Decimal
+        return sum((f["monto"] or Decimal("0")) for f in filas)
 
     @property
     def proximo_vencimiento(self):
@@ -131,9 +182,9 @@ class PagoAlquiler(models.Model):
     ]
 
     alquiler = models.ForeignKey(Alquiler, on_delete=models.CASCADE, related_name='pagos')
-    fecha = models.DateField('Fecha de pago')
-    periodo = models.CharField('Período', max_length=50, blank=True,
-                               help_text='Ej: Junio 2026')
+    fecha = models.DateField('Fecha de cobro')
+    periodo_mes = models.PositiveSmallIntegerField('Mes del período', null=True, blank=True)
+    periodo_anio = models.PositiveIntegerField('Año del período', null=True, blank=True)
     monto = models.DecimalField('Monto', max_digits=12, decimal_places=2)
     forma_pago = models.CharField('Forma de pago', max_length=20, choices=FORMA_CHOICES,
                                   default='transferencia')
@@ -147,5 +198,13 @@ class PagoAlquiler(models.Model):
         verbose_name = 'Pago de alquiler'
         verbose_name_plural = 'Pagos de alquiler'
 
+    @property
+    def periodo_label(self):
+        if self.periodo_mes and self.periodo_anio:
+            MESES = ["", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+                     "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
+            return f"{MESES[self.periodo_mes]} {self.periodo_anio}"
+        return ""
+
     def __str__(self):
-        return f"{self.alquiler.nombre} - ${self.monto} ({self.periodo or self.fecha})"
+        return f"{self.alquiler.nombre} - ${self.monto} ({self.periodo_label or self.fecha})"

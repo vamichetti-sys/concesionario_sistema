@@ -9,6 +9,7 @@ urlpatterns = [
 
     # ===== ALQUILERES =====
     path('alquileres/', views.alquileres_lista, name='alquileres_lista'),
+    path('alquileres/pdf/', views.alquileres_pdf, name='alquileres_pdf'),
     path('alquileres/nuevo/', views.alquiler_crear, name='alquiler_crear'),
     path('alquileres/pago/<int:pk>/eliminar/', views.alquiler_pago_eliminar, name='alquiler_pago_eliminar'),
     path('alquileres/<int:pk>/', views.alquiler_detalle, name='alquiler_detalle'),

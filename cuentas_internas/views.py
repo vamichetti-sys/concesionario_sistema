@@ -295,8 +295,11 @@ def alquileres_lista(request):
         alquileres = alquileres.filter(
             Q(nombre__icontains=query) |
             Q(direccion__icontains=query) |
-            Q(propietario__icontains=query)
+            Q(arrendatario__icontains=query)
         )
+
+    # Ordenado por arrendatario para agrupar en el template
+    alquileres = alquileres.order_by('arrendatario', 'nombre')
 
     total_mensual = (
         Alquiler.objects.filter(activo=True).aggregate(t=Sum('monto_mensual'))['t'] or 0
@@ -312,13 +315,61 @@ def alquileres_lista(request):
 
 
 @login_required
+def alquileres_pdf(request):
+    if not usuario_autorizado(request.user):
+        messages.error(request, 'No tenés permiso para acceder a esta sección.')
+        return redirect('inicio')
+
+    from reportes.pdf_utils import render_pdf_listado
+
+    query = request.GET.get('q', '')
+    mostrar = request.GET.get('mostrar', 'activos')
+    alquileres = Alquiler.objects.all()
+    if mostrar == 'activos':
+        alquileres = alquileres.filter(activo=True)
+    elif mostrar == 'inactivos':
+        alquileres = alquileres.filter(activo=False)
+    if query:
+        alquileres = alquileres.filter(
+            Q(nombre__icontains=query) |
+            Q(direccion__icontains=query) |
+            Q(arrendatario__icontains=query)
+        )
+    alquileres = alquileres.order_by('arrendatario', 'nombre')
+
+    total = Decimal('0')
+    filas = []
+    for a in alquileres:
+        total += a.monto_mensual or Decimal('0')
+        filas.append([
+            a.arrendatario or '—',
+            a.nombre,
+            f"$ {(a.monto_mensual or 0):,.0f}".replace(',', '.'),
+            str(a.dia_pago) if a.dia_pago else '—',
+            'Pagado' if a.pagado_mes_actual else 'Pendiente',
+        ])
+
+    totales = ['', 'TOTAL', f"$ {total:,.0f}".replace(',', '.'), '', '']
+
+    return render_pdf_listado(
+        filename='alquileres.pdf',
+        titulo='Alquileres por arrendatario',
+        subtitulo=f"{len(filas)} alquiler(es) · total mensual a cobrar incluido",
+        columnas=['Arrendatario', 'Inmueble', 'Monto mensual', 'Día cobro', 'Mes actual'],
+        filas=filas,
+        totales=totales if filas else None,
+        pie=f"Generado el {date.today().strftime('%d/%m/%Y')}",
+    )
+
+
+@login_required
 def alquiler_crear(request):
     if not usuario_autorizado(request.user):
         messages.error(request, 'No tenés permiso para acceder a esta sección.')
         return redirect('inicio')
 
     if request.method == 'POST':
-        form = AlquilerForm(request.POST)
+        form = AlquilerForm(request.POST, request.FILES)
         if form.is_valid():
             alq = form.save()
             messages.success(request, f'Alquiler "{alq.nombre}" creado.')
@@ -338,7 +389,7 @@ def alquiler_editar(request, pk):
 
     alq = get_object_or_404(Alquiler, pk=pk)
     if request.method == 'POST':
-        form = AlquilerForm(request.POST, instance=alq)
+        form = AlquilerForm(request.POST, request.FILES, instance=alq)
         if form.is_valid():
             form.save()
             messages.success(request, 'Alquiler actualizado.')
@@ -381,19 +432,33 @@ def alquiler_detalle(request, pk):
             pago.alquiler = alq
             pago.creado_por = request.user
             pago.save()
-            messages.success(request, f'Pago de ${pago.monto} registrado.')
+            messages.success(request, f'Cobro de ${pago.monto} registrado.')
             return redirect('cuentas_internas:alquiler_detalle', pk=alq.pk)
     else:
+        hoy = date.today()
+        def _gint(name, default):
+            try:
+                return int(request.GET.get(name, default))
+            except (TypeError, ValueError):
+                return default
         form = PagoAlquilerForm(initial={
-            'fecha': date.today(),
+            'fecha': hoy,
             'monto': alq.monto_mensual or None,
             'forma_pago': 'transferencia',
+            'periodo_mes': _gint('mes', hoy.month),
+            'periodo_anio': _gint('anio', hoy.year),
         })
+
+    cronograma = alq.cronograma()
+    meses_cobrados = sum(1 for f in cronograma if f['cobrado'])
 
     return render(request, 'cuentas_internas/alquiler_detalle.html', {
         'alquiler': alq,
         'pagos': pagos,
         'form': form,
+        'cronograma': cronograma,
+        'meses_cobrados': meses_cobrados,
+        'meses_total': len(cronograma),
     })
 
 

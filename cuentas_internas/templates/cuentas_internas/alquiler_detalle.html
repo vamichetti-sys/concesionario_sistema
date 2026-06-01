@@ -14,6 +14,11 @@
         <p class="text-muted mb-0">{{ alquiler.direccion }}</p>
     </div>
     <div class="d-flex gap-2">
+        {% if alquiler.contrato %}
+        <a href="{{ alquiler.contrato.url }}" download class="btn btn-outline-primary">
+            <i data-lucide="download" style="width:16px;height:16px;margin-right:6px;"></i>Descargar contrato
+        </a>
+        {% endif %}
         <a href="{% url 'cuentas_internas:alquiler_editar' alquiler.pk %}" class="btn btn-secondary">
             <i data-lucide="edit" style="width:16px;height:16px;margin-right:6px;"></i>Editar
         </a>
@@ -37,8 +42,8 @@
                     <div class="fw-semibold">{{ alquiler.proximo_vencimiento|date:"d/m/Y"|default:"—" }}</div>
                 </div>
                 <div class="col-6">
-                    <div class="text-muted" style="font-size:12px;">Propietario</div>
-                    <div class="fw-semibold">{{ alquiler.propietario|default:"—" }}</div>
+                    <div class="text-muted" style="font-size:12px;">Arrendatario</div>
+                    <div class="fw-semibold">{{ alquiler.arrendatario|default:"—" }}</div>
                 </div>
                 <div class="col-6">
                     <div class="text-muted" style="font-size:12px;">Teléfono</div>
@@ -52,9 +57,17 @@
                     <div class="text-muted" style="font-size:12px;">Fin</div>
                     <div class="fw-semibold">{{ alquiler.fecha_fin|date:"d/m/Y"|default:"—" }}</div>
                 </div>
+                <div class="col-6">
+                    <div class="text-muted" style="font-size:12px;">Meses cobrados</div>
+                    <div class="fw-bold">{{ meses_cobrados }} / {{ meses_total }}</div>
+                </div>
+                <div class="col-6">
+                    <div class="text-muted" style="font-size:12px;">Total a cobrar (contrato)</div>
+                    <div class="fw-bold">$ {{ alquiler.total_a_cobrar_contrato|floatformat:0 }}</div>
+                </div>
                 <div class="col-12">
-                    <div class="text-muted" style="font-size:12px;">Total pagado</div>
-                    <div class="fw-bold">$ {{ alquiler.total_pagado|floatformat:0 }}</div>
+                    <div class="text-muted" style="font-size:12px;">Total cobrado</div>
+                    <div class="fw-bold text-success">$ {{ alquiler.total_pagado|floatformat:0 }}</div>
                 </div>
                 {% if alquiler.observaciones %}
                 <div class="col-12">
@@ -75,18 +88,22 @@
                 {% csrf_token %}
                 <div class="row g-2">
                     <div class="col-6">
-                        <label class="form-label" style="font-size:12px;">Fecha</label>
+                        <label class="form-label" style="font-size:12px;">Fecha de cobro</label>
                         {{ form.fecha }}
-                    </div>
-                    <div class="col-6">
-                        <label class="form-label" style="font-size:12px;">Período</label>
-                        {{ form.periodo }}
                     </div>
                     <div class="col-6">
                         <label class="form-label" style="font-size:12px;">Monto</label>
                         {{ form.monto }}
                     </div>
-                    <div class="col-6">
+                    <div class="col-7">
+                        <label class="form-label" style="font-size:12px;">Mes que cobra</label>
+                        {{ form.periodo_mes }}
+                    </div>
+                    <div class="col-5">
+                        <label class="form-label" style="font-size:12px;">Año</label>
+                        {{ form.periodo_anio }}
+                    </div>
+                    <div class="col-12">
                         <label class="form-label" style="font-size:12px;">Forma de pago</label>
                         {{ form.forma_pago }}
                     </div>
@@ -126,7 +143,7 @@
                         {% for p in pagos %}
                         <tr>
                             <td>{{ p.fecha|date:"d/m/Y" }}</td>
-                            <td>{{ p.periodo|default:"—" }}</td>
+                            <td>{{ p.periodo_label|default:"—" }}</td>
                             <td><span class="badge bg-light text-dark border">{{ p.get_forma_pago_display }}</span></td>
                             <td class="text-end fw-bold">$ {{ p.monto|floatformat:0 }}</td>
                             <td class="text-end">
@@ -151,6 +168,62 @@
             {% endif %}
         </div>
     </div>
+</div>
+
+<!-- CRONOGRAMA MENSUAL DEL CONTRATO -->
+<div class="card p-4 mt-4">
+    <div class="d-flex align-items-center gap-2 mb-3">
+        <i data-lucide="calendar-range" style="width:20px;height:20px;color:#f59e0b;"></i>
+        <h6 class="fw-bold mb-0">Cronograma de cobros — duración del contrato</h6>
+        {% if cronograma %}
+        <span class="badge bg-light text-dark border ms-2">{{ meses_cobrados }}/{{ meses_total }} cobrados</span>
+        {% endif %}
+    </div>
+
+    {% if cronograma %}
+    <div class="table-responsive">
+        <table class="table align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Período</th>
+                    <th class="text-end">A cobrar</th>
+                    <th>Estado</th>
+                    <th>Cobrado el</th>
+                    <th class="text-end"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for f in cronograma %}
+                <tr>
+                    <td class="fw-semibold">{{ f.label }}</td>
+                    <td class="text-end">$ {{ f.monto|floatformat:0 }}</td>
+                    <td>
+                        {% if f.cobrado %}
+                        <span class="badge bg-success-subtle text-success">Cobrado</span>
+                        {% else %}
+                        <span class="badge bg-danger-subtle text-danger">Pendiente</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if f.pago %}{{ f.pago.fecha|date:"d/m/Y" }} <small class="text-muted">· ${{ f.pago.monto|floatformat:0 }}</small>{% else %}—{% endif %}
+                    </td>
+                    <td class="text-end">
+                        {% if not f.cobrado %}
+                        <a href="{% url 'cuentas_internas:alquiler_detalle' alquiler.pk %}?mes={{ f.mes }}&anio={{ f.anio }}#registrar-cobro" class="btn btn-sm btn-success">
+                            <i data-lucide="dollar-sign" style="width:14px;height:14px;margin-right:4px;"></i>Cobrar
+                        </a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="alert alert-info mb-0" style="font-size:14px;">
+        Cargá <strong>inicio y fin de contrato</strong> (en «Editar») para ver el cronograma mes a mes de lo que tenés que cobrar.
+    </div>
+    {% endif %}
 </div>
 
 <script>
