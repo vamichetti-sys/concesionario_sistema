@@ -7,12 +7,16 @@
             <i data-lucide="calendar-clock" style="width:18px;height:18px;color:#f59e0b;"></i>
             <h6 class="fw-bold mb-0" style="font-size:15px;">Agenda de pagos — Vencidos y próximos</h6>
         </div>
-        <div class="d-flex gap-2">
-            <a href="{% url 'agenda_pagos:crear' %}" class="btn btn-primary btn-sm">
-                <i data-lucide="plus" style="width:14px;height:14px;margin-right:4px;"></i>
-                Agregar pago
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="{% url 'agenda_pagos:crear' %}" class="btn btn-warning btn-sm">
+                <i data-lucide="trending-down" style="width:14px;height:14px;margin-right:4px;"></i>
+                Agregar gasto
             </a>
-            <a href="/agenda-pagos/" class="btn btn-secondary btn-sm">Ver agenda</a>
+            <a href="{% url 'agenda_ingresos:crear' %}" class="btn btn-success btn-sm">
+                <i data-lucide="trending-up" style="width:14px;height:14px;margin-right:4px;"></i>
+                Agregar ingreso
+            </a>
+            <a href="/agenda-pagos/" class="btn btn-outline-secondary btn-sm">Ver agenda</a>
         </div>
     </div>
 
@@ -26,7 +30,7 @@
             {% if pagos_vencidos %}
             <div class="list-group list-group-flush">
                 {% for p in pagos_vencidos %}
-                <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                <div class="list-group-item px-0 py-1 d-flex justify-content-between align-items-center" style="font-size:13px;">
                     <div>
                         <span class="fw-semibold">{{ p.descripcion }}</span>
                         {% if p.categoria %}<small class="text-muted">— {{ p.categoria.nombre }}</small>{% endif %}
@@ -54,7 +58,7 @@
             {% if pagos_proximos %}
             <div class="list-group list-group-flush">
                 {% for p in pagos_proximos %}
-                <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                <div class="list-group-item px-0 py-1 d-flex justify-content-between align-items-center" style="font-size:13px;">
                     <div>
                         <span class="fw-semibold">{{ p.descripcion }}</span>
                         {% if p.categoria %}<small class="text-muted">— {{ p.categoria.nombre }}</small>{% endif %}
@@ -75,13 +79,17 @@
         </div>
     </div>
     {% else %}
-    <div class="text-center py-4">
-        <i data-lucide="check-circle" style="width:32px;height:32px;color:#10b981;margin-bottom:8px;"></i>
-        <p class="text-muted mb-2">No hay pagos vencidos ni próximos a vencer.</p>
-        <a href="{% url 'agenda_pagos:crear' %}" class="btn btn-primary btn-sm">
-            <i data-lucide="plus" style="width:14px;height:14px;margin-right:4px;"></i>
-            Agregar pago
-        </a>
+    <div class="text-center py-3">
+        <i data-lucide="check-circle" style="width:28px;height:28px;color:#10b981;margin-bottom:6px;"></i>
+        <p class="text-muted mb-2 small">No hay pagos vencidos ni próximos a vencer.</p>
+        <div class="d-flex gap-2 justify-content-center flex-wrap">
+            <a href="{% url 'agenda_pagos:crear' %}" class="btn btn-warning btn-sm">
+                <i data-lucide="trending-down" style="width:14px;height:14px;margin-right:4px;"></i>Agregar gasto
+            </a>
+            <a href="{% url 'agenda_ingresos:crear' %}" class="btn btn-success btn-sm">
+                <i data-lucide="trending-up" style="width:14px;height:14px;margin-right:4px;"></i>Agregar ingreso
+            </a>
+        </div>
     </div>
     {% endif %}
 </div>

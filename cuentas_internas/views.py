@@ -431,6 +431,13 @@ def alquiler_detalle(request, pk):
             pago = form.save(commit=False)
             pago.alquiler = alq
             pago.creado_por = request.user
+
+            # Guard: no cobrar dos veces el mismo período (mismo mes/año).
+            if (pago.periodo_mes and pago.periodo_anio and
+                    alq.pagos.filter(periodo_mes=pago.periodo_mes, periodo_anio=pago.periodo_anio).exists()):
+                messages.warning(request, 'Ese período ya está cobrado.')
+                return redirect('cuentas_internas:alquiler_detalle', pk=alq.pk)
+
             pago.save()
 
             # La cobranza del alquiler se registra como Ingreso Personal del
@@ -514,6 +521,53 @@ def alquiler_escala_eliminar(request, escala_id):
         esc.delete()
         messages.success(request, 'Tramo eliminado.')
     return redirect('cuentas_internas:alquiler_detalle', pk=alq_pk)
+
+
+@login_required
+def cobrar_alquiler_mes(request, alquiler_id, anio, mes):
+    """
+    Cobro rápido de un mes de alquiler (usado desde la ficha y desde la
+    Agenda de Ingresos). Crea UN PagoAlquiler + su Ingreso Personal, con
+    guard para no cobrar dos veces el mismo período.
+    """
+    if not usuario_autorizado(request.user):
+        messages.error(request, 'No tenés permiso para acceder a esta sección.')
+        return redirect('inicio')
+
+    alq = get_object_or_404(Alquiler, pk=alquiler_id)
+    volver = request.GET.get('next', '')
+
+    def _redir():
+        if volver == 'agenda':
+            return redirect('agenda_ingresos:lista')
+        return redirect('cuentas_internas:alquiler_detalle', pk=alq.pk)
+
+    if request.method != 'POST':
+        return _redir()
+
+    if alq.pagos.filter(periodo_mes=mes, periodo_anio=anio).exists():
+        messages.warning(request, 'Ese período ya está cobrado.')
+        return _redir()
+
+    # Monto del mes según el cronograma (respeta tramos)
+    monto = alq.monto_mensual or Decimal('0')
+    for f in alq.cronograma():
+        if f['mes'] == mes and f['anio'] == anio:
+            monto = f['monto']
+            break
+
+    pago = PagoAlquiler.objects.create(
+        alquiler=alq, fecha=date.today(), periodo_mes=mes, periodo_anio=anio,
+        monto=monto, creado_por=request.user,
+    )
+    from gastos_personales.models import IngresoPersonal
+    IngresoPersonal.objects.create(
+        usuario=request.user, pago_alquiler=pago,
+        concepto=f"Alquiler – {alq.nombre}", descripcion=alq.arrendatario or "",
+        monto=monto, mes=mes, anio=anio, fecha=date.today(),
+    )
+    messages.success(request, f'Cobro de ${monto} registrado en Ingresos Personales.')
+    return _redir()
 
 
 @login_required
