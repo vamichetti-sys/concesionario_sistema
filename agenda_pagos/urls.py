@@ -12,4 +12,5 @@ urlpatterns = [
     path("<int:pk>/pagar/", views.marcar_pagado, name="marcar_pagado"),
     path("<int:pk>/deshacer/", views.deshacer_pago, name="deshacer_pago"),
     path("copiar-mes-anterior/", views.copiar_mes_anterior, name="copiar_mes_anterior"),
+    path("eliminar-vencidos-sin-monto/", views.eliminar_vencidos_sin_monto, name="eliminar_vencidos_sin_monto"),
 ]

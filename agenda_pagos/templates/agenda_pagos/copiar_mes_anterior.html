@@ -15,6 +15,44 @@
     </p>
 </div>
 
+<!-- FILTROS -->
+<form method="get" class="card p-3 mb-3">
+    <input type="hidden" name="mes" value="{{ mes_destino }}">
+    <input type="hidden" name="anio" value="{{ anio_destino }}">
+    <div class="row g-2 align-items-end">
+        <div class="col-md-4">
+            <label class="form-label" style="font-size:12px;">Categoría</label>
+            <select name="categoria" class="form-select form-select-sm">
+                <option value="">Todas las categorías</option>
+                {% for c in categorias %}
+                <option value="{{ c.id }}" {% if categoria_sel == c.id|stringformat:'s' %}selected{% endif %}>{{ c.nombre }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label" style="font-size:12px;">Destino</label>
+            <select name="destino" class="form-select form-select-sm">
+                <option value="">Todos los destinos</option>
+                {% for val, lbl in destino_choices %}
+                <option value="{{ val }}" {% if destino_sel == val %}selected{% endif %}>{{ lbl }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label" style="font-size:12px;">Tipo</label>
+            <select name="tipo" class="form-select form-select-sm">
+                <option value="">Todos</option>
+                <option value="fijo" {% if tipo_sel == 'fijo' %}selected{% endif %}>Mensuales (fijos)</option>
+                <option value="variable" {% if tipo_sel == 'variable' %}selected{% endif %}>Variables</option>
+            </select>
+        </div>
+        <div class="col-md-3 d-flex gap-2">
+            <button type="submit" class="btn btn-primary btn-sm flex-grow-1">Filtrar</button>
+            <a href="{% url 'agenda_pagos:copiar_mes_anterior' %}?mes={{ mes_destino }}&anio={{ anio_destino }}" class="btn btn-outline-secondary btn-sm">Limpiar</a>
+        </div>
+    </div>
+</form>
+
 <div class="card p-0">
     {% if pagos_info %}
     <form method="post">

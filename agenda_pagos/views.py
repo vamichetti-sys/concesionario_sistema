@@ -207,6 +207,7 @@ def lista_pagos(request):
     vencidos = pendientes_all.filter(fecha_vencimiento__lt=hoy)
     total_vencido = vencidos.aggregate(t=Sum("monto"))["t"] or Decimal("0")
     cant_vencido = vencidos.count()
+    vencidos_sin_monto_count = vencidos.filter(monto__lte=0).count()
     proximos_7 = pendientes_all.filter(fecha_vencimiento__gte=hoy, fecha_vencimiento__lte=hoy + timedelta(days=7))
     cant_prox = proximos_7.count()
     total_prox = proximos_7.aggregate(t=Sum("monto"))["t"] or Decimal("0")
@@ -236,6 +237,7 @@ def lista_pagos(request):
         "cant_pendiente": cant_pendiente,
         "total_vencido": total_vencido,
         "cant_vencido": cant_vencido,
+        "vencidos_sin_monto_count": vencidos_sin_monto_count,
         "total_prox": total_prox,
         "cant_prox": cant_prox,
     })
@@ -364,6 +366,35 @@ def deshacer_pago(request, pk):
 
 
 @solo_admins
+@transaction.atomic
+def eliminar_vencidos_sin_monto(request):
+    """
+    Borra los pagos VENCIDOS que quedaron sin monto ($0 "a definir") y sin
+    pagar — los placeholders sobrantes que genera la recurrencia. También
+    limpia el registro destino vinculado (si lo hubiera).
+    """
+    if request.method == "POST":
+        hoy = date.today()
+        pagos = list(
+            PagoFuturo.objects.filter(
+                pagado=False,
+                fecha_vencimiento__lt=hoy,
+                monto__lte=0,
+            )
+        )
+        count = 0
+        for p in pagos:
+            _borrar_destino(p)
+            p.delete()
+            count += 1
+        if count:
+            messages.success(request, f"Se eliminaron {count} pago(s) vencido(s) en $0.")
+        else:
+            messages.info(request, "No hay pagos vencidos en $0 para eliminar.")
+    return redirect("agenda_pagos:lista")
+
+
+@solo_admins
 def copiar_mes_anterior(request):
     """
     GET: muestra los pagos del mes anterior con checkboxes para elegir
@@ -387,6 +418,19 @@ def copiar_mes_anterior(request):
         fecha_vencimiento__year=anio_origen,
         fecha_vencimiento__month=mes_origen,
     ).select_related("categoria").order_by("fecha_vencimiento")
+
+    # Filtros opcionales (categoría / destino / tipo)
+    categoria_sel = request.GET.get("categoria") or ""
+    destino_sel = request.GET.get("destino") or ""
+    tipo_sel = request.GET.get("tipo") or ""
+    if categoria_sel:
+        pagos_origen = pagos_origen.filter(categoria_id=categoria_sel)
+    if destino_sel:
+        pagos_origen = pagos_origen.filter(destino=destino_sel)
+    if tipo_sel == "fijo":
+        pagos_origen = pagos_origen.filter(categoria__es_fijo=True)
+    elif tipo_sel == "variable":
+        pagos_origen = pagos_origen.filter(categoria__es_fijo=False)
 
     # Cuáles ya existen en el mes destino (para mostrar y excluir)
     last_day = calendar.monthrange(anio, mes)[1]
@@ -437,6 +481,11 @@ def copiar_mes_anterior(request):
         "anio_origen": anio_origen,
         "mes_destino_nombre": MESES[mes],
         "mes_origen_nombre": MESES[mes_origen],
+        "categorias": CategoriaGasto.objects.filter(activa=True).order_by("nombre"),
+        "destino_choices": PagoFuturo.DESTINO_CHOICES,
+        "categoria_sel": categoria_sel,
+        "destino_sel": destino_sel,
+        "tipo_sel": tipo_sel,
     })
 
 
