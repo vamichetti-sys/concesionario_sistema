@@ -76,9 +76,20 @@ class Alquiler(models.Model):
                                     help_text='Quién alquila y paga el alquiler')
     telefono = models.CharField('Teléfono', max_length=50, blank=True)
 
-    monto_mensual = models.DecimalField('Monto mensual', max_digits=12, decimal_places=2, default=0)
+    monto_mensual = models.DecimalField('Monto mensual', max_digits=12, decimal_places=2, default=0,
+                                        help_text='Monto inicial. Si hay aumento programado, se ajusta solo.')
     dia_pago = models.PositiveSmallIntegerField('Día de pago', null=True, blank=True,
                                                 help_text='Día del mes en que se paga (1-31)')
+
+    # Aumento programado del alquiler (ej: cada 3 meses sube 10%)
+    aumento_porcentaje = models.DecimalField(
+        'Aumento (%)', max_digits=6, decimal_places=2, default=0, blank=True,
+        help_text='Porcentaje de aumento. Ej: 10 = 10%',
+    )
+    aumento_cada_meses = models.PositiveSmallIntegerField(
+        'Aumenta cada (meses)', null=True, blank=True,
+        help_text='Cada cuántos meses aumenta. Ej: 3 = trimestral. Vacío = sin aumento.',
+    )
 
     fecha_inicio = models.DateField('Inicio de contrato', null=True, blank=True)
     fecha_fin = models.DateField('Fin de contrato', null=True, blank=True)
@@ -121,26 +132,40 @@ class Alquiler(models.Model):
         """
         if not (self.fecha_inicio and self.fecha_fin):
             return []
+        from decimal import Decimal
         MESES = ["", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
                  "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
         pagos = {}
         for p in self.pagos.all():
             if p.periodo_anio and p.periodo_mes:
                 pagos[(p.periodo_anio, p.periodo_mes)] = p
+
+        base = self.monto_mensual or Decimal("0")
+        pct = self.aumento_porcentaje or Decimal("0")
+        cada = self.aumento_cada_meses or 0
+        factor = Decimal("1") + (Decimal(pct) / Decimal("100"))
+
         filas = []
         y, m = self.fecha_inicio.year, self.fecha_inicio.month
         endy, endm = self.fecha_fin.year, self.fecha_fin.month
+        idx = 0
         guard = 0
         while (y, m) <= (endy, endm) and guard < 600:
             guard += 1
+            # Monto con aumento programado: cada `cada` meses sube `pct`%.
+            if cada and cada > 0 and pct:
+                monto = (base * (factor ** (idx // cada))).quantize(Decimal("0.01"))
+            else:
+                monto = base
             pago = pagos.get((y, m))
             filas.append({
                 "anio": y, "mes": m,
                 "label": f"{MESES[m]} {y}",
-                "monto": self.monto_mensual,
+                "monto": monto,
                 "pago": pago,
                 "cobrado": pago is not None,
             })
+            idx += 1
             m += 1
             if m > 12:
                 m = 1

@@ -32,7 +32,8 @@ class AlquilerForm(forms.ModelForm):
     class Meta:
         model = Alquiler
         fields = ['nombre', 'direccion', 'arrendatario', 'telefono',
-                  'monto_mensual', 'dia_pago', 'fecha_inicio', 'fecha_fin',
+                  'monto_mensual', 'dia_pago', 'aumento_porcentaje', 'aumento_cada_meses',
+                  'fecha_inicio', 'fecha_fin',
                   'contrato', 'observaciones', 'activo']
         widgets = {
             'nombre': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Local centro'}),
@@ -41,6 +42,8 @@ class AlquilerForm(forms.ModelForm):
             'telefono': forms.TextInput(attrs={'class': 'form-control'}),
             'monto_mensual': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0'}),
             'dia_pago': forms.NumberInput(attrs={'class': 'form-control', 'min': '1', 'max': '31'}),
+            'aumento_porcentaje': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0', 'placeholder': '0'}),
+            'aumento_cada_meses': forms.NumberInput(attrs={'class': 'form-control', 'min': '1', 'placeholder': 'Ej: 3'}),
             'fecha_inicio': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
             'fecha_fin': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
             'contrato': forms.ClearableFileInput(attrs={'class': 'form-control', 'accept': '.pdf,image/*'}),
