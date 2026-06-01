@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+
+<div class="mb-4">
+    <a href="{% url 'agenda_ingresos:lista' %}" class="text-muted text-decoration-none d-inline-flex align-items-center mb-2" style="font-size:14px;">
+        <i data-lucide="arrow-left" style="width:16px;height:16px;margin-right:6px;"></i>
+        Volver a Agenda de Ingresos
+    </a>
+    <h3 class="fw-bold mb-1">{{ titulo }}</h3>
+    <p class="text-muted mb-0">Programá un ingreso futuro. Al marcarlo cobrado se cargará en el módulo destino.</p>
+</div>
+
+<div class="card p-4" style="max-width:780px;">
+    <form method="post">
+        {% csrf_token %}
+        <div class="row g-3">
+            <div class="col-md-8">
+                <label class="form-label">Descripción *</label>
+                {{ form.descripcion }}
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Monto</label>
+                {{ form.monto }}
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Concepto</label>
+                {{ form.concepto }}
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Fecha de cobro *</label>
+                {{ form.fecha_vencimiento }}
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Destino al cobrar *</label>
+                {{ form.destino }}
+                <small class="text-muted"><strong>Control de Ingresos</strong> = concesionaria · <strong>Ingresos Personales</strong> = del usuario que cobra.</small>
+            </div>
+            <div class="col-12">
+                <div class="form-check">
+                    {{ form.es_recurrente_mensual }}
+                    <label class="form-check-label" for="id_es_recurrente_mensual"><strong>Ingreso mensual recurrente</strong></label>
+                </div>
+            </div>
+            <div class="col-md-4" id="wrap_recurrente_hasta">
+                <label class="form-label">Recurrente hasta</label>
+                {{ form.recurrente_hasta }}
+                <small class="text-muted">Opcional. Vacío = sin límite.</small>
+            </div>
+            <div class="col-12">
+                <label class="form-label">Observaciones</label>
+                {{ form.observaciones }}
+            </div>
+        </div>
+        <hr class="my-4">
+        <div class="d-flex gap-3">
+            <button type="submit" class="btn btn-success"><i data-lucide="save" style="width:16px;height:16px;margin-right:6px;"></i> Guardar</button>
+            <a href="{% url 'agenda_ingresos:lista' %}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
+
+<script>
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+    (function(){
+        var chk = document.getElementById('id_es_recurrente_mensual');
+        var wrap = document.getElementById('wrap_recurrente_hasta');
+        function t(){ if(wrap) wrap.style.display = (chk && chk.checked) ? '' : 'none'; }
+        if(chk){ chk.addEventListener('change', t); t(); }
+    })();
+</script>
+{% endblock %}

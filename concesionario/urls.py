@@ -121,6 +121,7 @@ urlpatterns = [
     path('gastos-personales/', include('gastos_personales.urls')),
     path('permisos/', include('permisos.urls')),
     path('agenda-pagos/', include('agenda_pagos.urls')),
+    path('agenda-ingresos/', include('agenda_ingresos.urls')),
     path('financiacion/', include('financiacion.urls')),
     path('community/', include('community.urls')),
     path('auditoria/', include('auditoria.urls')),

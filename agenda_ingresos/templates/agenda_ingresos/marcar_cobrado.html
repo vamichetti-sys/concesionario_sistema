@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Registrar cobro{% endblock %}
+
+{% block content %}
+
+<div class="mb-4">
+    <a href="{% url 'agenda_ingresos:lista' %}" class="text-muted text-decoration-none d-inline-flex align-items-center mb-2" style="font-size:14px;">
+        <i data-lucide="arrow-left" style="width:16px;height:16px;margin-right:6px;"></i>
+        Volver
+    </a>
+    <h3 class="fw-bold mb-1">Registrar cobro</h3>
+    <p class="text-muted mb-0">{{ obj.descripcion }} · {{ obj.get_destino_display }}</p>
+</div>
+
+<div class="card p-4" style="max-width:560px;">
+    <form method="post">
+        {% csrf_token %}
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label">Monto cobrado *</label>
+                {{ form.monto }}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Fecha de cobro *</label>
+                {{ form.fecha_cobro }}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Forma de cobro</label>
+                {{ form.forma_cobro }}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Observaciones</label>
+                {{ form.observaciones }}
+            </div>
+            <div class="col-12">
+                <div class="form-check">
+                    {{ form.agregar_mes_siguiente }}
+                    <label class="form-check-label">{{ form.agregar_mes_siguiente.label }}</label>
+                </div>
+            </div>
+        </div>
+        <hr class="my-4">
+        <div class="d-flex gap-3">
+            <button type="submit" class="btn btn-success"><i data-lucide="check" style="width:16px;height:16px;margin-right:6px;"></i> Confirmar cobro</button>
+            <a href="{% url 'agenda_ingresos:lista' %}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
+
+<script>if (typeof lucide !== 'undefined') lucide.createIcons();</script>
+{% endblock %}
