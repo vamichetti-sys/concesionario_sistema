@@ -123,6 +123,10 @@ def _crear_proximo_mes(pago, request_user):
     nuevo PagoFuturo o None si no se creó.
     """
     next_fecha = pago.proxima_fecha_mensual
+    # No generar meses que ya quedaron vencidos (evita encadenar placeholders
+    # en $0 cuando se paga un mes atrasado). Solo se agenda a futuro.
+    if next_fecha < date.today():
+        return None
     # Respeta la fecha de término del recurrente (ej: último mes de un crédito).
     if pago.recurrente_hasta and next_fecha > pago.recurrente_hasta:
         return None
