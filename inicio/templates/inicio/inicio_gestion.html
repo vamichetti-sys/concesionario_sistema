@@ -276,106 +276,57 @@
 {% include "inicio/_gestoria_observaciones.html" %}
 
 <!-- ===============================
-     8. DOCUMENTACIÓN PENDIENTE (abajo de todo)
+     8. VENTAS CON DOCUMENTACIÓN PENDIENTE
 =============================== -->
 {% include "inicio/_ventas_doc_alerta.html" %}
 
-<div class="row g-4 mb-4">
-
-    <!-- DOCUMENTACIÓN VENCIDA -->
-    <div class="col-md-6">
-        <div class="card p-4 h-100">
-            <div class="d-flex align-items-center gap-2 mb-3">
-                <i data-lucide="alert-octagon" style="width:20px;height:20px;color:#ef4444;"></i>
-                <h6 class="fw-bold mb-0">Documentación vencida</h6>
+<!-- ===============================
+     9. RESUMEN DE CUENTAS INTERNAS
+=============================== -->
+<div class="card p-4 mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-2">
+            <i data-lucide="wallet" style="width:20px;height:20px;color:#8b5cf6;"></i>
+            <h6 class="fw-bold mb-0">Resumen de cuentas internas</h6>
+        </div>
+        <div class="d-flex align-items-center gap-3">
+            <div class="text-end">
+                <small class="text-muted d-block" style="font-size:11px;">Saldo total</small>
+                <span class="fw-bold" style="font-size:18px;color:#7c3aed;">$ {{ cuentas_internas_total|floatformat:0 }}</span>
             </div>
-
-            {% if docs_vtv_vencida or docs_verif_vencida %}
-            <div class="list-group list-group-flush">
-                {% for v in docs_vtv_vencida %}
-                <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                    <div>
-                        <span class="badge bg-danger me-2">VTV</span>
-                        <span class="fw-semibold">{{ v.vehiculo.marca }} {{ v.vehiculo.modelo }}</span>
-                        <small class="text-muted">({{ v.vehiculo.dominio }})</small>
-                    </div>
-                    <small class="text-danger fw-semibold">Venció {{ v.vtv_vencimiento|date:"d/m/Y" }}</small>
-                </div>
-                {% endfor %}
-                {% for v in docs_verif_vencida %}
-                <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                    <div>
-                        <span class="badge bg-warning text-dark me-2">Verif.</span>
-                        <span class="fw-semibold">{{ v.vehiculo.marca }} {{ v.vehiculo.modelo }}</span>
-                        <small class="text-muted">({{ v.vehiculo.dominio }})</small>
-                    </div>
-                    <small class="text-danger fw-semibold">Venció {{ v.verificacion_vencimiento|date:"d/m/Y" }}</small>
-                </div>
-                {% endfor %}
-            </div>
-            {% else %}
-            <div class="text-center py-4">
-                <i data-lucide="check-circle" style="width:32px;height:32px;color:#10b981;margin-bottom:8px;"></i>
-                <p class="text-muted mb-0">No hay documentación vencida</p>
-            </div>
-            {% endif %}
-
-            <a href="/documentacion/" class="btn btn-secondary btn-sm mt-3 w-100">Ver documentación</a>
+            <a href="/cuentas-internas/" class="btn btn-secondary btn-sm">Ver todas</a>
         </div>
     </div>
 
-    <!-- CALENDARIO: PRÓXIMOS TURNOS Y VENCIMIENTOS -->
-    <div class="col-md-6">
-        <div class="card p-4 h-100">
-            <div class="d-flex align-items-center gap-2 mb-3">
-                <i data-lucide="calendar-clock" style="width:20px;height:20px;color:#f59e0b;"></i>
-                <h6 class="fw-bold mb-0">Próximos turnos y vencimientos</h6>
-            </div>
-
-            {% if turnos_vtv or turnos_verificacion or turnos_autopartes or vencimientos_vtv or vencimientos_verificacion %}
-            <div class="list-group list-group-flush">
-                {% for t in turnos_vtv %}
-                <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                    <div><span class="badge bg-danger me-2">Turno VTV</span><span class="fw-semibold">{{ t.vehiculo.marca }} {{ t.vehiculo.modelo }}</span></div>
-                    <small class="text-muted">{{ t.vtv_turno|date:"d/m" }}</small>
-                </div>
+    {% if cuentas_internas %}
+    <div class="table-responsive">
+        <table class="table align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Cuenta</th>
+                    <th>Cargo / Concepto</th>
+                    <th class="text-end">Saldo</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in cuentas_internas %}
+                <tr>
+                    <td class="fw-semibold">{{ c.nombre }}</td>
+                    <td class="text-muted">{{ c.cargo }}</td>
+                    <td class="text-end fw-bold {% if c.saldo > 0 %}text-success{% elif c.saldo < 0 %}text-danger{% else %}text-muted{% endif %}">
+                        $ {{ c.saldo|floatformat:0 }}
+                    </td>
+                </tr>
                 {% endfor %}
-                {% for t in turnos_verificacion %}
-                <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                    <div><span class="badge bg-warning text-dark me-2">Turno Verif.</span><span class="fw-semibold">{{ t.vehiculo.marca }} {{ t.vehiculo.modelo }}</span></div>
-                    <small class="text-muted">{{ t.verificacion_turno|date:"d/m" }}</small>
-                </div>
-                {% endfor %}
-                {% for t in turnos_autopartes %}
-                <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                    <div><span class="badge bg-info text-dark me-2">Turno Autopartes</span><span class="fw-semibold">{{ t.vehiculo.marca }} {{ t.vehiculo.modelo }}</span></div>
-                    <small class="text-muted">{{ t.autopartes_turno|date:"d/m" }}</small>
-                </div>
-                {% endfor %}
-                {% for v in vencimientos_vtv %}
-                <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                    <div><span class="badge bg-light text-danger border me-2">Vence VTV</span><span class="fw-semibold">{{ v.vehiculo.dominio }}</span></div>
-                    <small class="text-muted">{{ v.vtv_vencimiento|date:"d/m/Y" }}</small>
-                </div>
-                {% endfor %}
-                {% for v in vencimientos_verificacion %}
-                <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                    <div><span class="badge bg-light text-warning border me-2">Vence Verif.</span><span class="fw-semibold">{{ v.vehiculo.dominio }}</span></div>
-                    <small class="text-muted">{{ v.verificacion_vencimiento|date:"d/m/Y" }}</small>
-                </div>
-                {% endfor %}
-            </div>
-            {% else %}
-            <div class="text-center py-4">
-                <i data-lucide="calendar-check" style="width:32px;height:32px;color:#10b981;margin-bottom:8px;"></i>
-                <p class="text-muted mb-0">Sin turnos ni vencimientos próximos</p>
-            </div>
-            {% endif %}
-
-            <a href="/calendario/" class="btn btn-secondary btn-sm mt-3 w-100">Ver calendario</a>
-        </div>
+            </tbody>
+        </table>
     </div>
-
+    {% else %}
+    <div class="text-center py-4">
+        <i data-lucide="wallet" style="width:32px;height:32px;color:#9ca3af;margin-bottom:8px;"></i>
+        <p class="text-muted mb-0">No hay cuentas internas activas.</p>
+    </div>
+    {% endif %}
 </div>
 
 <script>

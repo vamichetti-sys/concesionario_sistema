@@ -15,6 +15,8 @@ urlpatterns = [
     path("vigentes/", views.gestoria_vigentes, name="vigentes"),
     path("finalizadas/", views.gestoria_finalizadas, name="finalizadas"),
     path("pdf/", views.pdf_gestorias, name="pdf_gestorias"),
+    path("pagos-concesionario/", views.pagos_concesionario, name="pagos_concesionario"),
+    path("<int:gestoria_id>/pago-cliente/", views.generar_pago_cliente, name="generar_pago_cliente"),
 
     # ===============================
     # ACCIÓN: MARCAR COMO FINALIZADA

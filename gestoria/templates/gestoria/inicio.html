@@ -55,6 +55,25 @@
         </div>
     </div>
 
+    <!-- PAGOS CONCESIONARIO -->
+    <div class="col-md-6">
+        <div class="card p-4 h-100">
+            <div class="d-flex align-items-start gap-3">
+                <div style="width:50px;height:50px;background:rgba(245,158,11,0.1);border-radius:12px;display:flex;align-items:center;justify-content:center;">
+                    <i data-lucide="wallet" style="width:24px;height:24px;color:#f59e0b;"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <h5 class="fw-bold mb-1" style="color:#d97706;">Pagos Concesionario</h5>
+                    <p class="text-muted mb-3" style="font-size:14px;">Pagos de gestoría gestionados por la concesionaria, con fecha y monto</p>
+                    <a href="{% url 'gestoria:pagos_concesionario' %}" class="btn btn-warning">
+                        Ver listado
+                        <i data-lucide="arrow-right" style="width:16px;height:16px;margin-left:6px;"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 <script>

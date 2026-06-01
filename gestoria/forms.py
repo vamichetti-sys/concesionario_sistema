@@ -13,6 +13,7 @@ class GestoriaForm(forms.ModelForm):
             "pago_escribania",
             "pago_cliente",
             "pago_concesionaria",
+            "pago_concesionaria_gestionado",
             "pagado",
             "transferido",
 

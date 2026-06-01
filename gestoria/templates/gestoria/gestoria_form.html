@@ -113,6 +113,36 @@
                     </div>
                 </div>
 
+                <!-- Cobrar al cliente y emitir recibo -->
+                <div class="p-3 mb-3" style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;">
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                        <i data-lucide="receipt" style="width:18px;height:18px;color:#16a34a;"></i>
+                        <strong>Cobrar el pago del cliente y emitir recibo</strong>
+                    </div>
+                    <p class="text-muted mb-2" style="font-size:13px;">
+                        Registra el <strong>Pago cliente</strong> como un pago en la cuenta corriente
+                        (lo descuenta del saldo) y genera el recibo.
+                    </p>
+                    <div class="row g-2 align-items-end">
+                        <div class="col-md-5">
+                            <label class="form-label" style="font-size:12px;">Forma de pago</label>
+                            <select name="forma_pago_cliente" class="form-select form-select-sm">
+                                <option value="efectivo">Efectivo</option>
+                                <option value="transferencia">Transferencia</option>
+                                <option value="cheque">Cheque</option>
+                            </select>
+                        </div>
+                        <div class="col-md-7">
+                            <button type="submit" formaction="{% url 'gestoria:generar_pago_cliente' gestoria.id %}" formnovalidate
+                                    class="btn btn-success w-100"
+                                    onclick="return confirm('Se registrará el Pago cliente en la cuenta corriente (lo descuenta del saldo) y se generará el recibo. ¿Continuar?');">
+                                <i data-lucide="receipt" style="width:16px;height:16px;margin-right:6px;"></i>
+                                Registrar pago + recibo
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 <div id="resumen-pagos" class="p-3 mb-3" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;display:none;">
                     <div class="d-flex justify-content-between" style="font-size:13px;">
                         <span class="text-muted">Suma cargada</span>
@@ -126,6 +156,17 @@
                         <span class="text-muted">Diferencia</span>
                         <span class="fw-bold" id="txt-diff-pagos">—</span>
                     </div>
+                </div>
+
+                <div class="form-check mb-2">
+                    {{ form.pago_concesionaria_gestionado }}
+                    <label class="form-check-label">
+                        Pago concesionaria gestionado
+                        {% if gestoria.pago_concesionaria_fecha %}
+                        <small class="text-muted">· {{ gestoria.pago_concesionaria_fecha|date:"d/m/Y" }}</small>
+                        {% endif %}
+                    </label>
+                    <div><small class="text-muted">Al tildarlo pasa al módulo <strong>Pagos Concesionario</strong> con la fecha. No afecta la cuenta corriente.</small></div>
                 </div>
 
                 <div class="form-check mb-2">

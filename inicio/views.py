@@ -292,6 +292,7 @@ def inicio(request):
         from django.db.models.functions import Coalesce
         from reventa.models import CuentaRevendedor
         from compraventa.models import DeudaProveedor
+        from cuentas_internas.models import CuentaInterna
 
         # Deuda de reventas: lo que los revendedores nos deben (saldo > 0)
         rev_qs = CuentaRevendedor.objects.filter(saldo__gt=0)
@@ -321,6 +322,10 @@ def inicio(request):
 
         # (pagos_vencidos / pagos_proximos ya vienen del contexto base)
 
+        # Resumen de cuentas internas (saldos del personal/internas)
+        cuentas_internas = CuentaInterna.objects.filter(activa=True).order_by("-saldo")
+        cuentas_internas_total = cuentas_internas.aggregate(t=Sum("saldo"))["t"] or 0
+
         context.update({
             "deuda_reventa": deuda_reventa,
             "reventa_count": reventa_count,
@@ -328,6 +333,8 @@ def inicio(request):
             "compraventa_count": compraventa_count,
             "docs_vtv_vencida": docs_vtv_vencida,
             "docs_verif_vencida": docs_verif_vencida,
+            "cuentas_internas": cuentas_internas,
+            "cuentas_internas_total": cuentas_internas_total,
             # (turnos_* / vencimientos_* / pagos_* ya vienen del contexto base)
         })
         return render(request, "inicio/inicio_gestion.html", context)

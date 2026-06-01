@@ -63,6 +63,17 @@ class Gestoria(models.Model):
         verbose_name="Pago concesionaria"
     )
 
+    # Check del pago de la concesionaria: al marcarse "gestionado" pasa al
+    # listado del módulo Pagos Concesionario, con su fecha de pago.
+    pago_concesionaria_gestionado = models.BooleanField(
+        default=False,
+        verbose_name="Pago concesionaria gestionado",
+    )
+    pago_concesionaria_fecha = models.DateField(
+        null=True, blank=True,
+        verbose_name="Fecha de pago concesionaria",
+    )
+
     pagado = models.BooleanField(default=False)
     transferido = models.BooleanField(default=False)
 
