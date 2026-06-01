@@ -120,3 +120,34 @@ class ResumenGastosMensual(models.Model):
         self.total_pendiente = self.total_general - self.total_pagado
 
         self.save()
+
+
+# ============================================================
+# INGRESO MENSUAL (Control de Ingresos) — separado de los gastos
+# ============================================================
+class IngresoMensual(models.Model):
+    UNIDAD_CHOICES = [
+        ("HA", "Hamichetti"),
+        ("VA", "Vamichetti"),
+        ("ambas", "Ambas"),
+    ]
+
+    concepto = models.CharField("Concepto", max_length=150,
+                                help_text="Ej: Venta, Comisión, Alquiler cobrado, Otro")
+    descripcion = models.CharField(max_length=200, blank=True, null=True)
+    monto = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    mes = models.PositiveSmallIntegerField()
+    anio = models.PositiveIntegerField()
+    unidad = models.CharField(max_length=5, choices=UNIDAD_CHOICES, default="ambas")
+    fecha = models.DateField("Fecha", null=True, blank=True)
+    observaciones = models.TextField(blank=True, null=True)
+    creado_por = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-anio", "-mes", "concepto"]
+        verbose_name = "Ingreso mensual"
+        verbose_name_plural = "Ingresos mensuales"
+
+    def __str__(self):
+        return f"{self.concepto} – ${self.monto} ({self.mes}/{self.anio})"

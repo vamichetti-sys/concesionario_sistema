@@ -14,4 +14,12 @@ urlpatterns = [
     # Compatibilidad: 'lista' apunta al resumen
     path("lista/", views.resumen_mensual, name="lista"),
     path("pdf/mensual/", views.pdf_mensual, name="pdf_mensual"),
+
+    # ===== INGRESOS PERSONALES =====
+    path("ingresos/", views.ingresos_resumen, name="ingresos"),
+    path("ingresos/agregar/", views.agregar_ingreso, name="ingreso_agregar"),
+    path("ingresos/<int:pk>/editar/", views.editar_ingreso, name="ingreso_editar"),
+    path("ingresos/<int:pk>/eliminar/", views.eliminar_ingreso, name="ingreso_eliminar"),
+    path("ingresos/<int:pk>/monto/", views.actualizar_monto_ingreso, name="ingreso_monto"),
+    path("ingresos/pdf/", views.pdf_ingresos, name="ingresos_pdf"),
 ]

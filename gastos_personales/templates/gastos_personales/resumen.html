@@ -9,6 +9,10 @@
         <p class="text-muted mb-0">Tus gastos personales mensuales (privados, solo los ves vos)</p>
     </div>
     <div class="d-flex gap-2">
+        <a href="{% url 'gastos_personales:ingresos' %}" class="btn btn-success">
+            <i data-lucide="trending-up" style="width:16px;height:16px;margin-right:6px;"></i>
+            Ingresos Personales
+        </a>
         <a href="{% url 'gastos_personales:pdf_mensual' %}?mes={{ mes }}&anio={{ anio }}" target="_blank" class="btn btn-outline-secondary"
            title="Descargar PDF del mes seleccionado">
             <i data-lucide="file-down" style="width:16px;height:16px;margin-right:6px;"></i>

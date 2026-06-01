@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% block title %}Control de Ingresos – {{ mes_nombre }} {{ anio }}{% endblock %}
+
+{% block content %}
+
+<!-- ENCABEZADO -->
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <a href="{% url 'gastos_mensuales:resumen' %}" class="text-muted text-decoration-none d-inline-flex align-items-center mb-2" style="font-size:14px;">
+            <i data-lucide="arrow-left" style="width:16px;height:16px;margin-right:6px;"></i>
+            Ir a Control de Gastos
+        </a>
+        <h3 class="fw-bold mb-1">Control de Ingresos</h3>
+        <p class="text-muted mb-0">Ingresos operativos del concesionario (separado de los gastos)</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'gastos_mensuales:ingresos_pdf' %}?mes={{ mes }}&anio={{ anio }}" target="_blank" class="btn btn-outline-secondary">
+            <i data-lucide="file-down" style="width:16px;height:16px;margin-right:6px;"></i> PDF
+        </a>
+        <a href="{% url 'gastos_mensuales:ingreso_agregar' %}" class="btn btn-success">
+            <i data-lucide="plus" style="width:16px;height:16px;margin-right:6px;"></i> Nuevo Ingreso
+        </a>
+    </div>
+</div>
+
+<!-- SELECTOR DE MES -->
+<div class="card p-3 mb-4">
+    <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-4">
+            <label class="form-label" style="font-size:12px;">Mes</label>
+            <select name="mes" class="form-select">
+                {% for num, nombre in meses_choices %}
+                <option value="{{ num }}" {% if num == mes %}selected{% endif %}>{{ nombre }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label" style="font-size:12px;">Año</label>
+            <select name="anio" class="form-select">
+                {% for a in anios_disponibles %}
+                <option value="{{ a }}" {% if a == anio %}selected{% endif %}>{{ a }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-4 d-grid">
+            <button type="submit" class="btn btn-primary">Ver mes</button>
+        </div>
+    </form>
+</div>
+
+<!-- TOTAL -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card p-4" style="border-left:4px solid #10b981;">
+            <small class="text-muted">Total ingresos del mes</small>
+            <div class="fw-bold" style="font-size:28px;color:#059669;">$ {{ total_general|floatformat:0 }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- TABLA -->
+    <div class="col-lg-8">
+        <div class="card p-4">
+            <h6 class="fw-bold mb-3">Ingresos de {{ mes_nombre }} {{ anio }}</h6>
+            {% if ingresos %}
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Concepto</th>
+                            <th>Detalle</th>
+                            <th>Unidad</th>
+                            <th class="text-end">Monto</th>
+                            <th class="text-end">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for i in ingresos %}
+                        <tr>
+                            <td><strong>{{ i.concepto }}</strong></td>
+                            <td>{{ i.descripcion|default:"-" }}</td>
+                            <td><small class="text-muted">{{ i.get_unidad_display }}</small></td>
+                            <td class="text-end">
+                                <form method="post" action="{% url 'gastos_mensuales:ingreso_monto' pk=i.pk %}" class="d-inline-flex align-items-center justify-content-end gap-1">
+                                    {% csrf_token %}
+                                    <span class="text-muted">$</span>
+                                    <input type="number" name="monto" value="{{ i.monto|stringformat:'.2f' }}" step="0.01" min="0"
+                                           class="form-control form-control-sm text-end fw-bold" style="width:120px;"
+                                           title="Editar monto (se guarda al salir del campo)" onchange="this.form.submit()">
+                                </form>
+                            </td>
+                            <td class="text-end">
+                                <div class="d-flex gap-1 justify-content-end">
+                                    <a href="{% url 'gastos_mensuales:ingreso_editar' pk=i.pk %}" class="btn btn-secondary btn-sm">
+                                        <i data-lucide="edit" style="width:14px;height:14px;"></i>
+                                    </a>
+                                    <form method="post" action="{% url 'gastos_mensuales:ingreso_eliminar' pk=i.pk %}" style="display:inline;" onsubmit="return confirm('¿Eliminar este ingreso?');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-outline-danger btn-sm"><i data-lucide="trash-2" style="width:14px;height:14px;"></i></button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <i data-lucide="trending-up" style="width:32px;height:32px;color:#9ca3af;margin-bottom:8px;"></i>
+                <p class="text-muted mb-2">Sin ingresos cargados este mes.</p>
+                <a href="{% url 'gastos_mensuales:ingreso_agregar' %}" class="btn btn-success btn-sm">Cargar el primero</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- POR CONCEPTO -->
+    <div class="col-lg-4">
+        <div class="card p-4 h-100">
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <i data-lucide="pie-chart" style="width:20px;height:20px;color:#10b981;"></i>
+                <h6 class="fw-bold mb-0">Por concepto</h6>
+            </div>
+            {% for c in por_concepto %}
+            <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                <span class="fw-semibold">{{ c.concepto }}</span>
+                <span class="fw-bold">$ {{ c.total|floatformat:0 }}</span>
+            </div>
+            {% empty %}
+            <p class="text-muted mb-0">—</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<script>
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+</script>
+
+{% endblock %}

@@ -1,5 +1,8 @@
 from django import forms
-from .models import CategoriaGasto, GastoMensual
+from .models import CategoriaGasto, GastoMensual, IngresoMensual
+
+_MESES = ["", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+          "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
 
 
 class CategoriaGastoForm(forms.ModelForm):
@@ -74,3 +77,19 @@ class GastoMensualForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["categoria"].queryset = CategoriaGasto.objects.filter(activa=True)
+
+
+class IngresoMensualForm(forms.ModelForm):
+    class Meta:
+        model = IngresoMensual
+        fields = ["concepto", "descripcion", "monto", "mes", "anio", "unidad", "fecha", "observaciones"]
+        widgets = {
+            "concepto": forms.TextInput(attrs={"class": "form-control", "placeholder": "Ej: Venta, Comisión, Alquiler cobrado"}),
+            "descripcion": forms.TextInput(attrs={"class": "form-control", "placeholder": "Detalle del ingreso"}),
+            "monto": forms.NumberInput(attrs={"class": "form-control", "placeholder": "0.00", "step": "0.01"}),
+            "mes": forms.Select(choices=[(i, n) for i, n in enumerate(_MESES) if i > 0], attrs={"class": "form-select"}),
+            "anio": forms.NumberInput(attrs={"class": "form-control", "placeholder": "2026"}),
+            "unidad": forms.Select(attrs={"class": "form-select"}),
+            "fecha": forms.DateInput(format="%Y-%m-%d", attrs={"class": "form-control", "type": "date"}),
+            "observaciones": forms.Textarea(attrs={"class": "form-control", "rows": 2, "placeholder": "Notas..."}),
+        }

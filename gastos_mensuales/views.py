@@ -7,8 +7,8 @@ from django.utils import timezone
 from decimal import Decimal, InvalidOperation
 from datetime import date
 
-from .models import CategoriaGasto, GastoMensual, ResumenGastosMensual
-from .forms import CategoriaGastoForm, GastoMensualForm
+from .models import CategoriaGasto, GastoMensual, ResumenGastosMensual, IngresoMensual
+from .forms import CategoriaGastoForm, GastoMensualForm, IngresoMensualForm
 
 
 MESES = [
@@ -250,6 +250,140 @@ def pdf_mensual(request):
         titulo="Control de Gastos",
         subtitulo=f"{MESES_ES[mes]} {anio} – {len(filas)} gasto(s)",
         columnas=["Categoría", "Detalle", "Unidad", "Monto", "Pagado"],
+        filas=filas,
+        totales=totales if filas else None,
+        pie=f"Generado el {hoy.strftime('%d/%m/%Y')}",
+    )
+
+
+# ==========================================================
+# CONTROL DE INGRESOS (separado de los gastos)
+# ==========================================================
+@login_required
+def ingresos_resumen(request):
+    hoy = date.today()
+    mes = int(request.GET.get("mes", hoy.month))
+    anio = int(request.GET.get("anio", hoy.year))
+
+    ingresos = IngresoMensual.objects.filter(mes=mes, anio=anio).order_by("concepto")
+    total_general = ingresos.aggregate(t=Sum("monto"))["t"] or Decimal("0")
+    por_concepto = (
+        ingresos.values("concepto").annotate(total=Sum("monto")).order_by("-total")
+    )
+
+    anios_disponibles = list(
+        IngresoMensual.objects.values_list("anio", flat=True).distinct().order_by("-anio")
+    )
+    if hoy.year not in anios_disponibles:
+        anios_disponibles = [hoy.year] + anios_disponibles
+
+    return render(request, "gastos_mensuales/ingresos_resumen.html", {
+        "ingresos": ingresos,
+        "mes": mes,
+        "anio": anio,
+        "mes_nombre": MESES[mes] if 1 <= mes <= 12 else "",
+        "total_general": total_general,
+        "por_concepto": por_concepto,
+        "anios_disponibles": anios_disponibles,
+        "meses_choices": list(enumerate(MESES))[1:],
+    })
+
+
+@login_required
+def agregar_ingreso(request):
+    hoy = date.today()
+    if request.method == "POST":
+        form = IngresoMensualForm(request.POST)
+        if form.is_valid():
+            ing = form.save(commit=False)
+            ing.creado_por = request.user
+            ing.save()
+            messages.success(request, f'Ingreso "{ing.concepto}" registrado.')
+            return redirect(f"/gastos-mensuales/ingresos/?mes={ing.mes}&anio={ing.anio}")
+    else:
+        form = IngresoMensualForm(initial={"mes": hoy.month, "anio": hoy.year})
+    return render(request, "gastos_mensuales/ingreso_form.html", {
+        "form": form, "titulo": "Registrar Ingreso",
+    })
+
+
+@login_required
+def editar_ingreso(request, pk):
+    ing = get_object_or_404(IngresoMensual, pk=pk)
+    if request.method == "POST":
+        form = IngresoMensualForm(request.POST, instance=ing)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Ingreso actualizado.")
+            return redirect(f"/gastos-mensuales/ingresos/?mes={ing.mes}&anio={ing.anio}")
+    else:
+        form = IngresoMensualForm(instance=ing)
+    return render(request, "gastos_mensuales/ingreso_form.html", {
+        "form": form, "titulo": f"Editar Ingreso – {ing.concepto}", "ingreso": ing,
+    })
+
+
+@login_required
+def eliminar_ingreso(request, pk):
+    ing = get_object_or_404(IngresoMensual, pk=pk)
+    mes, anio = ing.mes, ing.anio
+    if request.method == "POST":
+        ing.delete()
+        messages.success(request, "Ingreso eliminado.")
+    return redirect(f"/gastos-mensuales/ingresos/?mes={mes}&anio={anio}")
+
+
+@login_required
+def actualizar_monto_ingreso(request, pk):
+    ing = get_object_or_404(IngresoMensual, pk=pk)
+    if request.method == "POST":
+        raw = (request.POST.get("monto") or "").strip().replace(",", ".")
+        try:
+            monto = Decimal(raw)
+            if monto < 0:
+                raise InvalidOperation
+            ing.monto = monto
+            ing.save(update_fields=["monto"])
+            messages.success(request, "Monto actualizado.")
+        except (InvalidOperation, ValueError):
+            messages.error(request, "Monto inválido.")
+    return redirect(f"/gastos-mensuales/ingresos/?mes={ing.mes}&anio={ing.anio}")
+
+
+@login_required
+def pdf_ingresos(request):
+    from reportes.pdf_utils import render_pdf_listado, MESES_ES
+    hoy = date.today()
+    try:
+        mes = int(request.GET.get("mes", hoy.month))
+    except (TypeError, ValueError):
+        mes = hoy.month
+    try:
+        anio = int(request.GET.get("anio", hoy.year))
+    except (TypeError, ValueError):
+        anio = hoy.year
+
+    ingresos = IngresoMensual.objects.filter(mes=mes, anio=anio).order_by("concepto")
+    total = Decimal("0")
+    filas = []
+    for i in ingresos:
+        total += i.monto or Decimal("0")
+        try:
+            unidad = i.get_unidad_display()
+        except Exception:
+            unidad = i.unidad or "—"
+        filas.append([
+            i.concepto,
+            i.descripcion or "—",
+            unidad,
+            f"$ {(i.monto or 0):,.0f}".replace(",", "."),
+        ])
+    totales = ["", "TOTAL", "", f"$ {total:,.0f}".replace(",", ".")]
+    return render_pdf_listado(
+        filename=f"ingresos_{mes:02d}_{anio}.pdf",
+        titulo="Control de Ingresos",
+        subtitulo=f"{MESES_ES[mes]} {anio} – {len(filas)} ingreso(s)",
+        columnas=["Concepto", "Detalle", "Unidad", "Monto"],
         filas=filas,
         totales=totales if filas else None,
         pie=f"Generado el {hoy.strftime('%d/%m/%Y')}",

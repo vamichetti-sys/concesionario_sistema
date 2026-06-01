@@ -15,4 +15,12 @@ urlpatterns = [
     path("categorias/", views.lista_categorias, name="categorias"),
     path("categorias/nueva/", views.crear_categoria, name="crear_categoria"),
     path("categorias/<int:pk>/editar/", views.editar_categoria, name="editar_categoria"),
+
+    # ===== CONTROL DE INGRESOS =====
+    path("ingresos/", views.ingresos_resumen, name="ingresos"),
+    path("ingresos/agregar/", views.agregar_ingreso, name="ingreso_agregar"),
+    path("ingresos/<int:pk>/editar/", views.editar_ingreso, name="ingreso_editar"),
+    path("ingresos/<int:pk>/eliminar/", views.eliminar_ingreso, name="ingreso_eliminar"),
+    path("ingresos/<int:pk>/monto/", views.actualizar_monto_ingreso, name="ingreso_monto"),
+    path("ingresos/pdf/", views.pdf_ingresos, name="ingresos_pdf"),
 ]
