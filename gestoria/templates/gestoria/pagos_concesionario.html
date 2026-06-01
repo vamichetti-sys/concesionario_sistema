@@ -61,7 +61,7 @@
                     </td>
                     <td>{{ g.cliente_actual|default:"Sin cliente" }}</td>
                     <td>{{ g.pago_concesionaria_fecha|date:"d/m/Y"|default:"—" }}</td>
-                    <td class="text-end fw-bold">$ {{ g.pago_concesionaria|floatformat:0|intcomma }}</td>
+                    <td class="text-end fw-bold">$ {{ g.monto_transferencia|floatformat:0|intcomma }}</td>
                     <td class="text-end">
                         <a href="{% url 'gestoria:editar_gestoria' g.id %}" class="btn btn-sm btn-outline-secondary">
                             <i data-lucide="eye" style="width:14px;height:14px;"></i>

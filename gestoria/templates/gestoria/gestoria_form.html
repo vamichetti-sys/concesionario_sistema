@@ -98,21 +98,6 @@
                     <small class="text-muted">Se imputa automáticamente a la cuenta corriente del cliente.</small>
                 </div>
 
-                <div class="row g-3 mb-3">
-                    <div class="col-md-4">
-                        <label class="form-label">Pago escribanía</label>
-                        {{ form.pago_escribania }}
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Pago cliente</label>
-                        {{ form.pago_cliente }}
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Pago concesionaria</label>
-                        {{ form.pago_concesionaria }}
-                    </div>
-                </div>
-
                 <!-- Cobrar al cliente y emitir recibo -->
                 <div class="p-3 mb-3" style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;">
                     <div class="d-flex align-items-center gap-2 mb-1">
@@ -124,7 +109,14 @@
                         (lo descuenta del saldo) y genera el recibo.
                     </p>
                     <div class="row g-2 align-items-end">
-                        <div class="col-md-5">
+                        <div class="col-md-4">
+                            <label class="form-label" style="font-size:12px;">Monto a cobrar</label>
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text">$</span>
+                                <input type="number" name="pago_cliente" class="form-control" step="0.01" min="0" placeholder="0,00">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
                             <label class="form-label" style="font-size:12px;">Forma de pago</label>
                             <select name="forma_pago_cliente" class="form-select form-select-sm">
                                 <option value="efectivo">Efectivo</option>
@@ -132,7 +124,7 @@
                                 <option value="cheque">Cheque</option>
                             </select>
                         </div>
-                        <div class="col-md-7">
+                        <div class="col-md-4">
                             <button type="submit" formaction="{% url 'gestoria:generar_pago_cliente' gestoria.id %}" formnovalidate
                                     class="btn btn-success w-100"
                                     onclick="return confirm('Se registrará el Pago cliente en la cuenta corriente (lo descuenta del saldo) y se generará el recibo. ¿Continuar?');">
@@ -162,21 +154,6 @@
                     {% endif %}
                 </div>
 
-                <div id="resumen-pagos" class="p-3 mb-3" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;display:none;">
-                    <div class="d-flex justify-content-between" style="font-size:13px;">
-                        <span class="text-muted">Suma cargada</span>
-                        <span class="fw-semibold" id="txt-suma-pagos">—</span>
-                    </div>
-                    <div class="d-flex justify-content-between mt-1" style="font-size:13px;">
-                        <span class="text-muted">Monto de transferencia</span>
-                        <span class="fw-semibold" id="txt-monto-transfer">—</span>
-                    </div>
-                    <div class="d-flex justify-content-between mt-1" style="font-size:13px;">
-                        <span class="text-muted">Diferencia</span>
-                        <span class="fw-bold" id="txt-diff-pagos">—</span>
-                    </div>
-                </div>
-
                 <div class="form-check mb-2">
                     {{ form.pago_concesionaria_gestionado }}
                     <label class="form-check-label">
@@ -186,11 +163,6 @@
                         {% endif %}
                     </label>
                     <div><small class="text-muted">Al tildarlo pasa al módulo <strong>Pagos Concesionario</strong> con la fecha. No afecta la cuenta corriente.</small></div>
-                </div>
-
-                <div class="form-check mb-2">
-                    {{ form.pagado }}
-                    <label class="form-check-label">Pago recibido</label>
                 </div>
 
                 <div class="form-check mb-3">
@@ -280,6 +252,33 @@
                     Este vehículo todavía no tiene ficha vehicular cargada.
                 </div>
                 {% endif %}
+
+                {% if ficha %}
+                <!-- Gastos de ingreso del vehículo -->
+                <hr class="my-3">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <i data-lucide="coins" style="width:18px;height:18px;color:#f59e0b;"></i>
+                    <h6 class="fw-bold mb-0">Gastos de ingreso del vehículo</h6>
+                </div>
+                <div class="list-group list-group-flush" style="font-size:14px;">
+                    {% for concepto, monto in ficha.mapa_gastos_ingreso.items %}
+                    {% if monto %}
+                    <div class="list-group-item px-0 py-1 d-flex justify-content-between align-items-center">
+                        <span class="text-muted">{{ concepto }}</span>
+                        <span class="fw-semibold">$ {{ monto|floatformat:0 }}</span>
+                    </div>
+                    {% endif %}
+                    {% empty %}
+                    <p class="text-muted mb-0">Sin gastos de ingreso cargados.</p>
+                    {% endfor %}
+                </div>
+                {% if ficha.total_gastos %}
+                <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top">
+                    <span class="fw-semibold">Total gastos de ingreso</span>
+                    <span class="fw-bold" style="color:#d97706;">$ {{ ficha.total_gastos|floatformat:0 }}</span>
+                </div>
+                {% endif %}
+                {% endif %}
             </div>
         </div>
 
@@ -302,47 +301,6 @@
 
 <script>
     if (typeof lucide !== 'undefined') lucide.createIcons();
-
-    // ----- Resumen de pagos en vivo -----
-    (function() {
-        const ids = ['id_pago_escribania', 'id_pago_cliente', 'id_pago_concesionaria', 'id_monto_transferencia'];
-        const inputs = ids.map(i => document.getElementById(i)).filter(Boolean);
-        if (inputs.length < 4) return;
-
-        const box       = document.getElementById('resumen-pagos');
-        const txtSuma   = document.getElementById('txt-suma-pagos');
-        const txtMonto  = document.getElementById('txt-monto-transfer');
-        const txtDiff   = document.getElementById('txt-diff-pagos');
-
-        const fmt = n => new Intl.NumberFormat('es-AR', {
-            style: 'currency', currency: 'ARS', maximumFractionDigits: 2
-        }).format(n);
-
-        const num = el => parseFloat((el.value || '0').replace(',', '.')) || 0;
-
-        function actualizar() {
-            const escri = num(document.getElementById('id_pago_escribania'));
-            const cli   = num(document.getElementById('id_pago_cliente'));
-            const conce = num(document.getElementById('id_pago_concesionaria'));
-            const monto = num(document.getElementById('id_monto_transferencia'));
-            const suma  = escri + cli + conce;
-            const diff  = monto - suma;
-
-            if (escri + cli + conce + monto === 0) {
-                box.style.display = 'none';
-                return;
-            }
-
-            box.style.display = 'block';
-            txtSuma.textContent  = fmt(suma);
-            txtMonto.textContent = fmt(monto);
-            txtDiff.textContent  = fmt(diff);
-            txtDiff.style.color  = Math.abs(diff) < 0.005 ? '#16a34a' : '#dc2626';
-        }
-
-        inputs.forEach(i => i.addEventListener('input', actualizar));
-        actualizar();
-    })();
 </script>
 
 {% endblock %}

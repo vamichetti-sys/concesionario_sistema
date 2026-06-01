@@ -357,7 +357,7 @@ def pagos_concesionario(request):
         ).distinct()
 
     gestorias = gestorias.order_by("-pago_concesionaria_fecha", "-fecha_creacion")
-    total = gestorias.aggregate(t=Sum("pago_concesionaria"))["t"] or 0
+    total = gestorias.aggregate(t=Sum("monto_transferencia"))["t"] or 0
 
     return render(
         request,

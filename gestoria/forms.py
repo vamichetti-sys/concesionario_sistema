@@ -10,11 +10,7 @@ class GestoriaForm(forms.ModelForm):
             # ADMINISTRATIVO
             # ===============================
             "monto_transferencia",
-            "pago_escribania",
-            "pago_cliente",
-            "pago_concesionaria",
             "pago_concesionaria_gestionado",
-            "pagado",
             "transferido",
 
             # ===============================
@@ -35,31 +31,7 @@ class GestoriaForm(forms.ModelForm):
                     "min": "0"
                 }
             ),
-            "pago_escribania": forms.NumberInput(
-                attrs={
-                    "class": "form-control",
-                    "step": "0.01",
-                    "min": "0",
-                    "placeholder": "0,00",
-                }
-            ),
-            "pago_cliente": forms.NumberInput(
-                attrs={
-                    "class": "form-control",
-                    "step": "0.01",
-                    "min": "0",
-                    "placeholder": "0,00",
-                }
-            ),
-            "pago_concesionaria": forms.NumberInput(
-                attrs={
-                    "class": "form-control",
-                    "step": "0.01",
-                    "min": "0",
-                    "placeholder": "0,00",
-                }
-            ),
-            "pagado": forms.CheckboxInput(
+            "pago_concesionaria_gestionado": forms.CheckboxInput(
                 attrs={"class": "form-check-input"}
             ),
             "transferido": forms.CheckboxInput(
