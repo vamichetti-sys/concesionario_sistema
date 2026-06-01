@@ -34,13 +34,21 @@
 <!-- ===============================
      TABS
 =============================== -->
-<ul class="nav nav-tabs mb-4">
+<ul class="nav nav-tabs mb-4 flex-nowrap" style="overflow-x:auto;">
     <li class="nav-item">
-        <a class="nav-link {% if tab_actual == 'deuda' %}active{% endif %}"
-           href="?tab=deuda{% if query %}&q={{ query }}{% endif %}">
-            <i data-lucide="alert-circle" style="width:16px;height:16px;margin-right:4px;"></i>
+        <a class="nav-link {% if tab_actual == 'principal' %}active{% endif %}"
+           href="?tab=principal{% if query %}&q={{ query }}{% endif %}">
+            <i data-lucide="credit-card" style="width:16px;height:16px;margin-right:4px;"></i>
             Con deuda
-            <span class="badge bg-danger ms-1">{{ cuentas_con_deuda_count }}</span>
+            <span class="badge bg-danger ms-1">{{ count_principal }}</span>
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {% if tab_actual == 'vencidas' %}active{% endif %}"
+           href="?tab=vencidas{% if query %}&q={{ query }}{% endif %}">
+            <i data-lucide="alert-octagon" style="width:16px;height:16px;margin-right:4px;"></i>
+            Vencidas
+            <span class="badge bg-danger ms-1">{{ count_vencidas }}</span>
         </a>
     </li>
     <li class="nav-item">
@@ -48,7 +56,23 @@
            href="?tab=al_dia{% if query %}&q={{ query }}{% endif %}">
             <i data-lucide="check-circle" style="width:16px;height:16px;margin-right:4px;"></i>
             Al día
-            <span class="badge bg-success ms-1">{{ cuentas_al_dia_count }}</span>
+            <span class="badge bg-warning ms-1">{{ count_al_dia }}</span>
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {% if tab_actual == 'inicio' %}active{% endif %}"
+           href="?tab=inicio{% if query %}&q={{ query }}{% endif %}">
+            <i data-lucide="sparkles" style="width:16px;height:16px;margin-right:4px;"></i>
+            Nuevas
+            <span class="badge bg-info ms-1">{{ count_inicio }}</span>
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {% if tab_actual == 'finalizadas' %}active{% endif %}"
+           href="?tab=finalizadas{% if query %}&q={{ query }}{% endif %}">
+            <i data-lucide="archive" style="width:16px;height:16px;margin-right:4px;"></i>
+            Historial
+            <span class="badge bg-secondary ms-1">{{ count_finalizadas }}</span>
         </a>
     </li>
 </ul>
@@ -95,10 +119,12 @@
                     <td>
                         {% if cuenta.estado == 'cerrada' %}
                         <span class="badge bg-secondary">Cerrada</span>
+                        {% elif cuenta.tiene_deuda_vencida %}
+                        <span class="badge bg-danger">Vencida</span>
                         {% elif cuenta.deuda_total_real > 0 %}
-                        <span class="badge bg-warning">Con deuda</span>
+                        <span class="badge bg-warning">Al día</span>
                         {% else %}
-                        <span class="badge bg-success">Al día</span>
+                        <span class="badge bg-success">Sin deuda</span>
                         {% endif %}
                     </td>
                     <td class="text-end">
@@ -116,7 +142,11 @@
     <div class="p-5 text-center">
         <i data-lucide="credit-card" style="width:48px;height:48px;color:#9ca3af;margin-bottom:12px;"></i>
         <p class="text-muted mb-0">
-            {% if tab_actual == 'al_dia' %}No hay cuentas al día{% else %}No hay cuentas con deuda{% endif %}
+            {% if tab_actual == 'inicio' %}No hay cuentas nuevas sin gestión
+            {% elif tab_actual == 'finalizadas' %}No hay cuentas finalizadas
+            {% elif tab_actual == 'vencidas' %}No hay cuentas con cuotas vencidas
+            {% elif tab_actual == 'al_dia' %}No hay cuentas al día
+            {% else %}No hay cuentas con deuda{% endif %}
         </p>
     </div>
     {% endif %}

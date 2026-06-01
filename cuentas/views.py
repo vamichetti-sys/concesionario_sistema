@@ -267,8 +267,7 @@ def _generar_pdf_recibo(pago, cuenta, concepto_extra="", modo_saldo="completo"):
 @login_required
 def lista_cuentas_corrientes(request):
 
-    mostrar_cerradas = request.GET.get("mostrar_cerradas") == "1"
-    tab = request.GET.get("tab", "deuda")  # 'deuda' o 'al_dia'
+    tab = request.GET.get("tab", "principal")
     query = request.GET.get("q", "").strip()
 
     cuentas_qs = (
@@ -277,12 +276,6 @@ def lista_cuentas_corrientes(request):
         .order_by("-creada")
     )
 
-    if not mostrar_cerradas:
-        cuentas_qs = cuentas_qs.exclude(
-            estado="cerrada",
-            plan_pago__isnull=False
-        )
-
     if query:
         cuentas_qs = cuentas_qs.filter(
             Q(cliente__nombre_completo__icontains=query) |
@@ -290,16 +283,43 @@ def lista_cuentas_corrientes(request):
             Q(venta__id__icontains=query)
         )
 
-    # Separar en con deuda / al día según deuda_total_real
-    cuentas_con_deuda = []
-    cuentas_al_dia = []
+    # ----------------------------------------------------------
+    # Clasificación en buckets:
+    #  - inicio: recién creada, sin gestoría / vínculo (permuta) / plan
+    #            y sin deuda.
+    #  - finalizada: tuvo algo pero quedó todo en 0 (historial).
+    #  - vencida: tiene deuda y cuotas vencidas.
+    #  - al_dia: tiene deuda pero sin cuotas vencidas.
+    #  El listado principal = todas las que tienen deuda (al día + vencidas).
+    # ----------------------------------------------------------
+    inicio, al_dia, vencidas, finalizadas = [], [], [], []
     for c in cuentas_qs:
-        if c.deuda_total_real > 0:
-            cuentas_con_deuda.append(c)
-        else:
-            cuentas_al_dia.append(c)
+        plan = getattr(c, "plan_pago", None)
+        if plan and not plan.pk:
+            plan = None
+        tiene_gestoria = c.movimientos.filter(origen="gestoria").exists()
+        tiene_permuta = c.movimientos.filter(origen="permuta").exists()
+        deuda = c.deuda_total_real
 
-    cuentas_mostradas = cuentas_al_dia if tab == "al_dia" else cuentas_con_deuda
+        if not (plan or tiene_gestoria or tiene_permuta or deuda > 0):
+            inicio.append(c)
+        elif deuda <= 0:
+            finalizadas.append(c)
+        elif c.tiene_deuda_vencida:
+            vencidas.append(c)
+        else:
+            al_dia.append(c)
+
+    principal = vencidas + al_dia  # con deuda (vencidas primero)
+
+    tab_map = {
+        "principal": principal,
+        "al_dia": al_dia,
+        "vencidas": vencidas,
+        "inicio": inicio,
+        "finalizadas": finalizadas,
+    }
+    cuentas_mostradas = tab_map.get(tab, principal)
 
     hoy = timezone.now().date()
 
@@ -330,12 +350,14 @@ def lista_cuentas_corrientes(request):
         "cuentas/lista_cuentas_corrientes.html",
         {
             "cuentas": cuentas_mostradas,
-            "cuentas_con_deuda_count": len(cuentas_con_deuda),
-            "cuentas_al_dia_count": len(cuentas_al_dia),
             "tab_actual": tab,
+            "count_principal": len(principal),
+            "count_al_dia": len(al_dia),
+            "count_vencidas": len(vencidas),
+            "count_inicio": len(inicio),
+            "count_finalizadas": len(finalizadas),
             "query": query,
             "alertas_cuotas": alertas_cuotas,
-            "mostrar_cerradas": mostrar_cerradas,
         }
     )
 
@@ -482,6 +504,16 @@ def cuenta_corriente_detalle(request, cuenta_id):
     # Deuda total = saldo de cuotas + gestoría pendiente + gastos de ingreso pendientes
     deuda_total = deuda_cuotas + max(total_gestoria, Decimal("0")) + saldo_gastos_ingreso
 
+    # Gastos extra / ajustes manuales (movimientos no ligados al plan ni gestoría)
+    gastos_extra = movimientos.filter(origen__in=["manual", "ajuste"]).order_by("-fecha")
+    ge_debe = (
+        gastos_extra.filter(tipo__in=["debe", "deuda"]).aggregate(t=Sum("monto"))["t"] or Decimal("0")
+    )
+    ge_haber = (
+        gastos_extra.filter(tipo__in=["haber", "pago"]).aggregate(t=Sum("monto"))["t"] or Decimal("0")
+    )
+    gastos_extra_saldo = ge_debe - ge_haber
+
     return render(
         request,
         "cuentas/cuenta_corriente_detalle.html",
@@ -490,6 +522,8 @@ def cuenta_corriente_detalle(request, cuenta_id):
             "plan": plan,
             "cuotas": cuotas,
             "movimientos": movimientos,
+            "gastos_extra": gastos_extra,
+            "gastos_extra_saldo": gastos_extra_saldo,
             "vehiculos": vehiculos,
             "total_gastos_ingreso": total_gastos_ingreso,
             "saldo_gastos_ingreso": saldo_gastos_ingreso,
