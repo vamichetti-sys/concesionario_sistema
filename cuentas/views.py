@@ -1064,6 +1064,23 @@ def agregar_gasto_cuenta(request, cuenta_id):
 
 
 # ==========================================================
+# ELIMINAR GASTO EXTRA / AJUSTE MANUAL
+# ==========================================================
+@login_required
+def eliminar_gasto_extra(request, movimiento_id):
+    mov = get_object_or_404(MovimientoCuenta, id=movimiento_id)
+    cuenta = mov.cuenta
+    if mov.origen not in ("manual", "ajuste"):
+        messages.error(request, "Solo se pueden eliminar gastos extra / ajustes manuales.")
+        return redirect("cuentas:cuenta_corriente_detalle", cuenta_id=cuenta.id)
+    if request.method == "POST":
+        mov.delete()
+        cuenta.recalcular_saldo()
+        messages.success(request, "Gasto extra eliminado.")
+    return redirect("cuentas:cuenta_corriente_detalle", cuenta_id=cuenta.id)
+
+
+# ==========================================================
 # HISTORIAL DE FINANCIACIÓN
 # ==========================================================
 @login_required

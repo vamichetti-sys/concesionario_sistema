@@ -330,6 +330,7 @@
                     <th>Concepto</th>
                     <th>Tipo</th>
                     <th class="text-end">Monto</th>
+                    <th class="text-end"></th>
                 </tr>
             </thead>
             <tbody>
@@ -346,6 +347,15 @@
                     </td>
                     <td class="text-end fw-bold {% if m.tipo == 'debe' or m.tipo == 'deuda' %}text-danger{% else %}text-success{% endif %}">
                         $ {{ m.monto|floatformat:0 }}
+                    </td>
+                    <td class="text-end">
+                        <form method="post" action="{% url 'cuentas:eliminar_gasto_extra' m.id %}" style="display:inline;"
+                              onsubmit="return confirm('¿Eliminar este gasto extra por $ {{ m.monto|floatformat:0 }}?');">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar gasto extra">
+                                <i data-lucide="trash-2" style="width:14px;height:14px;"></i>
+                            </button>
+                        </form>
                     </td>
                 </tr>
                 {% endfor %}

@@ -97,6 +97,11 @@ urlpatterns = [
         name="agregar_gasto_cuenta"
     ),
     path(
+        "movimiento/<int:movimiento_id>/eliminar-gasto/",
+        views.eliminar_gasto_extra,
+        name="eliminar_gasto_extra"
+    ),
+    path(
         "<int:cuenta_id>/permuta/<int:vehiculo_id>/",
         views.conectar_vehiculo_permuta,
         name="conectar_vehiculo_permuta"
