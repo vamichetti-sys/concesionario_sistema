@@ -90,3 +90,52 @@ def listado_deudas(request):
             "query": q,
         }
     )
+
+
+@login_required
+def pdf_listado_deudas(request):
+    from datetime import date
+    from decimal import Decimal
+    from reportes.pdf_utils import render_pdf_listado
+
+    q = request.GET.get("q", "").strip()
+    fichas = FichaVehicular.objects.select_related("vehiculo")
+    if q:
+        fichas = fichas.filter(
+            Q(vehiculo__dominio__icontains=q) |
+            Q(vehiculo__marca__icontains=q) |
+            Q(vehiculo__modelo__icontains=q)
+        )
+
+    total = Decimal("0")
+    filas = []
+    for ficha in fichas:
+        total_gastos = ficha.total_gastos or 0
+        if total_gastos <= 0:
+            continue
+        total_pagado = (
+            PagoGastoIngreso.objects.filter(vehiculo=ficha.vehiculo)
+            .aggregate(total=Sum("monto"))["total"] or 0
+        )
+        saldo = total_gastos - total_pagado
+        if saldo <= 0:
+            continue
+        total += Decimal(str(saldo))
+        filas.append([
+            f"{ficha.vehiculo.marca} {ficha.vehiculo.modelo}",
+            ficha.vehiculo.dominio or "—",
+            "Gastos de ingreso",
+            f"$ {saldo:,.0f}".replace(",", "."),
+        ])
+
+    totales = ["", "", "TOTAL", f"$ {total:,.0f}".replace(",", ".")]
+
+    return render_pdf_listado(
+        filename="deudas_vehiculos.pdf",
+        titulo="Deudas de Vehículos",
+        subtitulo=(f"Búsqueda: «{q}» – " if q else "") + f"{len(filas)} unidad(es) con deuda",
+        columnas=["Vehículo", "Dominio", "Concepto", "Saldo"],
+        filas=filas,
+        totales=totales if filas else None,
+        pie=f"Generado el {date.today().strftime('%d/%m/%Y')}",
+    )

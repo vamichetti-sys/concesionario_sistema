@@ -7,9 +7,15 @@
 <!-- ===============================
      ENCABEZADO
 =============================== -->
-<div class="mb-4">
-    <h3 class="fw-bold mb-1">Gestoría</h3>
-    <p class="text-muted mb-0">Transferencias y trámites finalizados</p>
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-4">
+    <div>
+        <h3 class="fw-bold mb-1">Gestoría</h3>
+        <p class="text-muted mb-0">Transferencias y trámites finalizados</p>
+    </div>
+    <a href="{% url 'gestoria:pdf_gestorias' %}?estado=finalizada{% if query %}&q={{ query|urlencode }}{% endif %}" target="_blank" class="btn btn-outline-secondary">
+        <i data-lucide="file-down" style="width:16px;height:16px;margin-right:6px;"></i>
+        Descargar PDF
+    </a>
 </div>
 
 <!-- ===============================

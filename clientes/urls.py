@@ -34,6 +34,15 @@ urlpatterns = [
     ),
 
     # ===============================
+    # PDF DEL LISTADO
+    # ===============================
+    path(
+        "pdf/",
+        views.pdf_lista_clientes,
+        name="pdf_lista_clientes"
+    ),
+
+    # ===============================
     # CREAR CLIENTE
     # ===============================
     path(

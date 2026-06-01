@@ -679,6 +679,22 @@
                 <span>Control de Stock</span>
             </a>
             {% endif %}
+            <a href="{% url 'reportes:reporte_ganancias' %}" class="nav-link {% if '/interno/reporte/' in request.path %}active{% endif %}">
+                <i data-lucide="trending-up"></i>
+                <span>Ganancias</span>
+            </a>
+            <a href="{% url 'reportes:reporte_interno' %}" class="nav-link {% if request.path == '/reportes/interno/' %}active{% endif %}">
+                <i data-lucide="file-bar-chart"></i>
+                <span>Reporte Interno HA</span>
+            </a>
+            <a href="{% url 'reportes:reporte_interno_vamichetti' %}" class="nav-link {% if '/interno/vamichetti/' in request.path %}active{% endif %}">
+                <i data-lucide="file-bar-chart-2"></i>
+                <span>Reporte Interno VA</span>
+            </a>
+            <a href="{% url 'reportes:reporte_web' %}" class="nav-link {% if '/reportes/web/' in request.path %}active{% endif %}">
+                <i data-lucide="globe"></i>
+                <span>Reporte Web</span>
+            </a>
             <a href="/cuentas-internas/" class="nav-link {% if '/cuentas-internas/' in request.path %}active{% endif %}">
                 <i data-lucide="wallet"></i>
                 <span>Cuentas Internas</span>

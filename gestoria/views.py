@@ -86,6 +86,58 @@ def gestoria_finalizadas(request):
 
 
 # ==========================================================
+# PDF: LISTADO DE GESTORÍAS (vigentes / finalizadas)
+# ==========================================================
+def pdf_gestorias(request):
+    from datetime import date
+    from reportes.pdf_utils import render_pdf_listado
+
+    estado = request.GET.get("estado", "vigente")
+    if estado not in ("vigente", "finalizada"):
+        estado = "vigente"
+    query = request.GET.get("q", "").strip()
+
+    gestorias = (
+        Gestoria.objects.filter(estado=estado)
+        .select_related("vehiculo", "cliente", "venta")
+    )
+    if query:
+        gestorias = gestorias.filter(
+            Q(cliente__nombre_completo__icontains=query) |
+            Q(cliente__dni_cuit__icontains=query) |
+            Q(vehiculo__marca__icontains=query) |
+            Q(vehiculo__modelo__icontains=query) |
+            Q(vehiculo__dominio__icontains=query) |
+            Q(venta__id__icontains=query)
+        ).distinct()
+
+    orden = "-fecha_finalizacion" if estado == "finalizada" else "-fecha_creacion"
+    gestorias = gestorias.order_by(orden)
+
+    filas = []
+    for g in gestorias:
+        cli = g.cliente_actual
+        fecha_ref = g.fecha_finalizacion or g.fecha_creacion
+        filas.append([
+            f"{g.vehiculo.marca} {g.vehiculo.modelo}" if g.vehiculo_id else "—",
+            (g.vehiculo.dominio or "—") if g.vehiculo_id else "—",
+            str(cli) if cli else "Sin cliente",
+            (getattr(cli, "telefono", "") or "—") if cli else "—",
+            fecha_ref.strftime("%d/%m/%Y") if fecha_ref else "—",
+        ])
+
+    titulo = "Gestorías finalizadas" if estado == "finalizada" else "Gestorías vigentes"
+    return render_pdf_listado(
+        filename=f"gestorias_{estado}.pdf",
+        titulo=titulo,
+        subtitulo=(f"Búsqueda: «{query}» – " if query else "") + f"{len(filas)} gestoría(s)",
+        columnas=["Vehículo", "Dominio", "Cliente", "Teléfono", "Fecha"],
+        filas=filas,
+        pie=f"Generado el {date.today().strftime('%d/%m/%Y')}",
+    )
+
+
+# ==========================================================
 # MARCAR GESTORÍA COMO FINALIZADA
 # (SE MANTIENE PARA FLUJOS EXISTENTES)
 # ==========================================================

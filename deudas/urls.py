@@ -9,4 +9,9 @@ urlpatterns = [
         views.listado_deudas,
         name="listado"
     ),
+    path(
+        "pdf/",
+        views.pdf_listado_deudas,
+        name="pdf_listado"
+    ),
 ]

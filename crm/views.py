@@ -66,6 +66,56 @@ def lista_prospectos(request):
 
 
 # ==========================================================
+# PDF: LISTADO DE PROSPECTOS
+# ==========================================================
+@login_required
+def pdf_lista_prospectos(request):
+    from reportes.pdf_utils import render_pdf_listado
+
+    query = request.GET.get("q", "")
+    etapa_filtro = request.GET.get("etapa", "")
+    origen_filtro = request.GET.get("origen", "")
+    prioridad_filtro = request.GET.get("prioridad", "")
+
+    prospectos = Prospecto.objects.all().select_related("vehiculo_interes")
+    if query:
+        prospectos = prospectos.filter(
+            Q(nombre_completo__icontains=query)
+            | Q(telefono__icontains=query)
+            | Q(email__icontains=query)
+        )
+    if etapa_filtro:
+        prospectos = prospectos.filter(etapa=etapa_filtro)
+    if origen_filtro:
+        prospectos = prospectos.filter(origen=origen_filtro)
+    if prioridad_filtro:
+        prospectos = prospectos.filter(prioridad=prioridad_filtro)
+
+    filas = []
+    for p in prospectos:
+        if p.vehiculo_interes_id:
+            interes = str(p.vehiculo_interes)
+        else:
+            interes = p.vehiculo_interes_texto or "—"
+        filas.append([
+            p.nombre_completo,
+            p.telefono or "—",
+            p.get_etapa_display(),
+            interes,
+            p.fecha_proximo_contacto.strftime("%d/%m/%Y") if p.fecha_proximo_contacto else "—",
+        ])
+
+    return render_pdf_listado(
+        filename="prospectos_crm.pdf",
+        titulo="CRM – Prospectos",
+        subtitulo=f"{len(filas)} prospecto(s)",
+        columnas=["Nombre", "Teléfono", "Etapa", "Vehículo de interés", "Próx. contacto"],
+        filas=filas,
+        pie=f"Generado el {date.today().strftime('%d/%m/%Y')}",
+    )
+
+
+# ==========================================================
 # CREAR PROSPECTO
 # ==========================================================
 @login_required

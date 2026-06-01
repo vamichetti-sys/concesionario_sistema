@@ -79,6 +79,40 @@ def lista_clientes(request):
     )
 
 
+@login_required
+def pdf_lista_clientes(request):
+    from datetime import date
+    from reportes.pdf_utils import render_pdf_listado
+
+    query = request.GET.get('q', '')
+    clientes = Cliente.objects.filter(activo=True).order_by('nombre_completo')
+    if query:
+        clientes = clientes.filter(
+            Q(nombre_completo__icontains=query) |
+            Q(telefono__icontains=query) |
+            Q(email__icontains=query)
+        )
+
+    filas = [
+        [
+            c.nombre_completo,
+            c.dni_cuit or "—",
+            c.telefono or "—",
+            c.email or "—",
+        ]
+        for c in clientes
+    ]
+
+    return render_pdf_listado(
+        filename="clientes.pdf",
+        titulo="Listado de Clientes",
+        subtitulo=(f"Búsqueda: «{query}» – " if query else "") + f"{len(filas)} cliente(s)",
+        columnas=["Nombre", "DNI / CUIT", "Teléfono", "Email"],
+        filas=filas,
+        pie=f"Generado el {date.today().strftime('%d/%m/%Y')}",
+    )
+
+
 # ==========================================================
 # ALTA DE CLIENTE
 # ==========================================================

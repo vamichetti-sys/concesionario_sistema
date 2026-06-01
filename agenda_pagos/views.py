@@ -185,6 +185,18 @@ def lista_pagos(request):
     if categoria_sel:
         qs = qs.filter(categoria_id=categoria_sel)
 
+    # Filtro por destino (Control de Gastos / Gastos Personales)
+    destino_sel = request.GET.get("destino") or ""
+    if destino_sel:
+        qs = qs.filter(destino=destino_sel)
+
+    # Filtro por tipo de gasto (fijo/mensual vs variable)
+    tipo_sel = request.GET.get("tipo") or ""
+    if tipo_sel == "fijo":
+        qs = qs.filter(categoria__es_fijo=True)
+    elif tipo_sel == "variable":
+        qs = qs.filter(categoria__es_fijo=False)
+
     pendientes_all = PagoFuturo.objects.filter(pagado=False)
     total_pendiente = pendientes_all.aggregate(t=Sum("monto"))["t"] or Decimal("0")
     cant_pendiente = pendientes_all.count()
@@ -213,6 +225,9 @@ def lista_pagos(request):
         "anios_disponibles": anios,
         "categorias": CategoriaGasto.objects.filter(activa=True).order_by("nombre"),
         "categoria_sel": categoria_sel,
+        "destino_choices": PagoFuturo.DESTINO_CHOICES,
+        "destino_sel": destino_sel,
+        "tipo_sel": tipo_sel,
         "total_pendiente": total_pendiente,
         "cant_pendiente": cant_pendiente,
         "total_vencido": total_vencido,
@@ -419,3 +434,70 @@ def copiar_mes_anterior(request):
         "mes_destino_nombre": MESES[mes],
         "mes_origen_nombre": MESES[mes_origen],
     })
+
+
+# ==========================================================
+# PDF: AGENDA DE PAGOS (respeta los filtros de la lista)
+# ==========================================================
+@solo_admins
+def pdf_agenda(request):
+    from reportes.pdf_utils import render_pdf_listado
+
+    hoy = date.today()
+    filtro = request.GET.get("filtro", "pendientes")
+    try:
+        mes = int(request.GET.get("mes", hoy.month))
+        anio = int(request.GET.get("anio", hoy.year))
+    except ValueError:
+        mes, anio = hoy.month, hoy.year
+
+    qs = PagoFuturo.objects.all().select_related("categoria", "pagado_por")
+    if filtro == "pendientes":
+        qs = qs.filter(pagado=False, fecha_vencimiento__year=anio, fecha_vencimiento__month=mes).order_by("fecha_vencimiento")
+    elif filtro == "vencidos":
+        qs = qs.filter(pagado=False, fecha_vencimiento__lt=hoy).order_by("fecha_vencimiento")
+    elif filtro == "pagados":
+        qs = qs.filter(pagado=True, fecha_pago__year=anio, fecha_pago__month=mes).order_by("-fecha_pago", "-id")
+    else:
+        qs = qs.filter(fecha_vencimiento__year=anio, fecha_vencimiento__month=mes)
+
+    if request.GET.get("categoria"):
+        qs = qs.filter(categoria_id=request.GET["categoria"])
+    if request.GET.get("destino"):
+        qs = qs.filter(destino=request.GET["destino"])
+    tipo_sel = request.GET.get("tipo") or ""
+    if tipo_sel == "fijo":
+        qs = qs.filter(categoria__es_fijo=True)
+    elif tipo_sel == "variable":
+        qs = qs.filter(categoria__es_fijo=False)
+
+    total = Decimal("0")
+    filas = []
+    for p in qs:
+        total += p.monto or Decimal("0")
+        filas.append([
+            p.descripcion,
+            p.categoria.nombre if p.categoria_id else "—",
+            p.get_destino_display(),
+            p.fecha_vencimiento.strftime("%d/%m/%Y") if p.fecha_vencimiento else "—",
+            f"$ {(p.monto or 0):,.0f}".replace(",", "."),
+            "Pagado" if p.pagado else ("Vencido" if p.vencido else "Pendiente"),
+        ])
+
+    etiquetas = {
+        "pendientes": f"Pendientes – {MESES[mes]} {anio}",
+        "vencidos": "Vencidos (todos)",
+        "pagados": f"Pagados – {MESES[mes]} {anio}",
+        "todos": f"Todos – {MESES[mes]} {anio}",
+    }
+    totales = ["", "", "", "TOTAL", f"$ {total:,.0f}".replace(",", "."), ""]
+
+    return render_pdf_listado(
+        filename=f"agenda_pagos_{filtro}.pdf",
+        titulo="Agenda de Pagos",
+        subtitulo=f"{etiquetas.get(filtro, '')} – {len(filas)} pago(s)",
+        columnas=["Descripción", "Categoría", "Destino", "Vencimiento", "Monto", "Estado"],
+        filas=filas,
+        totales=totales if filas else None,
+        pie=f"Generado el {hoy.strftime('%d/%m/%Y')}",
+    )

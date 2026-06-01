@@ -5,6 +5,7 @@ app_name = "agenda_pagos"
 
 urlpatterns = [
     path("", views.lista_pagos, name="lista"),
+    path("pdf/", views.pdf_agenda, name="pdf_agenda"),
     path("nuevo/", views.crear_pago, name="crear"),
     path("<int:pk>/editar/", views.editar_pago, name="editar"),
     path("<int:pk>/eliminar/", views.eliminar_pago, name="eliminar"),

@@ -16,6 +16,15 @@ urlpatterns = [
     ),
 
     # ===============================
+    # PDF DEL LISTADO
+    # ===============================
+    path(
+        "pdf/",
+        views.pdf_unidades_vendidas,
+        name="pdf_unidades_vendidas"
+    ),
+
+    # ===============================
     # ASIGNAR CLIENTE A VENTA
     # ===============================
     path(

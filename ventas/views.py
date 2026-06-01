@@ -88,6 +88,57 @@ def lista_unidades_vendidas(request):
 
 
 # ==========================================================
+# PDF: LISTADO DE UNIDADES VENDIDAS
+# ==========================================================
+def pdf_unidades_vendidas(request):
+    from datetime import date
+    from decimal import Decimal
+    from reportes.pdf_utils import render_pdf_listado
+
+    query = request.GET.get("q", "").strip()
+    ventas = (
+        Venta.objects
+        .filter(estado__in=["pendiente", "confirmada"])
+        .select_related("vehiculo", "cliente")
+    )
+    if query:
+        ventas = ventas.filter(
+            Q(vehiculo__marca__icontains=query) |
+            Q(vehiculo__modelo__icontains=query) |
+            Q(vehiculo__dominio__icontains=query) |
+            Q(cliente__nombre_completo__icontains=query) |
+            Q(id__icontains=query)
+        ).distinct()
+    ventas = ventas.order_by("-id")
+
+    total = Decimal("0")
+    filas = []
+    for v in ventas:
+        total += v.precio_venta or Decimal("0")
+        filas.append([
+            f"#{v.id}",
+            f"{v.vehiculo.marca} {v.vehiculo.modelo}" if v.vehiculo_id else "—",
+            v.vehiculo.dominio or "—" if v.vehiculo_id else "—",
+            v.cliente.nombre_completo if v.cliente_id else "Sin cliente",
+            v.fecha_venta.strftime("%d/%m/%Y") if v.fecha_venta else "—",
+            v.get_estado_display(),
+            f"$ {(v.precio_venta or 0):,.0f}".replace(",", "."),
+        ])
+
+    totales = ["", "", "", "", "", "TOTAL", f"$ {total:,.0f}".replace(",", ".")]
+
+    return render_pdf_listado(
+        filename="unidades_vendidas.pdf",
+        titulo="Unidades Vendidas",
+        subtitulo=(f"Búsqueda: «{query}» – " if query else "") + f"{len(filas)} unidad(es)",
+        columnas=["#", "Vehículo", "Dominio", "Cliente", "Fecha", "Estado", "Precio"],
+        filas=filas,
+        totales=totales if filas else None,
+        pie=f"Generado el {date.today().strftime('%d/%m/%Y')}",
+    )
+
+
+# ==========================================================
 # BUSCAR CLIENTE (AJAX)
 # ==========================================================
 def buscar_cliente_venta(request):

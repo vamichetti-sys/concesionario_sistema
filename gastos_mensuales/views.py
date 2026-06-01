@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.urls import reverse
 from django.db.models import Sum, Q
 from django.utils import timezone
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from datetime import date
 
 from .models import CategoriaGasto, GastoMensual, ResumenGastosMensual
@@ -178,6 +178,82 @@ def marcar_pagado(request, pk):
         messages.success(request, f"Gasto marcado como {estado}.")
 
     return redirect(f"{reverse('gastos_mensuales:resumen')}?mes={gasto.mes}&anio={gasto.anio}")
+
+
+# ==========================================================
+# ACTUALIZAR MONTO (EDICIÓN INLINE DESDE LA TABLA)
+# ==========================================================
+@login_required
+def actualizar_monto(request, pk):
+    gasto = get_object_or_404(GastoMensual, pk=pk)
+    if request.method == "POST":
+        raw = (request.POST.get("monto") or "").strip().replace(",", ".")
+        try:
+            monto = Decimal(raw)
+            if monto < 0:
+                raise InvalidOperation
+            gasto.monto = monto
+            gasto.save(update_fields=["monto"])
+            messages.success(request, "Monto actualizado.")
+        except (InvalidOperation, ValueError):
+            messages.error(request, "Monto inválido.")
+    return redirect(f"{reverse('gastos_mensuales:resumen')}?mes={gasto.mes}&anio={gasto.anio}")
+
+
+# ==========================================================
+# PDF MENSUAL: control de gastos del mes/año
+# ==========================================================
+@login_required
+def pdf_mensual(request):
+    from reportes.pdf_utils import render_pdf_listado, MESES_ES
+
+    hoy = date.today()
+    try:
+        mes = int(request.GET.get("mes", hoy.month))
+    except (TypeError, ValueError):
+        mes = hoy.month
+    try:
+        anio = int(request.GET.get("anio", hoy.year))
+    except (TypeError, ValueError):
+        anio = hoy.year
+
+    qs = (
+        GastoMensual.objects.filter(mes=mes, anio=anio)
+        .select_related("categoria")
+        .order_by("categoria__nombre", "descripcion")
+    )
+
+    total = Decimal("0")
+    total_pagado = Decimal("0")
+    filas = []
+    for g in qs:
+        total += g.monto or Decimal("0")
+        if g.pagado:
+            total_pagado += g.monto or Decimal("0")
+        try:
+            unidad = g.get_unidad_display()
+        except Exception:
+            unidad = g.unidad or "—"
+        filas.append([
+            g.categoria.nombre if g.categoria_id else "—",
+            g.descripcion or "—",
+            unidad,
+            f"$ {(g.monto or 0):,.0f}".replace(",", "."),
+            "Sí" if g.pagado else "No",
+        ])
+
+    totales = ["", "", "TOTAL", f"$ {total:,.0f}".replace(",", "."),
+               f"Pagado: $ {total_pagado:,.0f}".replace(",", ".")]
+
+    return render_pdf_listado(
+        filename=f"control_gastos_{mes:02d}_{anio}.pdf",
+        titulo="Control de Gastos",
+        subtitulo=f"{MESES_ES[mes]} {anio} – {len(filas)} gasto(s)",
+        columnas=["Categoría", "Detalle", "Unidad", "Monto", "Pagado"],
+        filas=filas,
+        totales=totales if filas else None,
+        pie=f"Generado el {hoy.strftime('%d/%m/%Y')}",
+    )
 
 
 # ==========================================================

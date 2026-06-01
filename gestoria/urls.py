@@ -14,6 +14,7 @@ urlpatterns = [
     # ===============================
     path("vigentes/", views.gestoria_vigentes, name="vigentes"),
     path("finalizadas/", views.gestoria_finalizadas, name="finalizadas"),
+    path("pdf/", views.pdf_gestorias, name="pdf_gestorias"),
 
     # ===============================
     # ACCIÓN: MARCAR COMO FINALIZADA

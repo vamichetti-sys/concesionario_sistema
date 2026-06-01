@@ -5,6 +5,7 @@
 
 {% block content %}
 
+{# 1. BOTONES DE VENTA + 2. RECORDATORIOS #}
 {% include "inicio/_dashboard_top.html" %}
 
 {% if agenda_mes_sin_cargar %}
@@ -26,13 +27,8 @@
 </div>
 {% endif %}
 
-{% include "inicio/_ventas_doc_alerta.html" %}
-
-<!-- AGENDA DE PAGOS (debajo de recordatorios) -->
-{% include "inicio/_agenda_pagos.html" %}
-
 <!-- ===============================
-     ACCESOS GESTIÓN INTERNA
+     3. ACCESOS GESTIÓN INTERNA
 =============================== -->
 <div class="d-flex align-items-center gap-2 mb-3 mt-2">
     <i data-lucide="lock" style="width:20px;height:20px;color:#8b5cf6;"></i>
@@ -97,174 +93,11 @@
     </div>
 </div>
 
-<!-- ===============================
-     RESUMEN DE DEUDAS
-=============================== -->
-<div class="d-flex align-items-center gap-2 mb-3 mt-2">
-    <i data-lucide="alert-triangle" style="width:20px;height:20px;color:#ef4444;"></i>
-    <h5 class="fw-bold mb-0">Resumen de deudas</h5>
-</div>
-
-<div class="row g-4 mb-4">
-
-    <!-- CUENTAS CORRIENTES (clientes nos deben) -->
-    <div class="col-md-4">
-        <a href="/cuentas/" class="text-decoration-none text-reset">
-            <div class="card p-4 h-100" style="position:relative;">
-                <div class="d-flex justify-content-between align-items-start mb-3">
-                    <span class="text-muted" style="font-size:13px;">Cuentas corrientes</span>
-                    <div style="width:40px;height:40px;background:rgba(239,68,68,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
-                        <i data-lucide="credit-card" style="width:20px;height:20px;color:#ef4444;"></i>
-                    </div>
-                </div>
-                <h3 class="fw-bold mb-1 text-danger">${{ total_deuda|floatformat:0 }}</h3>
-                <small class="text-muted">{{ cantidad_deudores }} cliente{{ cantidad_deudores|pluralize:"s" }} con deuda</small>
-                <div style="position:absolute;top:0;left:0;width:4px;height:100%;background:#ef4444;border-radius:14px 0 0 14px;"></div>
-            </div>
-        </a>
-    </div>
-
-    <!-- DEUDAS DE REVENTAS (revendedores nos deben) -->
-    <div class="col-md-4">
-        <a href="/reventa/" class="text-decoration-none text-reset">
-            <div class="card p-4 h-100" style="position:relative;">
-                <div class="d-flex justify-content-between align-items-start mb-3">
-                    <span class="text-muted" style="font-size:13px;">Deudas de reventas</span>
-                    <div style="width:40px;height:40px;background:rgba(245,158,11,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
-                        <i data-lucide="repeat" style="width:20px;height:20px;color:#f59e0b;"></i>
-                    </div>
-                </div>
-                <h3 class="fw-bold mb-1" style="color:#d97706;">${{ deuda_reventa|floatformat:0 }}</h3>
-                <small class="text-muted">{{ reventa_count }} revendedor{{ reventa_count|pluralize:"es" }} con deuda</small>
-                <div style="position:absolute;top:0;left:0;width:4px;height:100%;background:#f59e0b;border-radius:14px 0 0 14px;"></div>
-            </div>
-        </a>
-    </div>
-
-    <!-- DEUDA DE COMPRA-VENTA (nosotros debemos a proveedores) -->
-    <div class="col-md-4">
-        <a href="{% url 'compraventa:home' %}" class="text-decoration-none text-reset">
-            <div class="card p-4 h-100" style="position:relative;">
-                <div class="d-flex justify-content-between align-items-start mb-3">
-                    <span class="text-muted" style="font-size:13px;">Deuda de compra-venta</span>
-                    <div style="width:40px;height:40px;background:rgba(59,130,246,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
-                        <i data-lucide="building-2" style="width:20px;height:20px;color:#3b82f6;"></i>
-                    </div>
-                </div>
-                <h3 class="fw-bold mb-1" style="color:#2563eb;">${{ deuda_compraventa|floatformat:0 }}</h3>
-                <small class="text-muted">{{ compraventa_count }} unidad{{ compraventa_count|pluralize:"es" }} adeudada{{ compraventa_count|pluralize:"s" }}</small>
-                <div style="position:absolute;top:0;left:0;width:4px;height:100%;background:#3b82f6;border-radius:14px 0 0 14px;"></div>
-            </div>
-        </a>
-    </div>
-
-</div>
+<!-- 4. AGENDA DE PAGOS -->
+{% include "inicio/_agenda_pagos.html" %}
 
 <!-- ===============================
-     DOCUMENTACIÓN VENCIDA + CALENDARIO
-=============================== -->
-<div class="row g-4 mb-4">
-
-    <!-- DOCUMENTACIÓN VENCIDA -->
-    <div class="col-md-6">
-        <div class="card p-4 h-100">
-            <div class="d-flex align-items-center gap-2 mb-3">
-                <i data-lucide="alert-octagon" style="width:20px;height:20px;color:#ef4444;"></i>
-                <h6 class="fw-bold mb-0">Documentación vencida</h6>
-            </div>
-
-            {% if docs_vtv_vencida or docs_verif_vencida %}
-            <div class="list-group list-group-flush">
-                {% for v in docs_vtv_vencida %}
-                <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                    <div>
-                        <span class="badge bg-danger me-2">VTV</span>
-                        <span class="fw-semibold">{{ v.vehiculo.marca }} {{ v.vehiculo.modelo }}</span>
-                        <small class="text-muted">({{ v.vehiculo.dominio }})</small>
-                    </div>
-                    <small class="text-danger fw-semibold">Venció {{ v.vtv_vencimiento|date:"d/m/Y" }}</small>
-                </div>
-                {% endfor %}
-                {% for v in docs_verif_vencida %}
-                <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                    <div>
-                        <span class="badge bg-warning text-dark me-2">Verif.</span>
-                        <span class="fw-semibold">{{ v.vehiculo.marca }} {{ v.vehiculo.modelo }}</span>
-                        <small class="text-muted">({{ v.vehiculo.dominio }})</small>
-                    </div>
-                    <small class="text-danger fw-semibold">Venció {{ v.verificacion_vencimiento|date:"d/m/Y" }}</small>
-                </div>
-                {% endfor %}
-            </div>
-            {% else %}
-            <div class="text-center py-4">
-                <i data-lucide="check-circle" style="width:32px;height:32px;color:#10b981;margin-bottom:8px;"></i>
-                <p class="text-muted mb-0">No hay documentación vencida</p>
-            </div>
-            {% endif %}
-
-            <a href="/documentacion/" class="btn btn-secondary btn-sm mt-3 w-100">Ver documentación</a>
-        </div>
-    </div>
-
-    <!-- CALENDARIO: PRÓXIMOS TURNOS Y VENCIMIENTOS -->
-    <div class="col-md-6">
-        <div class="card p-4 h-100">
-            <div class="d-flex align-items-center gap-2 mb-3">
-                <i data-lucide="calendar-clock" style="width:20px;height:20px;color:#f59e0b;"></i>
-                <h6 class="fw-bold mb-0">Próximos turnos y vencimientos</h6>
-            </div>
-
-            {% if turnos_vtv or turnos_verificacion or turnos_autopartes or vencimientos_vtv or vencimientos_verificacion %}
-            <div class="list-group list-group-flush">
-                {% for t in turnos_vtv %}
-                <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                    <div><span class="badge bg-danger me-2">Turno VTV</span><span class="fw-semibold">{{ t.vehiculo.marca }} {{ t.vehiculo.modelo }}</span></div>
-                    <small class="text-muted">{{ t.vtv_turno|date:"d/m" }}</small>
-                </div>
-                {% endfor %}
-                {% for t in turnos_verificacion %}
-                <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                    <div><span class="badge bg-warning text-dark me-2">Turno Verif.</span><span class="fw-semibold">{{ t.vehiculo.marca }} {{ t.vehiculo.modelo }}</span></div>
-                    <small class="text-muted">{{ t.verificacion_turno|date:"d/m" }}</small>
-                </div>
-                {% endfor %}
-                {% for t in turnos_autopartes %}
-                <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                    <div><span class="badge bg-info text-dark me-2">Turno Autopartes</span><span class="fw-semibold">{{ t.vehiculo.marca }} {{ t.vehiculo.modelo }}</span></div>
-                    <small class="text-muted">{{ t.autopartes_turno|date:"d/m" }}</small>
-                </div>
-                {% endfor %}
-                {% for v in vencimientos_vtv %}
-                <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                    <div><span class="badge bg-light text-danger border me-2">Vence VTV</span><span class="fw-semibold">{{ v.vehiculo.dominio }}</span></div>
-                    <small class="text-muted">{{ v.vtv_vencimiento|date:"d/m/Y" }}</small>
-                </div>
-                {% endfor %}
-                {% for v in vencimientos_verificacion %}
-                <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                    <div><span class="badge bg-light text-warning border me-2">Vence Verif.</span><span class="fw-semibold">{{ v.vehiculo.dominio }}</span></div>
-                    <small class="text-muted">{{ v.verificacion_vencimiento|date:"d/m/Y" }}</small>
-                </div>
-                {% endfor %}
-            </div>
-            {% else %}
-            <div class="text-center py-4">
-                <i data-lucide="calendar-check" style="width:32px;height:32px;color:#10b981;margin-bottom:8px;"></i>
-                <p class="text-muted mb-0">Sin turnos ni vencimientos próximos</p>
-            </div>
-            {% endif %}
-
-            <a href="/calendario/" class="btn btn-secondary btn-sm mt-3 w-100">Ver calendario</a>
-        </div>
-    </div>
-
-</div>
-
-{% include "inicio/_gestoria_observaciones.html" %}
-
-<!-- ===============================
-     CRM – PROSPECTOS
+     5. CRM – PROSPECTOS
 =============================== -->
 <div class="row g-4 mb-4">
     <div class="col-md-8">
@@ -374,6 +207,175 @@
             </a>
         </div>
     </div>
+</div>
+
+<!-- ===============================
+     6. RESUMEN DE DEUDAS
+=============================== -->
+<div class="d-flex align-items-center gap-2 mb-3 mt-2">
+    <i data-lucide="alert-triangle" style="width:20px;height:20px;color:#ef4444;"></i>
+    <h5 class="fw-bold mb-0">Resumen de deudas</h5>
+</div>
+
+<div class="row g-4 mb-4">
+
+    <!-- CUENTAS CORRIENTES (clientes nos deben) -->
+    <div class="col-md-4">
+        <a href="/cuentas/" class="text-decoration-none text-reset">
+            <div class="card p-4 h-100" style="position:relative;">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <span class="text-muted" style="font-size:13px;">Cuentas corrientes</span>
+                    <div style="width:40px;height:40px;background:rgba(239,68,68,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                        <i data-lucide="credit-card" style="width:20px;height:20px;color:#ef4444;"></i>
+                    </div>
+                </div>
+                <h3 class="fw-bold mb-1 text-danger">${{ total_deuda|floatformat:0 }}</h3>
+                <small class="text-muted">{{ cantidad_deudores }} cliente{{ cantidad_deudores|pluralize:"s" }} con deuda</small>
+                <div style="position:absolute;top:0;left:0;width:4px;height:100%;background:#ef4444;border-radius:14px 0 0 14px;"></div>
+            </div>
+        </a>
+    </div>
+
+    <!-- DEUDAS DE REVENTAS (revendedores nos deben) -->
+    <div class="col-md-4">
+        <a href="/reventa/" class="text-decoration-none text-reset">
+            <div class="card p-4 h-100" style="position:relative;">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <span class="text-muted" style="font-size:13px;">Deudas de reventas</span>
+                    <div style="width:40px;height:40px;background:rgba(245,158,11,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                        <i data-lucide="repeat" style="width:20px;height:20px;color:#f59e0b;"></i>
+                    </div>
+                </div>
+                <h3 class="fw-bold mb-1" style="color:#d97706;">${{ deuda_reventa|floatformat:0 }}</h3>
+                <small class="text-muted">{{ reventa_count }} revendedor{{ reventa_count|pluralize:"es" }} con deuda</small>
+                <div style="position:absolute;top:0;left:0;width:4px;height:100%;background:#f59e0b;border-radius:14px 0 0 14px;"></div>
+            </div>
+        </a>
+    </div>
+
+    <!-- DEUDA DE COMPRA-VENTA (nosotros debemos a proveedores) -->
+    <div class="col-md-4">
+        <a href="{% url 'compraventa:home' %}" class="text-decoration-none text-reset">
+            <div class="card p-4 h-100" style="position:relative;">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <span class="text-muted" style="font-size:13px;">Deuda de compra-venta</span>
+                    <div style="width:40px;height:40px;background:rgba(59,130,246,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                        <i data-lucide="building-2" style="width:20px;height:20px;color:#3b82f6;"></i>
+                    </div>
+                </div>
+                <h3 class="fw-bold mb-1" style="color:#2563eb;">${{ deuda_compraventa|floatformat:0 }}</h3>
+                <small class="text-muted">{{ compraventa_count }} unidad{{ compraventa_count|pluralize:"es" }} adeudada{{ compraventa_count|pluralize:"s" }}</small>
+                <div style="position:absolute;top:0;left:0;width:4px;height:100%;background:#3b82f6;border-radius:14px 0 0 14px;"></div>
+            </div>
+        </a>
+    </div>
+
+</div>
+
+<!-- 7. OBSERVACIONES DE GESTORÍA -->
+{% include "inicio/_gestoria_observaciones.html" %}
+
+<!-- ===============================
+     8. DOCUMENTACIÓN PENDIENTE (abajo de todo)
+=============================== -->
+{% include "inicio/_ventas_doc_alerta.html" %}
+
+<div class="row g-4 mb-4">
+
+    <!-- DOCUMENTACIÓN VENCIDA -->
+    <div class="col-md-6">
+        <div class="card p-4 h-100">
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <i data-lucide="alert-octagon" style="width:20px;height:20px;color:#ef4444;"></i>
+                <h6 class="fw-bold mb-0">Documentación vencida</h6>
+            </div>
+
+            {% if docs_vtv_vencida or docs_verif_vencida %}
+            <div class="list-group list-group-flush">
+                {% for v in docs_vtv_vencida %}
+                <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="badge bg-danger me-2">VTV</span>
+                        <span class="fw-semibold">{{ v.vehiculo.marca }} {{ v.vehiculo.modelo }}</span>
+                        <small class="text-muted">({{ v.vehiculo.dominio }})</small>
+                    </div>
+                    <small class="text-danger fw-semibold">Venció {{ v.vtv_vencimiento|date:"d/m/Y" }}</small>
+                </div>
+                {% endfor %}
+                {% for v in docs_verif_vencida %}
+                <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="badge bg-warning text-dark me-2">Verif.</span>
+                        <span class="fw-semibold">{{ v.vehiculo.marca }} {{ v.vehiculo.modelo }}</span>
+                        <small class="text-muted">({{ v.vehiculo.dominio }})</small>
+                    </div>
+                    <small class="text-danger fw-semibold">Venció {{ v.verificacion_vencimiento|date:"d/m/Y" }}</small>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <i data-lucide="check-circle" style="width:32px;height:32px;color:#10b981;margin-bottom:8px;"></i>
+                <p class="text-muted mb-0">No hay documentación vencida</p>
+            </div>
+            {% endif %}
+
+            <a href="/documentacion/" class="btn btn-secondary btn-sm mt-3 w-100">Ver documentación</a>
+        </div>
+    </div>
+
+    <!-- CALENDARIO: PRÓXIMOS TURNOS Y VENCIMIENTOS -->
+    <div class="col-md-6">
+        <div class="card p-4 h-100">
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <i data-lucide="calendar-clock" style="width:20px;height:20px;color:#f59e0b;"></i>
+                <h6 class="fw-bold mb-0">Próximos turnos y vencimientos</h6>
+            </div>
+
+            {% if turnos_vtv or turnos_verificacion or turnos_autopartes or vencimientos_vtv or vencimientos_verificacion %}
+            <div class="list-group list-group-flush">
+                {% for t in turnos_vtv %}
+                <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                    <div><span class="badge bg-danger me-2">Turno VTV</span><span class="fw-semibold">{{ t.vehiculo.marca }} {{ t.vehiculo.modelo }}</span></div>
+                    <small class="text-muted">{{ t.vtv_turno|date:"d/m" }}</small>
+                </div>
+                {% endfor %}
+                {% for t in turnos_verificacion %}
+                <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                    <div><span class="badge bg-warning text-dark me-2">Turno Verif.</span><span class="fw-semibold">{{ t.vehiculo.marca }} {{ t.vehiculo.modelo }}</span></div>
+                    <small class="text-muted">{{ t.verificacion_turno|date:"d/m" }}</small>
+                </div>
+                {% endfor %}
+                {% for t in turnos_autopartes %}
+                <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                    <div><span class="badge bg-info text-dark me-2">Turno Autopartes</span><span class="fw-semibold">{{ t.vehiculo.marca }} {{ t.vehiculo.modelo }}</span></div>
+                    <small class="text-muted">{{ t.autopartes_turno|date:"d/m" }}</small>
+                </div>
+                {% endfor %}
+                {% for v in vencimientos_vtv %}
+                <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                    <div><span class="badge bg-light text-danger border me-2">Vence VTV</span><span class="fw-semibold">{{ v.vehiculo.dominio }}</span></div>
+                    <small class="text-muted">{{ v.vtv_vencimiento|date:"d/m/Y" }}</small>
+                </div>
+                {% endfor %}
+                {% for v in vencimientos_verificacion %}
+                <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                    <div><span class="badge bg-light text-warning border me-2">Vence Verif.</span><span class="fw-semibold">{{ v.vehiculo.dominio }}</span></div>
+                    <small class="text-muted">{{ v.verificacion_vencimiento|date:"d/m/Y" }}</small>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <i data-lucide="calendar-check" style="width:32px;height:32px;color:#10b981;margin-bottom:8px;"></i>
+                <p class="text-muted mb-0">Sin turnos ni vencimientos próximos</p>
+            </div>
+            {% endif %}
+
+            <a href="/calendario/" class="btn btn-secondary btn-sm mt-3 w-100">Ver calendario</a>
+        </div>
+    </div>
+
 </div>
 
 <script>
