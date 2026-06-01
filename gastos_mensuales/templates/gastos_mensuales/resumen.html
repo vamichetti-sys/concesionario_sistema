@@ -113,7 +113,7 @@
 
 <div class="row g-4 mb-4">
     <!-- TABLA DE GASTOS -->
-    <div class="col-md-8">
+    <div class="col-12">
         <div class="card p-0">
             <div class="p-4 pb-0 d-flex justify-content-between align-items-center">
                 <h6 class="fw-bold mb-0">Gastos de {{ mes_nombre }} {{ anio }}</h6>
@@ -213,37 +213,6 @@
         </div>
     </div>
 
-    <!-- DESGLOSE POR CATEGORIA -->
-    <div class="col-md-4">
-        <div class="card p-4">
-            <h6 class="fw-bold mb-3">
-                <i data-lucide="pie-chart" style="width:16px;height:16px;margin-right:6px;color:#64748b;"></i>
-                Por categoría
-            </h6>
-
-            {% if por_categoria %}
-            {% for item in por_categoria %}
-            <div class="mb-3">
-                <div class="d-flex justify-content-between align-items-center mb-1">
-                    <span class="fw-semibold" style="font-size:14px;">
-                        {{ item.categoria__nombre }}
-                        {% if item.categoria__es_fijo %}<span class="badge" style="background:rgba(139,92,246,0.1);color:#8b5cf6;font-size:9px;">Fijo</span>{% endif %}
-                    </span>
-                    <span class="fw-bold" style="font-size:14px;">${{ item.total|floatformat:0 }}</span>
-                </div>
-                {% if total_general > 0 %}
-                <div class="progress" style="height:5px;border-radius:3px;background:#f1f5f9;">
-                    <div class="progress-bar {% if item.categoria__es_fijo %}bg-primary{% else %}bg-warning{% endif %}"
-                         style="width:{% widthratio item.total total_general 100 %}%;border-radius:3px;"></div>
-                </div>
-                {% endif %}
-            </div>
-            {% endfor %}
-            {% else %}
-            <p class="text-muted text-center mb-0">Sin datos</p>
-            {% endif %}
-        </div>
-    </div>
 </div>
 
 <script>lucide.createIcons();</script>
