@@ -135,6 +135,11 @@ urlpatterns = [
     # 📌 PROYECTOS (módulo personal)
     # ===============================
     path('proyectos/', include('proyectos.urls', namespace='proyectos')),
+
+    # ===============================
+    # 📣 MARKETING (Meta: Instagram + Facebook)
+    # ===============================
+    path('marketing/', include('marketing.urls')),
 ]
 
 # ==========================================================

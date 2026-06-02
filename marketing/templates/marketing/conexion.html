@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Conexión con Meta – Marketing{% endblock %}
+
+{% block content %}
+<div class="mb-3">
+    <a href="{% url 'marketing:panel' %}" class="text-muted text-decoration-none small">
+        <i data-lucide="arrow-left" style="width:14px;height:14px;vertical-align:-2px;"></i> Marketing
+    </a>
+    <h3 class="fw-bold mb-0 mt-1">Conexión con Meta</h3>
+    <p class="text-muted mb-0">Datos para configurar la app en Meta para desarrolladores</p>
+</div>
+
+<!-- Estado -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card p-3 h-100">
+            <small class="text-muted">Token de verificación</small>
+            <div class="fw-bold {% if tiene_verify %}text-success{% else %}text-danger{% endif %}">
+                {% if tiene_verify %}✓ Cargado{% else %}✗ Falta{% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card p-3 h-100">
+            <small class="text-muted">Token de la página (responder)</small>
+            <div class="fw-bold {% if tiene_token %}text-success{% else %}text-danger{% endif %}">
+                {% if tiene_token %}✓ Cargado{% else %}✗ Falta{% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card p-3 h-100">
+            <small class="text-muted">Secreto de la app (firma)</small>
+            <div class="fw-bold {% if tiene_secret %}text-success{% else %}text-warning{% endif %}">
+                {% if tiene_secret %}✓ Cargado{% else %}Opcional{% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Datos para Meta -->
+<div class="card p-4 mb-4">
+    <h6 class="fw-bold mb-3"><i data-lucide="link" style="width:18px;height:18px;vertical-align:-3px;"></i> Datos para pegar en Meta</h6>
+
+    <label class="form-label small fw-semibold mb-1">URL de devolución de llamada (Callback URL)</label>
+    <div class="input-group mb-3">
+        <input type="text" class="form-control" value="{{ webhook_url }}" id="urlWebhook" readonly>
+        <button class="btn btn-outline-secondary" onclick="copiar('urlWebhook')" type="button"><i data-lucide="copy" style="width:15px;height:15px;"></i></button>
+    </div>
+
+    <label class="form-label small fw-semibold mb-1">Token de verificación (Verify Token)</label>
+    <div class="input-group">
+        <input type="text" class="form-control" value="{{ verify_token|default:'(definí META_VERIFY_TOKEN en el servidor)' }}" id="verifyToken" readonly>
+        <button class="btn btn-outline-secondary" onclick="copiar('verifyToken')" type="button"><i data-lucide="copy" style="width:15px;height:15px;"></i></button>
+    </div>
+</div>
+
+<!-- Pasos -->
+<div class="card p-4">
+    <h6 class="fw-bold mb-3"><i data-lucide="list-checks" style="width:18px;height:18px;vertical-align:-3px;"></i> Cómo conectar (resumen)</h6>
+    <ol class="mb-0" style="line-height:1.9;">
+        <li>Entrá a <strong>developers.facebook.com</strong> y creá una app de tipo <em>Negocio</em>.</li>
+        <li>Agregá los productos <strong>Messenger</strong>, <strong>Instagram</strong> y <strong>Webhooks</strong>.</li>
+        <li>En Webhooks, pegá la <strong>Callback URL</strong> y el <strong>Verify Token</strong> de arriba.</li>
+        <li>Suscribite a los eventos: <code>messages</code>, <code>messaging_postbacks</code> y <code>leadgen</code>.</li>
+        <li>Vinculá tu <strong>página de Facebook</strong> y tu <strong>Instagram Business</strong>.</li>
+        <li>Generá el <strong>token de la página</strong> y cargalo en el servidor como <code>META_PAGE_ACCESS_TOKEN</code>.</li>
+        <li>Pedí la revisión de permisos (<em>pages_messaging, instagram_manage_messages, leads_retrieval</em>).</li>
+    </ol>
+    <div class="alert alert-info mt-3 mb-0 small">
+        Los tokens se cargan como <strong>variables de entorno</strong> en Render (no se escriben acá por seguridad):
+        <code>META_VERIFY_TOKEN</code>, <code>META_PAGE_ACCESS_TOKEN</code>, <code>META_APP_SECRET</code>.
+    </div>
+</div>
+
+<script>
+function copiar(id){ var el=document.getElementById(id); el.select(); document.execCommand('copy'); }
+if (typeof lucide !== 'undefined') lucide.createIcons();
+</script>
+{% endblock %}

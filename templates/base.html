@@ -698,6 +698,34 @@
     </div>
     {% endif %}
 
+    {% if user.username == 'Vamichetti' or user.username == 'Hamichetti' %}
+    <!-- MARKETING -->
+    <div class="sidebar-category">
+        <div class="sidebar-category-header" onclick="toggleCategory(this)">
+            <span>Marketing</span>
+            <i data-lucide="chevron-down" class="chevron"></i>
+        </div>
+        <div class="sidebar-category-items" style="max-height:400px;">
+            <a href="{% url 'marketing:panel' %}" class="nav-link {% if request.path == '/marketing/' %}active{% endif %}">
+                <i data-lucide="megaphone"></i>
+                <span>Panel Marketing</span>
+            </a>
+            <a href="{% url 'marketing:bandeja' %}" class="nav-link {% if '/marketing/bandeja/' in request.path or '/marketing/conversacion/' in request.path %}active{% endif %}">
+                <i data-lucide="message-circle"></i>
+                <span>Mensajes</span>
+            </a>
+            <a href="{% url 'marketing:leads' %}" class="nav-link {% if '/marketing/leads/' in request.path %}active{% endif %}">
+                <i data-lucide="user-plus"></i>
+                <span>Leads</span>
+            </a>
+            <a href="{% url 'marketing:conexion' %}" class="nav-link {% if '/marketing/conexion/' in request.path %}active{% endif %}">
+                <i data-lucide="plug"></i>
+                <span>Conexión Meta</span>
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
     {% if user.username == USUARIO_PRINCIPAL %}
     <!-- PANEL PERSONAL -->
     <div class="sidebar-category">

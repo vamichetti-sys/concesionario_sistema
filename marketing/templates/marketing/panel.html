@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}Marketing{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h3 class="fw-bold mb-1"><i data-lucide="megaphone" style="width:24px;height:24px;vertical-align:-4px;color:#e8820a;"></i> Marketing</h3>
+        <p class="text-muted mb-0">Mensajes y leads de Instagram y Facebook</p>
+    </div>
+    {% if not conectado %}
+    <a href="{% url 'marketing:conexion' %}" class="btn btn-warning">
+        <i data-lucide="plug-zap" style="width:16px;height:16px;"></i> Conectar Meta
+    </a>
+    {% endif %}
+</div>
+
+{% if not conectado %}
+<div class="alert alert-warning d-flex align-items-center gap-2">
+    <i data-lucide="alert-triangle" style="width:18px;height:18px;"></i>
+    <div>Todavía no está conectado con Meta. Andá a <a href="{% url 'marketing:conexion' %}" class="fw-semibold">Conexión</a> para configurarlo.</div>
+</div>
+{% endif %}
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <a href="{% url 'marketing:bandeja' %}" class="text-decoration-none">
+            <div class="card p-4 h-100" style="border-left:4px solid #d6249f;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">Mensajes sin leer</small>
+                    <i data-lucide="message-circle" style="width:20px;height:20px;color:#d6249f;"></i>
+                </div>
+                <div class="fw-bold" style="font-size:28px;color:#1a1a2e;">{{ no_leidos }}</div>
+                <small class="text-muted">{{ total_conversaciones }} conversación{{ total_conversaciones|pluralize:"es" }}</small>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-4">
+        <a href="{% url 'marketing:leads' %}" class="text-decoration-none">
+            <div class="card p-4 h-100" style="border-left:4px solid #10b981;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">Leads capturados</small>
+                    <i data-lucide="user-plus" style="width:20px;height:20px;color:#10b981;"></i>
+                </div>
+                <div class="fw-bold" style="font-size:28px;color:#1a1a2e;">{{ total_leads }}</div>
+                <small class="text-muted">Entran al CRM automáticamente</small>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-4">
+        <a href="{% url 'marketing:conexion' %}" class="text-decoration-none">
+            <div class="card p-4 h-100" style="border-left:4px solid {% if conectado %}#3b82f6{% else %}#f59e0b{% endif %};">
+                <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">Conexión con Meta</small>
+                    <i data-lucide="plug" style="width:20px;height:20px;color:#3b82f6;"></i>
+                </div>
+                <div class="fw-bold" style="font-size:20px;color:{% if conectado %}#059669{% else %}#d97706{% endif %};">
+                    {% if conectado %}Conectado{% else %}Sin conectar{% endif %}
+                </div>
+                <small class="text-muted">Webhook, tokens y permisos</small>
+            </div>
+        </a>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-7">
+        <div class="card p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="fw-bold mb-0">Últimas conversaciones</h6>
+                <a href="{% url 'marketing:bandeja' %}" class="small text-decoration-none">Ver todas</a>
+            </div>
+            {% for c in conversaciones %}
+            <a href="{% url 'marketing:conversacion' c.pk %}" class="d-flex align-items-center gap-2 py-2 border-bottom text-decoration-none text-dark">
+                <span class="badge {% if c.plataforma == 'instagram' %}bg-danger{% else %}bg-primary{% endif %}">{{ c.get_plataforma_display }}</span>
+                <div class="flex-fill">
+                    <div class="fw-semibold">{{ c.nombre|default:c.contacto_id }}</div>
+                    <small class="text-muted">{{ c.ultimo_texto|truncatechars:50 }}</small>
+                </div>
+                {% if c.no_leido %}<span class="badge bg-success rounded-pill">nuevo</span>{% endif %}
+            </a>
+            {% empty %}
+            <p class="text-muted mb-0">Todavía no llegaron mensajes.</p>
+            {% endfor %}
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="card p-4 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="fw-bold mb-0">Últimos leads</h6>
+                <a href="{% url 'marketing:leads' %}" class="small text-decoration-none">Ver todos</a>
+            </div>
+            {% for l in leads_recientes %}
+            <div class="d-flex align-items-center gap-2 py-2 border-bottom">
+                <i data-lucide="user" style="width:16px;height:16px;color:#10b981;"></i>
+                <div class="flex-fill">
+                    <div class="fw-semibold">{{ l.nombre|default:"Lead" }}</div>
+                    <small class="text-muted">{{ l.telefono }}{% if l.email %} · {{ l.email }}{% endif %}</small>
+                </div>
+                <small class="text-muted">{{ l.get_plataforma_display }}</small>
+            </div>
+            {% empty %}
+            <p class="text-muted mb-0">Sin leads todavía.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<script>if (typeof lucide !== 'undefined') lucide.createIcons();</script>
+{% endblock %}

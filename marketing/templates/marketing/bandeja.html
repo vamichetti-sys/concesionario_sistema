@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Bandeja – Marketing{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+        <a href="{% url 'marketing:panel' %}" class="text-muted text-decoration-none small">
+            <i data-lucide="arrow-left" style="width:14px;height:14px;vertical-align:-2px;"></i> Marketing
+        </a>
+        <h3 class="fw-bold mb-0 mt-1">Bandeja de mensajes</h3>
+    </div>
+    <div class="btn-group">
+        <a href="{% url 'marketing:bandeja' %}" class="btn btn-sm {% if not filtro %}btn-dark{% else %}btn-outline-secondary{% endif %}">Todos</a>
+        <a href="?plataforma=instagram" class="btn btn-sm {% if filtro == 'instagram' %}btn-dark{% else %}btn-outline-secondary{% endif %}">Instagram</a>
+        <a href="?plataforma=messenger" class="btn btn-sm {% if filtro == 'messenger' %}btn-dark{% else %}btn-outline-secondary{% endif %}">Messenger</a>
+    </div>
+</div>
+
+<div class="card">
+    {% for c in conversaciones %}
+    <a href="{% url 'marketing:conversacion' c.pk %}" class="d-flex align-items-center gap-3 p-3 border-bottom text-decoration-none text-dark" style="{% if c.no_leido %}background:#f0fdf4;{% endif %}">
+        <span class="badge {% if c.plataforma == 'instagram' %}bg-danger{% else %}bg-primary{% endif %}">{{ c.get_plataforma_display }}</span>
+        <div class="flex-fill">
+            <div class="fw-semibold">{{ c.nombre|default:c.contacto_id }}</div>
+            <small class="text-muted">{{ c.ultimo_texto|truncatechars:70 }}</small>
+        </div>
+        <div class="text-end">
+            {% if c.ultima_fecha %}<small class="text-muted d-block">{{ c.ultima_fecha|date:"d/m H:i" }}</small>{% endif %}
+            {% if c.no_leido %}<span class="badge bg-success rounded-pill">nuevo</span>{% endif %}
+        </div>
+    </a>
+    {% empty %}
+    <div class="text-center py-5">
+        <i data-lucide="inbox" style="width:34px;height:34px;color:#d1d5db;"></i>
+        <p class="text-muted mb-0 mt-2">No hay mensajes todavía.</p>
+        {% if not conectado %}<small class="text-muted">Conectá Meta para empezar a recibirlos.</small>{% endif %}
+    </div>
+    {% endfor %}
+</div>
+
+<script>if (typeof lucide !== 'undefined') lucide.createIcons();</script>
+{% endblock %}

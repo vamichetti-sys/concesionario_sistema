@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}{{ conv.nombre|default:"Conversación" }} – Marketing{% endblock %}
+
+{% block content %}
+<style>
+    .chat-box { max-height:60vh; overflow-y:auto; background:#f8f9fa; border-radius:12px; padding:16px; }
+    .burbuja { max-width:70%; padding:8px 12px; border-radius:14px; margin-bottom:8px; font-size:14px; }
+    .burbuja.entra { background:#fff; border:1px solid #e5e7eb; }
+    .burbuja.sale  { background:#dcf8c6; margin-left:auto; }
+    .burbuja small { display:block; font-size:11px; color:#9ca3af; margin-top:2px; }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+        <a href="{% url 'marketing:bandeja' %}" class="text-muted text-decoration-none small">
+            <i data-lucide="arrow-left" style="width:14px;height:14px;vertical-align:-2px;"></i> Bandeja
+        </a>
+        <h4 class="fw-bold mb-0 mt-1">
+            <span class="badge {% if conv.plataforma == 'instagram' %}bg-danger{% else %}bg-primary{% endif %}">{{ conv.get_plataforma_display }}</span>
+            {{ conv.nombre|default:conv.contacto_id }}
+        </h4>
+    </div>
+</div>
+
+<div class="card p-3 mb-3">
+    <div class="chat-box" id="chatBox">
+        {% for m in mensajes %}
+        <div class="burbuja {% if m.entrante %}entra{% else %}sale{% endif %}">
+            {{ m.texto|linebreaksbr }}
+            <small>{{ m.fecha|date:"d/m H:i" }}</small>
+        </div>
+        {% empty %}
+        <p class="text-muted text-center mb-0">Sin mensajes.</p>
+        {% endfor %}
+    </div>
+
+    <form method="post" class="d-flex gap-2 mt-3">
+        {% csrf_token %}
+        <input type="text" name="texto" class="form-control" placeholder="Escribí una respuesta…" autocomplete="off" required {% if not conectado %}disabled{% endif %}>
+        <button type="submit" class="btn btn-success" {% if not conectado %}disabled{% endif %}>
+            <i data-lucide="send" style="width:16px;height:16px;"></i> Enviar
+        </button>
+    </form>
+    {% if not conectado %}
+    <small class="text-warning mt-2"><i data-lucide="alert-triangle" style="width:13px;height:13px;vertical-align:-2px;"></i> Conectá Meta para poder responder.</small>
+    {% endif %}
+</div>
+
+<script>
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+    var cb = document.getElementById('chatBox'); if (cb) cb.scrollTop = cb.scrollHeight;
+</script>
+{% endblock %}

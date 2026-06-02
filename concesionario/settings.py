@@ -95,7 +95,18 @@ INSTALLED_APPS = [
     "agenda_pagos",
     "agenda_ingresos",
     "financiacion",
+    "marketing",
 ]
+
+# ==========================================================
+# META / MARKETING (Instagram + Facebook)
+# Tokens y secretos se cargan como variables de entorno en Render.
+# ==========================================================
+META_VERIFY_TOKEN = os.getenv("META_VERIFY_TOKEN", "")
+META_PAGE_ACCESS_TOKEN = os.getenv("META_PAGE_ACCESS_TOKEN", "")
+META_APP_SECRET = os.getenv("META_APP_SECRET", "")
+# Opcional: forzar la URL base pública del webhook (si no, se deduce del request)
+META_WEBHOOK_BASE_URL = os.getenv("META_WEBHOOK_BASE_URL", "")
 
 # ==========================================================
 # USUARIO PRINCIPAL (módulo "Proyectos")
