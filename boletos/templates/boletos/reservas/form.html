@@ -387,14 +387,14 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function autoRellenar(vid) {
     if (!vid) return;
-    fetch(`/vehiculos/ajax/datos/?id=${vid}`)
+    fetch(`/vehiculos/ajax/vehiculo-datos/?vehiculo_id=${vid}`)
       .then(r => r.json())
       .then(data => {
-        const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ""; };
+        const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = (val == null ? "" : val); };
         set("id_marca",      data.marca);
         set("id_modelo",     data.modelo);
         set("id_anio",       data.anio);
-        set("id_dominio",    data.dominio || data.patente);
+        set("id_dominio",    data.dominio);
         set("id_motor_nro",  data.motor);
         set("id_chasis_nro", data.chasis);
       })
