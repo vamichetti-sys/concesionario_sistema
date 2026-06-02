@@ -1,0 +1,162 @@
+{% extends 'base.html' %}
+{% block title %}Agenda Diaria{% endblock %}
+
+{% block content %}
+<style>
+    .accent { color: #e8820a; }
+    .ad-card { background:#fff; border-radius:14px; box-shadow:0 2px 12px rgba(0,0,0,0.05); }
+    .ad-row { display:flex; align-items:center; gap:12px; padding:12px 16px; border-bottom:1px solid #f1f1f4; }
+    .ad-row:last-child { border-bottom:none; }
+    .ad-row.done .ad-text { text-decoration:line-through; color:#9ca3af; }
+    .ad-text { flex:1; font-size:15px; color:#1a1a2e; }
+    .ad-hora { font-size:13px; font-weight:600; color:#6b7280; min-width:48px; }
+    .prio-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+    .prio-alta { background:#ef4444; }
+    .prio-media { background:#f59e0b; }
+    .prio-baja { background:#10b981; }
+    .chk { width:22px; height:22px; border-radius:6px; border:2px solid #d1d5db; background:#fff;
+           display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; }
+    .chk.on { background:#10b981; border-color:#10b981; color:#fff; }
+    .ad-actions { display:flex; gap:6px; opacity:0; transition:opacity .15s; }
+    .ad-row:hover .ad-actions { opacity:1; }
+    .ad-actions .btn { padding:2px 7px; }
+    .day-nav .btn { border-radius:10px; }
+    .progress-thin { height:8px; border-radius:6px; }
+</style>
+
+<!-- ENCABEZADO -->
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+        <h3 class="fw-bold mb-1"><i data-lucide="list-checks" class="accent" style="width:24px;height:24px;vertical-align:-4px;"></i> Agenda Diaria</h3>
+        <p class="text-muted mb-0">Tu lista de tareas del día</p>
+    </div>
+    <div class="day-nav d-flex align-items-center gap-2">
+        <a href="?fecha={{ dia_anterior|date:'Y-m-d' }}" class="btn btn-outline-secondary"><i data-lucide="chevron-left" style="width:18px;height:18px;"></i></a>
+        <a href="{% url 'proyectos:agenda_diaria' %}" class="btn {% if fecha == hoy %}btn-secondary{% else %}btn-outline-secondary{% endif %}">Hoy</a>
+        <a href="?fecha={{ dia_siguiente|date:'Y-m-d' }}" class="btn btn-outline-secondary"><i data-lucide="chevron-right" style="width:18px;height:18px;"></i></a>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <!-- DÍA + PROGRESO -->
+        <div class="ad-card p-4 mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                <div>
+                    <div class="fw-bold" style="font-size:18px; text-transform:capitalize;">{{ fecha|date:'l, d \d\e F' }}</div>
+                    <small class="text-muted">{{ hechas }} de {{ total }} completada{{ total|pluralize:"s" }} · {{ pendientes }} pendiente{{ pendientes|pluralize:"s" }}</small>
+                </div>
+                {% if fecha == hoy %}<span class="badge bg-warning text-dark">Hoy</span>{% endif %}
+            </div>
+            <div class="progress progress-thin mb-1">
+                <div class="progress-bar bg-success" style="width: {{ progreso }}%;"></div>
+            </div>
+
+            <!-- AGREGAR -->
+            <form method="post" action="{% url 'proyectos:agenda_diaria_agregar' %}" class="row g-2 align-items-end mt-3">
+                {% csrf_token %}
+                <input type="hidden" name="fecha" value="{{ fecha|date:'Y-m-d' }}">
+                <div class="col-md-6">
+                    <label class="form-label" style="font-size:12px;">Tarea</label>
+                    <input type="text" name="texto" class="form-control" placeholder="¿Qué hay que hacer?" maxlength="300" required autofocus>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label" style="font-size:12px;">Hora</label>
+                    <input type="time" name="hora" class="form-control">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label" style="font-size:12px;">Prioridad</label>
+                    <select name="prioridad" class="form-select">
+                        {% for val, lbl in prioridades %}
+                        <option value="{{ val }}" {% if val == 'media' %}selected{% endif %}>{{ lbl }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2 d-grid">
+                    <button type="submit" class="btn btn-success"><i data-lucide="plus" style="width:16px;height:16px;"></i> Agregar</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- LISTA DEL DÍA -->
+        <div class="ad-card">
+            {% for t in tareas %}
+            <div class="ad-row {% if t.hecha %}done{% endif %}">
+                <form method="post" action="{% url 'proyectos:agenda_diaria_toggle' t.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="chk {% if t.hecha %}on{% endif %}" title="{% if t.hecha %}Desmarcar{% else %}Marcar como hecha{% endif %}">
+                        {% if t.hecha %}<i data-lucide="check" style="width:14px;height:14px;"></i>{% endif %}
+                    </button>
+                </form>
+                <span class="prio-dot prio-{{ t.prioridad }}" title="Prioridad {{ t.get_prioridad_display }}"></span>
+                {% if t.hora %}<span class="ad-hora">{{ t.hora|time:'H:i' }}</span>{% endif %}
+                <span class="ad-text">{{ t.texto }}</span>
+                <div class="ad-actions">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="document.getElementById('edit-{{ t.pk }}').classList.toggle('d-none')"><i data-lucide="pencil" style="width:14px;height:14px;"></i></button>
+                    <form method="post" action="{% url 'proyectos:agenda_diaria_eliminar' t.pk %}" onsubmit="return confirm('¿Eliminar esta tarea?');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-danger"><i data-lucide="trash-2" style="width:14px;height:14px;"></i></button>
+                    </form>
+                </div>
+            </div>
+            <!-- EDICIÓN INLINE -->
+            <div id="edit-{{ t.pk }}" class="d-none px-3 pb-3" style="background:#fafafb;">
+                <form method="post" action="{% url 'proyectos:agenda_diaria_editar' t.pk %}" class="row g-2 align-items-end pt-3">
+                    {% csrf_token %}
+                    <div class="col-md-6">
+                        <input type="text" name="texto" class="form-control form-control-sm" value="{{ t.texto }}" maxlength="300">
+                    </div>
+                    <div class="col-md-2">
+                        <input type="time" name="hora" class="form-control form-control-sm" value="{{ t.hora|date:'H:i' }}">
+                    </div>
+                    <div class="col-md-2">
+                        <select name="prioridad" class="form-select form-select-sm">
+                            {% for val, lbl in prioridades %}
+                            <option value="{{ val }}" {% if val == t.prioridad %}selected{% endif %}>{{ lbl }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2 d-grid">
+                        <button type="submit" class="btn btn-sm btn-primary">Guardar</button>
+                    </div>
+                </form>
+            </div>
+            {% empty %}
+            <div class="text-center py-5">
+                <i data-lucide="coffee" style="width:34px;height:34px;color:#d1d5db;"></i>
+                <p class="text-muted mb-0 mt-2">No hay tareas para este día.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- ATRASADAS -->
+    <div class="col-lg-4">
+        <div class="ad-card p-4 h-100">
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <i data-lucide="alert-triangle" style="width:18px;height:18px;color:#ef4444;"></i>
+                <h6 class="fw-bold mb-0">Pendientes atrasadas</h6>
+            </div>
+            {% for t in atrasadas %}
+            <div class="d-flex align-items-center gap-2 py-2 border-bottom">
+                <span class="prio-dot prio-{{ t.prioridad }}"></span>
+                <div class="flex-fill">
+                    <div style="font-size:14px;">{{ t.texto }}</div>
+                    <small class="text-danger">{{ t.fecha|date:'d/m/Y' }}</small>
+                </div>
+                <form method="post" action="{% url 'proyectos:agenda_diaria_mover_hoy' t.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-outline-success" title="Mover a hoy"><i data-lucide="arrow-right" style="width:14px;height:14px;"></i></button>
+                </form>
+            </div>
+            {% empty %}
+            <p class="text-muted mb-0" style="font-size:14px;">Nada atrasado. 🎉</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<script>
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+</script>
+{% endblock %}

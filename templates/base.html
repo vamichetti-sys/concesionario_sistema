@@ -706,7 +706,11 @@
             <i data-lucide="chevron-down" class="chevron"></i>
         </div>
         <div class="sidebar-category-items" style="max-height:400px;">
-            <a href="{% url 'proyectos:dashboard' %}" class="nav-link {% if '/proyectos/' in request.path %}active{% endif %}">
+            <a href="{% url 'proyectos:agenda_diaria' %}" class="nav-link {% if '/proyectos/agenda/' in request.path %}active{% endif %}">
+                <i data-lucide="list-checks"></i>
+                <span>Agenda Diaria</span>
+            </a>
+            <a href="{% url 'proyectos:dashboard' %}" class="nav-link {% if '/proyectos/' in request.path and '/proyectos/agenda/' not in request.path %}active{% endif %}">
                 <i data-lucide="kanban-square"></i>
                 <span>Proyectos</span>
             </a>

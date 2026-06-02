@@ -152,3 +152,51 @@ class Recordatorio(models.Model):
 
     def __str__(self):
         return self.titulo
+
+
+# ==========================================================
+# TAREA DIARIA
+# To-do simple del día (agenda diaria), independiente de proyectos.
+# Cada usuario maneja su propia agenda.
+# ==========================================================
+class TareaDiaria(models.Model):
+    PRIORIDAD_CHOICES = [
+        ('alta', 'Alta'),
+        ('media', 'Media'),
+        ('baja', 'Baja'),
+    ]
+
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='tareas_diarias',
+    )
+    fecha = models.DateField(default=timezone.localdate)
+    texto = models.CharField(max_length=300)
+    hora = models.TimeField(null=True, blank=True)
+    prioridad = models.CharField(
+        max_length=10,
+        choices=PRIORIDAD_CHOICES,
+        default='media',
+    )
+    hecha = models.BooleanField(default=False)
+    completada_en = models.DateTimeField(null=True, blank=True)
+    orden = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        # Pendientes primero; luego por hora (sin hora al final) y orden de carga
+        ordering = ['hecha', 'hora', 'orden', 'created_at']
+        verbose_name = 'Tarea diaria'
+        verbose_name_plural = 'Tareas diarias'
+
+    def __str__(self):
+        return self.texto
+
+    def save(self, *args, **kwargs):
+        # Sella la fecha de completado al marcar / la limpia al desmarcar
+        if self.hecha and not self.completada_en:
+            self.completada_en = timezone.now()
+        if not self.hecha and self.completada_en:
+            self.completada_en = None
+        super().save(*args, **kwargs)

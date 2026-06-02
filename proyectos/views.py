@@ -1,13 +1,14 @@
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponseBadRequest
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 from django.db.models import Q
 
-from .models import Proyecto, Tarea, Recordatorio
+from .models import Proyecto, Tarea, Recordatorio, TareaDiaria
 from .forms import ProyectoForm, TareaForm, RecordatorioForm
 from .decorators import solo_usuario_principal
 
@@ -416,3 +417,136 @@ def api_recordatorios_pendientes(request):
         'tarea': r.tarea.titulo if r.tarea else None,
     } for r in pendientes]
     return JsonResponse({'count': len(data), 'recordatorios': data})
+
+
+# ==========================================================
+# AGENDA DIARIA — to-do simple por día
+# ==========================================================
+def _parse_fecha(valor):
+    """Devuelve la fecha del querystring (YYYY-MM-DD) o hoy si es inválida."""
+    if valor:
+        try:
+            return datetime.strptime(valor, '%Y-%m-%d').date()
+        except (ValueError, TypeError):
+            pass
+    return timezone.localdate()
+
+
+@solo_usuario_principal
+def agenda_diaria(request):
+    fecha = _parse_fecha(request.GET.get('fecha'))
+    hoy = timezone.localdate()
+
+    tareas = TareaDiaria.objects.filter(usuario=request.user, fecha=fecha)
+
+    # Pendientes arrastradas de días anteriores (solo si miramos hoy o el futuro)
+    atrasadas = []
+    if fecha >= hoy:
+        atrasadas = (
+            TareaDiaria.objects
+            .filter(usuario=request.user, hecha=False, fecha__lt=hoy)
+            .order_by('fecha', 'hora', 'orden')
+        )
+
+    total = tareas.count()
+    hechas = tareas.filter(hecha=True).count()
+    progreso = int(round((hechas / total) * 100)) if total else 0
+
+    return render(request, 'proyectos/agenda_diaria.html', {
+        'fecha': fecha,
+        'hoy': hoy,
+        'dia_anterior': fecha - timedelta(days=1),
+        'dia_siguiente': fecha + timedelta(days=1),
+        'tareas': tareas,
+        'atrasadas': atrasadas,
+        'total': total,
+        'hechas': hechas,
+        'pendientes': total - hechas,
+        'progreso': progreso,
+        'prioridades': TareaDiaria.PRIORIDAD_CHOICES,
+    })
+
+
+@solo_usuario_principal
+@require_POST
+def agenda_diaria_agregar(request):
+    fecha = _parse_fecha(request.POST.get('fecha'))
+    texto = (request.POST.get('texto') or '').strip()
+    if not texto:
+        messages.error(request, 'Escribí la tarea.')
+        return redirect(f"{request.path_info}")
+
+    prioridad = request.POST.get('prioridad') or 'media'
+    if prioridad not in dict(TareaDiaria.PRIORIDAD_CHOICES):
+        prioridad = 'media'
+
+    hora = None
+    hora_str = (request.POST.get('hora') or '').strip()
+    if hora_str:
+        try:
+            hora = datetime.strptime(hora_str, '%H:%M').time()
+        except ValueError:
+            hora = None
+
+    TareaDiaria.objects.create(
+        usuario=request.user,
+        fecha=fecha,
+        texto=texto[:300],
+        prioridad=prioridad,
+        hora=hora,
+    )
+    messages.success(request, 'Tarea agregada.')
+    return redirect(f"{reverse('proyectos:agenda_diaria')}?fecha={fecha:%Y-%m-%d}")
+
+
+@solo_usuario_principal
+@require_POST
+def agenda_diaria_toggle(request, pk):
+    t = get_object_or_404(TareaDiaria, pk=pk, usuario=request.user)
+    t.hecha = not t.hecha
+    t.save()
+    return redirect(f"{reverse('proyectos:agenda_diaria')}?fecha={t.fecha:%Y-%m-%d}")
+
+
+@solo_usuario_principal
+@require_POST
+def agenda_diaria_editar(request, pk):
+    t = get_object_or_404(TareaDiaria, pk=pk, usuario=request.user)
+    texto = (request.POST.get('texto') or '').strip()
+    if texto:
+        t.texto = texto[:300]
+    prioridad = request.POST.get('prioridad')
+    if prioridad in dict(TareaDiaria.PRIORIDAD_CHOICES):
+        t.prioridad = prioridad
+    hora_str = (request.POST.get('hora') or '').strip()
+    if hora_str:
+        try:
+            t.hora = datetime.strptime(hora_str, '%H:%M').time()
+        except ValueError:
+            pass
+    else:
+        t.hora = None
+    t.save()
+    messages.success(request, 'Tarea actualizada.')
+    return redirect(f"{reverse('proyectos:agenda_diaria')}?fecha={t.fecha:%Y-%m-%d}")
+
+
+@solo_usuario_principal
+@require_POST
+def agenda_diaria_eliminar(request, pk):
+    t = get_object_or_404(TareaDiaria, pk=pk, usuario=request.user)
+    fecha = t.fecha
+    t.delete()
+    messages.success(request, 'Tarea eliminada.')
+    return redirect(f"{reverse('proyectos:agenda_diaria')}?fecha={fecha:%Y-%m-%d}")
+
+
+@solo_usuario_principal
+@require_POST
+def agenda_diaria_mover_hoy(request, pk):
+    """Pasa una tarea atrasada al día de hoy."""
+    t = get_object_or_404(TareaDiaria, pk=pk, usuario=request.user)
+    t.fecha = timezone.localdate()
+    t.save()
+    messages.success(request, 'Tarea movida a hoy.')
+    return redirect('proyectos:agenda_diaria')
