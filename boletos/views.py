@@ -719,8 +719,13 @@ def _generar_pdf_reserva(reserva):
         lx = x + ancho_label
         linea_punt(lx, x + at, y)
         if valor:
+            txt = str(valor)
+            # Recorta el valor para que nunca se desborde del campo (evita pisar el de al lado)
+            disponible = (x + at) - (lx + 0.12 * cm) - 0.05 * cm
             c.setFont("Helvetica-Bold", 8)
-            c.drawString(lx + 0.12 * cm, y, str(valor))
+            while txt and c.stringWidth(txt, "Helvetica-Bold", 8) > disponible:
+                txt = txt[:-1]
+            c.drawString(lx + 0.12 * cm, y, txt)
 
     def monto_box(label, valor):
         nonlocal y
@@ -752,13 +757,17 @@ def _generar_pdf_reserva(reserva):
     # ── Datos del Vehículo ───────────────────────────────
     sec_header("DATOS DEL VEHÍCULO QUE SOLICITA RESERVA")
     y -= 0.15 * cm
-    campo("Marca:", reserva.marca, ML, ancho_label=1.2 * cm, ancho_total=3.8 * cm)
-    campo("Modelo:", reserva.modelo, ML + 4.3 * cm, ancho_label=1.5 * cm, ancho_total=4.2 * cm)
-    campo("Año:", reserva.anio, ML + 9.8 * cm, ancho_label=0.8 * cm, ancho_total=2 * cm)
-    campo("Dominio:", reserva.dominio, ML + 12.4 * cm, ancho_label=1.6 * cm, ancho_total=CW - 12.4 * cm)
+    # Fila 1: Marca · Año · Dominio (campos cortos)
+    campo("Marca:", reserva.marca, ML, ancho_label=1.2 * cm, ancho_total=5 * cm)
+    campo("Año:", reserva.anio, ML + 5.5 * cm, ancho_label=0.8 * cm, ancho_total=2.5 * cm)
+    campo("Dominio:", reserva.dominio, ML + 8.5 * cm, ancho_label=1.6 * cm, ancho_total=CW - 8.5 * cm)
     y -= 0.52 * cm
-    campo("Motor N°:", reserva.motor_nro, ML, ancho_label=1.7 * cm, ancho_total=5.5 * cm)
-    campo("Chasis N°:", reserva.chasis_nro, ML + 6.5 * cm, ancho_label=1.8 * cm, ancho_total=CW - 6.5 * cm)
+    # Fila 2: Modelo en línea completa (puede ser largo)
+    campo("Modelo:", reserva.modelo, ML, ancho_label=1.5 * cm, ancho_total=CW)
+    y -= 0.52 * cm
+    # Fila 3: Motor · Chasis
+    campo("Motor N°:", reserva.motor_nro, ML, ancho_label=1.7 * cm, ancho_total=8 * cm)
+    campo("Chasis N°:", reserva.chasis_nro, ML + 8.5 * cm, ancho_label=1.8 * cm, ancho_total=CW - 8.5 * cm)
     y -= 0.7 * cm
 
     # ── Detalle de la Operación ──────────────────────────
