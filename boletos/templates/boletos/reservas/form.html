@@ -55,12 +55,24 @@
       </div>
       <div class="card-body">
         <div class="row g-3">
-          <!-- Selector de stock (opcional) -->
+          <!-- Selector de stock (opcional) - buscador con autocompletado -->
           <div class="col-12">
             <label class="form-label small fw-semibold mb-1">
-              Vínculo con Stock <span class="text-muted fw-normal">(opcional – auto-completa los datos)</span>
+              Vínculo con Stock <span class="text-muted fw-normal">(opcional – escribí marca, modelo o patente; auto-completa los datos)</span>
             </label>
-            {{ form.vehiculo }}
+            <div id="vehiculoCombo" class="position-relative">
+              <div class="input-group">
+                <span class="input-group-text bg-white"><i data-lucide="search" style="width:15px;height:15px;"></i></span>
+                <input type="text" id="vehiculoSearch" class="form-control"
+                       placeholder="Buscar vehículo en stock…" autocomplete="off">
+                <button type="button" id="vehiculoClear" class="btn btn-outline-secondary" title="Quitar vínculo" style="display:none;">
+                  <i data-lucide="x" style="width:15px;height:15px;"></i>
+                </button>
+              </div>
+              <div id="vehiculoDropdown" class="list-group position-absolute w-100 shadow"
+                   style="z-index:1050; max-height:260px; overflow-y:auto; display:none;"></div>
+              <div style="display:none;">{{ form.vehiculo }}</div>
+            </div>
           </div>
           <div class="col-md-3">
             <label class="form-label small fw-semibold mb-1">Marca</label>{{ form.marca }}
@@ -273,16 +285,22 @@
   </form>
 </div>
 
-<!-- Auto-populate desde selector de vehículo (igual que en boleto) -->
+<!-- Buscador de vehículo en stock + auto-relleno -->
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-  const selectVehiculo = document.getElementById("id_vehiculo");
-  if (!selectVehiculo) return;
+  const select   = document.getElementById("id_vehiculo");
+  const search   = document.getElementById("vehiculoSearch");
+  const dropdown = document.getElementById("vehiculoDropdown");
+  const clearBtn = document.getElementById("vehiculoClear");
+  if (!select || !search || !dropdown) return;
 
-  selectVehiculo.addEventListener("change", function () {
-    const vid = this.value;
+  // Armamos la lista de opciones desde el <select> (valor vacío = sin vínculo)
+  const opciones = Array.from(select.options)
+    .filter(o => o.value)
+    .map(o => ({ value: o.value, label: o.textContent.trim() }));
+
+  function autoRellenar(vid) {
     if (!vid) return;
-
     fetch(`/vehiculos/ajax/datos/?id=${vid}`)
       .then(r => r.json())
       .then(data => {
@@ -295,7 +313,60 @@ document.addEventListener("DOMContentLoaded", function () {
         set("id_chasis_nro", data.chasis);
       })
       .catch(() => {});
+  }
+
+  function elegir(opt) {
+    select.value = opt.value;
+    search.value = opt.label;
+    dropdown.style.display = "none";
+    clearBtn.style.display = "";
+    autoRellenar(opt.value);
+  }
+
+  function limpiar() {
+    select.value = "";
+    search.value = "";
+    dropdown.style.display = "none";
+    clearBtn.style.display = "none";
+  }
+
+  function render(filtro) {
+    const f = (filtro || "").toLowerCase().trim();
+    const lista = f
+      ? opciones.filter(o => o.label.toLowerCase().includes(f))
+      : opciones;
+    dropdown.innerHTML = "";
+    if (!lista.length) {
+      dropdown.innerHTML = '<div class="list-group-item text-muted small">Sin resultados en stock</div>';
+    } else {
+      lista.slice(0, 50).forEach(o => {
+        const item = document.createElement("button");
+        item.type = "button";
+        item.className = "list-group-item list-group-item-action small";
+        item.textContent = o.label;
+        item.addEventListener("mousedown", e => { e.preventDefault(); elegir(o); });
+        dropdown.appendChild(item);
+      });
+    }
+    dropdown.style.display = "block";
+  }
+
+  search.addEventListener("focus", () => render(search.value));
+  search.addEventListener("input", () => { select.value = ""; clearBtn.style.display = search.value ? "" : "none"; render(search.value); });
+  clearBtn.addEventListener("click", limpiar);
+
+  // Cerrar el dropdown al hacer click afuera
+  document.addEventListener("click", e => {
+    if (!document.getElementById("vehiculoCombo").contains(e.target)) dropdown.style.display = "none";
   });
+
+  // Si viene con un vehículo ya elegido (edición), mostramos su etiqueta
+  if (select.value) {
+    const sel = opciones.find(o => o.value === select.value);
+    if (sel) { search.value = sel.label; clearBtn.style.display = ""; }
+  }
+
+  if (typeof lucide !== 'undefined') lucide.createIcons();
 });
 </script>
 {% endblock %}
