@@ -200,6 +200,19 @@ def ingresos_resumen(request):
     if hoy.year not in anios_disponibles:
         anios_disponibles = [hoy.year] + anios_disponibles
 
+    # Lo que está a ingresar: alquileres pendientes de cobro del mes
+    from cuentas_internas.models import Alquiler
+    a_ingresar = []
+    total_a_ingresar = Decimal("0")
+    for alq in Alquiler.objects.filter(activo=True):
+        if alq.pagos.filter(periodo_mes=mes, periodo_anio=anio).exists():
+            continue
+        for f in alq.cronograma():
+            if f["mes"] == mes and f["anio"] == anio:
+                a_ingresar.append({"alquiler": alq, "monto": f["monto"]})
+                total_a_ingresar += f["monto"] or Decimal("0")
+                break
+
     return render(request, "gastos_personales/ingresos_resumen.html", {
         "ingresos": ingresos,
         "mes": mes,
@@ -209,6 +222,8 @@ def ingresos_resumen(request):
         "por_concepto": por_concepto,
         "anios_disponibles": anios_disponibles,
         "meses_choices": list(enumerate(MESES))[1:],
+        "a_ingresar": a_ingresar,
+        "total_a_ingresar": total_a_ingresar,
     })
 
 

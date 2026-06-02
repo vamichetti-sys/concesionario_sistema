@@ -253,9 +253,13 @@
                     </td>
                     <td class="text-end">
                         {% if not f.cobrado %}
-                        <a href="{% url 'cuentas_internas:alquiler_detalle' alquiler.pk %}?mes={{ f.mes }}&anio={{ f.anio }}#registrar-cobro" class="btn btn-sm btn-success">
-                            <i data-lucide="dollar-sign" style="width:14px;height:14px;margin-right:4px;"></i>Cobrar
-                        </a>
+                        <form method="post" action="{% url 'cuentas_internas:cobrar_alquiler_mes' alquiler.id f.anio f.mes %}" style="display:inline;"
+                              onsubmit="return confirm('Cobrar {{ f.label }} por $ {{ f.monto|floatformat:0 }}? Se carga en Ingresos Personales.');">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-success">
+                                <i data-lucide="dollar-sign" style="width:14px;height:14px;margin-right:4px;"></i>Cobrar
+                            </button>
+                        </form>
                         {% endif %}
                     </td>
                 </tr>

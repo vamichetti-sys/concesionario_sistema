@@ -9,14 +9,14 @@ class PagoFuturo(models.Model):
     Pago futuro programado en la Agenda de Pagos (alquiler, impuestos,
     celular, sueldos, etc.). Al marcarse como pagado, se crea
     automáticamente el registro en el módulo destino:
-    - Control de Gastos → si es un gasto de la concesionaria.
+    - Gastos Concesionario → si es un gasto de la concesionaria.
     - Gastos Personales → si es un gasto personal del usuario que paga.
     """
 
     DESTINO_CONTROL_GASTOS = "control_gastos"
     DESTINO_GASTOS_PERSONALES = "gastos_personales"
     DESTINO_CHOICES = [
-        (DESTINO_CONTROL_GASTOS, "Control de Gastos"),
+        (DESTINO_CONTROL_GASTOS, "Gastos Concesionario"),
         (DESTINO_GASTOS_PERSONALES, "Gastos Personales"),
     ]
 
@@ -43,7 +43,7 @@ class PagoFuturo(models.Model):
     destino = models.CharField(
         "Destino al marcar pagado", max_length=20, choices=DESTINO_CHOICES,
         default=DESTINO_CONTROL_GASTOS,
-        help_text="Control de Gastos = gasto de la concesionaria · Gastos Personales = gasto del usuario que paga.",
+        help_text="Gastos Concesionario = gasto de la concesionaria · Gastos Personales = gasto del usuario que paga.",
     )
 
     forma_pago = models.CharField(

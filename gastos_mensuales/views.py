@@ -247,7 +247,7 @@ def pdf_mensual(request):
 
     return render_pdf_listado(
         filename=f"control_gastos_{mes:02d}_{anio}.pdf",
-        titulo="Control de Gastos",
+        titulo="Gastos Concesionario",
         subtitulo=f"{MESES_ES[mes]} {anio} – {len(filas)} gasto(s)",
         columnas=["Categoría", "Detalle", "Unidad", "Monto", "Pagado"],
         filas=filas,

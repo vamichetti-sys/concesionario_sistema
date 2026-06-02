@@ -52,8 +52,26 @@
 <div class="row g-3 mb-4">
     <div class="col-md-4">
         <div class="card p-4" style="border-left:4px solid #10b981;">
-            <small class="text-muted">Total ingresos del mes</small>
+            <small class="text-muted">Total ingresos del mes (cobrado)</small>
             <div class="fw-bold" style="font-size:28px;color:#059669;">$ {{ total_general|floatformat:0 }}</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card p-4 h-100" style="border-left:4px solid #f59e0b;">
+            <small class="text-muted">A ingresar (alquileres pendientes)</small>
+            <div class="fw-bold" style="font-size:28px;color:#d97706;">$ {{ total_a_ingresar|floatformat:0 }}</div>
+            {% if a_ingresar %}
+            <div class="mt-2" style="font-size:13px;">
+                {% for a in a_ingresar %}
+                <div class="d-flex justify-content-between border-top py-1">
+                    <span class="text-muted text-truncate" style="max-width:60%;">{{ a.alquiler.nombre }}</span>
+                    <span class="fw-semibold">$ {{ a.monto|floatformat:0 }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <small class="text-muted">Nada pendiente este mes.</small>
+            {% endif %}
         </div>
     </div>
 </div>

@@ -139,7 +139,7 @@ def api_calendario_vencimientos(request):
 
     # ==================================================
     # 🔹 AGENDA DE PAGOS (solo admins: Hamichetti / Vamichetti)
-    # Control de Gastos → violeta · Gastos Personales → cyan/teal
+    # Gastos Concesionario → violeta · Gastos Personales → cyan/teal
     # En ambos casos: si está pagado se muestra en verde.
     # ==================================================
     if _es_admin_agenda(request.user):
@@ -149,11 +149,11 @@ def api_calendario_vencimientos(request):
             if p.pagado:
                 color = "#198754"  # verde
             elif p.destino == PagoFuturo.DESTINO_CONTROL_GASTOS:
-                color = "#8b5cf6"  # violeta — Control de Gastos
+                color = "#8b5cf6"  # violeta — Gastos Concesionario
             else:
                 color = "#14b8a6"  # teal — Gastos Personales
             destino_label = (
-                "Control de Gastos"
+                "Gastos Concesionario"
                 if p.destino == PagoFuturo.DESTINO_CONTROL_GASTOS
                 else "Gastos Personales"
             )

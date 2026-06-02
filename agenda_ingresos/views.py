@@ -133,6 +133,23 @@ def lista_ingresos(request):
     if hoy.year not in anios:
         anios = [hoy.year] + anios
 
+    # ----------------------------------------------------------
+    # Alquileres a cobrar del mes (pendientes): aparecen acá para
+    # poder cobrarlos. El cobro cae en Ingresos Personales.
+    # ----------------------------------------------------------
+    from cuentas_internas.models import Alquiler
+    alquileres_a_cobrar = []
+    total_alq_cobrar = Decimal("0")
+    if filtro in ("pendientes", "todos"):
+        for alq in Alquiler.objects.filter(activo=True):
+            if alq.pagos.filter(periodo_mes=mes, periodo_anio=anio).exists():
+                continue
+            for f in alq.cronograma():
+                if f["mes"] == mes and f["anio"] == anio:
+                    alquileres_a_cobrar.append({"alquiler": alq, "monto": f["monto"]})
+                    total_alq_cobrar += f["monto"] or Decimal("0")
+                    break
+
     return render(request, "agenda_ingresos/lista.html", {
         "ingresos": qs,
         "filtro": filtro,
@@ -150,6 +167,8 @@ def lista_ingresos(request):
         "cant_vencido": cant_vencido,
         "total_prox": total_prox,
         "cant_prox": cant_prox,
+        "alquileres_a_cobrar": alquileres_a_cobrar,
+        "total_alq_cobrar": total_alq_cobrar,
     })
 
 

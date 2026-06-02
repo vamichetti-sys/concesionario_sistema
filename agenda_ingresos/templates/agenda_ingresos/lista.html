@@ -91,6 +91,43 @@
     </form>
 </div>
 
+<!-- ALQUILERES A COBRAR (este mes) -->
+{% if alquileres_a_cobrar %}
+<div class="card p-0 mb-4" style="border-left:4px solid #10b981;">
+    <div class="p-3 border-bottom d-flex justify-content-between align-items-center" style="background:#f0fdf4;">
+        <div class="d-flex align-items-center gap-2">
+            <i data-lucide="building" style="width:18px;height:18px;color:#10b981;"></i>
+            <h6 class="fw-bold mb-0">Alquileres a cobrar — {{ mes_nombre }} {{ anio }}</h6>
+        </div>
+        <span class="fw-bold text-success">$ {{ total_alq_cobrar|floatformat:0 }}</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table align-middle mb-0">
+            <tbody>
+                {% for a in alquileres_a_cobrar %}
+                <tr>
+                    <td>
+                        <span class="fw-semibold">{{ a.alquiler.nombre }}</span>
+                        {% if a.alquiler.arrendatario %}<small class="text-muted">· {{ a.alquiler.arrendatario }}</small>{% endif %}
+                    </td>
+                    <td class="text-end fw-bold">$ {{ a.monto|floatformat:0 }}</td>
+                    <td class="text-end" style="width:140px;">
+                        <form method="post" action="{% url 'cuentas_internas:cobrar_alquiler_mes' a.alquiler.id anio mes %}?next=agenda"
+                              onsubmit="return confirm('Cobrar {{ a.alquiler.nombre }} de {{ mes_nombre }} por $ {{ a.monto|floatformat:0 }}? Se carga en Ingresos Personales.');">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-success">
+                                <i data-lucide="check" style="width:14px;height:14px;margin-right:4px;"></i>Cobrar
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
 <!-- TABLA -->
 <div class="card p-0">
     {% if ingresos %}
