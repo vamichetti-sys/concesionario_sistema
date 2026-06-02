@@ -597,7 +597,9 @@ def pagare_pdf(request, pagare_id):
         c.drawString(2 * cm, y, t); y -= 0.7 * cm
     c.showPage(); c.save()
     buffer.seek(0)
-    return HttpResponse(buffer.getvalue(), content_type="application/pdf")
+    response = HttpResponse(buffer.getvalue(), content_type="application/pdf")
+    response["Content-Disposition"] = f'inline; filename="pagare_{pagare.id}.pdf"'
+    return response
 
 
 # ====================================
