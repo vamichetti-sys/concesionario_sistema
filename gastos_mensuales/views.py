@@ -277,6 +277,10 @@ def ingresos_resumen(request):
     if hoy.year not in anios_disponibles:
         anios_disponibles = [hoy.year] + anios_disponibles
 
+    # Ganancia de Control de Stock (ventas confirmadas del mes)
+    from reportes.services import ganancia_ventas_mes
+    ganancia_ventas, ganancia_detalle = ganancia_ventas_mes(mes, anio)
+
     return render(request, "gastos_mensuales/ingresos_resumen.html", {
         "ingresos": ingresos,
         "mes": mes,
@@ -286,6 +290,9 @@ def ingresos_resumen(request):
         "por_concepto": por_concepto,
         "anios_disponibles": anios_disponibles,
         "meses_choices": list(enumerate(MESES))[1:],
+        "ganancia_ventas": ganancia_ventas,
+        "ganancia_detalle": ganancia_detalle,
+        "total_con_ganancia": (total_general or 0) + (ganancia_ventas or 0),
     })
 
 

@@ -96,6 +96,35 @@
 <!-- 4. AGENDA DE PAGOS -->
 {% include "inicio/_agenda_pagos.html" %}
 
+<!-- AVISOS DE ALQUILERES -->
+{% if aviso_aumentos_alquileres or alquileres_por_vencer %}
+<div class="card p-4 mb-4" style="border-left:4px solid #f59e0b;">
+    <div class="d-flex align-items-center gap-2 mb-2">
+        <i data-lucide="bell-ring" style="width:20px;height:20px;color:#f59e0b;"></i>
+        <h6 class="fw-bold mb-0">Avisos de alquileres</h6>
+    </div>
+    {% if aviso_aumentos_alquileres %}
+    <div class="alert alert-warning d-flex justify-content-between align-items-center mb-2" style="font-size:14px;">
+        <div>
+            <strong>Es {{ hoy|date:"F" }}</strong> — toca revisar los <strong>aumentos</strong> de los contratos de alquiler ({{ alquileres_activos_count }} activo{{ alquileres_activos_count|pluralize:"s" }}). Cargá el nuevo monto en cada alquiler.
+        </div>
+        <a href="{% url 'cuentas_internas:alquileres_lista' %}" class="btn btn-sm btn-warning">Ver alquileres</a>
+    </div>
+    {% endif %}
+    {% if alquileres_por_vencer %}
+    <div class="mb-1"><small class="text-muted text-uppercase fw-semibold">Contratos por vencer (60 días)</small></div>
+    <div class="list-group list-group-flush">
+        {% for a in alquileres_por_vencer %}
+        <a href="{% url 'cuentas_internas:alquiler_detalle' a.pk %}" class="list-group-item list-group-item-action px-0 d-flex justify-content-between align-items-center">
+            <span><span class="fw-semibold">{{ a.nombre }}</span>{% if a.arrendatario %} <small class="text-muted">· {{ a.arrendatario }}</small>{% endif %}</span>
+            <span class="text-danger fw-semibold">vence {{ a.fecha_fin|date:"d/m/Y" }}</span>
+        </a>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+
 <!-- ===============================
      5. CRM – PROSPECTOS
 =============================== -->

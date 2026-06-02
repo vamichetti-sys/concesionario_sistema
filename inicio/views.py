@@ -292,7 +292,18 @@ def inicio(request):
         from django.db.models.functions import Coalesce
         from reventa.models import CuentaRevendedor
         from compraventa.models import DeudaProveedor
-        from cuentas_internas.models import CuentaInterna
+        from cuentas_internas.models import CuentaInterna, Alquiler
+
+        # Alquileres: contratos por vencer (próximos 60 días) y aviso de
+        # aumentos en junio / diciembre.
+        alquileres_por_vencer = (
+            Alquiler.objects.filter(
+                activo=True, fecha_fin__isnull=False,
+                fecha_fin__gte=hoy, fecha_fin__lte=hoy + timedelta(days=60),
+            ).order_by("fecha_fin")
+        )
+        aviso_aumentos_alquileres = hoy.month in (6, 12)
+        alquileres_activos_count = Alquiler.objects.filter(activo=True).count()
 
         # Deuda de reventas: lo que los revendedores nos deben (saldo > 0)
         rev_qs = CuentaRevendedor.objects.filter(saldo__gt=0)
@@ -335,6 +346,9 @@ def inicio(request):
             "docs_verif_vencida": docs_verif_vencida,
             "cuentas_internas": cuentas_internas,
             "cuentas_internas_total": cuentas_internas_total,
+            "alquileres_por_vencer": alquileres_por_vencer,
+            "aviso_aumentos_alquileres": aviso_aumentos_alquileres,
+            "alquileres_activos_count": alquileres_activos_count,
             # (turnos_* / vencimientos_* / pagos_* ya vienen del contexto base)
         })
         return render(request, "inicio/inicio_gestion.html", context)
