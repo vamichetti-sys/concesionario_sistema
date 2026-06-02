@@ -683,7 +683,7 @@ def _generar_pdf_reserva(reserva):
     c.drawRightString(page_w - MR, y, f"RESERVA N° {reserva.numero_reserva}")
     y -= 0.42 * cm
     c.setFont("Helvetica", 8)
-    c.drawString(ML, y, "Av. Larrea n 255 · (2705) Rojas (B)  ·  Tel: 02475-465115  ·  hugoamichetti@speedy.com.ar")
+    c.drawString(ML, y, "Av. Larrea n 255 · (2705) Rojas (B)  ·  Tel: 02475-465115  ·  hugoamichettiautomotores@gmail.com")
     fecha_str = reserva.fecha_reserva.strftime("%d/%m/%Y") if reserva.fecha_reserva else date.today().strftime("%d/%m/%Y")
     c.drawRightString(page_w - MR, y, f"Fecha: {fecha_str}")
     y -= 0.5 * cm
@@ -729,17 +729,20 @@ def _generar_pdf_reserva(reserva):
 
     def monto_box(label, valor):
         nonlocal y
-        bw = 4 * cm
+        bw = 4.2 * cm
         bx = page_w - MR - bw
-        c.setFont("Helvetica", 7.5)
-        c.drawString(ML, y, label)
+        # Caja
         c.setStrokeColor(GRIS); c.setLineWidth(0.5)
-        c.rect(bx, y - 0.24 * cm, bw, 0.44 * cm, stroke=1, fill=0)
+        c.rect(bx, y - 0.30 * cm, bw, 0.50 * cm, stroke=1, fill=0)
         c.setStrokeColor(NEGRO)
+        # Baseline centrada verticalmente dentro de la caja (label y monto alineados)
+        ty = y - 0.14 * cm
+        c.setFont("Helvetica", 7.5)
+        c.drawString(ML, ty, label)
         if valor:
-            c.setFont("Helvetica-Bold", 8)
-            c.drawRightString(page_w - MR - 0.18 * cm, y, _fmt_moneda(valor))
-        y -= 0.5 * cm
+            c.setFont("Helvetica-Bold", 8.5)
+            c.drawRightString(page_w - MR - 0.2 * cm, ty, _fmt_moneda(valor))
+        y -= 0.62 * cm
 
     # ── Datos del Solicitante ────────────────────────────
     sec_header("DATOS DEL SOLICITANTE")
@@ -776,7 +779,7 @@ def _generar_pdf_reserva(reserva):
     monto_box("Precio de Vehículo", reserva.precio_vehiculo)
     monto_box("Opcionales / Otros gastos", reserva.opcionales)
     c.setStrokeColor(NEGRO); c.setLineWidth(0.5)
-    c.line(page_w - MR - 4 * cm, y + 0.1 * cm, page_w - MR, y + 0.1 * cm)
+    c.line(page_w - MR - 4.2 * cm, y + 0.1 * cm, page_w - MR, y + 0.1 * cm)
     y -= 0.1 * cm
     monto_box("TOTAL A PAGAR:", reserva.total_a_pagar)
     monto_box("SEÑA:", reserva.senia)
@@ -799,15 +802,7 @@ def _generar_pdf_reserva(reserva):
     y -= 0.42 * cm
 
     # Total propuesta
-    bw = 4 * cm; bx = page_w - MR - bw
-    c.setFont("Helvetica", 7.5); c.drawString(ML, y, "TOTAL:")
-    c.setStrokeColor(GRIS); c.setLineWidth(0.5)
-    c.rect(bx, y - 0.24 * cm, bw, 0.44 * cm, stroke=1, fill=0)
-    c.setStrokeColor(NEGRO)
-    if reserva.total_propuesta:
-        c.setFont("Helvetica-Bold", 8)
-        c.drawRightString(page_w - MR - 0.18 * cm, y, _fmt_moneda(reserva.total_propuesta))
-    y -= 0.55 * cm
+    monto_box("TOTAL:", reserva.total_propuesta)
 
     # Crédito prendario
     check = "☑" if reserva.credito_prendario else "☐"
@@ -839,7 +834,7 @@ def _generar_pdf_reserva(reserva):
         c.drawString(ML + 9.6 * cm, y, reserva.dia_cuota)
     # caja monto cuota derecha
     c.setStrokeColor(GRIS); c.setLineWidth(0.5)
-    c.rect(page_w - MR - 4 * cm, y - 0.24 * cm, 4 * cm, 0.44 * cm, stroke=1, fill=0)
+    c.rect(page_w - MR - 4.2 * cm, y - 0.30 * cm, 4.2 * cm, 0.50 * cm, stroke=1, fill=0)
     c.setStrokeColor(NEGRO)
     y -= 0.7 * cm
 
