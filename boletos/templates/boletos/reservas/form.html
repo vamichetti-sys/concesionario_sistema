@@ -24,6 +24,24 @@
         <i data-lucide="user" style="width:13px;height:13px;" class="me-1"></i> Datos del Solicitante
       </div>
       <div class="card-body">
+        <!-- Buscador de cliente cargado (opcional) -->
+        <div class="mb-3">
+          <label class="form-label small fw-semibold mb-1">
+            Cliente cargado <span class="text-muted fw-normal">(opcional – buscá por nombre o DNI y se completan los datos; o cargá manual abajo)</span>
+          </label>
+          <div id="clienteCombo" class="position-relative">
+            <div class="input-group">
+              <span class="input-group-text bg-white"><i data-lucide="user-search" style="width:15px;height:15px;"></i></span>
+              <input type="text" id="clienteSearch" class="form-control"
+                     placeholder="Buscar cliente cargado…" autocomplete="off">
+              <button type="button" id="clienteClear" class="btn btn-outline-secondary" title="Limpiar selección" style="display:none;">
+                <i data-lucide="x" style="width:15px;height:15px;"></i>
+              </button>
+            </div>
+            <div id="clienteDropdown" class="list-group position-absolute w-100 shadow"
+                 style="z-index:1050; max-height:260px; overflow-y:auto; display:none;"></div>
+          </div>
+        </div>
         <div class="row g-3">
           <div class="col-12">
             <label class="form-label small fw-semibold mb-1">Apellido y Nombre o Razón Social</label>
@@ -284,6 +302,74 @@
 
   </form>
 </div>
+
+{{ clientes|json_script:"clientes-data" }}
+<!-- Buscador de cliente cargado + auto-relleno del solicitante -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const search   = document.getElementById("clienteSearch");
+  const dropdown = document.getElementById("clienteDropdown");
+  const clearBtn = document.getElementById("clienteClear");
+  const dataEl   = document.getElementById("clientes-data");
+  if (!search || !dropdown || !dataEl) return;
+
+  let clientes = [];
+  try { clientes = JSON.parse(dataEl.textContent) || []; } catch (e) { clientes = []; }
+
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ""; };
+
+  function elegir(c) {
+    set("id_apellido_nombre", c.nombre);
+    set("id_dni",             c.dni);
+    set("id_cuit",            c.dni);   // el cliente guarda DNI/CUIT en un solo campo
+    set("id_domicilio",       c.domicilio);
+    set("id_telefono",        c.telefono);
+    search.value = c.nombre;
+    dropdown.style.display = "none";
+    clearBtn.style.display = "";
+  }
+
+  function limpiar() {
+    search.value = "";
+    clearBtn.style.display = "none";
+    dropdown.style.display = "none";
+    ["id_apellido_nombre","id_dni","id_cuit","id_domicilio","id_telefono"].forEach(id => set(id, ""));
+  }
+
+  function render(filtro) {
+    const f = (filtro || "").toLowerCase().trim();
+    const lista = f
+      ? clientes.filter(c => (c.nombre + " " + c.dni).toLowerCase().includes(f))
+      : clientes;
+    dropdown.innerHTML = "";
+    if (!clientes.length) {
+      dropdown.innerHTML = '<div class="list-group-item text-muted small">No hay clientes cargados</div>';
+    } else if (!lista.length) {
+      dropdown.innerHTML = '<div class="list-group-item text-muted small">Sin resultados</div>';
+    } else {
+      lista.slice(0, 50).forEach(c => {
+        const item = document.createElement("button");
+        item.type = "button";
+        item.className = "list-group-item list-group-item-action small";
+        item.innerHTML = '<span class="fw-semibold">' + c.nombre + '</span>' +
+                         (c.dni ? ' <span class="text-muted">· ' + c.dni + '</span>' : '');
+        item.addEventListener("mousedown", e => { e.preventDefault(); elegir(c); });
+        dropdown.appendChild(item);
+      });
+    }
+    dropdown.style.display = "block";
+  }
+
+  search.addEventListener("focus", () => render(search.value));
+  search.addEventListener("input", () => { clearBtn.style.display = search.value ? "" : "none"; render(search.value); });
+  clearBtn.addEventListener("click", limpiar);
+  document.addEventListener("click", e => {
+    if (!document.getElementById("clienteCombo").contains(e.target)) dropdown.style.display = "none";
+  });
+
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+});
+</script>
 
 <!-- Buscador de vehículo en stock + auto-relleno -->
 <script>

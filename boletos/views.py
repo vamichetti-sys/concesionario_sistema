@@ -919,6 +919,28 @@ def lista_reservas(request):
 
 
 # ────────────────────────────────────────────────────────
+# HELPER: clientes activos para el buscador de la reserva
+# ────────────────────────────────────────────────────────
+def _clientes_para_reserva():
+    """Lista liviana de clientes activos para el autocompletado del solicitante."""
+    qs = (
+        Cliente.objects.filter(activo=True)
+        .order_by("nombre_completo")
+        .values("id", "nombre_completo", "dni_cuit", "telefono", "direccion")
+    )
+    return [
+        {
+            "id": c["id"],
+            "nombre": c["nombre_completo"] or "",
+            "dni": c["dni_cuit"] or "",
+            "telefono": c["telefono"] or "",
+            "domicilio": c["direccion"] or "",
+        }
+        for c in qs
+    ]
+
+
+# ────────────────────────────────────────────────────────
 # CREAR RESERVA
 # ────────────────────────────────────────────────────────
 @login_required
@@ -934,6 +956,7 @@ def crear_reserva(request):
     return render(request, "boletos/reservas/form.html", {
         "form": form,
         "titulo": "Nueva Reserva",
+        "clientes": _clientes_para_reserva(),
     })
 
 
@@ -964,6 +987,7 @@ def editar_reserva(request, reserva_id):
         "form": form,
         "titulo": f"Editar Reserva {reserva.numero_reserva}",
         "reserva": reserva,
+        "clientes": _clientes_para_reserva(),
     })
 
 
