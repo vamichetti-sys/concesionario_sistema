@@ -127,14 +127,27 @@ class CuentaCorriente(models.Model):
         return self.estado == 'deuda' and self.saldo > 0
 
     @property
+    def plan_pago(self):
+        """
+        Compatibilidad: devuelve el primer plan de la cuenta (o None).
+        El sistema ahora admite VARIOS planes por cuenta (self.planes);
+        esta propiedad mantiene andando el código/visual que asume uno solo.
+        """
+        return self.planes.order_by('id').first()
+
+    @property
+    def planes_activos(self):
+        return self.planes.order_by('id')
+
+    @property
     def tiene_deuda_vencida(self):
-        plan = getattr(self, 'plan_pago', None)
-        if not plan:
-            return False
-        return plan.cuotas.filter(
-            estado='pendiente',
-            vencimiento__lt=date.today()
-        ).exists()
+        return any(
+            plan.cuotas.filter(
+                estado='pendiente',
+                vencimiento__lt=date.today()
+            ).exists()
+            for plan in self.planes.all()
+        )
 
     def _vehiculo_para_gastos(self):
         """Devuelve el primer vehículo de permuta vinculado (compatibilidad)."""
@@ -164,15 +177,14 @@ class CuentaCorriente(models.Model):
         from django.db.models import Sum
         total = Decimal("0")
 
-        # Total del plan de pago (con interés) - incluye planes finalizados
-        plan = getattr(self, 'plan_pago', None)
-        if plan and not plan.pk:
-            plan = None
-        if plan:
-            for cuota in plan.cuotas.all():
-                total += cuota.monto
+        # Total de TODOS los planes de pago (con interés) - incluye finalizados
+        planes = [p for p in self.planes.all() if p.pk]
+        if planes:
+            for plan in planes:
+                for cuota in plan.cuotas.all():
+                    total += cuota.monto
 
-            # Gastos extra / ajustes manuales contraídos (con plan)
+            # Gastos extra / ajustes manuales contraídos (con plan) - una sola vez
             man_debe = (
                 self.movimientos.filter(origen__in=["manual", "ajuste"], tipo__in=["debe", "deuda"])
                 .aggregate(t=Sum("monto"))["t"] or Decimal("0")
@@ -211,17 +223,15 @@ class CuentaCorriente(models.Model):
         from django.db.models import Sum
         total = Decimal("0")
 
-        # Saldo del plan de pago (si existe, usar saldos de cuotas)
+        # Saldo de TODOS los planes (si hay, usar saldos de cuotas)
         # Con plan: self.saldo se ignora — se suma gestoría aparte.
         # Sin plan: self.saldo YA incluye gestoría (es debe-haber de todos los movimientos),
         #           así que NO volver a sumarla.
-        plan = getattr(self, 'plan_pago', None)
-        # Si el plan fue borrado pero quedó en caché (pk=None), tratarlo como inexistente.
-        if plan and not plan.pk:
-            plan = None
-        if plan:
-            for cuota in plan.cuotas.all():
-                total += cuota.saldo_pendiente
+        planes = [p for p in self.planes.all() if p.pk]
+        if planes:
+            for plan in planes:
+                for cuota in plan.cuotas.all():
+                    total += cuota.saldo_pendiente
 
             gest_debe = (
                 self.movimientos.filter(origen="gestoria", tipo="debe")
@@ -339,10 +349,10 @@ class PlanPago(models.Model):
         ('cheques', 'Cheques'),
     )
 
-    cuenta = models.OneToOneField(
+    cuenta = models.ForeignKey(
         CuentaCorriente,
         on_delete=models.CASCADE,
-        related_name='plan_pago'
+        related_name='planes'
     )
 
     descripcion = models.CharField(max_length=255)

@@ -362,8 +362,8 @@ def reporte_web(request):
     # ----------------------
     deudas_vencidas = CuentaCorriente.objects.filter(
         estado="deuda",
-        plan_pago__cuotas__estado="pendiente",
-        plan_pago__cuotas__vencimiento__lt=hoy
+        planes__cuotas__estado="pendiente",
+        planes__cuotas__vencimiento__lt=hoy
     ).distinct().count()
 
     return render(

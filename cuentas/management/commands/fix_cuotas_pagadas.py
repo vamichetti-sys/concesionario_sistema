@@ -22,7 +22,7 @@ class Command(BaseCommand):
         # vincular automáticamente
         count_vinculados = 0
         cuentas = CuentaCorriente.objects.filter(
-            plan_pago__cuotas__estado="pendiente"
+            planes__cuotas__estado="pendiente"
         ).distinct()
 
         for cuenta in cuentas:

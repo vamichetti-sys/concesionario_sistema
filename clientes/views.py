@@ -149,7 +149,8 @@ def detalle_cliente(request, cliente_id):
         CuentaCorriente.objects
         .filter(cliente=cliente)
         .exclude(estado='cerrada')
-        .select_related('venta', 'venta__vehiculo', 'plan_pago')
+        .select_related('venta', 'venta__vehiculo')
+        .prefetch_related('planes')
         .first()
     )
 

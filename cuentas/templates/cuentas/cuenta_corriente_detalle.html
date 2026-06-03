@@ -161,150 +161,151 @@
             Gasto extra
         </a>
 
-        {% if plan %}
         <a href="{% url 'cuentas:crear_plan_pago' cuenta.id %}" class="btn btn-secondary">
-            <i data-lucide="pencil" style="width:16px;height:16px;margin-right:6px;"></i>
-            Editar plan
+            <i data-lucide="calendar-plus" style="width:16px;height:16px;margin-right:6px;"></i>
+            {% if planes_detalle %}Agregar otro plan{% else %}Crear plan de pago{% endif %}
         </a>
-        <a href="{% url 'cuentas:eliminar_plan_pago' cuenta.id %}"
-           class="btn btn-outline-danger"
-           onclick="return confirm('¿Eliminar el plan de pago?\n\nSe borrarán todas las cuotas y los pagos registrados del plan.\nEsta acción no se puede deshacer.');">
-            <i data-lucide="x" style="width:16px;height:16px;margin-right:6px;"></i>
-            Eliminar plan
-        </a>
-        {% else %}
-        <a href="{% url 'cuentas:crear_plan_pago' cuenta.id %}" class="btn btn-secondary">
-            <i data-lucide="calendar" style="width:16px;height:16px;margin-right:6px;"></i>
-            Crear plan de pago
-        </a>
-        {% endif %}
 
     </div>
 </div>
 
 <!-- ===============================
-     PLAN DE PAGO
+     PLANES DE PAGO (uno o varios; se suman en la cuenta)
 =============================== -->
 <div class="card p-4 mb-4">
     <div class="d-flex align-items-center gap-2 mb-4">
         <i data-lucide="list-ordered" style="width:20px;height:20px;color:#3b82f6;"></i>
-        <h5 class="fw-bold mb-0">Plan de pago</h5>
-        {% if plan %}
-        <span class="badge {% if plan.estado == 'activo' %}bg-success{% else %}bg-secondary{% endif %} ms-2">
-            {{ plan.get_estado_display }}
-        </span>
-        <a href="{% url 'cuentas:plan_pago_pdf' cuenta.id %}" target="_blank" class="btn btn-outline-primary btn-sm ms-auto">
-            <i data-lucide="printer" style="width:14px;height:14px;margin-right:4px;"></i>
-            Imprimir PDF
+        <h5 class="fw-bold mb-0">Planes de pago</h5>
+        {% if planes_detalle|length > 1 %}
+        <span class="badge bg-info ms-2">{{ planes_detalle|length }} planes</span>
+        {% endif %}
+        <a href="{% url 'cuentas:crear_plan_pago' cuenta.id %}" class="btn btn-secondary btn-sm ms-auto">
+            <i data-lucide="plus" style="width:14px;height:14px;margin-right:4px;"></i>
+            Agregar plan
         </a>
-        {% endif %}
     </div>
 
-    {% if plan %}
-    <!-- Resumen del plan -->
-    <div class="row g-3 mb-4 p-3" style="background:#f8f9fa;border-radius:12px;">
-        <div class="col-md-3">
-            <small class="text-muted d-block">Descripción</small>
-            <span class="fw-semibold">{{ plan.descripcion }}</span>
+    {% for pd in planes_detalle %}
+    {% with plan=pd.plan cuotas=pd.cuotas %}
+    <div class="border rounded p-3 mb-3">
+        <!-- Encabezado del plan -->
+        <div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
+            <span class="fw-bold">{{ plan.descripcion|default:"Plan de pago" }}</span>
+            <span class="badge {% if plan.estado == 'activo' %}bg-success{% else %}bg-secondary{% endif %}">{{ plan.get_estado_display }}</span>
+            <span class="badge bg-light text-dark border">{{ plan.get_tipo_plan_display }}</span>
+            <div class="ms-auto d-flex gap-1">
+                <a href="{% url 'cuentas:plan_pago_pdf' cuenta.id %}?plan_id={{ plan.id }}" target="_blank" class="btn btn-outline-primary btn-sm" title="Imprimir PDF">
+                    <i data-lucide="printer" style="width:14px;height:14px;"></i>
+                </a>
+                <a href="{% url 'cuentas:crear_plan_pago' cuenta.id %}?plan_id={{ plan.id }}" class="btn btn-outline-secondary btn-sm" title="Editar plan">
+                    <i data-lucide="pencil" style="width:14px;height:14px;"></i>
+                </a>
+                <a href="{% url 'cuentas:eliminar_plan_pago' cuenta.id %}?plan_id={{ plan.id }}" class="btn btn-outline-danger btn-sm" title="Eliminar plan"
+                   onclick="return confirm('¿Eliminar este plan de pago?\n\nSe borrarán sus cuotas y los pagos registrados de este plan.\nEsta acción no se puede deshacer.');">
+                    <i data-lucide="x" style="width:14px;height:14px;"></i>
+                </a>
+            </div>
         </div>
-        <div class="col-md-2">
-            <small class="text-muted d-block">Tipo</small>
-            <span class="fw-semibold">{{ plan.get_tipo_plan_display }}</span>
+
+        <!-- Resumen del plan -->
+        <div class="row g-3 mb-3 p-2" style="background:#f8f9fa;border-radius:10px;">
+            <div class="col-md-3">
+                <small class="text-muted d-block">Monto financiado</small>
+                <span class="fw-semibold">$ {{ plan.monto_financiado|floatformat:0 }}</span>
+            </div>
+            {% if plan.anticipo %}
+            <div class="col-md-2">
+                <small class="text-muted d-block">Anticipo</small>
+                <span class="fw-semibold text-success">$ {{ plan.anticipo|floatformat:0 }}</span>
+            </div>
+            {% endif %}
+            <div class="col-md-2">
+                <small class="text-muted d-block">Cuotas</small>
+                <span class="fw-semibold">{{ plan.cantidad_cuotas }}</span>
+            </div>
+            {% if plan.interes_financiacion %}
+            <div class="col-md-2">
+                <small class="text-muted d-block">Interés</small>
+                <span class="fw-semibold text-warning">{{ plan.interes_financiacion }}%</span>
+            </div>
+            {% endif %}
+            {% if plan.interes_mora_mensual %}
+            <div class="col-md-2">
+                <small class="text-muted d-block">Mora</small>
+                <span class="fw-semibold text-danger">{{ plan.interes_mora_mensual }}%</span>
+            </div>
+            {% endif %}
         </div>
-        <div class="col-md-2">
-            <small class="text-muted d-block">Monto financiado</small>
-            <span class="fw-semibold">$ {{ plan.monto_financiado|floatformat:0 }}</span>
+
+        <!-- Tabla de cuotas -->
+        {% if cuotas %}
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Cuota</th>
+                        <th>Vencimiento</th>
+                        <th class="text-end">Monto</th>
+                        <th class="text-end">Pagado</th>
+                        <th class="text-end">Saldo</th>
+                        <th>Estado</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cuota in cuotas %}
+                    <tr>
+                        <td><span class="badge bg-info">{{ cuota.numero }}</span></td>
+                        <td>
+                            <span class="text-muted">{{ cuota.vencimiento|date:"d/m/Y" }}</span>
+                            {% if cuota.esta_vencida %}
+                            <span class="badge bg-danger ms-1" style="font-size:10px;">Vencida</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">$ {{ cuota.monto|floatformat:0 }}</td>
+                        <td class="text-end text-success">$ {{ cuota.total_pagado|floatformat:0 }}</td>
+                        <td class="text-end fw-bold {% if cuota.saldo_pendiente > 0 %}text-danger{% else %}text-success{% endif %}">
+                            $ {{ cuota.saldo_pendiente|floatformat:0 }}
+                        </td>
+                        <td>
+                            {% if cuota.estado == 'pagada' %}
+                            <span class="badge bg-success">Pagada</span>
+                            {% elif cuota.esta_vencida %}
+                            <span class="badge bg-danger">Vencida</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Pendiente</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if cuota.estado != 'pagada' %}
+                            <a href="{% url 'cuentas:editar_cuota' cuota.id %}" class="btn btn-sm btn-outline-secondary">Editar</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
-        {% if plan.anticipo %}
-        <div class="col-md-2">
-            <small class="text-muted d-block">Anticipo</small>
-            <span class="fw-semibold text-success">$ {{ plan.anticipo|floatformat:0 }}</span>
-        </div>
-        {% endif %}
-        {% if plan.interes_financiacion %}
-        <div class="col-md-2">
-            <small class="text-muted d-block">Interés</small>
-            <span class="fw-semibold text-warning">{{ plan.interes_financiacion }}%</span>
-        </div>
-        {% endif %}
-        {% if plan.interes_mora_mensual %}
-        <div class="col-md-1">
-            <small class="text-muted d-block">Mora</small>
-            <span class="fw-semibold text-danger">{{ plan.interes_mora_mensual }}%</span>
-        </div>
+        {% else %}
+        <p class="text-muted mb-0">No hay cuotas registradas en este plan.</p>
         {% endif %}
     </div>
-
-    <!-- Tabla de cuotas -->
-    {% if cuotas %}
-    <div class="table-responsive">
-        <table class="table align-middle mb-0">
-            <thead>
-                <tr>
-                    <th>Cuota</th>
-                    <th>Vencimiento</th>
-                    <th class="text-end">Monto</th>
-                    <th class="text-end">Pagado</th>
-                    <th class="text-end">Saldo</th>
-                    <th>Estado</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for cuota in cuotas %}
-                <tr>
-                    <td><span class="badge bg-info">{{ cuota.numero }}</span></td>
-                    <td>
-                        <span class="text-muted">{{ cuota.vencimiento|date:"d/m/Y" }}</span>
-                        {% if cuota.esta_vencida %}
-                        <span class="badge bg-danger ms-1" style="font-size:10px;">Vencida</span>
-                        {% endif %}
-                    </td>
-                    <td class="text-end">$ {{ cuota.monto|floatformat:0 }}</td>
-                    <td class="text-end text-success">$ {{ cuota.total_pagado|floatformat:0 }}</td>
-                    <td class="text-end fw-bold {% if cuota.saldo_pendiente > 0 %}text-danger{% else %}text-success{% endif %}">
-                        $ {{ cuota.saldo_pendiente|floatformat:0 }}
-                    </td>
-                    <td>
-                        {% if cuota.estado == 'pagada' %}
-                        <span class="badge bg-success">Pagada</span>
-                        {% elif cuota.esta_vencida %}
-                        <span class="badge bg-danger">Vencida</span>
-                        {% else %}
-                        <span class="badge bg-secondary">Pendiente</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% if cuota.estado != 'pagada' %}
-                        <a href="{% url 'cuentas:editar_cuota' cuota.id %}" class="btn btn-sm btn-outline-secondary">
-                            Editar
-                        </a>
-                        {% endif %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    {% endwith %}
+    {% empty %}
+    <div class="p-4 text-center" style="background:#f8f9fa;border-radius:12px;">
+        <i data-lucide="calendar-x" style="width:32px;height:32px;color:#9ca3af;margin-bottom:8px;"></i>
+        <p class="text-muted mb-0">No hay planes de pago creados</p>
     </div>
-    {% else %}
-    <p class="text-muted mb-0">No hay cuotas registradas.</p>
-    {% endif %}
+    {% endfor %}
 
-    <!-- Gasto extra (disponible una vez creado el plan) -->
-    <div class="d-flex justify-content-end mt-4">
+    <!-- Gasto extra -->
+    <div class="d-flex justify-content-end mt-2">
         <a href="{% url 'cuentas:agregar_gasto_cuenta' cuenta.id %}" class="btn btn-warning"
            title="Suma un gasto extra al saldo sin tocar el plan de pago">
             <i data-lucide="plus-circle" style="width:16px;height:16px;margin-right:6px;"></i>
             Gasto extra
         </a>
     </div>
-
-    {% else %}
-    <div class="p-4 text-center" style="background:#f8f9fa;border-radius:12px;">
-        <i data-lucide="calendar-x" style="width:32px;height:32px;color:#9ca3af;margin-bottom:8px;"></i>
-        <p class="text-muted mb-0">No hay plan de pago creado</p>
-    </div>
-    {% endif %}
 </div>
 
 <!-- ===============================

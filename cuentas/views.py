@@ -384,6 +384,11 @@ def cuenta_corriente_detalle(request, cuenta_id):
 
     plan        = getattr(cuenta, "plan_pago", None)
     cuotas      = plan.cuotas.all().order_by("numero") if plan else []
+    # Todos los planes de la cuenta, cada uno con sus cuotas (para mostrarlos sumados)
+    planes_detalle = [
+        {"plan": p, "cuotas": p.cuotas.all().order_by("numero")}
+        for p in cuenta.planes.order_by("id")
+    ]
     movimientos = cuenta.movimientos.order_by("-fecha")
 
     # Para el modal de Vincular vehículo: mostrar solo los disponibles
@@ -521,6 +526,7 @@ def cuenta_corriente_detalle(request, cuenta_id):
             "cuenta": cuenta,
             "plan": plan,
             "cuotas": cuotas,
+            "planes_detalle": planes_detalle,
             "movimientos": movimientos,
             "gastos_extra": gastos_extra,
             "gastos_extra_saldo": gastos_extra_saldo,
@@ -553,7 +559,12 @@ def crear_plan_pago(request, cuenta_id):
         messages.error(request, "La cuenta está cerrada.")
         return redirect("cuentas:cuenta_corriente_detalle", cuenta_id=cuenta.id)
 
-    plan_existente = getattr(cuenta, "plan_pago", None)
+    # Si viene plan_id se EDITA ese plan; si no, se CREA uno nuevo
+    # (una cuenta puede tener varios planes que se suman).
+    plan_id = request.GET.get("plan_id") or request.POST.get("plan_id")
+    plan_existente = None
+    if plan_id:
+        plan_existente = get_object_or_404(PlanPago, id=plan_id, cuenta=cuenta)
 
     if request.method == "POST":
         form = PlanPagoForm(request.POST, instance=plan_existente)
@@ -565,10 +576,10 @@ def crear_plan_pago(request, cuenta_id):
             es_edicion  = plan_existente is not None
 
             if es_edicion:
-                # Limpiar movimientos de deuda anteriores del plan
+                # Limpiar movimientos de deuda anteriores de ESTE plan
                 cuenta.movimientos.filter(
                     tipo='debe',
-                    descripcion__icontains='Plan de pago'
+                    descripcion__icontains=f'Plan de pago #{plan.pk}'
                 ).delete()
 
             plan.save()
@@ -684,7 +695,12 @@ def crear_plan_pago(request, cuenta_id):
 def registrar_movimiento(request, cuenta_id):
     cuenta = get_object_or_404(CuentaCorriente, id=cuenta_id)
     plan   = getattr(cuenta, "plan_pago", None)
-    cuotas = plan.cuotas.filter(estado="pendiente").order_by("numero") if plan else []
+    # Cuotas pendientes de TODOS los planes de la cuenta (orden por vencimiento)
+    cuotas = (
+        CuotaPlan.objects
+        .filter(plan__cuenta=cuenta, estado="pendiente")
+        .order_by("vencimiento", "numero")
+    )
 
     if request.method == "POST":
         tipo_movimiento = request.POST.get("tipo_movimiento")
@@ -769,10 +785,13 @@ def registrar_movimiento(request, cuenta_id):
             cuota = get_object_or_404(CuotaPlan, id=cuota_id, plan__cuenta=cuenta)
             PagoCuota.objects.create(pago=pago, cuota=cuota, monto_aplicado=monto)
             cuota.marcar_pagada()
-        elif plan and plan.cuotas.filter(estado="pendiente").exists():
-            # Vincular automáticamente a cuotas pendientes (empezando por la más antigua)
+        elif CuotaPlan.objects.filter(plan__cuenta=cuenta, estado="pendiente").exists():
+            # Vincular automáticamente a cuotas pendientes de CUALQUIER plan
+            # (empezando por la de vencimiento más antiguo)
             restante = monto
-            for cuota in plan.cuotas.filter(estado="pendiente").order_by("numero"):
+            for cuota in CuotaPlan.objects.filter(
+                plan__cuenta=cuenta, estado="pendiente"
+            ).order_by("vencimiento", "numero"):
                 if restante <= 0:
                     break
                 saldo_cuota = cuota.saldo_pendiente
@@ -933,44 +952,43 @@ def conectar_vehiculo_permuta(request, cuenta_id, vehiculo_id):
 def eliminar_plan_pago(request, cuenta_id):
     cuenta = get_object_or_404(CuentaCorriente, id=cuenta_id)
 
-    plan = getattr(cuenta, "plan_pago", None)
+    # Si viene plan_id se borra ESE plan; si no, el primero (compatibilidad).
+    plan_id = request.GET.get("plan_id") or request.POST.get("plan_id")
+    if plan_id:
+        plan = get_object_or_404(PlanPago, id=plan_id, cuenta=cuenta)
+    else:
+        plan = cuenta.planes.order_by("id").first()
+
     if not plan:
         messages.error(request, "La cuenta no tiene plan de pago.")
         return redirect("cuentas:cuenta_corriente_detalle", cuenta_id=cuenta.id)
 
-    # 1. Borrar movimientos de DEBE generados por este plan
+    # Pagos vinculados a las cuotas de ESTE plan (vía PagoCuota)
+    pago_ids = list(
+        Pago.objects.filter(aplicaciones__cuota__plan=plan)
+        .values_list("id", flat=True).distinct()
+    )
+
+    # 1. Borrar movimientos de HABER generados por esos pagos
+    if pago_ids:
+        cuenta.movimientos.filter(pago_id__in=pago_ids).delete()
+
+    # 2. Borrar movimientos de DEBE y anticipo de ESTE plan
     cuenta.movimientos.filter(
-        tipo="debe",
-        descripcion__icontains="Plan de pago"
+        descripcion__icontains=f"Plan de pago #{plan.pk}"
+    ).delete()
+    cuenta.movimientos.filter(
+        descripcion__icontains=f"Anticipo plan de pago #{plan.pk}"
     ).delete()
 
-    # 2. Borrar movimientos de HABER de pagos de cuotas (origen venta)
-    cuenta.movimientos.filter(
-        tipo="haber",
-        origen="venta"
-    ).delete()
+    # 3. Borrar los Pago de ese plan (PagoCuota cae por CASCADE)
+    if pago_ids:
+        Pago.objects.filter(id__in=pago_ids).delete()
 
-    # 3. Borrar movimientos de anticipo si los hubiera
-    cuenta.movimientos.filter(
-        tipo="haber",
-        descripcion__icontains="Anticipo plan"
-    ).delete()
-
-    # 4. Borrar objetos Pago vinculados a la cuenta
-    #    (PagoCuota se borra por CASCADE desde Pago)
-    Pago.objects.filter(cuenta=cuenta).delete()
-
-    # 5. Borrar el plan — las CuotaPlan se borran por CASCADE
+    # 4. Borrar el plan — las CuotaPlan se borran por CASCADE
     plan.delete()
 
-    # Limpiar el cache del OneToOne reverso para que recalcular_saldo
-    # no encuentre un PlanPago con pk=None.
-    try:
-        del cuenta._state.fields_cache["plan_pago"]
-    except (KeyError, AttributeError):
-        pass
-
-    # 6. Recalcular saldo limpio
+    # 5. Recalcular saldo limpio
     cuenta.recalcular_saldo()
 
     messages.success(request, "Plan de pago eliminado correctamente.")
@@ -1233,7 +1251,11 @@ def plan_pago_pdf(request, cuenta_id):
     from reportlab.lib.enums import TA_CENTER
 
     cuenta = get_object_or_404(CuentaCorriente, id=cuenta_id)
-    plan = getattr(cuenta, "plan_pago", None)
+    plan_id = request.GET.get("plan_id")
+    if plan_id:
+        plan = PlanPago.objects.filter(id=plan_id, cuenta=cuenta).first()
+    else:
+        plan = getattr(cuenta, "plan_pago", None)
 
     if not plan:
         messages.error(request, "Esta cuenta no tiene plan de pago.")
