@@ -130,8 +130,19 @@
                         </div>
                     </td>
 
-                    <!-- CARPETA -->
-                    <td>{{ v.numero_carpeta|default:"–" }}</td>
+                    <!-- CARPETA / CUENTA DEL COMPRADOR (si está vendido) -->
+                    <td>
+                        {% if v.estado == 'vendido' and v.venta.cuenta_corriente %}
+                        <a href="{% url 'cuentas:cuenta_corriente_detalle' v.venta.cuenta_corriente.id %}"
+                           class="btn btn-outline-primary btn-sm"
+                           title="Cuenta corriente de {{ v.venta.cuenta_corriente.cliente }}">
+                            <i data-lucide="credit-card" style="width:13px;height:13px;margin-right:3px;"></i>
+                            Cuenta
+                        </a>
+                        {% else %}
+                        {{ v.numero_carpeta|default:"–" }}
+                        {% endif %}
+                    </td>
 
                     <!-- DOMINIO -->
                     <td><span class="badge bg-secondary">{{ v.dominio|default:"–" }}</span></td>
