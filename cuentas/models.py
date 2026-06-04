@@ -258,7 +258,18 @@ class CuentaCorriente(models.Model):
             if man_pendiente > 0:
                 total += man_pendiente
         else:
-            total += max(self.saldo or Decimal("0"), Decimal("0"))
+            # Sin plan: el saldo (debe − haber) representa la deuda, PERO los
+            # gastos de ingreso de permuta se cuentan aparte (vía la ficha, que
+            # ya descuenta lo pagado). Los excluimos del saldo para no duplicar.
+            debe = (
+                self.movimientos.filter(tipo__in=["debe", "deuda"])
+                .exclude(origen="permuta").aggregate(t=Sum("monto"))["t"] or Decimal("0")
+            )
+            haber = (
+                self.movimientos.filter(tipo__in=["haber", "pago"])
+                .exclude(origen="permuta").aggregate(t=Sum("monto"))["t"] or Decimal("0")
+            )
+            total += max(debe - haber, Decimal("0"))
 
         # Gastos de ingreso pendientes (suma de todos los vehículos vinculados)
         for vehiculo in self._vehiculos_para_gastos():
