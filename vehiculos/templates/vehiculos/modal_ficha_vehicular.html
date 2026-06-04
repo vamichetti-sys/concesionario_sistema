@@ -430,6 +430,14 @@
              readonly>
     </div>
   </div>
+
+  <div class="d-flex justify-content-end mt-3">
+    <a href="{% url 'vehiculos:gastos_ingreso_pdf' vehiculo.id %}" target="_blank"
+       class="btn btn-outline-primary btn-sm">
+      <i data-lucide="file-down" style="width:15px;height:15px;margin-right:5px;"></i>
+      Descargar PDF
+    </a>
+  </div>
 </div>
 
 <!-- ================= TAB 6B: PAGO DE GASTOS ================= -->

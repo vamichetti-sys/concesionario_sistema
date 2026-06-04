@@ -109,6 +109,11 @@ urlpatterns = [
         views.ficha_vehicular_pdf,
         name="ficha_vehicular_pdf"
     ),
+    path(
+        "gastos-ingreso/pdf/<int:vehiculo_id>/",
+        views.gastos_ingreso_pdf,
+        name="gastos_ingreso_pdf"
+    ),
     # ==================================================
     # GASTOS – OPERATIVOS EXISTENTES
     # ==================================================

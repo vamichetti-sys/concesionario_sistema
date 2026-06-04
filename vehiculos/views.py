@@ -896,6 +896,40 @@ def agregar_gasto_ingreso(request, vehiculo_id):
 
 
 # ==========================================================
+# PDF DE GASTOS DE INGRESO (desde la ficha del vehículo)
+# ==========================================================
+def gastos_ingreso_pdf(request, vehiculo_id):
+    from reportes.pdf_utils import render_pdf_listado
+
+    vehiculo = get_object_or_404(Vehiculo, id=vehiculo_id)
+    ficha = getattr(vehiculo, "ficha", None)
+
+    def money(v):
+        try:
+            return f"$ {Decimal(v):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+        except Exception:
+            return "$ 0,00"
+
+    filas = []
+    total = Decimal("0")
+    if ficha:
+        for concepto, monto in ficha.mapa_gastos_ingreso().items():
+            m = Decimal(monto or 0)
+            filas.append([concepto, money(m)])
+            total += m
+
+    dominio = getattr(vehiculo, "dominio", "") or "—"
+    return render_pdf_listado(
+        filename=f"gastos_ingreso_{vehiculo_id}.pdf",
+        titulo="Gastos de ingreso",
+        subtitulo=f"{vehiculo.marca} {vehiculo.modelo} — {dominio}",
+        columnas=["Concepto", "Monto"],
+        filas=filas,
+        totales=["TOTAL", money(total)],
+    )
+
+
+# ==========================================================
 # REGISTRAR PAGO DE GASTO DE INGRESO (DEFINITIVO)
 # ==========================================================
 from cuentas.models import MovimientoCuenta
