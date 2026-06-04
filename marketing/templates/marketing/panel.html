@@ -22,7 +22,7 @@
 {% endif %}
 
 <div class="row g-3 mb-4">
-    <div class="col-md-4">
+    <div class="col-md-3">
         <a href="{% url 'marketing:bandeja' %}" class="text-decoration-none">
             <div class="card p-4 h-100" style="border-left:4px solid #d6249f;">
                 <div class="d-flex justify-content-between align-items-center">
@@ -34,7 +34,7 @@
             </div>
         </a>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
         <a href="{% url 'marketing:leads' %}" class="text-decoration-none">
             <div class="card p-4 h-100" style="border-left:4px solid #10b981;">
                 <div class="d-flex justify-content-between align-items-center">
@@ -46,7 +46,7 @@
             </div>
         </a>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
         <a href="{% url 'marketing:conexion' %}" class="text-decoration-none">
             <div class="card p-4 h-100" style="border-left:4px solid {% if conectado %}#3b82f6{% else %}#f59e0b{% endif %};">
                 <div class="d-flex justify-content-between align-items-center">
@@ -57,6 +57,18 @@
                     {% if conectado %}Conectado{% else %}Sin conectar{% endif %}
                 </div>
                 <small class="text-muted">Webhook, tokens y permisos</small>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-3">
+        <a href="/community/" class="text-decoration-none">
+            <div class="card p-4 h-100" style="border-left:4px solid #8b5cf6;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">Community</small>
+                    <i data-lucide="camera" style="width:20px;height:20px;color:#8b5cf6;"></i>
+                </div>
+                <div class="fw-bold" style="font-size:20px;color:#7c3aed;">Catálogo y redes</div>
+                <small class="text-muted">Publicaciones y catálogo</small>
             </div>
         </a>
     </div>

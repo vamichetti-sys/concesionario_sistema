@@ -675,13 +675,9 @@
                 <span>Control de Stock</span>
             </a>
             {% endif %}
-            <a href="/cuentas-internas/" class="nav-link {% if '/cuentas-internas/' in request.path %}active{% endif %}">
+            <a href="/cuentas-internas/" class="nav-link {% if '/cuentas-internas/' in request.path or '/cheques/' in request.path %}active{% endif %}">
                 <i data-lucide="wallet"></i>
                 <span>Cuentas Internas</span>
-            </a>
-            <a href="/cheques/" class="nav-link {% if '/cheques/' in request.path %}active{% endif %}">
-                <i data-lucide="banknote"></i>
-                <span>Cheques</span>
             </a>
             {% endif %}
             <a href="/gastos-mensuales/" class="nav-link {% if '/gastos-mensuales/' in request.path %}active{% endif %}">
@@ -706,45 +702,9 @@
             <i data-lucide="chevron-down" class="chevron"></i>
         </div>
         <div class="sidebar-category-items" style="max-height:400px;">
-            <a href="{% url 'marketing:panel' %}" class="nav-link {% if request.path == '/marketing/' %}active{% endif %}">
+            <a href="{% url 'marketing:panel' %}" class="nav-link {% if '/marketing/' in request.path %}active{% endif %}">
                 <i data-lucide="megaphone"></i>
                 <span>Panel Marketing</span>
-            </a>
-            <a href="{% url 'marketing:bandeja' %}" class="nav-link {% if '/marketing/bandeja/' in request.path or '/marketing/conversacion/' in request.path %}active{% endif %}">
-                <i data-lucide="message-circle"></i>
-                <span>Mensajes</span>
-            </a>
-            <a href="{% url 'marketing:leads' %}" class="nav-link {% if '/marketing/leads/' in request.path %}active{% endif %}">
-                <i data-lucide="user-plus"></i>
-                <span>Leads</span>
-            </a>
-            <a href="{% url 'marketing:conexion' %}" class="nav-link {% if '/marketing/conexion/' in request.path %}active{% endif %}">
-                <i data-lucide="plug"></i>
-                <span>Conexión Meta</span>
-            </a>
-        </div>
-    </div>
-    {% endif %}
-
-    {% if user.username == USUARIO_PRINCIPAL %}
-    <!-- PANEL PERSONAL -->
-    <div class="sidebar-category">
-        <div class="sidebar-category-header" onclick="toggleCategory(this)">
-            <span>Panel Personal</span>
-            <i data-lucide="chevron-down" class="chevron"></i>
-        </div>
-        <div class="sidebar-category-items" style="max-height:400px;">
-            <a href="{% url 'proyectos:agenda_diaria' %}" class="nav-link {% if '/proyectos/agenda/' in request.path %}active{% endif %}">
-                <i data-lucide="list-checks"></i>
-                <span>Agenda Diaria</span>
-            </a>
-            <a href="{% url 'proyectos:dashboard' %}" class="nav-link {% if '/proyectos/' in request.path and '/proyectos/agenda/' not in request.path %}active{% endif %}">
-                <i data-lucide="kanban-square"></i>
-                <span>Proyectos</span>
-            </a>
-            <a href="/community/" class="nav-link {% if '/community/' in request.path %}active{% endif %}">
-                <i data-lucide="camera"></i>
-                <span>Community</span>
             </a>
         </div>
     </div>

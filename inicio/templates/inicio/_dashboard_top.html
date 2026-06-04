@@ -179,6 +179,19 @@
             </div>
         </a>
     </div>
+    {% if user.username == 'Vamichetti' %}
+    <div class="col-md">
+        <a href="{% url 'proyectos:dashboard' %}" class="quick-access-card">
+            <div class="quick-access-icon" style="background:rgba(232,130,10,0.12);">
+                <i data-lucide="kanban-square" style="width:22px;height:22px;color:#e8820a;"></i>
+            </div>
+            <div class="quick-access-text">
+                <strong>Panel Personal</strong>
+                <small>Proyectos y agenda</small>
+            </div>
+        </a>
+    </div>
+    {% endif %}
 </div>
 
 <!-- ===============================
