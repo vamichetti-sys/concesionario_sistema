@@ -62,12 +62,24 @@
         </h6>
 
         <div class="row g-3 mb-4">
-            <div class="col-md-4">
+            <div class="col-md-12">
+                <label class="form-label fw-semibold">Tipo de reventa</label>
+                <select name="tipo" class="form-select">
+                    <option value="compra" {% if reventa.tipo == 'compra' or not reventa.tipo %}selected{% endif %}>
+                        Compra — el revendedor la compra (contrae deuda)
+                    </option>
+                    <option value="consignacion" {% if reventa.tipo == 'consignacion' %}selected{% endif %}>
+                        Consignación — se la lleva en consignación (sin deuda)
+                    </option>
+                </select>
+                <small class="text-muted">En consignación no se le carga deuda al revendedor.</small>
+            </div>
+            <div class="col-md-6">
                 <label class="form-label">Precio de reventa</label>
                 <input type="number" name="precio_reventa" class="form-control" step="0.01"
                        value="{{ reventa.precio_reventa|default:'' }}" placeholder="0.00">
             </div>
-            <div class="col-md-4">
+            <div class="col-md-6">
                 <label class="form-label">Comision / Ganancia</label>
                 <input type="number" name="comision" class="form-control" step="0.01"
                        value="{{ reventa.comision|default:'0' }}" placeholder="0.00">

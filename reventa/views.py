@@ -88,6 +88,8 @@ def asignar_reventa(request, vehiculo_id):
         reventa.agencia = cuenta.nombre
         reventa.contacto = cuenta.contacto
         reventa.telefono = cuenta.telefono
+        tipo = request.POST.get("tipo", "compra")
+        reventa.tipo = tipo if tipo in ("compra", "consignacion") else "compra"
         reventa.observaciones = observaciones
         reventa.documentacion_entregada = request.POST.get("documentacion_entregada", "").strip()
         reventa.enviar_a_gestoria = request.POST.get("enviar_a_gestoria") == "on"
@@ -130,6 +132,8 @@ def editar_reventa(request, reventa_id):
         reventa.agencia = request.POST.get("agencia", "").strip()
         reventa.contacto = request.POST.get("contacto", "").strip()
         reventa.telefono = request.POST.get("telefono", "").strip()
+        tipo = request.POST.get("tipo", reventa.tipo)
+        reventa.tipo = tipo if tipo in ("compra", "consignacion") else reventa.tipo
         reventa.observaciones = request.POST.get("observaciones", "").strip()
         reventa.documentacion_entregada = request.POST.get("documentacion_entregada", "").strip()
         enviar_antes = reventa.enviar_a_gestoria
@@ -148,6 +152,25 @@ def editar_reventa(request, reventa_id):
             pass
 
         reventa.save()
+
+        # Sincronizar la deuda con el tipo:
+        # - Consignación: no debe haber deuda -> borrar el "debe" de esta reventa.
+        # - Compra (confirmada con precio): asegurar que el "debe" exista.
+        from .models import MovimientoRevendedor
+        if reventa.tipo == "consignacion":
+            if reventa.cuenta:
+                MovimientoRevendedor.objects.filter(reventa=reventa, tipo="debe").delete()
+                reventa.cuenta.recalcular_saldo()
+        elif (reventa.estado == "confirmada" and reventa.cuenta
+              and reventa.precio_reventa and reventa.precio_reventa > 0):
+            existe = MovimientoRevendedor.objects.filter(reventa=reventa, tipo="debe").exists()
+            if not existe:
+                veh = f"{reventa.vehiculo}" if reventa.vehiculo else "Vehiculo"
+                MovimientoRevendedor.objects.create(
+                    cuenta=reventa.cuenta, tipo="debe", monto=reventa.precio_reventa,
+                    descripcion=f"Reventa – {veh}", reventa=reventa,
+                )
+                reventa.cuenta.recalcular_saldo()
 
         # Si justo ahora se activó el envío a gestoría y la reventa ya está
         # confirmada, generamos el trámite (si no existe).

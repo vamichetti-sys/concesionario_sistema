@@ -12,6 +12,11 @@ class Reventa(models.Model):
         ("revertida", "Revertida"),
     ]
 
+    TIPOS = [
+        ("compra", "Compra (el revendedor la compra → contrae deuda)"),
+        ("consignacion", "Consignación (se la lleva en consignación → sin deuda)"),
+    ]
+
     vehiculo = models.OneToOneField(
         Vehiculo,
         on_delete=models.SET_NULL,
@@ -34,6 +39,13 @@ class Reventa(models.Model):
         max_length=20,
         choices=ESTADOS,
         default="pendiente",
+    )
+
+    tipo = models.CharField(
+        max_length=20,
+        choices=TIPOS,
+        default="compra",
+        verbose_name="Tipo de reventa",
     )
 
     precio_reventa = models.DecimalField(
@@ -93,8 +105,10 @@ class Reventa(models.Model):
         self.fecha_confirmacion = date.today()
         self.save()
 
-        # Crear movimiento "debe" en la cuenta del revendedor
-        if self.cuenta and self.precio_reventa and self.precio_reventa > 0:
+        # Crear movimiento "debe" en la cuenta del revendedor.
+        # SOLO si es por COMPRA. En consignación no contrae deuda
+        # (el revendedor solo debe cuando efectivamente la vende).
+        if self.tipo != "consignacion" and self.cuenta and self.precio_reventa and self.precio_reventa > 0:
             vehiculo_str = f"{self.vehiculo}" if self.vehiculo else "Vehiculo"
             ya_existe = MovimientoRevendedor.objects.filter(
                 cuenta=self.cuenta,
