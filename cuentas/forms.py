@@ -143,8 +143,9 @@ class PlanPagoForm(forms.ModelForm):
         elif tipo_plan == 'unico':
             cleaned_data['cantidad_cuotas'] = 1
         elif tipo_plan == 'cheques':
-            cleaned_data['cantidad_cuotas'] = 0
-            cleaned_data['monto_cuota'] = Decimal('0')
+            # Cada cheque es una "cuota" del plan (con sus datos de cheque)
+            if not cantidad_cuotas or cantidad_cuotas <= 0:
+                self.add_error('cantidad_cuotas', 'Debe indicar la cantidad de cheques.')
 
         return cleaned_data
 

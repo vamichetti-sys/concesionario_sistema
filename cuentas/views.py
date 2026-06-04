@@ -622,6 +622,36 @@ def crear_plan_pago(request, cuenta_id):
                     monto=monto_cuota,
                     estado="pendiente"
                 )
+
+                # Plan tipo CHEQUES: crear el cheque de esta cuota en el módulo Cheques
+                if plan.tipo_plan == "cheques" and not es_edicion:
+                    banco_chq   = (request.POST.get(f"form-{idx}-cheque_banco") or "").strip()
+                    numero_chq  = (request.POST.get(f"form-{idx}-cheque_numero") or "").strip()
+                    titular_chq = (request.POST.get(f"form-{idx}-cheque_titular") or "").strip()
+                    if banco_chq or numero_chq or titular_chq:
+                        try:
+                            from cheques.models import Cheque
+                            nombre_cliente = str(cuenta.cliente) if cuenta.cliente_id else ""
+                            Cheque.objects.create(
+                                cliente=nombre_cliente,
+                                banco_emision=banco_chq,
+                                numero_cheque=numero_chq,
+                                titular_cheque=titular_chq or nombre_cliente,
+                                monto=monto_cuota,
+                                fecha_deposito=fecha_cuota,
+                                estado="a_depositar",
+                                observaciones=(
+                                    f"Plan de pago #{plan.pk} - cheque {i} "
+                                    f"(cuenta corriente #{cuenta.id})"
+                                ),
+                                creado_por=request.user if request.user.is_authenticated else None,
+                            )
+                        except Exception as exc:
+                            messages.warning(
+                                request,
+                                f"La cuota {i} se creó pero el cheque no se pudo registrar: {exc}"
+                            )
+
                 ultimo_numero = i
                 fecha += timedelta(days=30)
 
