@@ -542,7 +542,7 @@
 
     <div class="sidebar-divider"></div>
 
-    {% if secciones_permitidas.operaciones %}
+    {% if grupos_menu.operaciones %}
     <!-- OPERACIONES -->
     <div class="sidebar-category">
         <div class="sidebar-category-header" onclick="toggleCategory(this)">
@@ -550,27 +550,35 @@
             <i data-lucide="chevron-down" class="chevron"></i>
         </div>
         <div class="sidebar-category-items" style="max-height:400px;">
+            {% if permisos_menu.vehiculos %}
             <a href="/vehiculos/" class="nav-link {% if '/vehiculos/' in request.path %}active{% endif %}">
                 <i data-lucide="car"></i>
                 <span>Vehículos</span>
             </a>
+            {% endif %}
+            {% if permisos_menu.compraventa %}
             <a href="{% url 'compraventa:home' %}" class="nav-link {% if '/compraventa/' in request.path %}active{% endif %}">
                 <i data-lucide="repeat"></i>
                 <span>Compra-Venta</span>
             </a>
+            {% endif %}
+            {% if permisos_menu.ventas %}
             <a href="/ventas/" class="nav-link {% if '/ventas/' in request.path %}active{% endif %}">
                 <i data-lucide="shopping-cart"></i>
                 <span>Ventas</span>
             </a>
+            {% endif %}
+            {% if permisos_menu.boletos %}
             <a href="/boletos/" class="nav-link {% if request.path == '/boletos/' or '/presupuestos/' in request.path %}active{% endif %}">
                 <i data-lucide="ticket"></i>
                 <span>Boletos</span>
             </a>
+            {% endif %}
         </div>
     </div>
     {% endif %}
 
-    {% if secciones_permitidas.clientes %}
+    {% if grupos_menu.clientes %}
     <!-- CLIENTES -->
     <div class="sidebar-category">
         <div class="sidebar-category-header" onclick="toggleCategory(this)">
@@ -578,27 +586,35 @@
             <i data-lucide="chevron-down" class="chevron"></i>
         </div>
         <div class="sidebar-category-items" style="max-height:400px;">
+            {% if permisos_menu.clientes %}
             <a href="/clientes/" class="nav-link {% if '/clientes/' in request.path %}active{% endif %}">
                 <i data-lucide="users"></i>
                 <span>Clientes</span>
             </a>
+            {% endif %}
+            {% if permisos_menu.cuentas_corrientes %}
             <a href="/cuentas/" class="nav-link {% if '/cuentas/' in request.path %}active{% endif %}">
                 <i data-lucide="credit-card"></i>
                 <span>Cuentas Corrientes</span>
             </a>
+            {% endif %}
+            {% if permisos_menu.crm %}
             <a href="/crm/" class="nav-link {% if '/crm/' in request.path %}active{% endif %}">
                 <i data-lucide="target"></i>
                 <span>CRM</span>
             </a>
+            {% endif %}
+            {% if permisos_menu.reventa %}
             <a href="/reventa/" class="nav-link {% if '/reventa/' in request.path %}active{% endif %}">
                 <i data-lucide="repeat"></i>
                 <span>Reventa</span>
             </a>
+            {% endif %}
         </div>
     </div>
     {% endif %}
 
-    {% if secciones_permitidas.documentacion %}
+    {% if grupos_menu.documentacion %}
     <!-- DOCUMENTACIÓN -->
     <div class="sidebar-category">
         <div class="sidebar-category-header" onclick="toggleCategory(this)">
@@ -606,23 +622,29 @@
             <i data-lucide="chevron-down" class="chevron"></i>
         </div>
         <div class="sidebar-category-items" style="max-height:400px;">
+            {% if permisos_menu.gestoria %}
             <a href="/gestoria/" class="nav-link {% if '/gestoria/' in request.path %}active{% endif %}">
                 <i data-lucide="clipboard-list"></i>
                 <span>Gestoría</span>
             </a>
+            {% endif %}
+            {% if permisos_menu.documentacion %}
             <a href="{% url 'documentacion:home' %}" class="nav-link {% if '/documentacion/' in request.path %}active{% endif %}">
                 <i data-lucide="folder-open"></i>
                 <span>Documentación</span>
             </a>
+            {% endif %}
+            {% if permisos_menu.deudas %}
             <a href="/deudas/" class="nav-link {% if '/deudas/' in request.path %}active{% endif %}">
                 <i data-lucide="alert-circle"></i>
                 <span>Deudas</span>
             </a>
+            {% endif %}
         </div>
     </div>
     {% endif %}
 
-    {% if secciones_permitidas.administracion %}
+    {% if grupos_menu.administracion %}
     <!-- ADMINISTRACIÓN -->
     <div class="sidebar-category">
         <div class="sidebar-category-header" onclick="toggleCategory(this)">
@@ -630,33 +652,41 @@
             <i data-lucide="chevron-down" class="chevron"></i>
         </div>
         <div class="sidebar-category-items" style="max-height:400px;">
+            {% if permisos_menu.facturacion %}
             <a href="/facturacion/" class="nav-link {% if '/facturacion/' in request.path %}active{% endif %}">
                 <i data-lucide="receipt"></i>
                 <span>Facturación</span>
             </a>
-            {% if request.user.username|lower == 'hamichetti' or request.user.username|lower == 'vamichetti' %}
+            {% endif %}
+            {% if permisos_menu.agenda_pagos %}
             <a href="/agenda-pagos/" class="nav-link {% if '/agenda-pagos/' in request.path %}active{% endif %}">
                 <i data-lucide="calendar-clock"></i>
                 <span>Agenda de Pagos</span>
             </a>
+            {% endif %}
+            {% if permisos_menu.agenda_ingresos %}
             <a href="/agenda-ingresos/" class="nav-link {% if '/agenda-ingresos/' in request.path %}active{% endif %}">
                 <i data-lucide="calendar-plus"></i>
                 <span>Agenda de Ingresos</span>
             </a>
             {% endif %}
+            {% if permisos_menu.asistencia %}
             <a href="/asistencia/" class="nav-link {% if '/asistencia/' in request.path %}active{% endif %}">
                 <i data-lucide="user-check"></i>
                 <span>Asistencia</span>
             </a>
+            {% endif %}
+            {% if permisos_menu.calendario %}
             <a href="/calendario/" class="nav-link {% if '/calendario/' in request.path %}active{% endif %}">
                 <i data-lucide="calendar"></i>
                 <span>Calendario</span>
             </a>
+            {% endif %}
         </div>
     </div>
     {% endif %}
 
-    {% if user.username == 'Vamichetti' or user.username == 'Hamichetti' or user.username|lower == 'namichetti' %}
+    {% if grupos_menu.gestion_interna %}
     <!-- GESTIÓN INTERNA -->
     <div class="sidebar-category">
         <div class="sidebar-category-header" onclick="toggleCategory(this)">
@@ -664,27 +694,31 @@
             <i data-lucide="chevron-down" class="chevron"></i>
         </div>
         <div class="sidebar-category-items" style="max-height:400px;">
-            {% if user.username == 'Vamichetti' or user.username == 'Hamichetti' %}
+            {% if permisos_menu.reportes %}
             <a href="/reportes/" class="nav-link {% if request.path == '/reportes/' or '/reportes/web/' in request.path %}active{% endif %}">
                 <i data-lucide="bar-chart-3"></i>
                 <span>Reportes</span>
             </a>
-            {% if perms.reportes.view_fichareporteinterno %}
+            {% endif %}
+            {% if permisos_menu.control_stock %}
             <a href="{% url 'reportes:control_stock' %}" class="nav-link {% if '/interno/stock/' in request.path %}active{% endif %}">
                 <i data-lucide="package"></i>
                 <span>Control de Stock</span>
             </a>
             {% endif %}
+            {% if permisos_menu.cuentas_internas %}
             <a href="/cuentas-internas/" class="nav-link {% if '/cuentas-internas/' in request.path or '/cheques/' in request.path %}active{% endif %}">
                 <i data-lucide="wallet"></i>
                 <span>Cuentas Internas</span>
             </a>
             {% endif %}
+            {% if permisos_menu.gastos_concesionario %}
             <a href="/gastos-mensuales/" class="nav-link {% if '/gastos-mensuales/' in request.path %}active{% endif %}">
                 <i data-lucide="trending-down"></i>
                 <span>Gastos Concesionario</span>
             </a>
-            {% if user.username == 'Vamichetti' or user.username == 'Hamichetti' %}
+            {% endif %}
+            {% if permisos_menu.auditoria %}
             <a href="/auditoria/" class="nav-link {% if '/auditoria/' in request.path %}active{% endif %}">
                 <i data-lucide="shield-check"></i>
                 <span>Auditoría</span>
@@ -694,7 +728,7 @@
     </div>
     {% endif %}
 
-    {% if user.username == 'Vamichetti' or user.username == 'Hamichetti' %}
+    {% if grupos_menu.marketing %}
     <!-- MARKETING -->
     <div class="sidebar-category">
         <div class="sidebar-category-header" onclick="toggleCategory(this)">
@@ -710,6 +744,7 @@
     </div>
     {% endif %}
 
+    {% if grupos_menu.gestion_personal or es_admin %}
     <!-- GESTIÓN PERSONAL -->
     <div class="sidebar-category">
         <div class="sidebar-category-header" onclick="toggleCategory(this)">
@@ -717,24 +752,33 @@
             <i data-lucide="chevron-down" class="chevron"></i>
         </div>
         <div class="sidebar-category-items" style="max-height:400px;">
+            {% if permisos_menu.contrasenas %}
             <a href="/contrasenas/" class="nav-link {% if '/contrasenas/' in request.path %}active{% endif %}">
                 <i data-lucide="key-round"></i>
                 <span>Contraseñas</span>
             </a>
+            {% endif %}
+            {% if permisos_menu.gastos_personales %}
             <a href="/gastos-personales/" class="nav-link {% if '/gastos-personales/' in request.path %}active{% endif %}">
                 <i data-lucide="receipt"></i>
                 <span>Gastos Personales</span>
             </a>
+            {% endif %}
+            {% if es_admin %}
             <a href="/permisos/" class="nav-link {% if '/permisos/' in request.path %}active{% endif %}">
                 <i data-lucide="shield"></i>
                 <span>Permisos</span>
             </a>
+            {% endif %}
+            {% if permisos_menu.financiacion %}
             <a href="/financiacion/" class="nav-link {% if '/financiacion/' in request.path %}active{% endif %}">
                 <i data-lucide="landmark"></i>
                 <span>Financiación</span>
             </a>
+            {% endif %}
         </div>
     </div>
+    {% endif %}
 
     <div class="sidebar-divider"></div>
 

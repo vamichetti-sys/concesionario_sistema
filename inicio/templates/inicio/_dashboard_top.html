@@ -124,6 +124,7 @@
 </style>
 
 <div class="row g-3 mb-4">
+    {% if permisos_menu.clientes %}
     <div class="col-md">
         <a href="{% url 'clientes:lista_clientes' %}" class="quick-access-card">
             <div class="quick-access-icon" style="background:rgba(59,130,246,0.1);">
@@ -135,6 +136,8 @@
             </div>
         </a>
     </div>
+    {% endif %}
+    {% if permisos_menu.vehiculos %}
     <div class="col-md">
         <a href="{% url 'vehiculos:lista_vehiculos' %}" class="quick-access-card">
             <div class="quick-access-icon" style="background:rgba(16,185,129,0.1);">
@@ -146,6 +149,8 @@
             </div>
         </a>
     </div>
+    {% endif %}
+    {% if permisos_menu.ventas %}
     <div class="col-md">
         <a href="{% url 'ventas:lista_unidades_vendidas' %}" class="quick-access-card">
             <div class="quick-access-icon" style="background:rgba(245,158,11,0.1);">
@@ -157,6 +162,8 @@
             </div>
         </a>
     </div>
+    {% endif %}
+    {% if permisos_menu.cuentas_corrientes %}
     <div class="col-md">
         <a href="{% url 'cuentas:lista_cuentas_corrientes' %}" class="quick-access-card">
             <div class="quick-access-icon" style="background:rgba(239,68,68,0.1);">
@@ -168,6 +175,8 @@
             </div>
         </a>
     </div>
+    {% endif %}
+    {% if permisos_menu.boletos %}
     <div class="col-md">
         <a href="{% url 'boletos:panel' %}" class="quick-access-card">
             <div class="quick-access-icon" style="background:rgba(139,92,246,0.1);">
@@ -179,6 +188,7 @@
             </div>
         </a>
     </div>
+    {% endif %}
     {% if user.username == 'Vamichetti' %}
     <div class="col-md">
         <a href="{% url 'proyectos:dashboard' %}" class="quick-access-card">

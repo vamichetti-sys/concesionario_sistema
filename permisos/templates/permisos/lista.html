@@ -1,59 +1,68 @@
 {% extends "base.html" %}
-{% block title %}Permisos{% endblock %}
+{% block title %}Permisos de usuarios{% endblock %}
 
 {% block content %}
-
-<!-- ENCABEZADO -->
-<div class="mb-4">
-    <h3 class="fw-bold mb-1">
-        <i data-lucide="shield" style="width:22px;height:22px;margin-right:6px;"></i>
-        Permisos de usuarios
-    </h3>
-    <p class="text-muted mb-0">Marcá a qué secciones puede entrar cada usuario. Vamichetti y Hamichetti siempre ven todo.</p>
+<div class="d-flex align-items-center gap-2 mb-2">
+    <i data-lucide="shield" style="width:26px;height:26px;color:#3b82f6;"></i>
+    <h3 class="fw-bold mb-0">Permisos de usuarios</h3>
 </div>
+<p class="text-muted mb-4">
+    Marcá a qué <strong>módulos e ítems</strong> puede entrar cada usuario. Un usuario nuevo no ve nada hasta que lo autorices.
+    Vamichetti y Hamichetti siempre ven todo.
+</p>
 
 <form method="post">
     {% csrf_token %}
-    <div class="card p-0">
-        {% if filas %}
-        <div class="table-responsive">
-            <table class="table align-middle mb-0 text-center">
-                <thead>
-                    <tr>
-                        <th class="text-start">Usuario</th>
-                        {% for key, label in secciones %}
-                        <th>{{ label }}</th>
-                        {% endfor %}
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for fila in filas %}
-                    <tr>
-                        <td class="text-start fw-semibold">{{ fila.usuario.username }}</td>
-                        {% for celda in fila.celdas %}
-                        <td>
-                            <div class="form-check d-flex justify-content-center mb-0">
-                                <input class="form-check-input" type="checkbox"
-                                       name="{{ celda.name }}"
-                                       {% if celda.checked %}checked{% endif %}>
-                            </div>
-                        </td>
-                        {% endfor %}
-                    </tr>
+
+    {% for fila in filas %}
+    <div class="card p-4 mb-4">
+        <div class="d-flex align-items-center gap-2 mb-3">
+            <div style="width:34px;height:34px;border-radius:9px;background:#3b82f6;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;">
+                {{ fila.usuario.username|slice:":1"|upper }}
+            </div>
+            <h5 class="fw-bold mb-0">{{ fila.usuario.username }}</h5>
+        </div>
+
+        <div class="row g-3">
+            {% for mod in fila.modulos %}
+            <div class="col-md-6 col-lg-4">
+                <div class="border rounded p-3 h-100">
+                    <!-- Encabezado módulo con "todos" -->
+                    <div class="form-check mb-2 pb-2 border-bottom">
+                        <input class="form-check-input modulo-todos" type="checkbox"
+                               id="m_{{ fila.usuario.id }}_{{ mod.clave }}"
+                               data-user="{{ fila.usuario.id }}" data-modulo="{{ mod.clave }}"
+                               {% if mod.todos %}checked{% endif %}>
+                        <label class="form-check-label fw-bold" for="m_{{ fila.usuario.id }}_{{ mod.clave }}">
+                            {{ mod.etiqueta }}
+                        </label>
+                    </div>
+                    <!-- Ítems -->
+                    {% for it in mod.items %}
+                    <div class="form-check">
+                        <input class="form-check-input item-check u{{ fila.usuario.id }}-{{ mod.clave }}" type="checkbox"
+                               name="u{{ fila.usuario.id }}" value="{{ it.clave }}"
+                               id="i_{{ fila.usuario.id }}_{{ it.clave }}"
+                               data-user="{{ fila.usuario.id }}" data-modulo="{{ mod.clave }}"
+                               {% if it.checked %}checked{% endif %}>
+                        <label class="form-check-label" for="i_{{ fila.usuario.id }}_{{ it.clave }}">
+                            {{ it.etiqueta }}
+                        </label>
+                    </div>
                     {% endfor %}
-                </tbody>
-            </table>
+                </div>
+            </div>
+            {% endfor %}
         </div>
-        {% else %}
-        <div class="p-5 text-center">
-            <i data-lucide="users" style="width:48px;height:48px;color:#9ca3af;margin-bottom:12px;"></i>
-            <p class="text-muted mb-0">No hay otros usuarios para gestionar.</p>
-        </div>
-        {% endif %}
     </div>
+    {% empty %}
+    <div class="card p-5 text-center text-muted">
+        No hay usuarios para gestionar (solo existen administradores).
+    </div>
+    {% endfor %}
 
     {% if filas %}
-    <div class="mt-4">
+    <div class="d-flex gap-2">
         <button type="submit" class="btn btn-primary">
             <i data-lucide="save" style="width:16px;height:16px;margin-right:6px;"></i>
             Guardar permisos
@@ -62,10 +71,24 @@
     {% endif %}
 </form>
 
-{% endblock %}
-
-{% block extra_js %}
 <script>
     if (typeof lucide !== 'undefined') lucide.createIcons();
+
+    // "Todos" del módulo marca/desmarca sus ítems
+    document.querySelectorAll('.modulo-todos').forEach(chk => {
+        chk.addEventListener('change', function(){
+            const sel = `.u${this.dataset.user}-${this.dataset.modulo}`;
+            document.querySelectorAll(sel).forEach(i => { i.checked = this.checked; });
+        });
+    });
+    // Si cambia un ítem, sincronizar el "todos" del módulo
+    document.querySelectorAll('.item-check').forEach(it => {
+        it.addEventListener('change', function(){
+            const u = this.dataset.user, m = this.dataset.modulo;
+            const items = document.querySelectorAll(`.u${u}-${m}`);
+            const todos = document.getElementById(`m_${u}_${m}`);
+            if (todos) todos.checked = Array.from(items).every(i => i.checked);
+        });
+    });
 </script>
 {% endblock %}

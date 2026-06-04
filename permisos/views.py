@@ -5,7 +5,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 
-from .access import SECCIONES, SECCION_KEYS, es_admin, _admins
+from .access import MODULOS, todas_las_claves, es_admin, _admins
 from .models import PermisoUsuario
 
 
@@ -31,26 +31,34 @@ def _usuarios_gestionables():
 @solo_admin
 def gestionar_permisos(request):
     usuarios = _usuarios_gestionables()
+    claves_validas = set(todas_las_claves())
 
     if request.method == "POST":
         for u in usuarios:
             perm, _ = PermisoUsuario.objects.get_or_create(usuario=u)
-            for key in SECCION_KEYS:
-                setattr(perm, key, bool(request.POST.get(f"u{u.id}_{key}")))
-            perm.save()
+            seleccionadas = request.POST.getlist(f"u{u.id}")
+            perm.claves = [c for c in seleccionadas if c in claves_validas]
+            perm.save(update_fields=["claves"])
         messages.success(request, "Permisos actualizados correctamente.")
         return redirect("permisos:gestionar")
 
+    # Armar la estructura para el template: por usuario, sus módulos/ítems marcados
     filas = []
     for u in usuarios:
         perm, _ = PermisoUsuario.objects.get_or_create(usuario=u)
-        celdas = [
-            {"name": f"u{u.id}_{key}", "checked": getattr(perm, key)}
-            for key in SECCION_KEYS
-        ]
-        filas.append({"usuario": u, "celdas": celdas})
+        permitidas = set(perm.claves or [])
+        modulos = []
+        for mod in MODULOS:
+            items = [
+                {"clave": it["clave"], "etiqueta": it["etiqueta"], "checked": it["clave"] in permitidas}
+                for it in mod["items"]
+            ]
+            modulos.append({
+                "clave": mod["clave"],
+                "etiqueta": mod["etiqueta"],
+                "items": items,
+                "todos": all(i["checked"] for i in items),
+            })
+        filas.append({"usuario": u, "modulos": modulos})
 
-    return render(request, "permisos/lista.html", {
-        "filas": filas,
-        "secciones": SECCIONES,
-    })
+    return render(request, "permisos/lista.html", {"filas": filas})
