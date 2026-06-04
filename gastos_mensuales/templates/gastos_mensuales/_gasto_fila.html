@@ -1,0 +1,46 @@
+<tr class="gasto-row">
+    <td>
+        <strong>{{ g.categoria.nombre }}</strong>
+        {% if g.categoria.es_fijo %}
+        <span class="badge" style="background:rgba(139,92,246,0.1);color:#8b5cf6;font-size:10px;margin-left:4px;">Fijo</span>
+        {% endif %}
+    </td>
+    <td>{{ g.descripcion_visible }}</td>
+    <td><small class="text-muted">{{ g.get_unidad_display }}</small></td>
+    <td class="text-end">
+        <form method="post" action="{% url 'gastos_mensuales:actualizar_monto' pk=g.pk %}" class="d-inline-flex align-items-center justify-content-end gap-1">
+            {% csrf_token %}
+            <span class="text-muted">$</span>
+            <input type="number" name="monto" value="{{ g.monto|stringformat:'.2f' }}"
+                   step="0.01" min="0"
+                   class="form-control form-control-sm text-end fw-bold"
+                   style="width:120px;"
+                   title="Editar monto (se guarda al salir del campo)"
+                   onchange="this.form.submit()">
+        </form>
+    </td>
+    <td class="text-center">
+        <form method="post" action="{% url 'gastos_mensuales:marcar_pagado' pk=g.pk %}" style="display:inline;">
+            {% csrf_token %}
+            {% if g.pagado %}
+            <button type="submit" class="btn btn-sm" style="background:rgba(16,185,129,0.1);color:#059669;border:none;" title="Marcar como pendiente">
+                <i data-lucide="check-circle" style="width:16px;height:16px;"></i>
+            </button>
+            {% else %}
+            <button type="submit" class="btn btn-sm" style="background:rgba(239,68,68,0.1);color:#dc2626;border:none;" title="Marcar como pagado">
+                <i data-lucide="circle" style="width:16px;height:16px;"></i>
+            </button>
+            {% endif %}
+        </form>
+    </td>
+    <td class="text-end">
+        <div class="d-flex gap-1 justify-content-end">
+            <a href="{% url 'gastos_mensuales:editar' pk=g.pk %}" class="btn btn-secondary btn-sm">
+                <i data-lucide="edit" style="width:14px;height:14px;"></i>
+            </a>
+            <a href="{% url 'gastos_mensuales:eliminar' pk=g.pk %}" class="btn btn-outline-danger btn-sm">
+                <i data-lucide="trash-2" style="width:14px;height:14px;"></i>
+            </a>
+        </div>
+    </td>
+</tr>

@@ -30,6 +30,12 @@ def resumen_mensual(request):
         mes=mes, anio=anio,
     ).select_related("categoria").order_by("categoria__nombre")
 
+    # Separar gastos de vehículos (sincronizados desde la ficha) del resto,
+    # para mostrarlos en solapas distintas y que no se mezclen.
+    gastos_vehiculos = [g for g in gastos if g.descripcion and "[GCF:" in g.descripcion]
+    gastos_generales = [g for g in gastos if not (g.descripcion and "[GCF:" in g.descripcion)]
+    total_vehiculos = sum((g.monto for g in gastos_vehiculos), Decimal("0"))
+
     # Totales
     total_fijos = gastos.filter(
         categoria__es_fijo=True
@@ -76,6 +82,9 @@ def resumen_mensual(request):
 
     return render(request, "gastos_mensuales/resumen.html", {
         "gastos": gastos,
+        "gastos_generales": gastos_generales,
+        "gastos_vehiculos": gastos_vehiculos,
+        "total_vehiculos": total_vehiculos,
         "mes": mes,
         "anio": anio,
         "mes_nombre": MESES[mes] if 1 <= mes <= 12 else "",
