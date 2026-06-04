@@ -77,6 +77,13 @@ class GastoMensual(models.Model):
     def __str__(self):
         return f"{self.categoria.nombre} – ${self.monto} ({self.mes}/{self.anio})"
 
+    @property
+    def descripcion_visible(self):
+        """Descripción sin los tags internos de sincronización ([GCF:...] / [GC#...])."""
+        import re
+        texto = re.sub(r"\s*\[GC[F]?[:#][^\]]*\]", "", self.descripcion or "")
+        return texto.strip() or "-"
+
 
 # ============================================================
 # RESUMEN MENSUAL DE GASTOS (CACHE/CIERRE)
