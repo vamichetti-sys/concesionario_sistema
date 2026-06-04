@@ -213,7 +213,15 @@ def sync_gastos_concesionario_fijos(sender, instance, **kwargs):
     GastoReporteInterno = _get_gasto_reporte_model()
     ficha_reporte = _get_ficha_reporte(instance.vehiculo)
 
-    patente_vehiculo = getattr(instance.vehiculo, "patente", None) or getattr(instance.vehiculo, "marca", "") or "Vehículo"
+    # Identificador completo del vehículo: marca modelo (dominio)
+    _veh = instance.vehiculo
+    _ident = " ".join(
+        str(x) for x in [getattr(_veh, "marca", ""), getattr(_veh, "modelo", "")] if x
+    ).strip()
+    _dominio = getattr(_veh, "dominio", "") or getattr(_veh, "patente", "") or ""
+    if _dominio:
+        _ident = f"{_ident} ({_dominio})".strip() if _ident else str(_dominio)
+    patente_vehiculo = _ident or "Vehículo"
 
     for campo, label in CAMPOS_GC:
         monto = getattr(instance, campo, None) or Decimal("0")
