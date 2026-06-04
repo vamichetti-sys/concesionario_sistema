@@ -65,32 +65,45 @@ def render_pdf_listado(
     else:
         elements.append(Spacer(1, 8))
 
-    data = [columnas] + [list(f) for f in filas]
-    if totales:
-        data.append(list(totales))
-
-    # Anchos que ocupan todo el ancho útil de la página (la primera columna
-    # más ancha por ser la etiqueta; el resto reparte lo que queda).
-    total_w = A4[0] - 48
     ncols = len(columnas) or 1
+
+    # Estilos de celda. Usamos Paragraph para que el texto AJUSTE (wrap)
+    # dentro de su columna y nunca se encime con la de al lado.
+    head_sty = ParagraphStyle("h", fontName="Helvetica-Bold", fontSize=10,
+                              leading=12.5, textColor=colors.white)
+    head_sty_r = ParagraphStyle("hr", parent=head_sty, alignment=2)
+    cell_sty = ParagraphStyle("c", fontName="Helvetica", fontSize=9.5, leading=12)
+    cell_sty_r = ParagraphStyle("cr", parent=cell_sty, alignment=2)
+    tot_sty = ParagraphStyle("t", fontName="Helvetica-Bold", fontSize=10.5, leading=13)
+    tot_sty_r = ParagraphStyle("tr", parent=tot_sty, alignment=2)
+
+    def fila_par(valores, sty_norm, sty_right):
+        out = []
+        for i, val in enumerate(valores):
+            out.append(Paragraph(str(val), sty_right if i == ncols - 1 else sty_norm))
+        return out
+
+    data = [fila_par(columnas, head_sty, head_sty_r)]
+    for f in filas:
+        data.append(fila_par(f, cell_sty, cell_sty_r))
+    if totales:
+        data.append(fila_par(totales, tot_sty, tot_sty_r))
+
+    # Anchos proporcionales: la primera columna un poco más ancha (etiquetas),
+    # el resto reparte parejo. Como el texto ajusta, no se desborda.
+    total_w = A4[0] - 48
     if ncols == 1:
         col_widths = [total_w]
     else:
-        first = total_w * 0.5
-        rest = (total_w - first) / (ncols - 1)
-        col_widths = [first] + [rest] * (ncols - 1)
+        weights = [2.0] + [1.0] * (ncols - 1)
+        sw = sum(weights)
+        col_widths = [total_w * w / sw for w in weights]
 
     tbl = Table(data, colWidths=col_widths, repeatRows=1)
     style = [
         ("BACKGROUND", (0, 0), (-1, 0), COLOR_AZUL),
-        ("TEXTCOLOR",  (0, 0), (-1, 0), colors.white),
-        ("FONTNAME",   (0, 0), (-1, 0), "Helvetica-Bold"),
-        ("FONTSIZE",   (0, 0), (-1, 0), 10.5),
-        ("FONTSIZE",   (0, 1), (-1, -1), 10),
         ("VALIGN",     (0, 0), (-1, -1), "MIDDLE"),
-        ("ALIGN",      (-1, 1), (-1, -1), "RIGHT"),
         ("LINEBELOW",  (0, 0), (-1, -1), 0.4, colors.HexColor("#e2e8f0")),
-        ("LINEAFTER",  (0, 0), (-2, -1), 0.4, colors.HexColor("#eef2f7")),
         ("BOX",        (0, 0), (-1, -1), 0.5, colors.HexColor("#cbd5e1")),
         ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, COLOR_GRIS]),
         ("TOPPADDING",    (0, 0), (-1, -1), 8),
@@ -101,8 +114,6 @@ def render_pdf_listado(
     if totales:
         style += [
             ("BACKGROUND", (0, -1), (-1, -1), colors.HexColor("#fef3c7")),
-            ("FONTNAME",   (0, -1), (-1, -1), "Helvetica-Bold"),
-            ("FONTSIZE",   (0, -1), (-1, -1), 11),
             ("LINEABOVE",  (0, -1), (-1, -1), 0.8, COLOR_AZUL),
         ]
     tbl.setStyle(TableStyle(style))
