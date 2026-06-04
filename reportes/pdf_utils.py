@@ -69,21 +69,41 @@ def render_pdf_listado(
     if totales:
         data.append(list(totales))
 
-    tbl = Table(data, repeatRows=1)
+    # Anchos que ocupan todo el ancho útil de la página (la primera columna
+    # más ancha por ser la etiqueta; el resto reparte lo que queda).
+    total_w = A4[0] - 48
+    ncols = len(columnas) or 1
+    if ncols == 1:
+        col_widths = [total_w]
+    else:
+        first = total_w * 0.5
+        rest = (total_w - first) / (ncols - 1)
+        col_widths = [first] + [rest] * (ncols - 1)
+
+    tbl = Table(data, colWidths=col_widths, repeatRows=1)
     style = [
         ("BACKGROUND", (0, 0), (-1, 0), COLOR_AZUL),
         ("TEXTCOLOR",  (0, 0), (-1, 0), colors.white),
         ("FONTNAME",   (0, 0), (-1, 0), "Helvetica-Bold"),
-        ("FONTSIZE",   (0, 0), (-1, -1), 9),
+        ("FONTSIZE",   (0, 0), (-1, 0), 10.5),
+        ("FONTSIZE",   (0, 1), (-1, -1), 10),
         ("VALIGN",     (0, 0), (-1, -1), "MIDDLE"),
         ("ALIGN",      (-1, 1), (-1, -1), "RIGHT"),
-        ("GRID",       (0, 0), (-1, -1), 0.25, colors.HexColor("#cbd5e1")),
+        ("LINEBELOW",  (0, 0), (-1, -1), 0.4, colors.HexColor("#e2e8f0")),
+        ("LINEAFTER",  (0, 0), (-2, -1), 0.4, colors.HexColor("#eef2f7")),
+        ("BOX",        (0, 0), (-1, -1), 0.5, colors.HexColor("#cbd5e1")),
         ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, COLOR_GRIS]),
+        ("TOPPADDING",    (0, 0), (-1, -1), 8),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+        ("LEFTPADDING",   (0, 0), (-1, -1), 12),
+        ("RIGHTPADDING",  (0, 0), (-1, -1), 12),
     ]
     if totales:
         style += [
             ("BACKGROUND", (0, -1), (-1, -1), colors.HexColor("#fef3c7")),
             ("FONTNAME",   (0, -1), (-1, -1), "Helvetica-Bold"),
+            ("FONTSIZE",   (0, -1), (-1, -1), 11),
+            ("LINEABOVE",  (0, -1), (-1, -1), 0.8, COLOR_AZUL),
         ]
     tbl.setStyle(TableStyle(style))
     elements.append(tbl)
