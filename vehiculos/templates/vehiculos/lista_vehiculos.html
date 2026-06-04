@@ -89,9 +89,18 @@
      TABLA
 =============================== -->
 <div class="card p-0">
+    <style>
+        .tabla-stock > :not(caption) > * > * { padding: 0.45rem 0.4rem; }
+        .tabla-stock th, .tabla-stock td { font-size: 13px; }
+        .tabla-stock th { font-size: 11px; letter-spacing: .3px; }
+        .tabla-stock .btn-sm { padding: 0.2rem 0.4rem; line-height: 1; }
+        .tabla-stock .btn-sm i { width: 14px; height: 14px; }
+        .tabla-stock .acciones-cell { gap: 0.2rem !important; }
+        .tabla-stock .veh-icono { width: 30px; height: 30px; }
+    </style>
     {% if vehiculos_con_dias %}
     <div class="table-responsive">
-        <table class="table align-middle mb-0">
+        <table class="table align-middle mb-0 tabla-stock">
             <thead>
                 <tr>
                     <th>Vehículo</th>
@@ -177,7 +186,7 @@
 
                     <!-- ACCIONES -->
                     <td class="text-end">
-                        <div class="d-flex gap-2 justify-content-end">
+                        <div class="d-flex gap-2 justify-content-end acciones-cell">
                             <button type="button" class="btn btn-primary btn-sm" onclick="abrirFicha('{{ v.id }}')">
                                 <i data-lucide="info" style="width:14px;height:14px;"></i>
                             </button>
