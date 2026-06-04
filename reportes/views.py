@@ -11,12 +11,30 @@ from gestoria.models import Gestoria
 from asistencia.models import AsistenciaDiaria
 from cuentas.models import CuentaCorriente
 
+from functools import wraps
+
 from .models import (
     ReporteMensual,
     ReporteAnual,
     FichaReporteInterno,
     GastoReporteInterno,
 )
+
+
+def requiere_control_stock(view_func):
+    """
+    Acceso a Control de Stock según la pantalla de Permisos:
+    admins siempre; el resto si tiene tildado 'Control de Stock'.
+    """
+    @wraps(view_func)
+    @login_required(login_url="ingreso")
+    def _wrapped(request, *args, **kwargs):
+        from permisos.access import puede_ver_clave
+        if not puede_ver_clave(request.user, "control_stock"):
+            messages.error(request, "No tenés permiso para acceder a este módulo.")
+            return redirect("inicio")
+        return view_func(request, *args, **kwargs)
+    return _wrapped
 from .forms import (
     FichaReporteInternoForm,
     GastoReporteInternoForm,
@@ -418,10 +436,7 @@ def reporte_interno_vamichetti(request):
 # CONTROL DE STOCK
 # ==========================================================
 @login_required
-@permission_required(
-    'reportes.view_fichareporteinterno',
-    raise_exception=True
-)
+@requiere_control_stock
 def control_stock(request):
     # 🔄 Permite cambiar de unidad desde la misma pantalla (?unidad=HA|VA)
     unidad_param = (request.GET.get("unidad") or "").upper()
@@ -462,10 +477,7 @@ def control_stock(request):
 # EDITAR FICHA INTERNA + GASTOS
 # ==========================================================
 @login_required
-@permission_required(
-    'reportes.view_fichareporteinterno',
-    raise_exception=True
-)
+@requiere_control_stock
 def editar_ficha_reporte(request, vehiculo_id):
     vehiculo = get_object_or_404(Vehiculo, id=vehiculo_id)
 
@@ -506,10 +518,7 @@ def editar_ficha_reporte(request, vehiculo_id):
 # AGREGAR GASTO
 # ==========================================================
 @login_required
-@permission_required(
-    'reportes.view_fichareporteinterno',
-    raise_exception=True
-)
+@requiere_control_stock
 def agregar_gasto_reporte(request, ficha_id):
     ficha = get_object_or_404(FichaReporteInterno, id=ficha_id)
 
@@ -533,10 +542,7 @@ def agregar_gasto_reporte(request, ficha_id):
 # ELIMINAR GASTO
 # ==========================================================
 @login_required
-@permission_required(
-    'reportes.view_fichareporteinterno',
-    raise_exception=True
-)
+@requiere_control_stock
 def eliminar_gasto_reporte(request, gasto_id):
     gasto = get_object_or_404(GastoReporteInterno, id=gasto_id)
     vehiculo_id = gasto.ficha.vehiculo.id
@@ -553,10 +559,7 @@ def eliminar_gasto_reporte(request, gasto_id):
 # REPORTE DE GANANCIAS (DINÁMICO)
 # ==========================================================
 @login_required
-@permission_required(
-    'reportes.view_fichareporteinterno',
-    raise_exception=True
-)
+@requiere_control_stock
 def reporte_ganancias(request):
     # 🔑 tomar la unidad activa desde sesión
     unidad = request.session.get("unidad_activa", "HA")

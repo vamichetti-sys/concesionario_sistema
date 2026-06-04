@@ -18,10 +18,12 @@ from .models import ConversacionMeta, MensajeMeta, LeadMeta
 
 
 # ==========================================================
-# Guard: solo administradores acceden a la parte visual
+# Guard: acceso según la pantalla de Permisos (admins siempre;
+# el resto si tiene tildado 'Marketing').
 # ==========================================================
 def _solo_admin(request):
-    return es_admin(request.user)
+    from permisos.access import puede_ver_clave
+    return puede_ver_clave(request.user, "marketing")
 
 
 # ==========================================================

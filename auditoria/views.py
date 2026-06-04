@@ -10,7 +10,10 @@ from .models import LogActividad
 
 
 def _es_admin(user):
-    return user.is_superuser or user.username in ("Vamichetti", "Hamichetti")
+    # Acceso según la pantalla de Permisos: admins siempre; el resto si
+    # tiene tildado 'Auditoría'.
+    from permisos.access import puede_ver_clave
+    return puede_ver_clave(user, "auditoria")
 
 
 @login_required
