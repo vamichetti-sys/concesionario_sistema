@@ -416,6 +416,12 @@
         .card .table-responsive .table thead th:first-child { border-top-left-radius: 10px; }
         .card .table-responsive .table thead th:last-child { border-top-right-radius: 10px; }
 
+        /* Botones de acción en listados: que NO se partan en varias líneas
+           (eso hacía que las filas quedaran altas y desprolijas) y compactos */
+        .table td .btn, .table th .btn { white-space: nowrap; }
+        .table td .btn-sm, .table th .btn-sm { padding: 0.3rem 0.6rem; line-height: 1.2; }
+        .table td .d-flex { flex-wrap: nowrap; }
+
         /* =========================
            BADGES
         ========================= */
