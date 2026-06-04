@@ -4,9 +4,32 @@ from django.conf import settings
 
 
 # ==========================================================
+# MIXIN: número de carpeta único entre vehículos ACTIVOS
+# (en stock, temporal o reventa). Los vendidos pueden repetir.
+# ==========================================================
+class CarpetaUnicaMixin:
+    def clean_numero_carpeta(self):
+        valor = (self.cleaned_data.get("numero_carpeta") or "").strip()
+        estado = self.cleaned_data.get("estado") or getattr(self.instance, "estado", "")
+        # Si no hay número, o el vehículo es vendido, no se valida.
+        if not valor or estado == "vendido":
+            return valor
+        qs = Vehiculo.objects.filter(numero_carpeta=valor).exclude(estado="vendido")
+        if self.instance and self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+        otro = qs.first()
+        if otro:
+            raise forms.ValidationError(
+                f"El número de carpeta «{valor}» ya está en uso por "
+                f"{otro.marca} {otro.modelo} ({otro.dominio}). Usá otro número."
+            )
+        return valor
+
+
+# ==========================================================
 # FORMULARIO BÁSICO PARA AGREGAR VEHÍCULO
 # ==========================================================
-class VehiculoBasicoForm(forms.ModelForm):
+class VehiculoBasicoForm(CarpetaUnicaMixin, forms.ModelForm):
     class Meta:
         model = Vehiculo
         fields = [
@@ -51,7 +74,7 @@ class VehiculoBasicoForm(forms.ModelForm):
 # ==========================================================
 # FORMULARIO PARA EDITAR VEHÍCULO
 # ==========================================================
-class VehiculoForm(forms.ModelForm):
+class VehiculoForm(CarpetaUnicaMixin, forms.ModelForm):
     class Meta:
         model = Vehiculo
         fields = [

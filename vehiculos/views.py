@@ -631,8 +631,12 @@ def guardar_ficha_vehicular(request, vehiculo_id):
                 vehiculo_id=vehiculo.id
             )
 
-        # ❌ Formularios inválidos
-        messages.error(request, "Error al guardar los cambios.")
+        # ❌ Formularios inválidos — mostramos el motivo real
+        errores = []
+        for form in (vehiculo_form, ficha_form):
+            for errs in form.errors.values():
+                errores.extend(str(e) for e in errs)
+        messages.error(request, " ".join(errores) if errores else "Error al guardar los cambios.")
         return redirect(
             "vehiculos:ficha_completa",
             vehiculo_id=vehiculo.id
