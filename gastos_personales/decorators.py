@@ -18,7 +18,8 @@ def solo_gestion_personal(view_func):
     @wraps(view_func)
     @login_required(login_url="ingreso")
     def _wrapped(request, *args, **kwargs):
-        if request.user.username.lower() not in _usuarios_permitidos():
+        from permisos.access import puede_ver_clave
+        if not puede_ver_clave(request.user, "gastos_personales"):
             messages.error(request, "No tenés permiso para acceder a este módulo.")
             return redirect("inicio")
         return view_func(request, *args, **kwargs)
