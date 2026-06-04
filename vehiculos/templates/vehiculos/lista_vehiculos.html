@@ -243,7 +243,7 @@
                                     <i data-lucide="archive" style="width:14px;height:14px;"></i>
                                 </button>
                             </form>
-                            {% if not v.tiene_venta %}
+                            {% if not v.tiene_venta_activa %}
                             <form method="POST" action="{% url 'vehiculos:borrar_vehiculo' v.id %}" data-no-confirm onsubmit="return confirm('¿ELIMINAR DEFINITIVAMENTE este vehículo?\n\nSe borra el vehículo y su ficha. Esta acción NO se puede deshacer.');">
                                 {% csrf_token %}
                                 <button type="submit" class="btn btn-outline-danger btn-sm" title="Eliminar definitivamente (no tiene venta)">

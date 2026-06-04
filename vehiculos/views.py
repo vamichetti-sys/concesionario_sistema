@@ -1224,23 +1224,31 @@ def eliminar_vehiculo(request, vehiculo_id):
 # BORRAR VEHÍCULO DEFINITIVAMENTE
 # Solo si no tiene ninguna venta asociada (cargado por error).
 # ==========================================================
+@transaction.atomic
 def borrar_vehiculo(request, vehiculo_id):
     from ventas.models import Venta
 
     vehiculo = get_object_or_404(Vehiculo, id=vehiculo_id)
 
     if request.method == "POST":
-        if Venta.objects.filter(vehiculo=vehiculo).exists():
+        ventas = Venta.objects.filter(vehiculo=vehiculo)
+        # Solo bloquea si tiene una venta CONFIRMADA (venta real).
+        if ventas.filter(estado="confirmada").exists():
             messages.error(
                 request,
-                "No se puede eliminar: el vehículo tiene una venta asociada. "
+                "No se puede eliminar: el vehículo tiene una venta CONFIRMADA. "
                 "Reingresalo a stock primero (se borra la venta) y después eliminalo."
             )
             return redirect("vehiculos:lista_vehiculos")
 
         nombre = str(vehiculo)
-        vehiculo.delete()
-        messages.success(request, f"Vehículo {nombre} eliminado definitivamente.")
+        try:
+            # Borrar ventas viejas/no confirmadas para no dejar registros huérfanos
+            ventas.delete()
+            vehiculo.delete()
+            messages.success(request, f"Vehículo {nombre} eliminado definitivamente.")
+        except Exception as exc:
+            messages.error(request, f"No se pudo eliminar: {exc}")
 
     return redirect("vehiculos:lista_vehiculos")
 
