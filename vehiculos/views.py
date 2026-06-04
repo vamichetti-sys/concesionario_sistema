@@ -1221,6 +1221,31 @@ def eliminar_vehiculo(request, vehiculo_id):
 
 
 # ==========================================================
+# BORRAR VEHÍCULO DEFINITIVAMENTE
+# Solo si no tiene ninguna venta asociada (cargado por error).
+# ==========================================================
+def borrar_vehiculo(request, vehiculo_id):
+    from ventas.models import Venta
+
+    vehiculo = get_object_or_404(Vehiculo, id=vehiculo_id)
+
+    if request.method == "POST":
+        if Venta.objects.filter(vehiculo=vehiculo).exists():
+            messages.error(
+                request,
+                "No se puede eliminar: el vehículo tiene una venta asociada. "
+                "Reingresalo a stock primero (se borra la venta) y después eliminalo."
+            )
+            return redirect("vehiculos:lista_vehiculos")
+
+        nombre = str(vehiculo)
+        vehiculo.delete()
+        messages.success(request, f"Vehículo {nombre} eliminado definitivamente.")
+
+    return redirect("vehiculos:lista_vehiculos")
+
+
+# ==========================================================
 # AJAX – DATOS DE VEHÍCULO (RESTAURADO)
 # ==========================================================
 @login_required

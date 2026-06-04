@@ -45,6 +45,11 @@ urlpatterns = [
         views.eliminar_vehiculo,
         name="eliminar_vehiculo"
     ),
+    path(
+        "borrar/<int:vehiculo_id>/",
+        views.borrar_vehiculo,
+        name="borrar_vehiculo"
+    ),
     # ==================================================
     # ESTADO DEL VEHÍCULO
     # ==================================================
