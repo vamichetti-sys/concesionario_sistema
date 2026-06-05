@@ -34,6 +34,7 @@ MODULOS = [
         {"clave": "reportes",             "etiqueta": "Reportes",             "url": "/reportes/"},
         {"clave": "control_stock",        "etiqueta": "Control de Stock",     "url": "/reportes/interno/stock/"},
         {"clave": "cuentas_internas",     "etiqueta": "Cuentas Internas",     "url": "/cuentas-internas/", "extra": ["/cheques/"]},
+        {"clave": "alquileres",           "etiqueta": "Alquileres",           "url": "/cuentas-internas/alquileres/"},
         {"clave": "gastos_concesionario", "etiqueta": "Gastos Concesionario", "url": "/gastos-mensuales/"},
         {"clave": "auditoria",            "etiqueta": "Auditoría",            "url": "/auditoria/"},
     ]},

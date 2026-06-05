@@ -5,13 +5,13 @@
 
 <div class="mb-4">
     <h3 class="fw-bold mb-1">Cuentas Internas</h3>
-    <p class="text-muted mb-0">Gestión de cuentas internas y alquileres</p>
+    <p class="text-muted mb-0">Gestión de cuentas internas y cheques</p>
 </div>
 
 <div class="row g-4">
 
     <!-- CUENTAS INTERNAS -->
-    <div class="col-md-4">
+    <div class="col-md-6">
         <div class="card p-4 h-100">
             <div class="d-flex align-items-start gap-3">
                 <div style="width:50px;height:50px;background:rgba(139,92,246,0.1);border-radius:12px;display:flex;align-items:center;justify-content:center;">
@@ -29,27 +29,8 @@
         </div>
     </div>
 
-    <!-- ALQUILERES -->
-    <div class="col-md-4">
-        <div class="card p-4 h-100">
-            <div class="d-flex align-items-start gap-3">
-                <div style="width:50px;height:50px;background:rgba(16,185,129,0.1);border-radius:12px;display:flex;align-items:center;justify-content:center;">
-                    <i data-lucide="building" style="width:24px;height:24px;color:#10b981;"></i>
-                </div>
-                <div class="flex-grow-1">
-                    <h5 class="fw-bold mb-1 text-success">Alquileres</h5>
-                    <p class="text-muted mb-3" style="font-size:14px;">Alquileres y sus pagos · {{ total_alquileres }} activo{{ total_alquileres|pluralize:"s" }} · $ {{ total_mensual_alquileres|floatformat:0 }}/mes</p>
-                    <a href="{% url 'cuentas_internas:alquileres_lista' %}" class="btn btn-success">
-                        Ingresar
-                        <i data-lucide="arrow-right" style="width:16px;height:16px;margin-left:6px;"></i>
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- CHEQUES -->
-    <div class="col-md-4">
+    <div class="col-md-6">
         <div class="card p-4 h-100">
             <div class="d-flex align-items-start gap-3">
                 <div style="width:50px;height:50px;background:rgba(59,130,246,0.1);border-radius:12px;display:flex;align-items:center;justify-content:center;">

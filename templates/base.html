@@ -730,9 +730,15 @@
             </a>
             {% endif %}
             {% if permisos_menu.cuentas_internas %}
-            <a href="/cuentas-internas/" class="nav-link {% if '/cuentas-internas/' in request.path or '/cheques/' in request.path %}active{% endif %}">
+            <a href="/cuentas-internas/" class="nav-link {% if '/cheques/' in request.path or '/cuentas-internas/' in request.path and '/alquileres/' not in request.path %}active{% endif %}">
                 <i data-lucide="wallet"></i>
                 <span>Cuentas Internas</span>
+            </a>
+            {% endif %}
+            {% if permisos_menu.alquileres %}
+            <a href="/cuentas-internas/alquileres/" class="nav-link {% if '/alquileres/' in request.path %}active{% endif %}">
+                <i data-lucide="building"></i>
+                <span>Alquileres</span>
             </a>
             {% endif %}
             {% if permisos_menu.gastos_concesionario %}
