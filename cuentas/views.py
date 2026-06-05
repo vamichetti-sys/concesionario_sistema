@@ -273,6 +273,12 @@ def lista_cuentas_corrientes(request):
     cuentas_qs = (
         CuentaCorriente.objects
         .select_related("cliente", "venta")
+        .prefetch_related(
+            "movimientos",
+            "planes",
+            "planes__cuotas",
+            "planes__cuotas__pagos",
+        )
         .order_by("-creada")
     )
 
@@ -297,8 +303,10 @@ def lista_cuentas_corrientes(request):
         plan = getattr(c, "plan_pago", None)
         if plan and not plan.pk:
             plan = None
-        tiene_gestoria = c.movimientos.filter(origen="gestoria").exists()
-        tiene_permuta = c.movimientos.filter(origen="permuta").exists()
+        # Chequeo en memoria sobre los movimientos ya traídos (sin consulta extra)
+        _movs = list(c.movimientos.all())
+        tiene_gestoria = any(m.origen == "gestoria" for m in _movs)
+        tiene_permuta = any(m.origen == "permuta" for m in _movs)
         deuda = c.deuda_total_real
 
         if not (plan or tiene_gestoria or tiene_permuta or deuda > 0):

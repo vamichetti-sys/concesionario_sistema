@@ -132,21 +132,24 @@ class CuentaCorriente(models.Model):
         Compatibilidad: devuelve el primer plan de la cuenta (o None).
         El sistema ahora admite VARIOS planes por cuenta (self.planes);
         esta propiedad mantiene andando el código/visual que asume uno solo.
+        Ordena en memoria para aprovechar el prefetch (sin consulta extra).
         """
-        return self.planes.order_by('id').first()
+        planes = list(self.planes.all())
+        if not planes:
+            return None
+        return sorted(planes, key=lambda p: p.id)[0]
 
     @property
     def planes_activos(self):
-        return self.planes.order_by('id')
+        return sorted(self.planes.all(), key=lambda p: p.id)
 
     @property
     def tiene_deuda_vencida(self):
+        hoy = date.today()
         return any(
-            plan.cuotas.filter(
-                estado='pendiente',
-                vencimiento__lt=date.today()
-            ).exists()
+            cuota.estado == 'pendiente' and cuota.vencimiento < hoy
             for plan in self.planes.all()
+            for cuota in plan.cuotas.all()
         )
 
     def _vehiculo_para_gastos(self):
@@ -168,14 +171,32 @@ class CuentaCorriente(models.Model):
             .distinct()
         )
 
+    @staticmethod
+    def _suma_mov(movs, *, origenes=None, excl_origen=None, tipos=None):
+        """
+        Suma montos de una lista de movimientos YA cargada en memoria.
+        Evita hacer un .aggregate() (consulta) por cada filtro; con prefetch
+        no genera ninguna consulta. Reemplaza los Sum() en los cálculos de deuda.
+        """
+        total = Decimal("0")
+        for m in movs:
+            if origenes is not None and m.origen not in origenes:
+                continue
+            if excl_origen is not None and m.origen == excl_origen:
+                continue
+            if tipos is not None and m.tipo not in tipos:
+                continue
+            total += m.monto or Decimal("0")
+        return total
+
     @property
     def deuda_total_inicial(self):
         """
         Deuda total contraída (sin descontar pagos):
         plan total + gestoría debe + gastos de ingreso totales
         """
-        from django.db.models import Sum
         total = Decimal("0")
+        movs = list(self.movimientos.all())  # 1 consulta (0 si viene con prefetch)
 
         # Total de TODOS los planes de pago (con interés) - incluye finalizados
         planes = [p for p in self.planes.all() if p.pk]
@@ -185,28 +206,21 @@ class CuentaCorriente(models.Model):
                     total += cuota.monto
 
             # Gastos extra / ajustes manuales contraídos (con plan) - una sola vez
-            man_debe = (
-                self.movimientos.filter(origen__in=["manual", "ajuste"], tipo__in=["debe", "deuda"])
-                .aggregate(t=Sum("monto"))["t"] or Decimal("0")
-            )
-            total += man_debe
+            total += self._suma_mov(movs, origenes=["manual", "ajuste"], tipos=["debe", "deuda"])
 
         # Gestoría debe (deuda original)
-        gest_debe = (
-            self.movimientos.filter(origen="gestoria", tipo="debe")
-            .aggregate(t=Sum("monto"))["t"] or Decimal("0")
-        )
-        total += gest_debe
+        total += self._suma_mov(movs, origenes=["gestoria"], tipos=["debe"])
 
-        # Gastos de ingreso totales (suma de todos los vehículos vinculados)
-        for vehiculo in self._vehiculos_para_gastos():
-            try:
-                ficha = vehiculo.ficha
-                for _, monto in ficha.mapa_gastos_ingreso().items():
-                    if monto:
-                        total += Decimal(monto)
-            except Exception:
-                pass
+        # Gastos de ingreso totales (solo si hay vehículos de permuta vinculados)
+        if any(m.origen == "permuta" for m in movs):
+            for vehiculo in self._vehiculos_para_gastos():
+                try:
+                    ficha = vehiculo.ficha
+                    for _, monto in ficha.mapa_gastos_ingreso().items():
+                        if monto:
+                            total += Decimal(monto)
+                except Exception:
+                    pass
 
         return total
 
@@ -220,8 +234,8 @@ class CuentaCorriente(models.Model):
         """
         Saldo pendiente actual = saldo cuotas del plan + gestoría pendiente + gastos pendientes
         """
-        from django.db.models import Sum
         total = Decimal("0")
+        movs = list(self.movimientos.all())  # 1 consulta (0 si viene con prefetch)
 
         # Saldo de TODOS los planes (si hay, usar saldos de cuotas)
         # Con plan: self.saldo se ignora — se suma gestoría aparte.
@@ -233,42 +247,26 @@ class CuentaCorriente(models.Model):
                 for cuota in plan.cuotas.all():
                     total += cuota.saldo_pendiente
 
-            gest_debe = (
-                self.movimientos.filter(origen="gestoria", tipo="debe")
-                .aggregate(t=Sum("monto"))["t"] or Decimal("0")
+            gest_pendiente = (
+                self._suma_mov(movs, origenes=["gestoria"], tipos=["debe"])
+                - self._suma_mov(movs, origenes=["gestoria"], tipos=["haber"])
             )
-            gest_haber = (
-                self.movimientos.filter(origen="gestoria", tipo="haber")
-                .aggregate(t=Sum("monto"))["t"] or Decimal("0")
-            )
-            gest_pendiente = gest_debe - gest_haber
             if gest_pendiente > 0:
                 total += gest_pendiente
 
             # Gastos extra / ajustes manuales (no van por el plan ni gestoría)
-            man_debe = (
-                self.movimientos.filter(origen__in=["manual", "ajuste"], tipo__in=["debe", "deuda"])
-                .aggregate(t=Sum("monto"))["t"] or Decimal("0")
+            man_pendiente = (
+                self._suma_mov(movs, origenes=["manual", "ajuste"], tipos=["debe", "deuda"])
+                - self._suma_mov(movs, origenes=["manual", "ajuste"], tipos=["haber", "pago"])
             )
-            man_haber = (
-                self.movimientos.filter(origen__in=["manual", "ajuste"], tipo__in=["haber", "pago"])
-                .aggregate(t=Sum("monto"))["t"] or Decimal("0")
-            )
-            man_pendiente = man_debe - man_haber
             if man_pendiente > 0:
                 total += man_pendiente
         else:
             # Sin plan: el saldo (debe − haber) representa la deuda, PERO los
             # gastos de ingreso de permuta se cuentan aparte (vía la ficha, que
             # ya descuenta lo pagado). Los excluimos del saldo para no duplicar.
-            debe = (
-                self.movimientos.filter(tipo__in=["debe", "deuda"])
-                .exclude(origen="permuta").aggregate(t=Sum("monto"))["t"] or Decimal("0")
-            )
-            haber = (
-                self.movimientos.filter(tipo__in=["haber", "pago"])
-                .exclude(origen="permuta").aggregate(t=Sum("monto"))["t"] or Decimal("0")
-            )
+            debe = self._suma_mov(movs, excl_origen="permuta", tipos=["debe", "deuda"])
+            haber = self._suma_mov(movs, excl_origen="permuta", tipos=["haber", "pago"])
             total += max(debe - haber, Decimal("0"))
 
         # Gastos de ingreso pendientes (suma de todos los vehículos vinculados)
@@ -523,10 +521,10 @@ class CuotaPlan(models.Model):
 
     @property
     def total_pagado(self):
-        return (
-            self.pagos.aggregate(
-                total=Sum('monto_aplicado')
-            ).get('total') or Decimal('0')
+        # Suma en memoria (usa el prefetch 'pagos' sin consulta extra).
+        return sum(
+            (p.monto_aplicado or Decimal('0') for p in self.pagos.all()),
+            Decimal('0'),
         )
 
     @property
