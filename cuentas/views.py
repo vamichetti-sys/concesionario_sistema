@@ -1023,6 +1023,15 @@ def eliminar_plan_pago(request, cuenta_id):
     if pago_ids:
         Pago.objects.filter(id__in=pago_ids).delete()
 
+    # 3b. Borrar los cheques que generó este plan en el módulo Cheques
+    try:
+        from cheques.models import Cheque
+        Cheque.objects.filter(
+            observaciones__icontains=f"Plan de pago #{plan.pk}"
+        ).delete()
+    except Exception:
+        pass
+
     # 4. Borrar el plan — las CuotaPlan se borran por CASCADE
     plan.delete()
 
