@@ -1249,6 +1249,14 @@ def borrar_vehiculo(request, vehiculo_id):
         try:
             # Borrar ventas viejas/no confirmadas para no dejar registros huérfanos
             ventas.delete()
+            # Quitar las protecciones de Compra-Venta (operación de compra y
+            # deuda del proveedor) para poder borrar un vehículo cargado por error.
+            try:
+                from compraventa.models import CompraVentaOperacion, DeudaProveedor
+                DeudaProveedor.objects.filter(vehiculo=vehiculo).delete()
+                CompraVentaOperacion.objects.filter(vehiculo=vehiculo).delete()
+            except Exception:
+                pass
             vehiculo.delete()
             messages.success(request, f"Vehículo {nombre} eliminado definitivamente.")
         except Exception as exc:
