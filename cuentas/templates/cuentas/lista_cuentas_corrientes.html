@@ -7,9 +7,15 @@
 <!-- ===============================
      ENCABEZADO
 =============================== -->
-<div class="mb-4">
-    <h3 class="fw-bold mb-1">Cuentas Corrientes</h3>
-    <p class="text-muted mb-0">Gestión de cuentas por venta y estado financiero</p>
+<div class="mb-4 d-flex justify-content-between align-items-start flex-wrap gap-2">
+    <div>
+        <h3 class="fw-bold mb-1">Cuentas Corrientes</h3>
+        <p class="text-muted mb-0">Gestión de cuentas por venta y estado financiero</p>
+    </div>
+    <a href="{% url 'cuentas:pdf_deudores' %}" class="btn btn-danger" target="_blank">
+        <i data-lucide="file-down" style="width:16px;height:16px;margin-right:6px;"></i>
+        PDF de deudores
+    </a>
 </div>
 
 <!-- ===============================

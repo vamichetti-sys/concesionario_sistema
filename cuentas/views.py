@@ -371,6 +371,68 @@ def lista_cuentas_corrientes(request):
 
 
 # ==========================================================
+# PDF: LISTADO DE DEUDORES CON DETALLE DE DEUDA
+# ==========================================================
+@login_required
+def pdf_deudores(request):
+    from reportes.pdf_utils import render_pdf_listado
+
+    def money(v):
+        try:
+            return f"$ {Decimal(v):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+        except Exception:
+            return "$ 0,00"
+
+    cuentas_qs = (
+        CuentaCorriente.objects
+        .select_related("cliente", "venta")
+        .prefetch_related(
+            "movimientos",
+            "planes",
+            "planes__cuotas",
+            "planes__cuotas__pagos",
+        )
+        .order_by("id")
+    )
+
+    hoy = date.today()
+    filas = []
+    total_general = Decimal("0")
+    total_vencido = Decimal("0")
+
+    for c in cuentas_qs:
+        deuda = c.deuda_total_real
+        if deuda <= 0:
+            continue
+
+        # Detalle: monto vencido (suma de saldos de cuotas vencidas)
+        vencido = Decimal("0")
+        for plan in c.planes.all():
+            for cuota in plan.cuotas.all():
+                if cuota.estado == "pendiente" and cuota.vencimiento < hoy:
+                    vencido += cuota.saldo_pendiente
+
+        cliente = str(c.cliente) if c.cliente_id else "—"
+        filas.append([
+            f"#{c.id}",
+            cliente,
+            money(deuda),
+            money(vencido) if vencido > 0 else "—",
+        ])
+        total_general += deuda
+        total_vencido += vencido
+
+    return render_pdf_listado(
+        filename="deudores.pdf",
+        titulo="Listado de deudores",
+        subtitulo=f"Cuentas con deuda — {hoy.strftime('%d/%m/%Y')} · {len(filas)} deudor(es)",
+        columnas=["Cuenta", "Cliente", "Deuda total", "Vencido"],
+        filas=filas,
+        totales=["", "TOTAL", money(total_general), money(total_vencido)],
+    )
+
+
+# ==========================================================
 # CREAR CUENTA CORRIENTE
 # (SE CREA AUTOMÁTICAMENTE AL ADJUDICAR VENTA)
 # ==========================================================
@@ -854,39 +916,54 @@ def registrar_movimiento(request, cuenta_id):
                     f"El pago se registró pero no pudo vincularse al módulo Cheques: {exc}"
                 )
 
+        # Cuota puntual elegida por el usuario (si corresponde)
+        cuota_preferida = None
         if tipo_movimiento == "cuota" and cuota_id:
-            cuota = get_object_or_404(CuotaPlan, id=cuota_id, plan__cuenta=cuenta)
-            PagoCuota.objects.create(pago=pago, cuota=cuota, monto_aplicado=monto)
-            cuota.marcar_pagada()
-        elif CuotaPlan.objects.filter(plan__cuenta=cuenta, estado="pendiente").exists():
-            # Vincular automáticamente a cuotas pendientes de CUALQUIER plan
-            # (empezando por la de vencimiento más antiguo)
-            restante = monto
-            for cuota in CuotaPlan.objects.filter(
-                plan__cuenta=cuenta, estado="pendiente"
-            ).order_by("vencimiento", "numero"):
-                if restante <= 0:
-                    break
-                saldo_cuota = cuota.saldo_pendiente
-                if saldo_cuota <= 0:
-                    continue
-                aplicar = min(restante, saldo_cuota)
-                PagoCuota.objects.create(pago=pago, cuota=cuota, monto_aplicado=aplicar)
-                cuota.marcar_pagada()
-                restante -= aplicar
-        else:
+            cuota_preferida = get_object_or_404(
+                CuotaPlan, id=cuota_id, plan__cuenta=cuenta
+            )
+
+        tenia_pendientes = CuotaPlan.objects.filter(
+            plan__cuenta=cuenta, estado="pendiente"
+        ).exists()
+
+        # Aplica el pago a las cuotas (el sobrante de una pasa a la siguiente).
+        # Devuelve lo que NO entró en ninguna cuota.
+        restante = cuenta.aplicar_pago_a_cuotas(
+            pago, monto, cuota_preferida=cuota_preferida
+        )
+
+        # El excedente NUNCA se pierde: queda como pago a favor (o como pago
+        # manual si la cuenta no tenía cuotas pendientes).
+        if restante > 0:
             MovimientoCuenta.objects.create(
                 cuenta=cuenta,
-                descripcion=f"Pago ({forma_pago}) {observaciones}".strip(),
+                descripcion=(
+                    f"Pago a favor ({forma_pago}) {observaciones}".strip()
+                    if tenia_pendientes
+                    else f"Pago ({forma_pago}) {observaciones}".strip()
+                ),
                 tipo="haber",
-                monto=monto,
+                monto=restante,
                 origen="manual",
                 pago=pago,
             )
             cuenta.recalcular_saldo()
+            if tenia_pendientes:
+                messages.info(
+                    request,
+                    "El pago superó el saldo de las cuotas pendientes. "
+                    f"El excedente de $ {restante:,.0f} quedó registrado como pago a favor."
+                )
 
         pago.saldo_posterior = cuenta.saldo
         pago.save(update_fields=["saldo_posterior"])
+
+        cuenta.log(
+            "Pago registrado",
+            f"Recibo {pago.numero_recibo} · $ {monto} · {forma_pago}"
+            + (f" · {observaciones}" if observaciones else "")
+        )
 
         messages.success(
             request,
@@ -1217,6 +1294,7 @@ def cerrar_cuenta_corriente(request, cuenta_id):
         messages.error(request, str(e))
         return redirect("cuentas:cuenta_corriente_detalle", cuenta_id=cuenta.id)
 
+    cuenta.log("Cuenta cerrada", "Cierre de cuenta corriente (venta revertida).")
     messages.success(request, "Cuenta corriente cerrada correctamente.")
     return redirect("cuentas:cuenta_corriente_detalle", cuenta_id=cuenta.id)
 
@@ -1257,6 +1335,10 @@ def editar_pago(request, pago_id):
             "forma_pago", "banco", "numero_cheque", "observaciones"
         ])
 
+        cuenta.log(
+            "Pago editado",
+            f"Recibo {pago.numero_recibo} · forma {forma_pago}"
+        )
         messages.success(request, f"Pago {pago.numero_recibo} actualizado.")
         return redirect("cuentas:cuenta_corriente_detalle", cuenta_id=cuenta.id)
 
@@ -1282,6 +1364,8 @@ def eliminar_pago(request, pago_id):
         CuotaPlan.objects.filter(pagos__pago=pago).distinct()
     )
 
+    _recibo = pago.numero_recibo
+    _monto = pago.monto_total
     pago.movimientos_creados.all().delete()
     pago.delete()
 
@@ -1298,6 +1382,7 @@ def eliminar_pago(request, pago_id):
 
     cuenta.recalcular_saldo()
 
+    cuenta.log("Pago eliminado", f"Recibo {_recibo} · $ {_monto}")
     messages.success(request, "Pago eliminado correctamente.")
     return redirect("cuentas:cuenta_corriente_detalle", cuenta_id=cuenta.id)
 

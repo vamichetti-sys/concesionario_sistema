@@ -14,6 +14,13 @@ urlpatterns = [
         name="lista_cuentas_corrientes"
     ),
 
+    # PDF: listado de deudores con detalle de deuda
+    path(
+        "deudores/pdf/",
+        views.pdf_deudores,
+        name="pdf_deudores"
+    ),
+
     # ===============================
     # CREAR CUENTA CORRIENTE
     # ===============================

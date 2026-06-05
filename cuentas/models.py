@@ -120,6 +120,62 @@ class CuentaCorriente(models.Model):
         self.save(update_fields=['estado'])
 
     # ======================================================
+    # BITÁCORA / AUDITORÍA
+    # ======================================================
+    def log(self, accion, detalle=""):
+        """
+        Registra una acción en la bitácora de la cuenta (auditoría).
+        Nunca interrumpe el flujo principal: si falla, se ignora.
+        """
+        try:
+            BitacoraCuenta.objects.create(
+                cuenta=self,
+                accion=(accion or "")[:100],
+                detalle=detalle or "",
+            )
+        except Exception:
+            pass
+
+    # ======================================================
+    # APLICACIÓN DE PAGOS A CUOTAS (con manejo de excedente)
+    # ======================================================
+    def aplicar_pago_a_cuotas(self, pago, monto, cuota_preferida=None):
+        """
+        Aplica `monto` (de un Pago) a las cuotas pendientes de la cuenta.
+        Empieza por `cuota_preferida` (si se indica) y luego sigue por
+        vencimiento más antiguo. Si el monto supera el saldo de una cuota,
+        el sobrante pasa a la siguiente.
+
+        Devuelve el EXCEDENTE (Decimal) que no entró en ninguna cuota, para
+        que el llamador lo registre como pago a favor en vez de perderlo.
+        """
+        restante = Decimal(monto)
+        pendientes = list(
+            CuotaPlan.objects
+            .filter(plan__cuenta=self, estado="pendiente")
+            .order_by("vencimiento", "numero")
+        )
+        if cuota_preferida is not None:
+            pendientes = [cuota_preferida] + [
+                c for c in pendientes if c.id != cuota_preferida.id
+            ]
+
+        for cuota in pendientes:
+            if restante <= 0:
+                break
+            saldo_cuota = cuota.saldo_pendiente
+            if saldo_cuota <= 0:
+                continue
+            aplicar = min(restante, saldo_cuota)
+            PagoCuota.objects.create(
+                pago=pago, cuota=cuota, monto_aplicado=aplicar
+            )
+            cuota.marcar_pagada()
+            restante -= aplicar
+
+        return restante
+
+    # ======================================================
     # HELPERS
     # ======================================================
     @property
