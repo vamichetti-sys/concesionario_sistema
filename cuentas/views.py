@@ -747,35 +747,65 @@ def registrar_movimiento(request, cuenta_id):
         observaciones   = request.POST.get("observaciones", "")
         cuota_id        = request.POST.get("cuota_id")
 
-        # Datos específicos de cheque
-        cheque_banco       = (request.POST.get("cheque_banco") or "").strip()
-        cheque_numero      = (request.POST.get("cheque_numero") or "").strip()
-        cheque_fecha_cobro = (request.POST.get("cheque_fecha_cobro") or "").strip()
-        cheque_titular     = (request.POST.get("cheque_titular") or "").strip()
+        # Datos de cheque(s): un mismo pago puede tener VARIOS cheques.
+        # Los campos vienen como listas paralelas (mismo name repetido).
+        bancos_l   = request.POST.getlist("cheque_banco")
+        numeros_l  = request.POST.getlist("cheque_numero")
+        fechas_l   = request.POST.getlist("cheque_fecha_cobro")
+        titulares_l = request.POST.getlist("cheque_titular")
+        montos_l   = request.POST.getlist("cheque_monto")
 
-        try:
-            monto = _parse_monto_argentino(monto_raw)
-        except (ValueError, InvalidOperation):
-            messages.error(request, "Monto inválido.")
-            return redirect("cuentas:registrar_movimiento", cuenta_id=cuenta.id)
+        cheques_data = []
+        if forma_pago == "cheque":
+            n = max(len(bancos_l), len(numeros_l), len(fechas_l), len(titulares_l), len(montos_l) or 0)
+            for i in range(n):
+                b   = (bancos_l[i] if i < len(bancos_l) else "").strip()
+                num = (numeros_l[i] if i < len(numeros_l) else "").strip()
+                fch = (fechas_l[i] if i < len(fechas_l) else "").strip()
+                tit = (titulares_l[i] if i < len(titulares_l) else "").strip()
+                mraw = (montos_l[i] if i < len(montos_l) else "").strip()
+                if not (b or num or fch or tit or mraw):
+                    continue  # fila vacía
+                faltan = []
+                if not b:   faltan.append("banco")
+                if not num: faltan.append("nº de cheque")
+                if not fch: faltan.append("fecha de cobro")
+                if not tit: faltan.append("titular")
+                try:
+                    m = _parse_monto_argentino(mraw) if mraw else Decimal("0")
+                except (ValueError, InvalidOperation):
+                    m = Decimal("0")
+                if m <= 0:
+                    faltan.append("monto")
+                if faltan:
+                    messages.error(request, "En cada cheque completá: " + ", ".join(faltan) + ".")
+                    return redirect("cuentas:registrar_movimiento", cuenta_id=cuenta.id)
+                cheques_data.append({"banco": b, "numero": num, "fecha": fch, "titular": tit, "monto": m})
+
+            if not cheques_data:
+                messages.error(request, "Cargá al menos un cheque.")
+                return redirect("cuentas:registrar_movimiento", cuenta_id=cuenta.id)
+
+        # El monto del pago: si es cheque, es la SUMA de los cheques; si no, el ingresado
+        if forma_pago == "cheque":
+            monto = sum((c["monto"] for c in cheques_data), Decimal("0"))
+        else:
+            try:
+                monto = _parse_monto_argentino(monto_raw)
+            except (ValueError, InvalidOperation):
+                messages.error(request, "Monto inválido.")
+                return redirect("cuentas:registrar_movimiento", cuenta_id=cuenta.id)
 
         if monto <= 0:
             messages.error(request, "El monto debe ser mayor a 0.")
             return redirect("cuentas:registrar_movimiento", cuenta_id=cuenta.id)
 
-        # Validación cheque: los 4 campos son obligatorios
-        if forma_pago == "cheque":
-            faltan = []
-            if not cheque_banco:       faltan.append("banco")
-            if not cheque_numero:      faltan.append("nº de cheque")
-            if not cheque_fecha_cobro: faltan.append("fecha de cobro")
-            if not cheque_titular:     faltan.append("titular")
-            if faltan:
-                messages.error(
-                    request,
-                    "Para pagos con cheque debés completar: " + ", ".join(faltan) + "."
-                )
-                return redirect("cuentas:registrar_movimiento", cuenta_id=cuenta.id)
+        # Para compatibilidad (recibo): datos del primer cheque
+        _primer = cheques_data[0] if cheques_data else {}
+        cheque_banco       = _primer.get("banco", "")
+        cheque_numero      = _primer.get("numero", "")
+        cheque_fecha_cobro = _primer.get("fecha", "")
+        cheque_titular     = _primer.get("titular", "")
 
         saldo_anterior = cuenta.saldo
 
@@ -791,26 +821,31 @@ def registrar_movimiento(request, cuenta_id):
             titular_cheque=cheque_titular if forma_pago == "cheque" else "",
         )
 
-        # Si es cheque, replicar automáticamente al módulo Cheques
+        # Si es cheque, replicar CADA cheque al módulo Cheques
         if forma_pago == "cheque":
             try:
                 from cheques.models import Cheque
-                cheque = Cheque.objects.create(
-                    cliente=str(cuenta.cliente) if cuenta.cliente_id else "",
-                    banco_emision=cheque_banco,
-                    numero_cheque=cheque_numero,
-                    titular_cheque=cheque_titular,
-                    monto=monto,
-                    fecha_deposito=cheque_fecha_cobro,
-                    estado="a_depositar",
-                    observaciones=(
-                        f"Generado desde cuenta corriente #{cuenta.id} "
-                        f"(recibo {pago.numero_recibo})"
-                    ),
-                    creado_por=request.user if request.user.is_authenticated else None,
-                )
-                pago.cheque_vinculado = cheque
-                pago.save(update_fields=["cheque_vinculado"])
+                primer_cheque = None
+                for cd in cheques_data:
+                    ch = Cheque.objects.create(
+                        cliente=str(cuenta.cliente) if cuenta.cliente_id else "",
+                        banco_emision=cd["banco"],
+                        numero_cheque=cd["numero"],
+                        titular_cheque=cd["titular"],
+                        monto=cd["monto"],
+                        fecha_deposito=cd["fecha"],
+                        estado="a_depositar",
+                        observaciones=(
+                            f"Generado desde cuenta corriente #{cuenta.id} "
+                            f"(recibo {pago.numero_recibo})"
+                        ),
+                        creado_por=request.user if request.user.is_authenticated else None,
+                    )
+                    if primer_cheque is None:
+                        primer_cheque = ch
+                if primer_cheque is not None:
+                    pago.cheque_vinculado = primer_cheque
+                    pago.save(update_fields=["cheque_vinculado"])
             except Exception as exc:
                 # No bloqueamos el cobro si falla la sincronización a Cheques,
                 # pero avisamos al usuario.
