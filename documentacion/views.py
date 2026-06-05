@@ -36,11 +36,20 @@ def documentacion_home(request):
     elif tipo == 'verificacion':
         # Vehículos SIN verificación policial
         vehiculos = vehiculos.filter(
-            models.Q(ficha__verificacion_estado='no_tiene') | 
+            models.Q(ficha__verificacion_estado='no_tiene') |
             models.Q(ficha__verificacion_estado__isnull=True) |
             models.Q(ficha__verificacion_estado='')
         )
         titulo = "Verificación Policial Pendiente"
+
+    elif tipo == 'f08':
+        # Vehículos SIN Formulario 08
+        vehiculos = vehiculos.filter(
+            models.Q(ficha__f08_estado='no_tiene') |
+            models.Q(ficha__f08_estado__isnull=True) |
+            models.Q(ficha__f08_estado='')
+        )
+        titulo = "Formulario 08 Pendiente"
     
     # ======================================================
     # 🆕 DOCUMENTACIÓN VENCIDA
@@ -109,4 +118,66 @@ def documentacion_home(request):
             'titulo': titulo,
             'vehiculos_vencidos': vehiculos_vencidos,
         }
+    )
+
+
+@login_required
+def documentacion_pdf(request):
+    """
+    PDF del listado de vehículos con documentación pendiente
+    según el filtro seleccionado (vtv, autopartes, verificacion, f08).
+    """
+    from reportes.pdf_utils import render_pdf_listado
+
+    tipo = request.GET.get('tipo', 'vtv')
+
+    vehiculos = Vehiculo.objects.filter(estado='stock').select_related('ficha')
+
+    if tipo == 'autopartes':
+        vehiculos = vehiculos.filter(
+            models.Q(ficha__autopartes_estado='no_tiene') |
+            models.Q(ficha__autopartes_estado__isnull=True) |
+            models.Q(ficha__autopartes_estado='')
+        )
+        titulo = "Grabado de Autopartes Pendiente"
+    elif tipo == 'verificacion':
+        vehiculos = vehiculos.filter(
+            models.Q(ficha__verificacion_estado='no_tiene') |
+            models.Q(ficha__verificacion_estado__isnull=True) |
+            models.Q(ficha__verificacion_estado='')
+        )
+        titulo = "Verificación Policial Pendiente"
+    elif tipo == 'f08':
+        vehiculos = vehiculos.filter(
+            models.Q(ficha__f08_estado='no_tiene') |
+            models.Q(ficha__f08_estado__isnull=True) |
+            models.Q(ficha__f08_estado='')
+        )
+        titulo = "Formulario 08 Pendiente"
+    else:
+        tipo = 'vtv'
+        vehiculos = vehiculos.filter(
+            models.Q(ficha__vtv_estado='no_tiene') |
+            models.Q(ficha__vtv_estado__isnull=True) |
+            models.Q(ficha__vtv_estado='')
+        )
+        titulo = "VTV Pendiente"
+
+    vehiculos = vehiculos.order_by('marca', 'modelo')
+
+    filas = []
+    for v in vehiculos:
+        filas.append([
+            f"{v.marca} {v.modelo}".strip(),
+            v.dominio or "Sin dominio",
+            str(v.anio or "—"),
+        ])
+
+    return render_pdf_listado(
+        filename=f"documentacion_{tipo}.pdf",
+        titulo=titulo,
+        subtitulo=f"Vehículos en stock pendientes — {date.today().strftime('%d/%m/%Y')}",
+        columnas=["Vehículo", "Dominio", "Año"],
+        filas=filas,
+        totales=["TOTAL", f"{len(filas)} vehículo(s)", ""],
     )

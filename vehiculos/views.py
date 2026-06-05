@@ -933,6 +933,81 @@ def gastos_ingreso_pdf(request, vehiculo_id):
     )
 
 
+def gastos_adeudados_pdf(request, vehiculo_id):
+    """
+    PDF de lo que se adeuda de los gastos de ingreso de un vehículo:
+    por cada concepto muestra monto, total pagado y saldo pendiente.
+    """
+    from reportes.pdf_utils import render_pdf_listado
+
+    vehiculo = get_object_or_404(Vehiculo, id=vehiculo_id)
+    ficha = getattr(vehiculo, "ficha", None)
+
+    def money(v):
+        try:
+            return f"$ {Decimal(v):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+        except Exception:
+            return "$ 0,00"
+
+    CONCEPTOS = {
+        "f08": "Formulario 08",
+        "informes": "Informes",
+        "patentes": "Patentes",
+        "infracciones": "Infracciones",
+        "verificacion": "Verificación",
+        "autopartes": "Autopartes",
+        "vtv": "VTV",
+        "r541": "R541",
+        "firmas": "Firmas",
+    }
+
+    filas = []
+    total_adeudado = Decimal("0")
+    if ficha:
+        mapa = {
+            "f08": ficha.gasto_f08,
+            "informes": ficha.gasto_informes,
+            "patentes": ficha.gasto_patentes,
+            "infracciones": ficha.gasto_infracciones,
+            "verificacion": ficha.gasto_verificacion,
+            "autopartes": ficha.gasto_autopartes,
+            "vtv": ficha.gasto_vtv,
+            "r541": ficha.gasto_r541,
+            "firmas": ficha.gasto_firmas,
+        }
+        for key, monto in mapa.items():
+            if monto is None:
+                continue
+            monto = Decimal(monto)
+            if monto <= 0:
+                continue
+            pagado = (
+                PagoGastoIngreso.objects.filter(vehiculo=vehiculo, concepto=key)
+                .aggregate(total=Sum("monto"))["total"]
+                or Decimal("0")
+            )
+            saldo = monto - Decimal(pagado)
+            if saldo <= 0:
+                continue  # solo lo que se adeuda
+            total_adeudado += saldo
+            filas.append([
+                CONCEPTOS.get(key, key),
+                money(monto),
+                money(pagado),
+                money(saldo),
+            ])
+
+    dominio = getattr(vehiculo, "dominio", "") or "—"
+    return render_pdf_listado(
+        filename=f"adeudado_gastos_{vehiculo_id}.pdf",
+        titulo="Saldo adeudado — Gastos de ingreso",
+        subtitulo=f"{vehiculo.marca} {vehiculo.modelo} — {dominio}",
+        columnas=["Concepto", "Monto", "Pagado", "Saldo"],
+        filas=filas,
+        totales=["TOTAL ADEUDADO", "", "", money(total_adeudado)],
+    )
+
+
 # ==========================================================
 # REGISTRAR PAGO DE GASTO DE INGRESO (DEFINITIVO)
 # ==========================================================

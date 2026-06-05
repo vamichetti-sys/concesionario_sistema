@@ -460,13 +460,19 @@
             <i data-lucide="credit-card" style="width:20px;height:20px;color:#10b981;"></i>
             <h5 class="fw-bold mb-0">Pago de gastos de ingreso</h5>
         </div>
-        {% if total_pendiente and total_pendiente > 0 %}
-        <button type="button" class="btn btn-outline-success btn-sm"
-                data-bs-toggle="collapse" data-bs-target="#panelPagoLote">
-            <i data-lucide="layers" style="width:14px;height:14px;margin-right:4px;"></i>
-            Cargar varios pagos a la vez
-        </button>
-        {% endif %}
+        <div class="d-flex align-items-center gap-2">
+            {% if total_pendiente and total_pendiente > 0 %}
+            <a href="{% url 'vehiculos:gastos_adeudados_pdf' vehiculo.id %}" class="btn btn-outline-danger btn-sm" target="_blank">
+                <i data-lucide="file-down" style="width:14px;height:14px;margin-right:4px;"></i>
+                PDF de lo adeudado
+            </a>
+            <button type="button" class="btn btn-outline-success btn-sm"
+                    data-bs-toggle="collapse" data-bs-target="#panelPagoLote">
+                <i data-lucide="layers" style="width:14px;height:14px;margin-right:4px;"></i>
+                Cargar varios pagos a la vez
+            </button>
+            {% endif %}
+        </div>
     </div>
 
     {% if not total_pendiente or total_pendiente == 0 %}

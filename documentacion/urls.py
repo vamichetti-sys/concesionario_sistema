@@ -5,4 +5,5 @@ app_name = 'documentacion'
 
 urlpatterns = [
     path('', views.documentacion_home, name='home'),
+    path('pdf/', views.documentacion_pdf, name='pdf'),
 ]

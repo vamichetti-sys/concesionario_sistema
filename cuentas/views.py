@@ -279,7 +279,7 @@ def lista_cuentas_corrientes(request):
             "planes__cuotas",
             "planes__cuotas__pagos",
         )
-        .order_by("-creada")
+        .order_by("id")   # por número de cuenta
     )
 
     if query:

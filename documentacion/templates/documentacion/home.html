@@ -14,7 +14,7 @@
      FILTROS
 =============================== -->
 <div class="card p-3 mb-4">
-    <div class="d-flex gap-2">
+    <div class="d-flex gap-2 flex-wrap align-items-center">
         <a href="?tipo=vtv" class="btn {% if tipo_actual == 'vtv' %}btn-primary{% else %}btn-secondary{% endif %}">
             <i data-lucide="shield-check" style="width:16px;height:16px;margin-right:6px;"></i>
             VTV
@@ -26,6 +26,14 @@
         <a href="?tipo=verificacion" class="btn {% if tipo_actual == 'verificacion' %}btn-primary{% else %}btn-secondary{% endif %}">
             <i data-lucide="badge-check" style="width:16px;height:16px;margin-right:6px;"></i>
             Verificación Policial
+        </a>
+        <a href="?tipo=f08" class="btn {% if tipo_actual == 'f08' %}btn-primary{% else %}btn-secondary{% endif %}">
+            <i data-lucide="file-text" style="width:16px;height:16px;margin-right:6px;"></i>
+            Formulario 08
+        </a>
+        <a href="{% url 'documentacion:pdf' %}?tipo={{ tipo_actual }}" class="btn btn-danger ms-auto" target="_blank">
+            <i data-lucide="file-down" style="width:16px;height:16px;margin-right:6px;"></i>
+            Descargar PDF
         </a>
     </div>
 </div>
