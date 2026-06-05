@@ -52,7 +52,7 @@ def lista_vehiculos(request):
     vehiculos = (
         Vehiculo.objects
         .all()
-        .select_related('ficha')
+        .select_related('ficha', 'ficha_reporte')
         .annotate(
             estado_orden=Case(
                 When(estado="stock", then=Value(0)),
