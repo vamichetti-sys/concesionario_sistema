@@ -529,7 +529,22 @@ def guardar_ficha_vehicular(request, vehiculo_id):
     if request.method == "POST":
 
         vehiculo_form = VehiculoForm(request.POST, instance=vehiculo)
-        ficha_form = FichaVehicularForm(request.POST, instance=ficha)
+
+        # 🔒 ANTI-BORRADO: la ficha es multi-pestaña. Cada pestaña manda solo
+        # SUS campos. Si construimos el form con los 63 campos, los campos de
+        # las otras pestañas (que no vienen en el POST) se guardarían vacíos y
+        # se pierde la información. Por eso armamos el form SOLO con los campos
+        # que realmente vinieron en el POST.
+        campos_enviados = [
+            campo for campo in FichaVehicularForm.Meta.fields
+            if campo in request.POST
+        ]
+
+        class FichaParcialForm(FichaVehicularForm):
+            class Meta(FichaVehicularForm.Meta):
+                fields = campos_enviados
+
+        ficha_form = FichaParcialForm(request.POST, instance=ficha)
         ficha_tecnica_form = FichaTecnicaForm(request.POST, instance=ficha_tec)
 
         if vehiculo_form.is_valid() and ficha_form.is_valid():
