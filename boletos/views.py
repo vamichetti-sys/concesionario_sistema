@@ -131,7 +131,7 @@ def panel_boletos(request):
 @login_required
 def lista_boletos(request):
     q = request.GET.get("q", "")
-    boletos = BoletoCompraventa.objects.all()
+    boletos = BoletoCompraventa.objects.all().order_by("-numero")
     if q:
         boletos = boletos.filter(Q(texto_final__icontains=q))
     return render(request, "boletos/lista.html", {"boletos": boletos, "query": q})
