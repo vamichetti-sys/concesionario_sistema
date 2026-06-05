@@ -28,7 +28,9 @@ class Vehiculo(models.Model):
 
     marca = models.CharField(max_length=100)
     modelo = models.CharField(max_length=100)
-    dominio = models.CharField(max_length=10, unique=True)
+    # Sin unique a nivel BD: la unicidad de patentes reales se valida en el
+    # formulario, pero permitimos varios "A DECLARAR" (vehículos 0km sin patente).
+    dominio = models.CharField(max_length=15)
 
     anio = models.PositiveIntegerField("Año")
     kilometros = models.PositiveIntegerField(null=True, blank=True)

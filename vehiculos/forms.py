@@ -25,6 +25,24 @@ class CarpetaUnicaMixin:
             )
         return valor
 
+    def clean_dominio(self):
+        valor = (self.cleaned_data.get("dominio") or "").strip().upper()
+        # Vehículo 0km / sin patente: se permite "A DECLARAR" (varios pueden
+        # tenerlo) sin chequear unicidad.
+        if valor in ("", "A DECLARAR", "ADECLARAR", "A DECLARAR.", "ADECLAR"):
+            return "A DECLARAR" if valor else valor
+        # Patente real: única entre vehículos activos (los vendidos no cuentan).
+        qs = Vehiculo.objects.filter(dominio__iexact=valor).exclude(estado="vendido")
+        if self.instance and self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+        otro = qs.first()
+        if otro:
+            raise forms.ValidationError(
+                f"El dominio «{valor}» ya está en otro vehículo activo "
+                f"({otro.marca} {otro.modelo}). Usá «A DECLARAR» si es 0km."
+            )
+        return valor
+
 
 # ==========================================================
 # FORMULARIO BÁSICO PARA AGREGAR VEHÍCULO
