@@ -548,6 +548,14 @@
                     </table>
                 </div>
 
+                <div class="form-check mt-3 p-2" style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;">
+                    <input class="form-check-input" type="checkbox" name="mantiene_deuda" value="1" id="mantiene_deuda_lote">
+                    <label class="form-check-label" for="mantiene_deuda_lote" style="font-size:13px;">
+                        <strong>El cliente los pagó pero todavía no se pagaron al ente.</strong>
+                        Se descuentan de la cuenta corriente, pero siguen figurando como deuda del vehículo en la ficha.
+                    </label>
+                </div>
+
                 <div class="text-end mt-3">
                     <button type="button" class="btn btn-sm btn-link text-muted me-2" onclick="completarSaldosLote()">
                         Completar todos con su saldo
@@ -613,7 +621,12 @@
                         <tr>
                             <td>{{ pago.fecha_pago|date:"d/m/Y" }}</td>
                             <td class="text-end text-success">${{ pago.monto }}</td>
-                            <td>{{ pago.observaciones|default:"-" }}</td>
+                            <td>
+                                {{ pago.observaciones|default:"-" }}
+                                {% if pago.mantiene_deuda_vehiculo %}
+                                <span class="badge bg-warning text-dark ms-1" title="Cobrado al cliente, no pagado al ente">deuda del vehículo</span>
+                                {% endif %}
+                            </td>
                             <td class="text-end">
                                 <form method="post" action="{% url 'vehiculos:eliminar_pago_gasto' pago.id %}" style="display:inline;" onsubmit="return confirm('¿Eliminar este pago de ${{ pago.monto }}?');">
                                     {% csrf_token %}
@@ -655,6 +668,15 @@
                         Pago
                     </button>
                 </div>
+            </div>
+            <!-- ¿Salda la deuda del vehículo o sigue como deuda? -->
+            <div class="form-check mt-3 p-2" style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;">
+                <input class="form-check-input" type="checkbox" name="mantiene_deuda" value="1"
+                       id="mantiene_deuda_{{ gasto.key }}">
+                <label class="form-check-label" for="mantiene_deuda_{{ gasto.key }}" style="font-size:13px;">
+                    <strong>El cliente lo pagó pero todavía no se pagó al ente.</strong>
+                    Se descuenta de la cuenta corriente igual, pero el gasto <u>sigue figurando como deuda del vehículo</u> en la ficha.
+                </label>
             </div>
         </form>
         {% endif %}

@@ -335,7 +335,11 @@ class FichaVehicular(models.Model):
         total = (
             PagoGasto.objects.filter(
                 vehiculo=self.vehiculo,
-                concepto__in=[concepto, key_corta]
+                concepto__in=[concepto, key_corta],
+                # Los pagos marcados como "sigue siendo deuda del vehículo"
+                # (cobrados al cliente pero no pagados al ente) NO saldan el
+                # gasto en la ficha: el saldo del vehículo queda pendiente.
+                mantiene_deuda_vehiculo=False,
             ).aggregate(total=models.Sum("monto"))["total"]
         )
         return Decimal(total) if total else Decimal("0")
@@ -445,6 +449,15 @@ class PagoGastoIngreso(models.Model):
     monto = models.DecimalField(max_digits=12, decimal_places=2)
     observaciones = models.TextField(blank=True, null=True)
     creado = models.DateTimeField(auto_now_add=True)
+
+    # Cuando el cliente paga el gasto pero la concesionaria todavía NO lo pagó
+    # al ente (ej. infracciones): el cobro se descuenta de la cuenta corriente
+    # igual, pero en la ficha del vehículo el gasto SIGUE figurando como deuda
+    # (queda en "Pago de gastos") hasta que efectivamente se pague al ente.
+    mantiene_deuda_vehiculo = models.BooleanField(
+        default=False,
+        verbose_name="Sigue como deuda del vehículo (no se pagó al ente)",
+    )
 
     class Meta:
         ordering = ["fecha_pago"]

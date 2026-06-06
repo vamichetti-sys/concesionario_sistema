@@ -708,17 +708,21 @@ def ficha_completa(request, vehiculo_id):
         if monto <= 0:
             continue
 
+        # Saldo del vehículo: solo los pagos que SALDAN la ficha. Los pagos
+        # cobrados al cliente pero no pagados al ente (mantiene_deuda_vehiculo)
+        # NO bajan el saldo: el gasto sigue como deuda del vehículo.
         total_pagado = (
             PagoGastoIngreso.objects.filter(
                 vehiculo=vehiculo,
-                concepto=key
+                concepto=key,
+                mantiene_deuda_vehiculo=False,
             ).aggregate(total=Sum("monto"))["total"]
             or Decimal("0")
         )
 
         saldo = monto - Decimal(total_pagado)
 
-        # 🆕 OBTENER HISTORIAL DE PAGOS DE ESTE CONCEPTO
+        # 🆕 OBTENER HISTORIAL DE PAGOS DE ESTE CONCEPTO (todos)
         pagos = PagoGastoIngreso.objects.filter(
             vehiculo=vehiculo,
             concepto=key
@@ -997,7 +1001,9 @@ def gastos_adeudados_pdf(request, vehiculo_id):
             if monto <= 0:
                 continue
             pagado = (
-                PagoGastoIngreso.objects.filter(vehiculo=vehiculo, concepto=key)
+                PagoGastoIngreso.objects.filter(
+                    vehiculo=vehiculo, concepto=key, mantiene_deuda_vehiculo=False
+                )
                 .aggregate(total=Sum("monto"))["total"]
                 or Decimal("0")
             )
@@ -1045,6 +1051,9 @@ def registrar_pago_gasto(request):
     fecha_pago = request.POST.get("fecha_pago")
     monto_raw = request.POST.get("monto")
     observaciones = request.POST.get("observaciones")
+    # El cliente pagó pero todavía no se le pagó al ente: el gasto sigue
+    # figurando como deuda del vehículo en la ficha (no salda el saldo).
+    mantiene_deuda = request.POST.get("mantiene_deuda") == "1"
 
     print(">>> DATOS RECIBIDOS:", vehiculo_id, concepto_key, fecha_pago, monto_raw)
 
@@ -1102,10 +1111,13 @@ def registrar_pago_gasto(request):
 
     monto_gasto = mapa_gastos.get(concepto_key) or Decimal("0")
 
+    # Saldo del vehículo = solo los pagos que SALDAN la ficha (no los que
+    # quedan como deuda del vehículo).
     total_pagado = (
         PagoGastoIngreso.objects.filter(
             vehiculo=vehiculo,
-            concepto=concepto_key
+            concepto=concepto_key,
+            mantiene_deuda_vehiculo=False,
         ).aggregate(total=Sum("monto"))["total"]
         or Decimal("0")
     )
@@ -1115,13 +1127,16 @@ def registrar_pago_gasto(request):
 
     # ===============================
     # PROTECCIÓN CONTRA PAGO DOBLE
+    # (solo aplica a los pagos que saldan el gasto en la ficha; los que
+    #  quedan como deuda del vehículo se permiten igual)
     # ===============================
-    if saldo_actual <= 0:
-        messages.warning(request, f"{CONCEPTOS[concepto_key]} ya está pagado.")
-        return redirect("vehiculos:ficha_completa", vehiculo_id=vehiculo.id)
+    if not mantiene_deuda:
+        if saldo_actual <= 0:
+            messages.warning(request, f"{CONCEPTOS[concepto_key]} ya está pagado.")
+            return redirect("vehiculos:ficha_completa", vehiculo_id=vehiculo.id)
 
-    if monto > saldo_actual:
-        monto = saldo_actual
+        if monto > saldo_actual:
+            monto = saldo_actual
 
     # ===============================
     # REGISTRAR PAGO DE GASTO
@@ -1132,6 +1147,7 @@ def registrar_pago_gasto(request):
         fecha_pago=fecha_pago,
         monto=monto,
         observaciones=observaciones,
+        mantiene_deuda_vehiculo=mantiene_deuda,
     )
 
     # ===============================
@@ -1153,10 +1169,18 @@ def registrar_pago_gasto(request):
 
         cuenta.recalcular_saldo()
 
-    messages.success(
-        request,
-        f"Pago registrado. {CONCEPTOS[concepto_key]}: ${monto}"
-    )
+    if mantiene_deuda:
+        messages.success(
+            request,
+            f"Cobro registrado. {CONCEPTOS[concepto_key]}: ${monto}. "
+            "Se descontó de la cuenta corriente, pero el gasto sigue figurando "
+            "como deuda del vehículo (todavía no se pagó al ente)."
+        )
+    else:
+        messages.success(
+            request,
+            f"Pago registrado. {CONCEPTOS[concepto_key]}: ${monto}"
+        )
 
     return redirect("vehiculos:ficha_completa", vehiculo_id=vehiculo.id)
 
@@ -1173,6 +1197,7 @@ def registrar_pagos_gastos_lote(request):
     vehiculo_id = request.POST.get("vehiculo_id")
     fecha_pago = request.POST.get("fecha_pago_lote")
     observaciones_comunes = (request.POST.get("observaciones_lote") or "").strip()
+    mantiene_deuda = request.POST.get("mantiene_deuda") == "1"
 
     if not vehiculo_id or not fecha_pago:
         messages.error(request, "Faltan datos para registrar los pagos.")
@@ -1226,15 +1251,18 @@ def registrar_pagos_gastos_lote(request):
 
         monto_total = mapa_gastos.get(key) or Decimal("0")
         ya_pagado = (
-            PagoGastoIngreso.objects.filter(vehiculo=vehiculo, concepto=key)
+            PagoGastoIngreso.objects.filter(
+                vehiculo=vehiculo, concepto=key, mantiene_deuda_vehiculo=False
+            )
             .aggregate(total=Sum("monto"))["total"] or Decimal("0")
         )
         saldo = Decimal(monto_total) - Decimal(ya_pagado)
-        if saldo <= 0:
-            saltados.append(f"{label} (ya pagado)")
-            continue
-        if monto > saldo:
-            monto = saldo
+        if not mantiene_deuda:
+            if saldo <= 0:
+                saltados.append(f"{label} (ya pagado)")
+                continue
+            if monto > saldo:
+                monto = saldo
 
         PagoGastoIngreso.objects.create(
             vehiculo=vehiculo,
@@ -1242,6 +1270,7 @@ def registrar_pagos_gastos_lote(request):
             fecha_pago=fecha_pago,
             monto=monto,
             observaciones=observaciones_comunes,
+            mantiene_deuda_vehiculo=mantiene_deuda,
         )
         creados += 1
 
