@@ -28,6 +28,9 @@ urlpatterns = [
     # ===============================
     path('inicio/', inicio_views.inicio, name='inicio'),
 
+    # PDF: documentación para la entrega de un vehículo
+    path('doc-entrega/pdf/', inicio_views.doc_entrega_pdf, name='doc_entrega_pdf'),
+
     # ===============================
     # 🚪 CERRAR SESIÓN
     # ===============================

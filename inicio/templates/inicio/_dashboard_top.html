@@ -89,9 +89,16 @@
         <h2 class="fw-bold mb-1">Panel general</h2>
         <p class="text-muted mb-0">Resumen operativo del negocio</p>
     </div>
-    <div class="text-muted" style="font-size:14px;">
-        <i data-lucide="calendar" style="width:16px;height:16px;margin-right:4px;"></i>
-        {{ hoy|date:"l, d M Y" }}
+    <div class="d-flex align-items-center gap-3">
+        <a href="{% url 'doc_entrega_pdf' %}" target="_blank" class="btn btn-danger"
+           title="Documentación necesaria para la entrega de un vehículo">
+            <i data-lucide="file-text" style="width:16px;height:16px;margin-right:6px;"></i>
+            DOC
+        </a>
+        <div class="text-muted" style="font-size:14px;">
+            <i data-lucide="calendar" style="width:16px;height:16px;margin-right:4px;"></i>
+            {{ hoy|date:"l, d M Y" }}
+        </div>
     </div>
 </div>
 

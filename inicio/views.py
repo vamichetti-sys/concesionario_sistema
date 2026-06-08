@@ -437,3 +437,37 @@ def eliminar_recordatorio(request, pk):
 def cerrar_sesion(request):
     logout(request)
     return redirect('ingreso')
+
+
+# ==========================================================
+# PDF: DOCUMENTACIÓN PARA LA ENTREGA DE UN VEHÍCULO (CHECKLIST)
+# ==========================================================
+@login_required
+def doc_entrega_pdf(request):
+    """
+    Checklist imprimible con la documentación necesaria a presentar
+    para la entrega de un vehículo.
+    """
+    from reportes.pdf_utils import render_pdf_listado
+
+    items = [
+        "Formulario 08 con firma certificada ante escribano público",
+        "Verificación Técnica Obligatoria (VTV) vigente",
+        "Verificación policial",
+        "Grabado de autopartes",
+        "Libre deuda de patentes",
+        "Libre deuda de infracciones",
+        "Oblea GNC (en caso de corresponder)",
+        "Cédula verde",
+        "Constancia de título",
+    ]
+
+    filas = [[item, "[     ]"] for item in items]
+
+    return render_pdf_listado(
+        filename="documentacion_entrega_vehiculo.pdf",
+        titulo="Documentación para la entrega del vehículo",
+        subtitulo="Documentación necesaria a presentar al momento de la entrega",
+        columnas=["Documento", "Presentado"],
+        filas=filas,
+    )
