@@ -94,6 +94,11 @@ urlpatterns = [
         views.actualizar_observaciones_cuenta,
         name="actualizar_observaciones_cuenta"
     ),
+    path(
+        "<int:cuenta_id>/documentacion-entregada/",
+        views.documentacion_entregada,
+        name="documentacion_entregada"
+    ),
 
     # ===============================
     # AGREGAR / VINCULAR GASTOS

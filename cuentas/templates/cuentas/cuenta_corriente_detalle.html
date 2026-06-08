@@ -145,6 +145,79 @@
 </div>
 
 <!-- ===============================
+     DOCUMENTACIÓN VEHICULAR ENTREGADA
+=============================== -->
+<div class="card p-4 mb-4">
+    <div class="d-flex align-items-center gap-2 mb-3">
+        <i data-lucide="file-check" style="width:18px;height:18px;color:#10b981;"></i>
+        <h6 class="fw-bold mb-0">Documentación vehicular</h6>
+        <small class="text-muted">entrega de la documentación al comprador</small>
+    </div>
+
+    {% if cuenta.doc_entregada %}
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 p-3"
+         style="background:#ecfdf5;border:1px solid #a7f3d0;border-radius:12px;">
+        <div class="d-flex align-items-center gap-2">
+            <i data-lucide="check-circle-2" style="width:20px;height:20px;color:#059669;"></i>
+            <div>
+                <strong class="text-success">Documentación entregada</strong>
+                <div class="text-muted" style="font-size:13px;">
+                    Fecha de entrega:
+                    <strong>{{ cuenta.doc_fecha_entrega|date:"d/m/Y"|default:"—" }}</strong>
+                </div>
+            </div>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            {% if cuenta.doc_recibo %}
+            <a href="{{ cuenta.doc_recibo.url }}" target="_blank" class="btn btn-sm btn-outline-success">
+                <i data-lucide="paperclip" style="width:14px;height:14px;margin-right:4px;"></i>
+                Ver recibo
+            </a>
+            {% endif %}
+            <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="collapse" data-bs-target="#formDocEntrega">
+                <i data-lucide="edit-3" style="width:14px;height:14px;margin-right:4px;"></i>
+                Editar
+            </button>
+            <form method="post" action="{% url 'cuentas:documentacion_entregada' cuenta.id %}" style="display:inline;"
+                  onsubmit="return confirm('¿Quitar la marca de documentación entregada?');" data-no-confirm>
+                {% csrf_token %}
+                <input type="hidden" name="accion" value="quitar">
+                <button type="submit" class="btn btn-sm btn-outline-danger" title="Deshacer">
+                    <i data-lucide="x" style="width:14px;height:14px;"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="collapse mt-3" id="formDocEntrega">
+    {% else %}
+    <div id="formDocEntrega">
+    {% endif %}
+        <form method="post" action="{% url 'cuentas:documentacion_entregada' cuenta.id %}"
+              enctype="multipart/form-data" data-no-confirm>
+            {% csrf_token %}
+            <div class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label">Fecha de entrega</label>
+                    <input type="date" name="fecha_entrega" class="form-control"
+                           value="{{ cuenta.doc_fecha_entrega|date:'Y-m-d' }}">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Recibo de entrega (PDF/imagen, opcional)</label>
+                    <input type="file" name="recibo" class="form-control" accept="application/pdf,image/*">
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-success w-100">
+                        <i data-lucide="file-check" style="width:16px;height:16px;margin-right:6px;"></i>
+                        Documentación entregada
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ===============================
      ACCIONES PRINCIPALES
 =============================== -->
 <div class="card p-4 mb-4">

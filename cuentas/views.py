@@ -1350,6 +1350,63 @@ def actualizar_observaciones_cuenta(request, cuenta_id):
 
 
 # ==========================================================
+# DOCUMENTACIÓN VEHICULAR ENTREGADA (con fecha y recibo adjunto)
+# ==========================================================
+@login_required
+def documentacion_entregada(request, cuenta_id):
+    cuenta = get_object_or_404(CuentaCorriente, id=cuenta_id)
+    if request.method != "POST":
+        return redirect("cuentas:cuenta_corriente_detalle", cuenta_id=cuenta.id)
+
+    accion = request.POST.get("accion", "guardar")
+
+    if accion == "quitar":
+        # Deshacer la entrega (y borrar el recibo adjunto si había)
+        if cuenta.doc_recibo:
+            cuenta.doc_recibo.delete(save=False)
+        cuenta.doc_entregada = False
+        cuenta.doc_fecha_entrega = None
+        cuenta.doc_recibo = None
+        cuenta.save(update_fields=["doc_entregada", "doc_fecha_entrega", "doc_recibo"])
+        cuenta.log("Documentación vehicular: entrega anulada")
+        messages.success(request, "Se quitó la marca de documentación entregada.")
+        return redirect("cuentas:cuenta_corriente_detalle", cuenta_id=cuenta.id)
+
+    # Fecha de entrega (por defecto hoy)
+    fecha_raw = (request.POST.get("fecha_entrega") or "").strip()
+    fecha = None
+    if fecha_raw:
+        try:
+            fecha = datetime.strptime(fecha_raw, "%Y-%m-%d").date()
+        except ValueError:
+            fecha = None
+    if fecha is None:
+        fecha = date.today()
+
+    cuenta.doc_entregada = True
+    cuenta.doc_fecha_entrega = fecha
+
+    # Recibo adjunto (opcional). Si suben uno nuevo, reemplaza el anterior.
+    archivo = request.FILES.get("recibo")
+    if archivo:
+        if cuenta.doc_recibo:
+            cuenta.doc_recibo.delete(save=False)
+        cuenta.doc_recibo = archivo
+
+    cuenta.save(update_fields=["doc_entregada", "doc_fecha_entrega", "doc_recibo"])
+    cuenta.log(
+        "Documentación vehicular entregada",
+        f"Fecha {fecha.strftime('%d/%m/%Y')}"
+        + (" · con recibo adjunto" if archivo else "")
+    )
+    messages.success(
+        request,
+        f"Documentación marcada como entregada el {fecha.strftime('%d/%m/%Y')}."
+    )
+    return redirect("cuentas:cuenta_corriente_detalle", cuenta_id=cuenta.id)
+
+
+# ==========================================================
 # EDITAR PAGO (solo metadatos: forma, banco, cheque, observaciones)
 # ==========================================================
 @login_required

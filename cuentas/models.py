@@ -50,6 +50,25 @@ class CuentaCorriente(models.Model):
         help_text="Notas internas sobre el cliente / cuenta",
     )
 
+    # ===============================
+    # ENTREGA DE DOCUMENTACIÓN VEHICULAR
+    # ===============================
+    doc_entregada = models.BooleanField(
+        "Documentación vehicular entregada",
+        default=False,
+    )
+    doc_fecha_entrega = models.DateField(
+        "Fecha de entrega de documentación",
+        null=True,
+        blank=True,
+    )
+    doc_recibo = models.FileField(
+        "Recibo de entrega de documentación",
+        upload_to="cuentas/recibos_documentacion/",
+        null=True,
+        blank=True,
+    )
+
     creada = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
