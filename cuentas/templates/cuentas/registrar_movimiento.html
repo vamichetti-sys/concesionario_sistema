@@ -30,6 +30,9 @@
                 <option value="">Seleccionar</option>
                 <option value="cuota">Pago de cuota</option>
                 <option value="unico">Pago único</option>
+                {% if gastos_extra_saldo > 0 %}
+                <option value="gasto_extra">Pago de gasto extra</option>
+                {% endif %}
                 <option value="cheque">Cheque</option>
             </select>
         </div>
@@ -45,6 +48,24 @@
             </select>
             <small class="text-muted">Si el monto supera esta cuota, se descontará de las siguientes.</small>
         </div>
+
+        <!-- GASTOS EXTRA -->
+        {% if gastos_extra_saldo > 0 %}
+        <div class="mb-4" id="bloque-gasto-extra" style="display:none;">
+            <div class="p-3" style="background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <strong style="color:#9a3412;">Gastos extra pendientes</strong>
+                    <span class="fw-bold" style="color:#9a3412;">Saldo $ {{ gastos_extra_saldo|floatformat:0 }}</span>
+                </div>
+                <ul class="mb-2 ps-3" style="font-size:13px;color:#7c2d12;">
+                    {% for g in gastos_extra %}
+                    <li>{{ g.descripcion }} — $ {{ g.monto|floatformat:0 }}</li>
+                    {% endfor %}
+                </ul>
+                <small class="text-muted">El pago se descuenta del saldo de gastos extra (no de las cuotas del plan).</small>
+            </div>
+        </div>
+        {% endif %}
 
         <!-- MONTO -->
         <div class="mb-4">
@@ -110,6 +131,9 @@ function toggleCuotas(valor) {
     const cuotaSelect = document.getElementById("cuota_id");
     bloque.style.display = valor === "cuota" ? "block" : "none";
     if (valor !== "cuota") cuotaSelect.value = "";
+
+    const bloqueGE = document.getElementById("bloque-gasto-extra");
+    if (bloqueGE) bloqueGE.style.display = valor === "gasto_extra" ? "block" : "none";
 }
 
 function filaChequeHTML() {

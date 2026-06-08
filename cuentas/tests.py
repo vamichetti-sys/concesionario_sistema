@@ -15,6 +15,7 @@ from cuentas.models import (
     CuotaPlan,
     Pago,
     PagoCuota,
+    MovimientoCuenta,
 )
 
 
@@ -52,6 +53,18 @@ class DeudaTests(BaseCuentaTest):
         self._plan_con_dos_cuotas()  # 2 x 60.000 = 120.000
         self.assertEqual(self.cuenta.deuda_total_inicial, Decimal("120000"))
         self.assertEqual(self.cuenta.deuda_total_real, Decimal("120000"))
+
+    def test_gasto_extra_suma_a_la_deuda(self):
+        # Un gasto extra (manual debe) debe sumarse a la deuda real
+        self._plan_con_dos_cuotas()  # 120.000
+        MovimientoCuenta.objects.create(
+            cuenta=self.cuenta,
+            descripcion="Gasto extra: sellado",
+            tipo="debe",
+            monto=Decimal("5000"),
+            origen="manual",
+        )
+        self.assertEqual(self.cuenta.deuda_total_real, Decimal("125000"))
 
     def test_pago_reduce_deuda_real(self):
         _, c1, _ = self._plan_con_dos_cuotas()

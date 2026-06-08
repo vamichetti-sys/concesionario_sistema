@@ -576,9 +576,6 @@ def cuenta_corriente_detalle(request, cuenta_id):
             plan.estado = "activo"
             plan.save(update_fields=["estado"])
 
-    # Deuda total = saldo de cuotas + gestoría pendiente + gastos de ingreso pendientes
-    deuda_total = deuda_cuotas + max(total_gestoria, Decimal("0")) + saldo_gastos_ingreso
-
     # Gastos extra / ajustes manuales (movimientos no ligados al plan ni gestoría)
     gastos_extra = movimientos.filter(origen__in=["manual", "ajuste"]).order_by("-fecha")
     ge_debe = (
@@ -588,6 +585,15 @@ def cuenta_corriente_detalle(request, cuenta_id):
         gastos_extra.filter(tipo__in=["haber", "pago"]).aggregate(t=Sum("monto"))["t"] or Decimal("0")
     )
     gastos_extra_saldo = ge_debe - ge_haber
+
+    # Deuda total = saldo de cuotas + gestoría pendiente + gastos de ingreso
+    #               pendientes + gastos extra / ajustes manuales pendientes
+    deuda_total = (
+        deuda_cuotas
+        + max(total_gestoria, Decimal("0"))
+        + saldo_gastos_ingreso
+        + max(gastos_extra_saldo, Decimal("0"))
+    )
 
     return render(
         request,
@@ -802,6 +808,19 @@ def registrar_movimiento(request, cuenta_id):
         .order_by("vencimiento", "numero")
     )
 
+    # Gastos extra / ajustes manuales y su saldo pendiente (para poder pagarlos
+    # desde el movimiento, además de las cuotas del plan).
+    gastos_extra = cuenta.movimientos.filter(
+        origen__in=["manual", "ajuste"], tipo__in=["debe", "deuda"]
+    ).order_by("-fecha")
+    _ge_debe = cuenta.movimientos.filter(
+        origen__in=["manual", "ajuste"], tipo__in=["debe", "deuda"]
+    ).aggregate(t=Sum("monto"))["t"] or Decimal("0")
+    _ge_haber = cuenta.movimientos.filter(
+        origen__in=["manual", "ajuste"], tipo__in=["haber", "pago"]
+    ).aggregate(t=Sum("monto"))["t"] or Decimal("0")
+    gastos_extra_saldo = _ge_debe - _ge_haber
+
     if request.method == "POST":
         tipo_movimiento = request.POST.get("tipo_movimiento")
         monto_raw       = request.POST.get("monto")
@@ -916,45 +935,58 @@ def registrar_movimiento(request, cuenta_id):
                     f"El pago se registró pero no pudo vincularse al módulo Cheques: {exc}"
                 )
 
-        # Cuota puntual elegida por el usuario (si corresponde)
-        cuota_preferida = None
-        if tipo_movimiento == "cuota" and cuota_id:
-            cuota_preferida = get_object_or_404(
-                CuotaPlan, id=cuota_id, plan__cuenta=cuenta
-            )
-
-        tenia_pendientes = CuotaPlan.objects.filter(
-            plan__cuenta=cuenta, estado="pendiente"
-        ).exists()
-
-        # Aplica el pago a las cuotas (el sobrante de una pasa a la siguiente).
-        # Devuelve lo que NO entró en ninguna cuota.
-        restante = cuenta.aplicar_pago_a_cuotas(
-            pago, monto, cuota_preferida=cuota_preferida
-        )
-
-        # El excedente NUNCA se pierde: queda como pago a favor (o como pago
-        # manual si la cuenta no tenía cuotas pendientes).
-        if restante > 0:
+        if tipo_movimiento == "gasto_extra":
+            # Pago dirigido a los gastos extra / ajustes manuales: NO toca las
+            # cuotas del plan, baja directamente el saldo de los gastos extra.
             MovimientoCuenta.objects.create(
                 cuenta=cuenta,
-                descripcion=(
-                    f"Pago a favor ({forma_pago}) {observaciones}".strip()
-                    if tenia_pendientes
-                    else f"Pago ({forma_pago}) {observaciones}".strip()
-                ),
+                descripcion=f"Pago de gasto extra ({forma_pago}) {observaciones}".strip(),
                 tipo="haber",
-                monto=restante,
+                monto=monto,
                 origen="manual",
                 pago=pago,
             )
             cuenta.recalcular_saldo()
-            if tenia_pendientes:
-                messages.info(
-                    request,
-                    "El pago superó el saldo de las cuotas pendientes. "
-                    f"El excedente de $ {restante:,.0f} quedó registrado como pago a favor."
+        else:
+            # Cuota puntual elegida por el usuario (si corresponde)
+            cuota_preferida = None
+            if tipo_movimiento == "cuota" and cuota_id:
+                cuota_preferida = get_object_or_404(
+                    CuotaPlan, id=cuota_id, plan__cuenta=cuenta
                 )
+
+            tenia_pendientes = CuotaPlan.objects.filter(
+                plan__cuenta=cuenta, estado="pendiente"
+            ).exists()
+
+            # Aplica el pago a las cuotas (el sobrante de una pasa a la siguiente).
+            # Devuelve lo que NO entró en ninguna cuota.
+            restante = cuenta.aplicar_pago_a_cuotas(
+                pago, monto, cuota_preferida=cuota_preferida
+            )
+
+            # El excedente NUNCA se pierde: queda como pago a favor (o como pago
+            # manual si la cuenta no tenía cuotas pendientes).
+            if restante > 0:
+                MovimientoCuenta.objects.create(
+                    cuenta=cuenta,
+                    descripcion=(
+                        f"Pago a favor ({forma_pago}) {observaciones}".strip()
+                        if tenia_pendientes
+                        else f"Pago ({forma_pago}) {observaciones}".strip()
+                    ),
+                    tipo="haber",
+                    monto=restante,
+                    origen="manual",
+                    pago=pago,
+                )
+                cuenta.recalcular_saldo()
+                if tenia_pendientes:
+                    messages.info(
+                        request,
+                        "El pago superó el saldo de las cuotas pendientes. "
+                        f"El excedente de $ {restante:,.0f} quedó registrado como pago a favor."
+                    )
 
         pago.saldo_posterior = cuenta.saldo
         pago.save(update_fields=["saldo_posterior"])
@@ -975,7 +1007,12 @@ def registrar_movimiento(request, cuenta_id):
     return render(
         request,
         "cuentas/registrar_movimiento.html",
-        {"cuenta": cuenta, "cuotas": cuotas}
+        {
+            "cuenta": cuenta,
+            "cuotas": cuotas,
+            "gastos_extra": gastos_extra,
+            "gastos_extra_saldo": gastos_extra_saldo,
+        }
     )
 
 
