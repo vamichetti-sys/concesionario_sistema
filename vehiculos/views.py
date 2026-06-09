@@ -724,6 +724,17 @@ def ficha_completa(request, vehiculo_id):
 
         saldo = monto - Decimal(total_pagado)
 
+        # Cobrado al cliente que NO salda la ficha (sigue como deuda del
+        # vehículo). Se muestra como informativo: el pago quedó registrado.
+        cobrado_informativo = (
+            PagoGastoIngreso.objects.filter(
+                vehiculo=vehiculo,
+                concepto=key,
+                mantiene_deuda_vehiculo=True,
+            ).aggregate(total=Sum("monto"))["total"]
+            or Decimal("0")
+        )
+
         # 🆕 OBTENER HISTORIAL DE PAGOS DE ESTE CONCEPTO (todos)
         pagos = PagoGastoIngreso.objects.filter(
             vehiculo=vehiculo,
@@ -738,6 +749,7 @@ def ficha_completa(request, vehiculo_id):
             "concepto": CONCEPTOS[key],
             "monto": monto,
             "total_pagado": total_pagado,
+            "cobrado_informativo": cobrado_informativo,
             "saldo": saldo,
             "pagos": pagos,
             "esta_pagado": esta_pagado,
@@ -939,20 +951,34 @@ def gastos_ingreso_pdf(request, vehiculo_id):
 
     filas = []
     total = Decimal("0")
+    total_pagado = Decimal("0")
+    total_saldo = Decimal("0")
     if ficha:
         for concepto, monto in ficha.mapa_gastos_ingreso().items():
             m = Decimal(monto or 0)
-            filas.append([concepto, money(m)])
+            # Pago registrado (lo que salda la ficha) y saldo restante.
+            pagado = ficha.total_pagado_por_concepto(concepto)
+            saldo = m - pagado
+            filas.append([
+                concepto,
+                money(m),
+                money(pagado) if pagado > 0 else "—",
+                money(saldo),
+            ])
             total += m
+            total_pagado += pagado
+            total_saldo += saldo
 
     dominio = getattr(vehiculo, "dominio", "") or "—"
     return render_pdf_listado(
         filename=f"gastos_ingreso_{vehiculo_id}.pdf",
         titulo="Gastos de ingreso",
         subtitulo=f"{vehiculo.marca} {vehiculo.modelo} — {dominio}",
-        columnas=["Concepto", "Monto"],
+        # Se muestra el gasto total y, como aclaración, el pago registrado
+        # descontado y el saldo pendiente.
+        columnas=["Concepto", "Gasto total", "Pagado", "Saldo"],
         filas=filas,
-        totales=["TOTAL", money(total)],
+        totales=["TOTAL", money(total), money(total_pagado), money(total_saldo)],
     )
 
 

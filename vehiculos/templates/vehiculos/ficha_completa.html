@@ -600,6 +600,15 @@
                     ${{ gasto.saldo }}
                 </div>
             </div>
+            {% if gasto.cobrado_informativo > 0 %}
+            <div class="col-md-4">
+                <small class="text-muted">Cobrado al cliente (informativo)</small>
+                <div class="fw-semibold" style="color:#b45309;" title="Cobrado al cliente, todavía no pagado al ente. No salda el saldo del vehículo.">
+                    ${{ gasto.cobrado_informativo }}
+                    <span class="badge bg-warning text-dark ms-1" style="font-size:10px;">deuda del vehículo</span>
+                </div>
+            </div>
+            {% endif %}
         </div>
 
         <!-- HISTORIAL -->
