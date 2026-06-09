@@ -4,6 +4,49 @@ from decimal import Decimal
 from vehiculos.models import FichaVehicular
 
 
+def recalcular_cuentas_vinculadas(vehiculo):
+    """
+    Recalcula el saldo/estado de las cuentas corrientes vinculadas a un
+    vehículo. Se llama cuando se actualiza la ficha (gastos de ingreso,
+    datos, etc.) para que las cuentas del cliente queden sincronizadas.
+
+    Un vehículo puede estar vinculado a una cuenta:
+      - como unidad vendida (vehiculo.venta.cuenta_corriente), o
+      - como permuta (movimientos origen="permuta" en la cuenta).
+
+    Nunca interrumpe el flujo: si algo falla, se ignora.
+    """
+    from cuentas.models import CuentaCorriente
+
+    cuentas = {}
+
+    # Cuenta del comprador (vía venta)
+    try:
+        venta = getattr(vehiculo, "venta", None)
+        if venta is not None:
+            cc = getattr(venta, "cuenta_corriente", None)
+            if cc is not None:
+                cuentas[cc.pk] = cc
+    except Exception:
+        pass
+
+    # Cuentas donde el vehículo figura como permuta
+    try:
+        for cc in CuentaCorriente.objects.filter(
+            movimientos__vehiculo=vehiculo,
+            movimientos__origen="permuta",
+        ).distinct():
+            cuentas[cc.pk] = cc
+    except Exception:
+        pass
+
+    for cc in cuentas.values():
+        try:
+            cc.recalcular_saldo()
+        except Exception:
+            pass
+
+
 def actualizar_gastos_por_vencimientos():
     """
     Revisa todos los vehiculos en stock y auto-llena gastos de concesionario

@@ -639,6 +639,8 @@ def guardar_ficha_vehicular(request, vehiculo_id):
             # ===============================
             calcular_total_gastos(ficha)
             sincronizar_turnos_calendario(vehiculo, ficha)
+            from vehiculos.services import recalcular_cuentas_vinculadas
+            recalcular_cuentas_vinculadas(vehiculo)
 
             messages.success(request, "Cambios guardados correctamente.")
             return redirect(
@@ -825,6 +827,8 @@ def guardar_gastos_concesionario(request, vehiculo_id):
             setattr(ficha, campo, nuevo)
 
         ficha.save(update_fields=campos_gc)
+        from vehiculos.services import recalcular_cuentas_vinculadas
+        recalcular_cuentas_vinculadas(vehiculo)
         messages.success(request, "Gastos de concesionario actualizados.")
 
     return redirect("vehiculos:ficha_completa", vehiculo_id=vehiculo.id)
@@ -2105,6 +2109,8 @@ def guardar_ficha_parcial(request, vehiculo_id):
             if ficha_form.is_valid():
                 ficha_form.save()
                 sincronizar_turnos_calendario(vehiculo, ficha)
+                from vehiculos.services import recalcular_cuentas_vinculadas
+                recalcular_cuentas_vinculadas(vehiculo)
                 messages.success(request, "Cambios guardados correctamente.")
             else:
                 messages.error(request, "Error al guardar los cambios.")
