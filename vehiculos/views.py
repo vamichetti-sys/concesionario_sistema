@@ -40,6 +40,27 @@ def get_configuracion_gastos():
     return config
 
 
+def _clientes_para_titular():
+    """Clientes activos para el autocompletado del titular en la ficha."""
+    from clientes.models import Cliente
+    qs = (
+        Cliente.objects.filter(activo=True)
+        .order_by("nombre_completo")
+        .values("id", "nombre_completo", "dni_cuit", "telefono", "email", "direccion")
+    )
+    return [
+        {
+            "id": c["id"],
+            "nombre": c["nombre_completo"] or "",
+            "dni": c["dni_cuit"] or "",
+            "telefono": c["telefono"] or "",
+            "email": c["email"] or "",
+            "domicilio": c["direccion"] or "",
+        }
+        for c in qs
+    ]
+
+
 # ==========================================================
 # LISTA DE VEHÍCULOS CON FILTROS Y DÍAS EN STOCK
 # ==========================================================
@@ -510,6 +531,7 @@ def ficha_vehicular_ajax(request, vehiculo_id):
             "total_gastos_conc": total_gastos_conc,
             "ficha_tecnica_form": ficha_tecnica_form,
             "mantenimientos": vehiculo.mantenimientos.all(),
+            "clientes_titular": _clientes_para_titular(),
         },
         request=request,
     )
@@ -807,6 +829,7 @@ def ficha_completa(request, vehiculo_id):
             "total_gastos_conc": total_gastos_conc,
             "total_extras": total_extras,
             "ficha_tecnica_form": ficha_tecnica_form,
+            "clientes_titular": _clientes_para_titular(),
         },
     )
 

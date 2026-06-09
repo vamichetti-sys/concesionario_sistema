@@ -201,22 +201,52 @@
     Titularidad / Ingreso
   </h4>
 
-  <div class="row g-3">
-    <div class="col-md-6">
-      <label class="fw-bold">Vendedor</label>
+  <!-- ORIGEN / INGRESO -->
+  <div class="row g-3 mb-2">
+    <div class="col-md-4">
+      <label class="fw-bold">Origen (proveedor)</label>
       {{ ficha_form.vendedor }}
+      <small class="text-muted">De qué proveedor / origen viene la unidad</small>
     </div>
-    <div class="col-md-6">
-      <label class="fw-bold">Contacto</label>
-      {{ ficha_form.contacto }}
+    <div class="col-md-4">
+      <label class="fw-bold">Tipo ingreso</label>
+      {{ ficha_form.tipo_ingreso }}
     </div>
-    <div class="col-md-6">
-      <label class="fw-bold">Email contacto</label>
-      {{ ficha_form.email_contacto }}
+    <div class="col-md-4">
+      <label class="fw-bold">N° consignación / factura</label>
+      {{ ficha_form.numero_consignacion_factura }}
     </div>
+  </div>
+
+  <hr>
+
+  <!-- TITULAR -->
+  <h6 class="fw-bold mb-2" style="color:#002855;">Datos del titular</h6>
+  <div class="mb-3">
+    <label class="fw-bold">Elegir cliente cargado (opcional)</label>
+    <input type="text" list="listaClientesTitular" id="buscadorClienteTitular"
+           class="form-control" placeholder="Buscar por nombre o DNI… o completar los campos a mano"
+           onchange="autocompletarTitular(this.value)">
+    <datalist id="listaClientesTitular">
+      {% for cli in clientes_titular %}
+      <option value="{{ cli.nombre }}{% if cli.dni %} — {{ cli.dni }}{% endif %}"></option>
+      {% endfor %}
+    </datalist>
+    <small class="text-muted">Seleccioná un cliente para autocompletar, o escribí los datos manualmente.</small>
+  </div>
+
+  <div class="row g-3">
     <div class="col-md-6">
       <label class="fw-bold">Titular</label>
       {{ ficha_form.titular }}
+    </div>
+    <div class="col-md-3">
+      <label class="fw-bold">Contacto (tel. titular)</label>
+      {{ ficha_form.contacto }}
+    </div>
+    <div class="col-md-3">
+      <label class="fw-bold">Email titular</label>
+      {{ ficha_form.email_contacto }}
     </div>
 
     <div class="col-md-4">
@@ -228,23 +258,37 @@
       {{ ficha_form.dni_titular }}
     </div>
     <div class="col-md-4">
-      <label class="fw-bold">Estado civil</label>
-      {{ ficha_form.estado_civil }}
-    </div>
-
-    <div class="col-md-4">
       <label class="fw-bold">CUIT / CUIL / DNI</label>
       {{ ficha_form.cuit_cuil_dni }}
     </div>
+
     <div class="col-md-4">
-      <label class="fw-bold">Tipo ingreso</label>
-      {{ ficha_form.tipo_ingreso }}
-    </div>
-    <div class="col-md-4">
-      <label class="fw-bold">N° consignación / factura</label>
-      {{ ficha_form.numero_consignacion_factura }}
+      <label class="fw-bold">Estado civil</label>
+      {{ ficha_form.estado_civil }}
     </div>
   </div>
+
+  {{ clientes_titular|json_script:"clientesTitularData" }}
+  <script>
+  (function(){
+    if (window.__titularAutocompleteReady) return;
+    window.__titularAutocompleteReady = true;
+    window.autocompletarTitular = function(valor){
+      var data = [];
+      try { data = JSON.parse(document.getElementById("clientesTitularData").textContent); } catch(e){ return; }
+      var nombre = (valor || "").split("—")[0].trim().toLowerCase();
+      var cli = data.find(function(c){ return (c.nombre||"").trim().toLowerCase() === nombre; });
+      if(!cli) return;
+      function set(id, val){ var el = document.getElementById(id); if(el && val) el.value = val; }
+      set("id_titular", cli.nombre);
+      set("id_contacto", cli.telefono);
+      set("id_email_contacto", cli.email);
+      set("id_domicilio_titular", cli.domicilio);
+      set("id_dni_titular", cli.dni);
+      set("id_cuit_cuil_dni", cli.dni);
+    };
+  })();
+  </script>
 </div>
  <!-- ================= TAB 3: DOCUMENTACIÓN ================= -->
 <div class="tab-pane fade" id="tab-documentacion">
