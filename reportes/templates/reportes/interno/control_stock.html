@@ -56,6 +56,7 @@
                     <th>Vehículo</th>
                     <th>Dominio</th>
                     <th>Estado</th>
+                    <th>Ingreso</th>
                     <th>Compra</th>
                     <th>Venta</th>
                     <th class="text-end">Gastos</th>
@@ -82,6 +83,9 @@
 
                     <!-- DOMINIO -->
                     <td><span class="badge bg-secondary">{{ v.dominio }}</span></td>
+
+                    <!-- INGRESO -->
+                    <td><small class="text-muted">{{ v.fecha_ingreso|date:"d/m/Y"|default:"—" }}</small></td>
 
                     <!-- ESTADO -->
                     <td>

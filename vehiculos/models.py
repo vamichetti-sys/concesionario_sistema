@@ -1,6 +1,7 @@
 from django.db import models
 from decimal import Decimal
 from django.apps import apps
+from datetime import date
 
 
 # ============================================================
@@ -53,6 +54,12 @@ class Vehiculo(models.Model):
         blank=True,
         null=True,
         verbose_name="Número de carpeta"
+    )
+
+    fecha_ingreso = models.DateField(
+        "Fecha de ingreso",
+        default=date.today,
+        help_text="Fecha en que el vehículo ingresó al stock. Se completa automáticamente con la fecha de alta y se puede editar.",
     )
 
     # ======================================================

@@ -60,6 +60,7 @@ class VehiculoBasicoForm(CarpetaUnicaMixin, forms.ModelForm):
             'precio',
             'estado',
             'numero_carpeta',
+            'fecha_ingreso',
         ]
 
         labels = {
@@ -72,6 +73,7 @@ class VehiculoBasicoForm(CarpetaUnicaMixin, forms.ModelForm):
             'precio': 'Precio',
             'estado': 'Estado',
             'numero_carpeta': 'Número de carpeta',
+            'fecha_ingreso': 'Fecha de ingreso',
         }
 
         widgets = {
@@ -85,6 +87,9 @@ class VehiculoBasicoForm(CarpetaUnicaMixin, forms.ModelForm):
             'estado': forms.Select(attrs={'class': 'form-control'}),
             'numero_carpeta': forms.TextInput(
                 attrs={'class': 'form-control', 'placeholder': 'Ej: C-2025-014'}
+            ),
+            'fecha_ingreso': forms.DateInput(
+                attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'
             ),
         }
 
@@ -105,7 +110,12 @@ class VehiculoForm(CarpetaUnicaMixin, forms.ModelForm):
             'precio',
             'estado',
             'numero_carpeta',
+            'fecha_ingreso',
         ]
+
+        labels = {
+            'fecha_ingreso': 'Fecha de ingreso',
+        }
 
         widgets = {
             'unidad': forms.Select(attrs={'class': 'form-control'}),
@@ -117,6 +127,9 @@ class VehiculoForm(CarpetaUnicaMixin, forms.ModelForm):
             'precio': forms.NumberInput(attrs={'class': 'form-control'}),
             'estado': forms.Select(attrs={'class': 'form-control'}),
             'numero_carpeta': forms.TextInput(attrs={'class': 'form-control'}),
+            'fecha_ingreso': forms.DateInput(
+                attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'
+            ),
         }
 
 
