@@ -113,7 +113,8 @@
                         <small class="text-muted d-block" style="font-size:11px;line-height:1.6;">
                             {% if deuda_cuotas > 0 %}Plan: $ {{ deuda_cuotas|floatformat:0 }}{% endif %}
                             {% if total_gestoria > 0 %} · Gestoría: $ {{ total_gestoria|floatformat:0 }}{% endif %}
-                            {% if saldo_gastos_ingreso > 0 %} · Gastos: $ {{ saldo_gastos_ingreso|floatformat:0 }}{% endif %}
+                            {% if saldo_gastos_ingreso > 0 %} · Gastos de ingreso: $ {{ saldo_gastos_ingreso|floatformat:0 }}{% endif %}
+                            {% if gastos_extra_saldo > 0 %} · Gastos extra: $ {{ gastos_extra_saldo|floatformat:0 }}{% endif %}
                         </small>
                     </div>
                 </div>
