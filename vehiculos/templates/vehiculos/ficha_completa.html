@@ -316,30 +316,35 @@
             <h6 class="fw-bold mb-3">Patentes</h6>
             <div class="row g-3">
                 <div class="col-md-3">
-                    <label class="form-label">Estado</label>
-                    {{ ficha_form.patentes_estado }}
+                    <label class="form-label">¿Adeuda patentes a la fecha de ingreso?</label>
+                    {{ ficha_form.patentes_adeuda }}
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label">Monto deuda</label>
+                    <label class="form-label">Monto adeudado</label>
                     {{ ficha_form.patentes_monto }}
                 </div>
                 <div class="col-md-3">
+                    <label class="form-label">Patente mensual ($)</label>
+                    {{ ficha_form.patente_mensual }}
+                </div>
+                <div class="col-md-3"></div>
+                <div class="col-md-2">
                     <label class="form-label">Vencimiento 1</label>
                     {{ ficha_form.patentes_vto1 }}
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label class="form-label">Vencimiento 2</label>
                     {{ ficha_form.patentes_vto2 }}
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label class="form-label">Vencimiento 3</label>
                     {{ ficha_form.patentes_vto3 }}
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label class="form-label">Vencimiento 4</label>
                     {{ ficha_form.patentes_vto4 }}
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label class="form-label">Vencimiento 5</label>
                     {{ ficha_form.patentes_vto5 }}
                 </div>

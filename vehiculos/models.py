@@ -172,7 +172,20 @@ class FichaVehicular(models.Model):
     ]
 
     patentes_estado = models.CharField(max_length=20, choices=ESTADO_DOC, blank=True, null=True)
-    patentes_monto = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
+    # ¿El vehículo adeuda patentes a la fecha de ingreso?
+    PATENTES_ADEUDA = [("si", "Sí"), ("no", "No")]
+    patentes_adeuda = models.CharField(
+        "¿Adeuda patentes a la fecha de ingreso?",
+        max_length=2, choices=PATENTES_ADEUDA, blank=True, null=True,
+    )
+    patentes_monto = models.DecimalField(
+        "Monto adeudado de patentes",
+        max_digits=12, decimal_places=2, blank=True, null=True,
+    )
+    patente_mensual = models.DecimalField(
+        "Monto de la patente mensual",
+        max_digits=12, decimal_places=2, blank=True, null=True,
+    )
     patentes_vto1 = models.DateField(blank=True, null=True)
     patentes_vto2 = models.DateField(blank=True, null=True)
     patentes_vto3 = models.DateField(blank=True, null=True)

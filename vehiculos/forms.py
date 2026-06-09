@@ -273,7 +273,9 @@ class FichaVehicularForm(forms.ModelForm):
             'numero_consignacion_factura',
 
             'patentes_estado',
+            'patentes_adeuda',
             'patentes_monto',
+            'patente_mensual',
             'patentes_vto1',
             'patentes_vto2',
             'patentes_vto3',
@@ -407,6 +409,8 @@ class FichaVehicularForm(forms.ModelForm):
             'gasto_r541': forms.NumberInput(attrs={'class': 'form-control'}),
             'gasto_firmas': forms.NumberInput(attrs={'class': 'form-control'}),
             'patentes_estado': forms.Select(attrs={'class': 'form-control'}),
+            'patentes_adeuda': forms.Select(attrs={'class': 'form-control'}),
+            'patente_mensual': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'f08_estado': forms.Select(attrs={'class': 'form-control'}),
             'cedula_estado': forms.Select(attrs={'class': 'form-control'}),
             'informe': forms.Select(attrs={'class': 'form-control'}),
