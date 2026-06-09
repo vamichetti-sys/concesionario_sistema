@@ -63,7 +63,7 @@ class VehiculoBasicoForm(CarpetaUnicaMixin, forms.ModelForm):
         ]
 
         labels = {
-            'unidad': 'Unidad',
+            'unidad': 'Perteneciente a',
             'marca': 'Marca',
             'modelo': 'Modelo',
             'dominio': 'Dominio',
