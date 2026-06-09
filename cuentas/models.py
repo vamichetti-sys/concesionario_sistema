@@ -267,35 +267,41 @@ class CuentaCorriente(models.Model):
     @property
     def deuda_total_inicial(self):
         """
-        Deuda total contraída (sin descontar pagos):
-        plan total + gestoría debe + gastos de ingreso totales
+        Deuda total contraída (montos brutos, SIN descontar pagos).
+
+        Es la imagen espejo EXACTA de `deuda_total_real`: los mismos
+        componentes pero con sus montos completos. Así se garantiza que
+        SIEMPRE valga:  total_pagado_real = deuda_total_inicial - deuda_total_real
+        y por lo tanto el "Pagado" que se muestra es el cobro real, sin
+        números fantasma por fórmulas que no coincidían entre sí.
         """
         total = Decimal("0")
         movs = list(self.movimientos.all())  # 1 consulta (0 si viene con prefetch)
 
-        # Total de TODOS los planes de pago (con interés) - incluye finalizados
         planes = [p for p in self.planes.all() if p.pk]
         if planes:
+            # Total bruto de TODAS las cuotas (incluye finalizados)
             for plan in planes:
                 for cuota in plan.cuotas.all():
                     total += cuota.monto
-
-            # Gastos extra / ajustes manuales contraídos (con plan) - una sola vez
+            # Gestoría debe (bruto)
+            total += self._suma_mov(movs, origenes=["gestoria"], tipos=["debe"])
+            # Gastos extra / ajustes manuales debe (bruto)
             total += self._suma_mov(movs, origenes=["manual", "ajuste"], tipos=["debe", "deuda"])
+        else:
+            # Sin plan: TODOS los cargos (debe) excepto permuta.
+            # (espejo del saldo sin plan, que es debe − haber excepto permuta)
+            total += self._suma_mov(movs, excl_origen="permuta", tipos=["debe", "deuda"])
 
-        # Gestoría debe (deuda original)
-        total += self._suma_mov(movs, origenes=["gestoria"], tipos=["debe"])
-
-        # Gastos de ingreso totales (solo si hay vehículos de permuta vinculados)
-        if any(m.origen == "permuta" for m in movs):
-            for vehiculo in self._vehiculos_para_gastos():
-                try:
-                    ficha = vehiculo.ficha
-                    for _, monto in ficha.mapa_gastos_ingreso().items():
-                        if monto:
-                            total += Decimal(monto)
-                except Exception:
-                    pass
+        # Gastos de ingreso totales (vehículos de permuta vinculados)
+        for vehiculo in self._vehiculos_para_gastos():
+            try:
+                ficha = vehiculo.ficha
+                for _, monto in ficha.mapa_gastos_ingreso().items():
+                    if monto:
+                        total += Decimal(monto)
+            except Exception:
+                pass
 
         return total
 
