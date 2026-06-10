@@ -49,11 +49,15 @@ def recalcular_cuentas_vinculadas(vehiculo):
 
 def actualizar_gastos_por_vencimientos():
     """
-    Revisa todos los vehiculos en stock y auto-llena gastos de concesionario
-    cuando un vencimiento ya paso:
-    - VTV vencida → gc_vtv se llena con gasto_vtv
-    - Verificacion vencida → gc_verificacion se llena con gasto_verificacion
-    - Patentes vencidas → gc_patentes se acumula con patentes_monto por cada cuota vencida
+    Revisa todos los vehiculos en stock y auto-acumula SOLO las patentes
+    mensuales en gastos de concesionario (cada vencimiento posterior a la
+    fecha de ingreso suma una patente mensual).
+
+    NOTA: VTV, verificación y grabado de autopartes ya NO se copian
+    automáticamente. El gasto de INGRESO de esos trámites es deuda del
+    vehículo (lo paga el cliente/proveedor), no un costo de la concesionaria:
+    si la concesionaria efectivamente lo paga, se carga A MANO en
+    "Gastos concesionario".
     """
     hoy = date.today()
 
@@ -65,39 +69,6 @@ def actualizar_gastos_por_vencimientos():
 
     for ficha in fichas:
         cambios = []
-
-        # VTV vencida
-        if (
-            ficha.vtv_vencimiento
-            and ficha.vtv_vencimiento < hoy
-            and ficha.gc_vtv == 0
-            and ficha.gasto_vtv
-            and ficha.gasto_vtv > 0
-        ):
-            ficha.gc_vtv = ficha.gasto_vtv
-            cambios.append("gc_vtv")
-
-        # Verificacion policial vencida
-        if (
-            ficha.verificacion_vencimiento
-            and ficha.verificacion_vencimiento < hoy
-            and ficha.gc_verificacion == 0
-            and ficha.gasto_verificacion
-            and ficha.gasto_verificacion > 0
-        ):
-            ficha.gc_verificacion = ficha.gasto_verificacion
-            cambios.append("gc_verificacion")
-
-        # Grabado autopartes (si el turno paso y no tiene gasto)
-        if (
-            ficha.autopartes_turno
-            and ficha.autopartes_turno < hoy
-            and ficha.gc_grabado_autopartes == 0
-            and ficha.gasto_autopartes
-            and ficha.gasto_autopartes > 0
-        ):
-            ficha.gc_grabado_autopartes = ficha.gasto_autopartes
-            cambios.append("gc_grabado_autopartes")
 
         # Patentes mensuales: cada vencimiento que cae DESPUÉS de la fecha de
         # ingreso y que ya pasó suma una "patente mensual" a gastos de
