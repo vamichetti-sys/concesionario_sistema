@@ -76,11 +76,12 @@ def lista_vehiculos(request):
         .select_related('ficha', 'ficha_reporte')
         .annotate(
             estado_orden=Case(
-                When(estado="stock", then=Value(0)),
-                When(estado="temporal", then=Value(1)),
-                When(estado="reventa", then=Value(2)),
-                When(estado="vendido", then=Value(3)),
-                default=Value(4),
+                When(estado="a_ingresar", then=Value(0)),
+                When(estado="stock", then=Value(1)),
+                When(estado="temporal", then=Value(2)),
+                When(estado="reventa", then=Value(3)),
+                When(estado="vendido", then=Value(4)),
+                default=Value(5),
                 output_field=IntegerField(),
             )
         )
@@ -118,6 +119,7 @@ def lista_vehiculos(request):
         })
 
     # Contadores para los filtros
+    total_a_ingresar = Vehiculo.objects.filter(estado='a_ingresar').count()
     total_stock = Vehiculo.objects.filter(estado='stock').count()
     total_temporal = Vehiculo.objects.filter(estado='temporal').count()
     total_vendido = Vehiculo.objects.filter(estado='vendido').count()
@@ -130,6 +132,7 @@ def lista_vehiculos(request):
             "vehiculos_con_dias": vehiculos_con_dias,
             "query": query,
             "estado_filtro": estado_filtro,
+            "total_a_ingresar": total_a_ingresar,
             "total_stock": total_stock,
             "total_temporal": total_temporal,
             "total_vendido": total_vendido,
@@ -252,7 +255,7 @@ def cambiar_estado_vehiculo(request, vehiculo_id):
     vehiculo = get_object_or_404(Vehiculo, id=vehiculo_id)
 
     # Estados que pueden setearse desde el dropdown.
-    ESTADOS_VALIDOS = {"stock", "temporal", "vendido", "reventa"}
+    ESTADOS_VALIDOS = {"a_ingresar", "stock", "temporal", "vendido", "reventa"}
 
     if request.method == "POST":
         nuevo_estado = request.POST.get("estado")

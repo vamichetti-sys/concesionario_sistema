@@ -33,6 +33,12 @@
 =============================== -->
 <div class="card p-3 mb-4">
     <div class="d-flex flex-wrap gap-2">
+        <a href="{% url 'vehiculos:lista_vehiculos' %}?estado=a_ingresar{% if query %}&q={{ query }}{% endif %}"
+           class="btn {% if estado_filtro == 'a_ingresar' %}btn-dark{% else %}btn-secondary{% endif %}">
+            <i data-lucide="truck" style="width:16px;height:16px;margin-right:6px;"></i>
+            A ingresar
+            <span class="badge bg-white text-dark ms-2">{{ total_a_ingresar }}</span>
+        </a>
         <a href="{% url 'vehiculos:lista_vehiculos' %}?estado=stock{% if query %}&q={{ query }}{% endif %}"
            class="btn {% if estado_filtro == 'stock' %}btn-primary{% else %}btn-secondary{% endif %}">
             <i data-lucide="package" style="width:16px;height:16px;margin-right:6px;"></i>
@@ -184,6 +190,7 @@
                             <input type="hidden" name="precio_venta" value="">
                             <input type="hidden" name="fecha_venta" value="">
                             <select name="estado" class="form-select form-select-sm" style="width:auto;">
+                                <option value="a_ingresar" {% if v.estado == 'a_ingresar' %}selected{% endif %}>A ingresar</option>
                                 <option value="stock" {% if v.estado == 'stock' %}selected{% endif %}>En stock</option>
                                 <option value="temporal" {% if v.estado == 'temporal' %}selected{% endif %}>Temporal</option>
                                 <option value="vendido" {% if v.estado == 'vendido' %}selected{% endif %}>Vendido</option>

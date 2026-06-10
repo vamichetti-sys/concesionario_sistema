@@ -9,6 +9,7 @@ from datetime import date
 # ============================================================
 class Vehiculo(models.Model):
     ESTADOS = [
+        ('a_ingresar', 'A ingresar'),
         ('stock', 'En stock'),
         ('temporal', 'Temporalmente no disponible'),
         ('vendido', 'Vendido'),
