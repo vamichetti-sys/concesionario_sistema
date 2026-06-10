@@ -191,3 +191,50 @@ class PagoProveedor(models.Model):
 
     def __str__(self):
         return f"Pago {self.deuda.proveedor.nombre_empresa} - ${self.monto}"
+
+
+# ==========================================================
+# 💵 REINTEGRO DE GASTOS QUE EL PROVEEDOR ME DEBE
+# ==========================================================
+class ReintegroProveedor(models.Model):
+    """
+    Gasto de ingreso de un vehículo que pagó la concesionaria pero que el
+    PROVEEDOR debe reintegrar (situación B del pago de gastos).
+
+    Es plata APARTE: NO se cruza con DeudaProveedor (que es solo el precio de
+    compra del auto). Sirve para seguir qué me debe el proveedor por gastos y
+    qué ya me reintegró.
+    """
+
+    ESTADOS = [
+        ("pendiente", "Pendiente de reintegro"),
+        ("reintegrado", "Reintegrado"),
+    ]
+
+    proveedor = models.ForeignKey(
+        Proveedor,
+        on_delete=models.CASCADE,
+        related_name="reintegros_gastos",
+    )
+    vehiculo = models.ForeignKey(
+        Vehiculo,
+        on_delete=models.PROTECT,
+        related_name="reintegros_proveedor",
+    )
+
+    concepto = models.CharField(max_length=100)   # f08, vtv, patentes, ...
+    ente = models.CharField(max_length=120, blank=True)
+    monto = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+
+    estado = models.CharField(max_length=12, choices=ESTADOS, default="pendiente")
+    fecha_reintegro = models.DateField(null=True, blank=True)
+
+    creado = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["-creado"]
+        verbose_name = "Reintegro de proveedor"
+        verbose_name_plural = "Reintegros de proveedores"
+
+    def __str__(self):
+        return f"Reintegro {self.proveedor.nombre_empresa} – {self.concepto} ${self.monto} ({self.estado})"

@@ -470,13 +470,48 @@ class PagoGastoIngreso(models.Model):
     observaciones = models.TextField(blank=True, null=True)
     creado = models.DateTimeField(auto_now_add=True)
 
-    # Cuando el cliente paga el gasto pero la concesionaria todavía NO lo pagó
-    # al ente (ej. infracciones): el cobro se descuenta de la cuenta corriente
-    # igual, pero en la ficha del vehículo el gasto SIGUE figurando como deuda
-    # (queda en "Pago de gastos") hasta que efectivamente se pague al ente.
+    # A quién pertenece el gasto: lo determina el PROVEEDOR de la solapa
+    # Titularidad (ficha.vendedor). Si hay proveedor → "proveedor"; si no →
+    # "cliente". Se fija al registrar el pago.
+    PERTENECE = [
+        ("proveedor", "Proveedor"),
+        ("cliente", "Cliente"),
+    ]
+    pertenece = models.CharField(max_length=10, choices=PERTENECE, default="cliente")
+
+    # Situación del gasto (la elige el usuario al registrar el pago):
+    #   Proveedor:  A) prov_directo   B) prov_reintegro
+    #   Cliente:    1) cli_directo    2) cli_concesion
+    #               3) cli_adelanto   4) pendiente
+    SITUACION = [
+        ("prov_directo",   "Proveedor pagó directo al ente (saldado)"),
+        ("prov_reintegro", "Lo pagué yo, el proveedor me reintegra"),
+        ("cli_directo",    "Cliente pagó directo al ente (saldado)"),
+        ("cli_concesion",  "Cliente me pagó, todavía no pagué al ente"),
+        ("cli_adelanto",   "Adelanté yo al ente, el cliente me debe"),
+        ("pendiente",      "Nadie pagó todavía"),
+    ]
+    situacion = models.CharField(max_length=20, choices=SITUACION, default="pendiente")
+
+    # Ente al que se le paga el trámite (VTV, registro, patentes…). Texto libre,
+    # el formulario sugiere un valor inicial según el concepto.
+    ente = models.CharField(max_length=120, blank=True)
+
+    # Saldado: cierra el circuito y pasa a la sección "Saldadas".
+    saldado = models.BooleanField(default=False)
+    fecha_saldado = models.DateField(null=True, blank=True)
+
+    # Referencias a registros creados en otros módulos (patrón IngresoFuturo),
+    # para poder vincular y revertir sin descuadrar:
+    movimiento_cuenta_id = models.PositiveIntegerField(null=True, blank=True)    # cuentas.MovimientoCuenta
+    pago_futuro_id = models.PositiveIntegerField(null=True, blank=True)          # agenda_pagos.PagoFuturo
+    reintegro_proveedor_id = models.PositiveIntegerField(null=True, blank=True)  # compraventa.ReintegroProveedor
+
+    # ⚠️ LEGADO: reemplazado por situacion="cli_concesion". Se conserva durante
+    # la transición y se eliminará al migrar la lógica de "Pago de gastos".
     mantiene_deuda_vehiculo = models.BooleanField(
         default=False,
-        verbose_name="Sigue como deuda del vehículo (no se pagó al ente)",
+        verbose_name="(legado) Sigue como deuda del vehículo",
     )
 
     class Meta:
