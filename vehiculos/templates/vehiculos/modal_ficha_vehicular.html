@@ -550,7 +550,7 @@
           </div>
 
           <div class="col-md-3">
-            <label class="fw-bold">Ente (a quién se le paga)</label>
+            <label class="fw-bold">Organismo (a quién se le paga)</label>
             <input type="text" name="ente" class="form-control" value="{{ gasto.ente_sugerido }}">
           </div>
 
@@ -570,12 +570,12 @@
           <label class="fw-bold">Situación</label>
           <select name="situacion" class="form-select" required>
             {% if tiene_proveedor %}
-            <option value="prov_directo">El proveedor pagó directo al ente (saldado)</option>
+            <option value="prov_directo">El proveedor pagó directo al organismo (saldado)</option>
             <option value="prov_reintegro">Lo pagué yo, el proveedor me reintegra</option>
             {% else %}
-            <option value="cli_directo">El cliente pagó directo al ente (saldado)</option>
-            <option value="cli_concesion">El cliente me pagó, todavía no pagué al ente</option>
-            <option value="cli_adelanto">Adelanté yo al ente, el cliente me debe</option>
+            <option value="cli_directo">El cliente pagó directo al organismo (saldado)</option>
+            <option value="cli_concesion">El cliente me pagó, todavía no pagué al organismo</option>
+            <option value="cli_adelanto">Adelanté yo al organismo, el cliente me debe</option>
             <option value="pendiente">Nadie pagó todavía</option>
             {% endif %}
           </select>

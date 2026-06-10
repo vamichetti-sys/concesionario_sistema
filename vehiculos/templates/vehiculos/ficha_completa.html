@@ -603,7 +603,7 @@
                 <div class="form-check mt-3 p-2" style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;">
                     <input class="form-check-input" type="checkbox" name="mantiene_deuda" value="1" id="mantiene_deuda_lote">
                     <label class="form-check-label" for="mantiene_deuda_lote" style="font-size:13px;">
-                        <strong>El cliente los pagó pero todavía no se pagaron al ente.</strong>
+                        <strong>El cliente los pagó pero todavía no se pagaron al organismo.</strong>
                         Se descuentan de la cuenta corriente, pero siguen figurando como deuda del vehículo en la ficha.
                     </label>
                 </div>
@@ -655,7 +655,7 @@
             {% if gasto.cobrado_informativo > 0 %}
             <div class="col-md-4">
                 <small class="text-muted">Cobrado al cliente (informativo)</small>
-                <div class="fw-semibold" style="color:#b45309;" title="Cobrado al cliente, todavía no pagado al ente. No salda el saldo del vehículo.">
+                <div class="fw-semibold" style="color:#b45309;" title="Cobrado al cliente, todavía no pagado al organismo. No salda el saldo del vehículo.">
                     ${{ gasto.cobrado_informativo }}
                     <span class="badge bg-warning text-dark ms-1" style="font-size:10px;">deuda del vehículo</span>
                 </div>
@@ -685,7 +685,7 @@
                             <td>
                                 {{ pago.observaciones|default:"-" }}
                                 {% if pago.situacion == "cli_concesion" %}
-                                <span class="badge bg-warning text-dark ms-1" title="Cobrado al cliente, todavía no pagado al ente">impaga por concesionario</span>
+                                <span class="badge bg-warning text-dark ms-1" title="Cobrado al cliente, todavía no pagado al organismo">impaga por concesionario</span>
                                 {% elif pago.situacion == "cli_adelanto" %}
                                 <span class="badge bg-info text-dark ms-1">el cliente me debe</span>
                                 {% elif pago.situacion == "prov_reintegro" %}
@@ -693,7 +693,7 @@
                                 {% elif pago.saldado %}
                                 <span class="badge bg-success ms-1">saldado</span>
                                 {% endif %}
-                                {% if pago.ente %}<small class="text-muted d-block">Ente: {{ pago.ente }}</small>{% endif %}
+                                {% if pago.ente %}<small class="text-muted d-block">Organismo: {{ pago.ente }}</small>{% endif %}
                             </td>
                             <td class="text-end">
                                 {% if pago.situacion == "cli_concesion" %}
@@ -703,7 +703,7 @@
                                     </span>
                                     {% else %}
                                     <form method="post" action="{% url 'vehiculos:agregar_gasto_a_agenda' pago.id %}" style="display:inline;"
-                                          onsubmit="return confirm('¿Agregar este gasto a la Agenda de Pagos para pagarle al ente?');">
+                                          onsubmit="return confirm('¿Agregar este gasto a la Agenda de Pagos para pagarle al organismo?');">
                                         {% csrf_token %}
                                         <button type="submit" class="btn btn-outline-warning btn-sm" title="Agregar a Agenda de Pagos">
                                             <i data-lucide="calendar-plus" style="width:13px;height:13px;margin-right:3px;"></i> Agenda
@@ -742,7 +742,7 @@
                     <input type="number" step="0.01" name="monto" class="form-control" required>
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label">Ente (a quién se le paga)</label>
+                    <label class="form-label">Organismo (a quién se le paga)</label>
                     <input type="text" name="ente" class="form-control" value="{{ gasto.ente_sugerido }}">
                 </div>
                 <div class="col-md-3">
@@ -761,12 +761,12 @@
                 <label class="form-label">Situación</label>
                 <select name="situacion" class="form-select" required>
                     {% if tiene_proveedor %}
-                    <option value="prov_directo">El proveedor pagó directo al ente (saldado)</option>
+                    <option value="prov_directo">El proveedor pagó directo al organismo (saldado)</option>
                     <option value="prov_reintegro">Lo pagué yo, el proveedor me reintegra</option>
                     {% else %}
-                    <option value="cli_directo">El cliente pagó directo al ente (saldado)</option>
-                    <option value="cli_concesion">El cliente me pagó, todavía no pagué al ente</option>
-                    <option value="cli_adelanto">Adelanté yo al ente, el cliente me debe</option>
+                    <option value="cli_directo">El cliente pagó directo al organismo (saldado)</option>
+                    <option value="cli_concesion">El cliente me pagó, todavía no pagué al organismo</option>
+                    <option value="cli_adelanto">Adelanté yo al organismo, el cliente me debe</option>
                     <option value="pendiente">Nadie pagó todavía</option>
                     {% endif %}
                 </select>

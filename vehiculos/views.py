@@ -757,7 +757,7 @@ def ficha_completa(request, vehiculo_id):
 
         saldo = monto - Decimal(total_pagado)
 
-        # Cobrado al cliente pero todavía no pagado al ente (situación 2):
+        # Cobrado al cliente pero todavía no pagado al organismo (situación 2):
         # impaga por concesionario. Se muestra como informativo.
         cobrado_informativo = (
             PagoGastoIngreso.objects.filter(
@@ -1234,7 +1234,7 @@ def registrar_pago_gasto(request):
         pago.save(update_fields=["reintegro_proveedor_id"])
 
     elif situacion == "cli_adelanto":
-        # 3) Adelanté yo al ente → el cliente me debe ese gasto (debe).
+        # 3) Adelanté yo al organismo → el cliente me debe ese gasto (debe).
         if cuenta:
             mov = MovimientoCuenta.objects.create(
                 cuenta=cuenta, vehiculo=vehiculo,
@@ -1246,7 +1246,7 @@ def registrar_pago_gasto(request):
             cuenta.recalcular_saldo()
 
     elif situacion == "cli_concesion":
-        # 2) El cliente me pagó pero todavía no pagué al ente. Reflejar la plata
+        # 2) El cliente me pagó pero todavía no pagué al organismo. Reflejar la plata
         #    real que entró: el gasto como deuda (debe) + el pago del cliente
         #    (haber) → neto 0 en la cuenta, pero queda registrado el cobro.
         #    La deuda con el ente queda como "impaga por concesionario" (cálculo).
@@ -1258,7 +1258,7 @@ def registrar_pago_gasto(request):
             )
             MovimientoCuenta.objects.create(
                 cuenta=cuenta, vehiculo=vehiculo,
-                descripcion=f"Pago del cliente por {label} (pendiente de pagar al ente) {marca}",
+                descripcion=f"Pago del cliente por {label} (pendiente de pagar al organismo) {marca}",
                 tipo="haber", monto=monto, origen="manual",
             )
             pago.movimiento_cuenta_id = mov_debe.pk
@@ -1272,7 +1272,7 @@ def registrar_pago_gasto(request):
         messages.success(
             request,
             f"Pago registrado. {label}: ${monto}. El cliente te pagó; "
-            "queda como IMPAGA POR CONCESIONARIO hasta que le pagues al ente."
+            "queda como IMPAGA POR CONCESIONARIO hasta que le pagues al organismo."
         )
     elif situacion == "cli_adelanto":
         messages.success(request, f"Pago registrado. {label}: ${monto}. El cliente te debe este gasto.")
@@ -1370,7 +1370,7 @@ def registrar_pagos_gastos_lote(request):
                 monto = saldo
 
         # Situación según proveedor en Titularidad. En lote: pagos directos
-        # (saldados) salvo que se tilde "cliente me pagó, no pagué al ente".
+        # (saldados) salvo que se tilde "cliente me pagó, no pagué al organismo".
         if ficha.vendedor_id:
             pertenece, situacion = "proveedor", "prov_directo"
         elif mantiene_deuda:
@@ -1404,7 +1404,7 @@ def registrar_pagos_gastos_lote(request):
             )
             MovimientoCuenta.objects.create(
                 cuenta=cuenta, vehiculo=vehiculo,
-                descripcion=f"Pago del cliente por {label} (pendiente de pagar al ente) {marca}",
+                descripcion=f"Pago del cliente por {label} (pendiente de pagar al organismo) {marca}",
                 tipo="haber", monto=monto, origen="manual",
             )
             pago.movimiento_cuenta_id = mov_debe.pk
@@ -1435,7 +1435,7 @@ def registrar_pagos_gastos_lote(request):
 def agregar_gasto_a_agenda(request, pago_id):
     """
     Crea un PagoFuturo (Agenda de Pagos) por un gasto en situación 2
-    (cliente me pagó, todavía no pagué al ente). Solo por POST (confirmación).
+    (cliente me pagó, todavía no pagué al organismo). Solo por POST (confirmación).
     Guarda la referencia para poder revertir.
     """
     pago = get_object_or_404(PagoGastoIngreso, id=pago_id)
@@ -1454,7 +1454,7 @@ def agregar_gasto_a_agenda(request, pago_id):
 
     label = CONCEPTOS_GASTO.get(pago.concepto, pago.concepto)
     veh = pago.vehiculo
-    ente = pago.ente or "ente"
+    ente = pago.ente or "organismo"
 
     pf = PagoFuturo.objects.create(
         descripcion=f"Gasto de ingreso {label} – {veh} (pagar a {ente})",
@@ -1463,7 +1463,7 @@ def agregar_gasto_a_agenda(request, pago_id):
         destino="control_gastos",
         observaciones=(
             f"Origen: vehículo #{veh.id} {veh} ({veh.dominio or 's/dominio'}). "
-            f"Cobrado al cliente, pendiente de pagar al ente {ente}."
+            f"Cobrado al cliente, pendiente de pagar al organismo {ente}."
         ),
         creado_por=request.user if request.user.is_authenticated else None,
     )

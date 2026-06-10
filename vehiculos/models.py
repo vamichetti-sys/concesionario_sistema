@@ -354,7 +354,7 @@ class FichaVehicular(models.Model):
         # El saldo de la ficha es la deuda del vehículo CON EL ENTE. Solo lo
         # reducen los pagos en los que el ente quedó efectivamente pagado
         # (prov_directo, cli_directo, cli_adelanto, prov_reintegro). Los que
-        # quedan "cli_concesion" (cliente me pagó, no pagué al ente) o
+        # quedan "cli_concesion" (cliente me pagó, no pagué al organismo) o
         # "pendiente" NO saldan el gasto con el ente.
         PagoGasto = apps.get_model("vehiculos", "PagoGastoIngreso")
         total = (
@@ -486,11 +486,11 @@ class PagoGastoIngreso(models.Model):
     #   Cliente:    1) cli_directo    2) cli_concesion
     #               3) cli_adelanto   4) pendiente
     SITUACION = [
-        ("prov_directo",   "Proveedor pagó directo al ente (saldado)"),
+        ("prov_directo",   "Proveedor pagó directo al organismo (saldado)"),
         ("prov_reintegro", "Lo pagué yo, el proveedor me reintegra"),
-        ("cli_directo",    "Cliente pagó directo al ente (saldado)"),
-        ("cli_concesion",  "Cliente me pagó, todavía no pagué al ente"),
-        ("cli_adelanto",   "Adelanté yo al ente, el cliente me debe"),
+        ("cli_directo",    "Cliente pagó directo al organismo (saldado)"),
+        ("cli_concesion",  "Cliente me pagó, todavía no pagué al organismo"),
+        ("cli_adelanto",   "Adelanté yo al organismo, el cliente me debe"),
         ("pendiente",      "Nadie pagó todavía"),
     ]
     situacion = models.CharField(max_length=20, choices=SITUACION, default="pendiente")
