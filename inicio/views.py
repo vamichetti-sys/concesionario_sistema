@@ -394,6 +394,14 @@ def inicio(request):
         })
         return render(request, "inicio/inicio_namichetti.html", context)
 
+    # ==========================================================
+    # 🪟 DASHBOARD PARA ESTUDIO.OB (solo módulos autorizados + recordatorios)
+    # ==========================================================
+    if request.user.username.lower() == "estudio.ob":
+        from permisos.access import items_visibles
+        context["modulos_autorizados"] = items_visibles(request.user)
+        return render(request, "inicio/inicio_estudio.html", context)
+
     return render(request, "inicio/inicio.html", context)
 
 

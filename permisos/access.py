@@ -146,3 +146,27 @@ def grupos_menu(user):
     for mod in MODULOS:
         out[mod["clave"]] = any(it["clave"] in permitidas for it in mod["items"])
     return out
+
+
+def items_visibles(user):
+    """
+    Módulos/ítems que el usuario tiene autorizados, agrupados, para armar un
+    dashboard de accesos. Devuelve:
+      [{"clave","etiqueta","items":[{"clave","etiqueta","url"}, ...]}, ...]
+    Respeta el mismo criterio que el menú (admin ve todo).
+    """
+    permitidas = claves_de_usuario(user)
+    grupos = []
+    for mod in MODULOS:
+        items = [
+            {"clave": it["clave"], "etiqueta": it["etiqueta"], "url": it["url"]}
+            for it in mod["items"]
+            if it["clave"] in permitidas
+        ]
+        if items:
+            grupos.append({
+                "clave": mod["clave"],
+                "etiqueta": mod["etiqueta"],
+                "items": items,
+            })
+    return grupos
