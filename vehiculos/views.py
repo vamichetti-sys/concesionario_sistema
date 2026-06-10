@@ -1428,6 +1428,56 @@ def registrar_pagos_gastos_lote(request):
 
 
 # ==========================================================
+# AGREGAR GASTO IMPAGO (situación 2) A AGENDA DE PAGOS — con confirmación
+# ==========================================================
+@login_required
+@transaction.atomic
+def agregar_gasto_a_agenda(request, pago_id):
+    """
+    Crea un PagoFuturo (Agenda de Pagos) por un gasto en situación 2
+    (cliente me pagó, todavía no pagué al ente). Solo por POST (confirmación).
+    Guarda la referencia para poder revertir.
+    """
+    pago = get_object_or_404(PagoGastoIngreso, id=pago_id)
+    if request.method != "POST":
+        return redirect("vehiculos:ficha_completa", vehiculo_id=pago.vehiculo_id)
+
+    if pago.situacion != "cli_concesion":
+        messages.error(request, "Este pago no corresponde a una deuda impaga por concesionario.")
+        return redirect("vehiculos:ficha_completa", vehiculo_id=pago.vehiculo_id)
+
+    if pago.pago_futuro_id:
+        messages.info(request, "Este gasto ya está en la Agenda de Pagos.")
+        return redirect("vehiculos:ficha_completa", vehiculo_id=pago.vehiculo_id)
+
+    from agenda_pagos.models import PagoFuturo
+
+    label = CONCEPTOS_GASTO.get(pago.concepto, pago.concepto)
+    veh = pago.vehiculo
+    ente = pago.ente or "ente"
+
+    pf = PagoFuturo.objects.create(
+        descripcion=f"Gasto de ingreso {label} – {veh} (pagar a {ente})",
+        monto=pago.monto,
+        fecha_vencimiento=pago.fecha_pago,
+        destino="control_gastos",
+        observaciones=(
+            f"Origen: vehículo #{veh.id} {veh} ({veh.dominio or 's/dominio'}). "
+            f"Cobrado al cliente, pendiente de pagar al ente {ente}."
+        ),
+        creado_por=request.user if request.user.is_authenticated else None,
+    )
+    pago.pago_futuro_id = pf.pk
+    pago.save(update_fields=["pago_futuro_id"])
+
+    messages.success(
+        request,
+        f"«{label}» agregado a la Agenda de Pagos (vence {pago.fecha_pago:%d/%m/%Y})."
+    )
+    return redirect("vehiculos:ficha_completa", vehiculo_id=pago.vehiculo_id)
+
+
+# ==========================================================
 # ELIMINAR PAGO DE GASTO DE INGRESO
 # ==========================================================
 @login_required

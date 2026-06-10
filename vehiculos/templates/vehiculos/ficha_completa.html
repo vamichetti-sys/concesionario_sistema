@@ -506,7 +506,7 @@
 <!-- ===============================
      PAGO DE GASTOS
 =============================== -->
-<div class="card p-4 mb-4">
+<div class="card p-4 mb-4" id="pago-gastos">
     <div class="d-flex align-items-center justify-content-between gap-2 mb-4 flex-wrap">
         <div class="d-flex align-items-center gap-2">
             <i data-lucide="credit-card" style="width:20px;height:20px;color:#10b981;"></i>
@@ -684,11 +684,33 @@
                             <td class="text-end text-success">${{ pago.monto }}</td>
                             <td>
                                 {{ pago.observaciones|default:"-" }}
-                                {% if pago.mantiene_deuda_vehiculo %}
-                                <span class="badge bg-warning text-dark ms-1" title="Cobrado al cliente, no pagado al ente">deuda del vehículo</span>
+                                {% if pago.situacion == "cli_concesion" %}
+                                <span class="badge bg-warning text-dark ms-1" title="Cobrado al cliente, todavía no pagado al ente">impaga por concesionario</span>
+                                {% elif pago.situacion == "cli_adelanto" %}
+                                <span class="badge bg-info text-dark ms-1">el cliente me debe</span>
+                                {% elif pago.situacion == "prov_reintegro" %}
+                                <span class="badge bg-info text-dark ms-1">el proveedor me reintegra</span>
+                                {% elif pago.saldado %}
+                                <span class="badge bg-success ms-1">saldado</span>
                                 {% endif %}
+                                {% if pago.ente %}<small class="text-muted d-block">Ente: {{ pago.ente }}</small>{% endif %}
                             </td>
                             <td class="text-end">
+                                {% if pago.situacion == "cli_concesion" %}
+                                    {% if pago.pago_futuro_id %}
+                                    <span class="badge bg-secondary" title="Ya está en Agenda de Pagos">
+                                        <i data-lucide="check" style="width:12px;height:12px;"></i> En Agenda
+                                    </span>
+                                    {% else %}
+                                    <form method="post" action="{% url 'vehiculos:agregar_gasto_a_agenda' pago.id %}" style="display:inline;"
+                                          onsubmit="return confirm('¿Agregar este gasto a la Agenda de Pagos para pagarle al ente?');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-outline-warning btn-sm" title="Agregar a Agenda de Pagos">
+                                            <i data-lucide="calendar-plus" style="width:13px;height:13px;margin-right:3px;"></i> Agenda
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                {% endif %}
                                 <form method="post" action="{% url 'vehiculos:eliminar_pago_gasto' pago.id %}" style="display:inline;" onsubmit="return confirm('¿Eliminar este pago de ${{ pago.monto }}?');">
                                     {% csrf_token %}
                                     <button type="submit" class="btn btn-outline-danger btn-sm" title="Eliminar pago">

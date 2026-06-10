@@ -139,3 +139,93 @@ def pdf_listado_deudas(request):
         totales=totales if filas else None,
         pie=f"Generado el {date.today().strftime('%d/%m/%Y')}",
     )
+
+# ==========================================================
+# DEUDAS POR SITUACIÓN DE GASTOS DE INGRESO (solo lectura)
+# Solapas: impagas por concesionario / clientes me deben /
+#          proveedores me deben / saldadas.
+# La gestión del pago se hace SOLO en la ficha del vehículo.
+# ==========================================================
+@login_required
+def deudas_situacion(request):
+    from decimal import Decimal
+    from compraventa.models import ReintegroProveedor
+
+    CONCEPTOS = {
+        "f08": "Formulario 08", "informes": "Informes", "patentes": "Patentes",
+        "infracciones": "Infracciones", "verificacion": "Verificación",
+        "autopartes": "Autopartes", "vtv": "VTV", "r541": "R541", "firmas": "Firmas",
+    }
+
+    tab = request.GET.get("tab", "impagas")
+    if tab not in ("impagas", "clientes", "proveedores", "saldadas"):
+        tab = "impagas"
+
+    filas = []
+    total = Decimal("0")
+
+    if tab == "proveedores":
+        qs = (
+            ReintegroProveedor.objects
+            .filter(estado="pendiente")
+            .select_related("proveedor", "vehiculo")
+            .order_by("-creado")
+        )
+        for r in qs:
+            filas.append({
+                "vehiculo": r.vehiculo,
+                "estado_vehiculo": r.vehiculo.get_estado_display() if r.vehiculo_id else "—",
+                "proveedor": r.proveedor.nombre_empresa if r.proveedor_id else "—",
+                "concepto": CONCEPTOS.get(r.concepto, r.concepto),
+                "ente": r.ente or "—",
+                "monto": r.monto,
+                "estado": "Pendiente de reintegro",
+            })
+            total += r.monto or Decimal("0")
+    else:
+        if tab == "impagas":
+            situaciones = ["cli_concesion"]
+            filtro = {"saldado": False}
+        elif tab == "clientes":
+            situaciones = ["cli_adelanto"]
+            filtro = {"saldado": False}
+        else:  # saldadas
+            situaciones = ["prov_directo", "cli_directo", "prov_reintegro", "cli_adelanto", "cli_concesion"]
+            filtro = {"saldado": True}
+
+        qs = (
+            PagoGastoIngreso.objects
+            .filter(situacion__in=situaciones, **filtro)
+            .select_related("vehiculo")
+            .order_by("-fecha_pago")
+        )
+        for p in qs:
+            filas.append({
+                "pago": p,
+                "vehiculo": p.vehiculo,
+                "estado_vehiculo": p.vehiculo.get_estado_display() if p.vehiculo_id else "—",
+                "concepto": CONCEPTOS.get(p.concepto, p.concepto),
+                "ente": p.ente or "—",
+                "monto": p.monto,
+                "estado": p.get_situacion_display(),
+                "en_agenda": bool(p.pago_futuro_id),
+            })
+            if tab != "saldadas":
+                total += p.monto or Decimal("0")
+
+    # Contadores para los badges de las solapas
+    base = PagoGastoIngreso.objects
+    counts = {
+        "impagas": base.filter(situacion="cli_concesion", saldado=False).count(),
+        "clientes": base.filter(situacion="cli_adelanto", saldado=False).count(),
+        "proveedores": ReintegroProveedor.objects.filter(estado="pendiente").count(),
+        "saldadas": base.filter(saldado=True).count(),
+    }
+
+    return render(request, "deudas/situacion.html", {
+        "tab": tab,
+        "filas": filas,
+        "total": total,
+        "counts": counts,
+        "page_title": "Deudas",
+    })

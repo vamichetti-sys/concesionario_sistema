@@ -14,4 +14,9 @@ urlpatterns = [
         views.pdf_listado_deudas,
         name="pdf_listado"
     ),
+    path(
+        "situacion/",
+        views.deudas_situacion,
+        name="situacion"
+    ),
 ]

@@ -144,6 +144,11 @@ urlpatterns = [
         name="eliminar_pago_gasto"
     ),
     path(
+        "pago-gasto/agenda/<int:pago_id>/",
+        views.agregar_gasto_a_agenda,
+        name="agregar_gasto_a_agenda"
+    ),
+    path(
         "pagos-gastos-lote/",
         views.registrar_pagos_gastos_lote,
         name="registrar_pagos_gastos_lote"
