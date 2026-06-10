@@ -32,10 +32,23 @@ class Cheque(models.Model):
     # Si fue endosado
     fecha_endoso = models.DateField('Fecha de endoso', null=True, blank=True)
     destinatario_endoso = models.CharField('Destinatario del endoso', max_length=255, blank=True)
-    
+
+    # Vínculo al cobro que este cheque saldó (cuenta corriente). Sirve para
+    # poder REVERTIR el cobro si el cheque se rechaza. Es 1 cheque ↔ 1 Pago.
+    # Los cheques de un plan de pago tipo cheques quedan con cobro=None
+    # (todavía no generaron cobro real).
+    cobro = models.ForeignKey(
+        "cuentas.Pago",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="cheques_cobro",
+        verbose_name="Cobro que saldó",
+    )
+
     # Observaciones
     observaciones = models.TextField('Observaciones', blank=True)
-    
+
     # Auditoría
     creado_por = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
@@ -99,11 +112,13 @@ class Cheque(models.Model):
     @classmethod
     def crear_desde_cobro(cls, *, cliente, monto, fecha_deposito=None,
                           banco_emision="", numero_cheque="", titular_cheque="",
-                          nro_factura="", creado_por=None, observaciones=""):
+                          nro_factura="", creado_por=None, observaciones="",
+                          cobro=None):
         """
         Crea un cheque 'a depositar' a partir de un cobro (cuenta corriente
         o reventa) pagado con cheque. Queda disponible automáticamente en
-        Gestión de Cheques.
+        Gestión de Cheques. `cobro` es el cuentas.Pago que este cheque saldó
+        (para poder revertirlo si se rechaza).
         """
         return cls.objects.create(
             cliente=(cliente or "").strip() or "Sin nombre",
@@ -116,4 +131,44 @@ class Cheque(models.Model):
             estado="a_depositar",
             creado_por=creado_por,
             observaciones=observaciones or "",
+            cobro=cobro,
         )
+
+    def registrar_movimiento(self, estado_nuevo, usuario=None, destinatario="", detalle=""):
+        """Deja asentado en el historial un cambio de estado del cheque."""
+        return MovimientoCheque.objects.create(
+            cheque=self,
+            estado_nuevo=estado_nuevo,
+            destinatario=destinatario or "",
+            detalle=detalle or "",
+            usuario=usuario if (usuario and usuario.is_authenticated) else None,
+        )
+
+
+# ==========================================================
+# HISTORIAL / MOVIMIENTOS DEL CHEQUE
+# ==========================================================
+class MovimientoCheque(models.Model):
+    """
+    Un registro por cada cambio de estado del cheque (depósito, endoso,
+    rechazo, etc.). Permite ver el ciclo de vida completo, no solo el
+    estado actual.
+    """
+    cheque = models.ForeignKey(
+        Cheque,
+        on_delete=models.CASCADE,
+        related_name="movimientos",
+    )
+    fecha = models.DateTimeField(auto_now_add=True)
+    estado_nuevo = models.CharField(max_length=20, choices=Cheque.ESTADO_CHOICES)
+    destinatario = models.CharField('Destinatario (endoso)', max_length=255, blank=True)
+    detalle = models.CharField('Detalle', max_length=255, blank=True)
+    usuario = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+
+    class Meta:
+        ordering = ['-fecha']
+        verbose_name = 'Movimiento de cheque'
+        verbose_name_plural = 'Movimientos de cheques'
+
+    def __str__(self):
+        return f"{self.cheque} → {self.get_estado_nuevo_display()} ({self.fecha:%d/%m/%Y})"
