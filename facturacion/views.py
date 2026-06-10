@@ -835,13 +835,18 @@ def posicion_iva(request):
 
     saldo_iva = iva_debito - iva_credito
 
-    # IVA a favor acumulado de meses anteriores
+    # IVA a favor acumulado de TODOS los períodos anteriores (cruza el año:
+    # el saldo a favor técnico se arrastra indefinidamente, incluso de
+    # diciembre a enero del año siguiente). Tomamos todo lo anterior al primer
+    # día del período consultado.
+    primer_dia_periodo = date(anio, mes, 1)
+
     iva_debito_anterior = FacturaRegistrada.objects.filter(
-        estado="valida", fecha__year=anio, fecha__month__lt=mes,
+        estado="valida", fecha__lt=primer_dia_periodo,
     ).aggregate(t=Sum("monto_iva"))["t"] or Decimal("0")
 
     iva_credito_anterior = CompraRegistrada.objects.filter(
-        fecha__year=anio, fecha__month__lt=mes,
+        fecha__lt=primer_dia_periodo,
     ).aggregate(t=Sum("monto_iva"))["t"] or Decimal("0")
 
     saldo_anterior = iva_debito_anterior - iva_credito_anterior
