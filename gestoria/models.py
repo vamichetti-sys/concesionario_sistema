@@ -1,4 +1,6 @@
-from django.db import models
+from decimal import Decimal
+
+from django.db import models, transaction
 from django.utils import timezone
 
 from ventas.models import Venta
@@ -86,6 +88,17 @@ class Gestoria(models.Model):
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_finalizacion = models.DateTimeField(null=True, blank=True)
 
+    # Vínculo al gasto (debe) que esta gestoría creó en la cuenta corriente,
+    # para poder ACTUALIZARLO si cambia el monto y REVERTIRLO si se elimina.
+    movimiento_transferencia = models.ForeignKey(
+        "cuentas.MovimientoCuenta",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+        verbose_name="Gasto de transferencia en cuenta",
+    )
+
     # ======================================================
     # 🗂️ CAMPOS DE FICHA DE GESTORÍA
     # ======================================================
@@ -168,13 +181,33 @@ class Gestoria(models.Model):
     # ======================================================
     # ⚙️ AUTOMATIZACIÓN CONTABLE (SEGURA)
     # ======================================================
+    def _movimiento_transferencia(self, cuenta):
+        """
+        Devuelve el MovimientoCuenta (debe) de esta gestoría. Usa el FK; si no
+        está enlazado (gestorías viejas), adopta el debe de gestoría existente
+        del mismo vehículo y lo deja enlazado.
+        """
+        mov = self.movimiento_transferencia
+        if mov is not None:
+            return mov
+        return (
+            MovimientoCuenta.objects.filter(
+                cuenta=cuenta, origen="gestoria", tipo="debe", vehiculo=self.vehiculo
+            )
+            .order_by("id")
+            .first()
+        )
+
     def sincronizar_gasto_en_cuenta(self):
         """
-        Imputa el gasto de gestoría UNA SOLA VEZ por venta.
-        Si el monto cambia, NO duplica ni reimputa automáticamente.
+        CREAR / ACTUALIZAR / BORRAR el gasto (debe) de la transferencia en la
+        cuenta corriente, de forma centralizada y atómica:
+          - monto > 0 y sin movimiento  → crea y enlaza el FK
+          - monto > 0 y con movimiento  → actualiza el monto del existente
+          - monto <= 0 y con movimiento → borra el movimiento
+        Siempre recalcula el saldo. Nunca duplica.
         """
-
-        if not self.venta:
+        if not self.venta_id:
             return
 
         try:
@@ -182,28 +215,65 @@ class Gestoria(models.Model):
         except CuentaCorriente.DoesNotExist:
             return
 
-        if self.monto_transferencia <= 0:
+        monto = self.monto_transferencia or Decimal("0")
+        desc = f"Gestoría – Transferencia {self.vehiculo}"
+
+        with transaction.atomic():
+            mov = self._movimiento_transferencia(cuenta)
+            nuevo_id = None
+
+            if monto > 0:
+                if mov is None:
+                    mov = MovimientoCuenta.objects.create(
+                        cuenta=cuenta,
+                        descripcion=desc,
+                        tipo="debe",
+                        monto=monto,
+                        origen="gestoria",
+                        vehiculo=self.vehiculo,
+                    )
+                else:
+                    campos = []
+                    if mov.monto != monto:
+                        mov.monto = monto
+                        campos.append("monto")
+                    if mov.descripcion != desc:
+                        mov.descripcion = desc
+                        campos.append("descripcion")
+                    if campos:
+                        mov.save(update_fields=campos)
+                nuevo_id = mov.pk
+            else:
+                # monto 0: el gasto no corresponde → se borra si existía
+                if mov is not None:
+                    mov.delete()
+
+            # Guardar la referencia SIN re-disparar save() (evita recursión)
+            if self.movimiento_transferencia_id != nuevo_id:
+                self.movimiento_transferencia_id = nuevo_id
+                type(self).objects.filter(pk=self.pk).update(
+                    movimiento_transferencia=nuevo_id
+                )
+
+            cuenta.recalcular_saldo()
+
+    def revertir_gasto_en_cuenta(self):
+        """Borra el gasto de transferencia en la cuenta y recalcula el saldo."""
+        if not self.venta_id:
             return
-
-        existe = MovimientoCuenta.objects.filter(
-            cuenta=cuenta,
-            origen='gestoria',
-            vehiculo=self.vehiculo
-        ).exists()
-
-        if existe:
+        try:
+            cuenta = self.venta.cuenta_corriente
+        except CuentaCorriente.DoesNotExist:
             return
-
-        MovimientoCuenta.objects.create(
-            cuenta=cuenta,
-            descripcion=f"Gestoría – Transferencia {self.vehiculo}",
-            tipo='debe',
-            monto=self.monto_transferencia,
-            origen='gestoria',
-            vehiculo=self.vehiculo
-        )
-
-        cuenta.recalcular_saldo()
+        with transaction.atomic():
+            mov = self._movimiento_transferencia(cuenta)
+            if mov is not None:
+                mov.delete()
+                self.movimiento_transferencia_id = None
+                type(self).objects.filter(pk=self.pk).update(
+                    movimiento_transferencia=None
+                )
+                cuenta.recalcular_saldo()
 
     # ======================================================
     # 🔁 HOOK AUTOMÁTICO
@@ -211,6 +281,11 @@ class Gestoria(models.Model):
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
         self.sincronizar_gasto_en_cuenta()
+
+    def delete(self, *args, **kwargs):
+        # Al eliminar/revertir la gestoría, se revierte su gasto en la cuenta.
+        self.revertir_gasto_en_cuenta()
+        return super().delete(*args, **kwargs)
 
     # ======================================================
     # 🆕 HELPERS PARA REPORTE WEB (NO ROMPEN NADA)
