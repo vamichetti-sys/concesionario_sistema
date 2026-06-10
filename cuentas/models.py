@@ -234,7 +234,8 @@ class CuentaCorriente(models.Model):
     def _vehiculos_para_gastos(self):
         """
         Devuelve TODOS los vehículos de permuta vinculados a la cuenta.
-        Los gastos del vehículo vendido los paga la concesionaria, no el cliente.
+        Los gastos de ingreso de esos usados los paga el CLIENTE, así que entran
+        en su deuda (se suman en deuda_total_real / deuda_total_inicial).
         """
         from vehiculos.models import Vehiculo
         return (
@@ -289,12 +290,19 @@ class CuentaCorriente(models.Model):
             # Gastos extra / ajustes manuales debe (bruto)
             total += self._suma_mov(movs, origenes=["manual", "ajuste"], tipos=["debe", "deuda"])
         else:
-            # Sin plan: TODOS los cargos (debe) excepto permuta.
+            # Sin plan: TODOS los cargos (debe) excepto permuta (marcadores).
             # (espejo del saldo sin plan, que es debe − haber excepto permuta)
             total += self._suma_mov(movs, excl_origen="permuta", tipos=["debe", "deuda"])
 
-        # Los gastos de ingreso NO son deuda del cliente (los paga la
-        # concesionaria); se administran en la ficha del vehículo.
+        # Gastos de ingreso de permuta (montos BRUTOS, espejo de deuda_total_real,
+        # para que: total_pagado_real = inicial − real).
+        for vehiculo in self._vehiculos_para_gastos():
+            try:
+                for _, monto in vehiculo.ficha.mapa_gastos_ingreso().items():
+                    if monto:
+                        total += Decimal(monto)
+            except Exception:
+                pass
 
         return total
 
@@ -337,15 +345,22 @@ class CuentaCorriente(models.Model):
                 total += man_pendiente
         else:
             # Sin plan: el saldo (debe − haber) representa la deuda.
-            # Los movimientos de permuta (gastos de ingreso) NO son deuda del
-            # cliente —los paga la concesionaria—, por eso se excluyen.
+            # Los movimientos 'permuta' son solo MARCADORES del usado vinculado;
+            # el monto real de sus gastos se suma aparte (vía la ficha, abajo),
+            # por eso se excluyen acá para NO contar dos veces.
             debe = self._suma_mov(movs, excl_origen="permuta", tipos=["debe", "deuda"])
             haber = self._suma_mov(movs, excl_origen="permuta", tipos=["haber", "pago"])
             total += max(debe - haber, Decimal("0"))
 
-        # Los gastos de ingreso del vehículo NO forman parte de la deuda del
-        # cliente: son un costo de la concesionaria y se administran en la
-        # ficha del vehículo, no en la cuenta corriente.
+        # Gastos de ingreso del/los vehículo(s) de permuta: los paga el CLIENTE,
+        # así que son deuda suya y entran en la cuenta corriente. Se calculan
+        # desde la ficha (saldo pendiente = gasto − pagos registrados), por eso
+        # bajan solos a medida que se registran pagos en "Pago de gastos".
+        for vehiculo in self._vehiculos_para_gastos():
+            try:
+                total += vehiculo.ficha.saldo_total_gastos()
+            except Exception:
+                pass
 
         return total
 
