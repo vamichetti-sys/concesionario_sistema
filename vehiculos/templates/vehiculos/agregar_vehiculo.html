@@ -79,6 +79,15 @@
                 {{ form.fecha_ingreso }}
                 <small class="text-muted">Se completa con hoy; podés cambiarla.</small>
             </div>
+            <div class="col-md-6 d-flex align-items-end">
+                <div class="form-check p-2" style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;width:100%;">
+                    {{ form.es_0km }}
+                    <label class="form-check-label" for="{{ form.es_0km.id_for_label }}">
+                        <strong>¿Es 0km?</strong>
+                        <small class="text-muted d-block">Un 0km no tiene gastos de ingreso.</small>
+                    </label>
+                </div>
+            </div>
         </div>
 
         <hr class="my-4">

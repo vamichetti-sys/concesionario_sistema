@@ -61,6 +61,7 @@ class VehiculoBasicoForm(CarpetaUnicaMixin, forms.ModelForm):
             'estado',
             'numero_carpeta',
             'fecha_ingreso',
+            'es_0km',
         ]
 
         labels = {
@@ -74,6 +75,7 @@ class VehiculoBasicoForm(CarpetaUnicaMixin, forms.ModelForm):
             'estado': 'Estado',
             'numero_carpeta': 'Número de carpeta',
             'fecha_ingreso': 'Fecha de ingreso',
+            'es_0km': '¿Es 0km?',
         }
 
         widgets = {
@@ -91,6 +93,7 @@ class VehiculoBasicoForm(CarpetaUnicaMixin, forms.ModelForm):
             'fecha_ingreso': forms.DateInput(
                 attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'
             ),
+            'es_0km': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
 
@@ -111,10 +114,12 @@ class VehiculoForm(CarpetaUnicaMixin, forms.ModelForm):
             'estado',
             'numero_carpeta',
             'fecha_ingreso',
+            'es_0km',
         ]
 
         labels = {
             'fecha_ingreso': 'Fecha de ingreso',
+            'es_0km': '¿Es 0km?',
         }
 
         widgets = {
@@ -130,6 +135,7 @@ class VehiculoForm(CarpetaUnicaMixin, forms.ModelForm):
             'fecha_ingreso': forms.DateInput(
                 attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'
             ),
+            'es_0km': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
 
