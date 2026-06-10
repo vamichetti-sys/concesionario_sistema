@@ -465,7 +465,8 @@ def ficha_vehicular_ajax(request, vehiculo_id):
         total_pagado = (
             PagoGastoIngreso.objects.filter(
                 vehiculo=vehiculo,
-                concepto=key
+                concepto=key,
+                situacion__in=["prov_directo", "cli_directo", "cli_adelanto", "prov_reintegro"],
             ).aggregate(total=Sum("monto"))["total"]
             or Decimal("0")
         )
@@ -482,6 +483,7 @@ def ficha_vehicular_ajax(request, vehiculo_id):
             "monto": monto,
             "total_pagado": total_pagado,
             "saldo": saldo,
+            "ente_sugerido": ENTE_SUGERIDO.get(key, ""),
         })
 
     total_pendiente = sum(
@@ -532,6 +534,7 @@ def ficha_vehicular_ajax(request, vehiculo_id):
             "ficha_tecnica_form": ficha_tecnica_form,
             "mantenimientos": vehiculo.mantenimientos.all(),
             "clientes_titular": _clientes_para_titular(),
+            "tiene_proveedor": ficha.vendedor_id is not None,
         },
         request=request,
     )
@@ -740,27 +743,27 @@ def ficha_completa(request, vehiculo_id):
         if monto <= 0:
             continue
 
-        # Saldo del vehículo: solo los pagos que SALDAN la ficha. Los pagos
-        # cobrados al cliente pero no pagados al ente (mantiene_deuda_vehiculo)
-        # NO bajan el saldo: el gasto sigue como deuda del vehículo.
+        # Saldo del vehículo = deuda con el ENTE. Solo lo bajan los pagos en
+        # los que el ente quedó pagado (prov_directo, cli_directo, cli_adelanto,
+        # prov_reintegro).
         total_pagado = (
             PagoGastoIngreso.objects.filter(
                 vehiculo=vehiculo,
                 concepto=key,
-                mantiene_deuda_vehiculo=False,
+                situacion__in=["prov_directo", "cli_directo", "cli_adelanto", "prov_reintegro"],
             ).aggregate(total=Sum("monto"))["total"]
             or Decimal("0")
         )
 
         saldo = monto - Decimal(total_pagado)
 
-        # Cobrado al cliente que NO salda la ficha (sigue como deuda del
-        # vehículo). Se muestra como informativo: el pago quedó registrado.
+        # Cobrado al cliente pero todavía no pagado al ente (situación 2):
+        # impaga por concesionario. Se muestra como informativo.
         cobrado_informativo = (
             PagoGastoIngreso.objects.filter(
                 vehiculo=vehiculo,
                 concepto=key,
-                mantiene_deuda_vehiculo=True,
+                situacion="cli_concesion",
             ).aggregate(total=Sum("monto"))["total"]
             or Decimal("0")
         )
@@ -783,6 +786,7 @@ def ficha_completa(request, vehiculo_id):
             "saldo": saldo,
             "pagos": pagos,
             "esta_pagado": esta_pagado,
+            "ente_sugerido": ENTE_SUGERIDO.get(key, ""),
         })
 
     total_pendiente = sum(
@@ -838,6 +842,7 @@ def ficha_completa(request, vehiculo_id):
             "total_extras": total_extras,
             "ficha_tecnica_form": ficha_tecnica_form,
             "clientes_titular": _clientes_para_titular(),
+            "tiene_proveedor": ficha.vendedor_id is not None,
         },
     )
 
@@ -1096,39 +1101,66 @@ def gastos_adeudados_pdf(request, vehiculo_id):
 from cuentas.models import MovimientoCuenta
 
 
+CONCEPTOS_GASTO = {
+    "f08": "Formulario 08",
+    "informes": "Informes",
+    "patentes": "Patentes",
+    "infracciones": "Infracciones",
+    "verificacion": "Verificación",
+    "autopartes": "Autopartes",
+    "vtv": "VTV",
+    "r541": "R541",
+    "firmas": "Firmas",
+}
+
+# Sugerencia inicial del ente según el concepto (editable por el usuario).
+ENTE_SUGERIDO = {
+    "f08": "Registro",
+    "informes": "Registro",
+    "patentes": "Patentes / Rentas",
+    "infracciones": "Infracciones",
+    "verificacion": "Verificación policial",
+    "autopartes": "Grabado de autopartes",
+    "vtv": "VTV",
+    "r541": "R-541",
+    "firmas": "Escribanía",
+}
+
+# Situaciones en las que el ENTE quedó efectivamente pagado (el gasto deja de
+# ser deuda del vehículo con el ente). En cli_concesion y pendiente el ente
+# todavía NO está pagado.
+SITUACIONES_ENTE_PAGADO = {"prov_directo", "cli_directo", "cli_adelanto", "prov_reintegro"}
+
+# Situaciones donde el circuito queda totalmente cerrado al registrar el pago.
+SITUACIONES_SALDADAS = {"prov_directo", "cli_directo"}
+
+SITUACIONES_PROVEEDOR = {"prov_directo", "prov_reintegro"}
+SITUACIONES_CLIENTE = {"cli_directo", "cli_concesion", "cli_adelanto", "pendiente"}
+
+
 @csrf_exempt
 @transaction.atomic
 def registrar_pago_gasto(request):
-
-    print(">>> ENTRÓ A registrar_pago_gasto")
-    print(">>> METHOD:", request.method)
-    print(">>> POST:", dict(request.POST))
-
     if request.method != "POST":
         return redirect("vehiculos:inicio")
+
+    from compraventa.models import ReintegroProveedor
 
     vehiculo_id = request.POST.get("vehiculo_id")
     concepto_key = (request.POST.get("gasto_id") or "").strip()
     fecha_pago = request.POST.get("fecha_pago")
     monto_raw = request.POST.get("monto")
-    observaciones = request.POST.get("observaciones")
-    # El cliente pagó pero todavía no se le pagó al ente: el gasto sigue
-    # figurando como deuda del vehículo en la ficha (no salda el saldo).
-    mantiene_deuda = request.POST.get("mantiene_deuda") == "1"
+    observaciones = request.POST.get("observaciones") or ""
+    situacion = (request.POST.get("situacion") or "").strip()
+    ente = (request.POST.get("ente") or "").strip()
 
-    print(">>> DATOS RECIBIDOS:", vehiculo_id, concepto_key, fecha_pago, monto_raw)
-
-    # ===============================
-    # VALIDACIONES BÁSICAS
-    # ===============================
+    # ── Validaciones básicas ──
     if not vehiculo_id:
         messages.error(request, "Vehículo inválido.")
         return redirect(request.META.get("HTTP_REFERER"))
-
     if not monto_raw:
         messages.error(request, "El monto del pago debe ser mayor a 0.")
         return redirect(request.META.get("HTTP_REFERER"))
-
     if not fecha_pago:
         messages.error(request, "Para registrar un pago es obligatorio ingresar la fecha.")
         return redirect(request.META.get("HTTP_REFERER"))
@@ -1136,98 +1168,125 @@ def registrar_pago_gasto(request):
     vehiculo = get_object_or_404(Vehiculo, id=vehiculo_id)
     ficha = vehiculo.ficha
 
-    # ===============================
-    # CONCEPTOS CANÓNICOS
-    # ===============================
-    CONCEPTOS = {
-        "f08": "Formulario 08",
-        "informes": "Informes",
-        "patentes": "Patentes",
-        "infracciones": "Infracciones",
-        "verificacion": "Verificación",
-        "autopartes": "Autopartes",
-        "vtv": "VTV",
-        "r541": "R541",
-        "firmas": "Firmas",
-    }
-
-    if concepto_key not in CONCEPTOS:
+    if concepto_key not in CONCEPTOS_GASTO:
         messages.error(request, "Concepto de gasto inválido.")
         return redirect(request.META.get("HTTP_REFERER"))
 
-    # ===============================
-    # CALCULAR SALDO REAL
-    # ===============================
-    mapa_gastos = {
-        "f08": ficha.gasto_f08,
-        "informes": ficha.gasto_informes,
-        "patentes": ficha.gasto_patentes,
-        "infracciones": ficha.gasto_infracciones,
-        "verificacion": ficha.gasto_verificacion,
-        "autopartes": ficha.gasto_autopartes,
-        "vtv": ficha.gasto_vtv,
-        "r541": ficha.gasto_r541,
-        "firmas": ficha.gasto_firmas,
-    }
+    try:
+        monto = Decimal(str(monto_raw).replace(",", "."))
+    except (ValueError, InvalidOperation):
+        messages.error(request, "Monto inválido.")
+        return redirect(request.META.get("HTTP_REFERER"))
+    if monto <= 0:
+        messages.error(request, "El monto del pago debe ser mayor a 0.")
+        return redirect(request.META.get("HTTP_REFERER"))
 
-    monto_gasto = mapa_gastos.get(concepto_key) or Decimal("0")
+    # ── Interruptor: ¿de quién es el gasto? Lo decide el proveedor (Titularidad) ──
+    proveedor = ficha.vendedor   # compraventa.Proveedor o None
+    pertenece = "proveedor" if proveedor_id_de(ficha) else "cliente"
 
-    # Saldo del vehículo = solo los pagos que SALDAN la ficha (no los que
-    # quedan como deuda del vehículo).
-    total_pagado = (
-        PagoGastoIngreso.objects.filter(
-            vehiculo=vehiculo,
-            concepto=concepto_key,
-            mantiene_deuda_vehiculo=False,
-        ).aggregate(total=Sum("monto"))["total"]
-        or Decimal("0")
-    )
+    # Validar coherencia de la situación con a quién pertenece
+    if pertenece == "proveedor":
+        opciones_validas = SITUACIONES_PROVEEDOR
+    else:
+        opciones_validas = SITUACIONES_CLIENTE
+    if situacion not in opciones_validas:
+        messages.error(request, "Elegí una situación válida para este pago.")
+        return redirect("vehiculos:ficha_completa", vehiculo_id=vehiculo.id)
 
-    saldo_actual = Decimal(monto_gasto) - Decimal(total_pagado)
-    monto = Decimal(monto_raw)
+    saldado = situacion in SITUACIONES_SALDADAS
+    label = CONCEPTOS_GASTO[concepto_key]
 
-    # ===============================
-    # PROTECCIÓN CONTRA PAGO DOBLE
-    # (solo aplica a los pagos que saldan el gasto en la ficha; los que
-    #  quedan como deuda del vehículo se permiten igual)
-    # ===============================
-    if not mantiene_deuda:
-        if saldo_actual <= 0:
-            messages.warning(request, f"{CONCEPTOS[concepto_key]} ya está pagado.")
-            return redirect("vehiculos:ficha_completa", vehiculo_id=vehiculo.id)
-
-        if monto > saldo_actual:
-            monto = saldo_actual
-
-    # ===============================
-    # REGISTRAR PAGO DE GASTO
-    # ===============================
-    PagoGastoIngreso.objects.create(
+    # ── Crear el registro del pago (lo único que se mueve) ──
+    pago = PagoGastoIngreso.objects.create(
         vehiculo=vehiculo,
         concepto=concepto_key,
         fecha_pago=fecha_pago,
         monto=monto,
         observaciones=observaciones,
-        mantiene_deuda_vehiculo=mantiene_deuda,
+        pertenece=pertenece,
+        situacion=situacion,
+        ente=ente,
+        saldado=saldado,
+        fecha_saldado=fecha_pago if saldado else None,
+        # compatibilidad legado mientras convive el boolean
+        mantiene_deuda_vehiculo=(situacion == "cli_concesion"),
     )
 
-    # Los gastos de ingreso son un costo de la concesionaria: NO se imputan a
-    # la cuenta corriente del cliente. El pago queda registrado en "Pago de
-    # gastos" de la ficha del vehículo (PagoGastoIngreso, recién creado arriba).
+    marca = f"[GI:{pago.pk}]"
+    cuenta = None
+    _venta = getattr(vehiculo, "venta", None)
+    if _venta is not None:
+        cuenta = getattr(_venta, "cuenta_corriente", None)
 
-    if mantiene_deuda:
+    # ── Efectos por situación (atómico) ──
+    if situacion == "prov_reintegro":
+        # B) Lo pagué yo y el proveedor me reintegra → plata aparte.
+        rein = ReintegroProveedor.objects.create(
+            proveedor=proveedor,
+            vehiculo=vehiculo,
+            concepto=concepto_key,
+            ente=ente,
+            monto=monto,
+            estado="pendiente",
+        )
+        pago.reintegro_proveedor_id = rein.pk
+        pago.save(update_fields=["reintegro_proveedor_id"])
+
+    elif situacion == "cli_adelanto":
+        # 3) Adelanté yo al ente → el cliente me debe ese gasto (debe).
+        if cuenta:
+            mov = MovimientoCuenta.objects.create(
+                cuenta=cuenta, vehiculo=vehiculo,
+                descripcion=f"Gasto de ingreso adelantado: {label} — el cliente lo debe {marca}",
+                tipo="debe", monto=monto, origen="manual",
+            )
+            pago.movimiento_cuenta_id = mov.pk
+            pago.save(update_fields=["movimiento_cuenta_id"])
+            cuenta.recalcular_saldo()
+
+    elif situacion == "cli_concesion":
+        # 2) El cliente me pagó pero todavía no pagué al ente. Reflejar la plata
+        #    real que entró: el gasto como deuda (debe) + el pago del cliente
+        #    (haber) → neto 0 en la cuenta, pero queda registrado el cobro.
+        #    La deuda con el ente queda como "impaga por concesionario" (cálculo).
+        if cuenta:
+            mov_debe = MovimientoCuenta.objects.create(
+                cuenta=cuenta, vehiculo=vehiculo,
+                descripcion=f"Gasto de ingreso: {label} {marca}",
+                tipo="debe", monto=monto, origen="manual",
+            )
+            MovimientoCuenta.objects.create(
+                cuenta=cuenta, vehiculo=vehiculo,
+                descripcion=f"Pago del cliente por {label} (pendiente de pagar al ente) {marca}",
+                tipo="haber", monto=monto, origen="manual",
+            )
+            pago.movimiento_cuenta_id = mov_debe.pk
+            pago.save(update_fields=["movimiento_cuenta_id"])
+            cuenta.recalcular_saldo()
+
+    # prov_directo / cli_directo / pendiente → no crean registros adicionales.
+
+    # ── Mensajes ──
+    if situacion == "cli_concesion":
         messages.success(
             request,
-            f"Pago registrado en la ficha. {CONCEPTOS[concepto_key]}: ${monto}. "
-            "El gasto sigue figurando como deuda del vehículo (todavía no se pagó al ente)."
+            f"Pago registrado. {label}: ${monto}. El cliente te pagó; "
+            "queda como IMPAGA POR CONCESIONARIO hasta que le pagues al ente."
         )
+    elif situacion == "cli_adelanto":
+        messages.success(request, f"Pago registrado. {label}: ${monto}. El cliente te debe este gasto.")
+    elif situacion == "prov_reintegro":
+        messages.success(request, f"Pago registrado. {label}: ${monto}. El proveedor te debe el reintegro.")
     else:
-        messages.success(
-            request,
-            f"Pago registrado en la ficha. {CONCEPTOS[concepto_key]}: ${monto}"
-        )
+        messages.success(request, f"Pago registrado y saldado. {label}: ${monto}.")
 
     return redirect("vehiculos:ficha_completa", vehiculo_id=vehiculo.id)
+
+
+def proveedor_id_de(ficha):
+    """True si la ficha tiene proveedor cargado en Titularidad."""
+    return getattr(ficha, "vendedor_id", None) is not None
 
 
 # ==========================================================
@@ -1297,7 +1356,8 @@ def registrar_pagos_gastos_lote(request):
         monto_total = mapa_gastos.get(key) or Decimal("0")
         ya_pagado = (
             PagoGastoIngreso.objects.filter(
-                vehiculo=vehiculo, concepto=key, mantiene_deuda_vehiculo=False
+                vehiculo=vehiculo, concepto=key,
+                situacion__in=["prov_directo", "cli_directo", "cli_adelanto", "prov_reintegro"],
             )
             .aggregate(total=Sum("monto"))["total"] or Decimal("0")
         )
@@ -1309,18 +1369,49 @@ def registrar_pagos_gastos_lote(request):
             if monto > saldo:
                 monto = saldo
 
-        PagoGastoIngreso.objects.create(
+        # Situación según proveedor en Titularidad. En lote: pagos directos
+        # (saldados) salvo que se tilde "cliente me pagó, no pagué al ente".
+        if ficha.vendedor_id:
+            pertenece, situacion = "proveedor", "prov_directo"
+        elif mantiene_deuda:
+            pertenece, situacion = "cliente", "cli_concesion"
+        else:
+            pertenece, situacion = "cliente", "cli_directo"
+        saldado = situacion in ("prov_directo", "cli_directo")
+
+        pago = PagoGastoIngreso.objects.create(
             vehiculo=vehiculo,
             concepto=key,
             fecha_pago=fecha_pago,
             monto=monto,
             observaciones=observaciones_comunes,
-            mantiene_deuda_vehiculo=mantiene_deuda,
+            pertenece=pertenece,
+            situacion=situacion,
+            ente=ENTE_SUGERIDO.get(key, ""),
+            saldado=saldado,
+            fecha_saldado=fecha_pago if saldado else None,
+            mantiene_deuda_vehiculo=(situacion == "cli_concesion"),
         )
         creados += 1
 
-    # Los gastos de ingreso NO se imputan a la cuenta corriente del cliente
-    # (son costo de la concesionaria). Quedan registrados en la ficha.
+        # Situación 2 en lote: reflejar el cobro del cliente (debe + haber).
+        if situacion == "cli_concesion" and cuenta:
+            marca = f"[GI:{pago.pk}]"
+            mov_debe = MovimientoCuenta.objects.create(
+                cuenta=cuenta, vehiculo=vehiculo,
+                descripcion=f"Gasto de ingreso: {label} {marca}",
+                tipo="debe", monto=monto, origen="manual",
+            )
+            MovimientoCuenta.objects.create(
+                cuenta=cuenta, vehiculo=vehiculo,
+                descripcion=f"Pago del cliente por {label} (pendiente de pagar al ente) {marca}",
+                tipo="haber", monto=monto, origen="manual",
+            )
+            pago.movimiento_cuenta_id = mov_debe.pk
+            pago.save(update_fields=["movimiento_cuenta_id"])
+
+    if cuenta:
+        cuenta.recalcular_saldo()
 
     if creados:
         msg = f"Se registraron {creados} pago(s) en lote."
@@ -1340,13 +1431,41 @@ def registrar_pagos_gastos_lote(request):
 # ELIMINAR PAGO DE GASTO DE INGRESO
 # ==========================================================
 @login_required
+@transaction.atomic
 def eliminar_pago_gasto(request, pago_id):
     pago = get_object_or_404(PagoGastoIngreso, id=pago_id)
     vehiculo_id = pago.vehiculo_id
 
     if request.method == "POST":
+        # Revertir lo que el pago haya generado en otros módulos:
+        # - movimientos en la cuenta corriente (marcados con [GI:pk])
+        # - reintegro del proveedor
+        # - pago futuro en Agenda de Pagos
+        from cuentas.models import MovimientoCuenta as _Mov
+        cuenta = None
+        movs = _Mov.objects.filter(descripcion__contains=f"[GI:{pago.pk}]")
+        for m in movs:
+            cuenta = m.cuenta
+        movs.delete()
+        if cuenta:
+            cuenta.recalcular_saldo()
+
+        if pago.reintegro_proveedor_id:
+            try:
+                from compraventa.models import ReintegroProveedor
+                ReintegroProveedor.objects.filter(pk=pago.reintegro_proveedor_id).delete()
+            except Exception:
+                pass
+
+        if pago.pago_futuro_id:
+            try:
+                from agenda_pagos.models import PagoFuturo
+                PagoFuturo.objects.filter(pk=pago.pago_futuro_id, pagado=False).delete()
+            except Exception:
+                pass
+
         pago.delete()
-        messages.success(request, "Pago eliminado correctamente.")
+        messages.success(request, "Pago eliminado y movimientos vinculados revertidos.")
 
     return redirect("vehiculos:ficha_completa", vehiculo_id=vehiculo_id)
 

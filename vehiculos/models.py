@@ -351,15 +351,17 @@ class FichaVehicular(models.Model):
         # Aceptar tanto label como key
         key_corta = LABEL_TO_KEY.get(concepto, concepto)
 
+        # El saldo de la ficha es la deuda del vehículo CON EL ENTE. Solo lo
+        # reducen los pagos en los que el ente quedó efectivamente pagado
+        # (prov_directo, cli_directo, cli_adelanto, prov_reintegro). Los que
+        # quedan "cli_concesion" (cliente me pagó, no pagué al ente) o
+        # "pendiente" NO saldan el gasto con el ente.
         PagoGasto = apps.get_model("vehiculos", "PagoGastoIngreso")
         total = (
             PagoGasto.objects.filter(
                 vehiculo=self.vehiculo,
                 concepto__in=[concepto, key_corta],
-                # Los pagos marcados como "sigue siendo deuda del vehículo"
-                # (cobrados al cliente pero no pagados al ente) NO saldan el
-                # gasto en la ficha: el saldo del vehículo queda pendiente.
-                mantiene_deuda_vehiculo=False,
+                situacion__in=["prov_directo", "cli_directo", "cli_adelanto", "prov_reintegro"],
             ).aggregate(total=models.Sum("monto"))["total"]
         )
         return Decimal(total) if total else Decimal("0")
