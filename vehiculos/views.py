@@ -1203,36 +1203,20 @@ def registrar_pago_gasto(request):
         mantiene_deuda_vehiculo=mantiene_deuda,
     )
 
-    # ===============================
-    # IMPACTAR CUENTA CORRIENTE (HABER – PERMUTA)
-    # ===============================
-    cuenta = None
-    if hasattr(vehiculo, "venta") and vehiculo.venta:
-        if hasattr(vehiculo.venta, "cuenta_corriente"):
-            cuenta = vehiculo.venta.cuenta_corriente
-    if cuenta:
-        MovimientoCuenta.objects.create(
-            cuenta=cuenta,
-            vehiculo=vehiculo,
-            descripcion=CONCEPTOS[concepto_key],
-            tipo="haber",
-            monto=monto,
-            origen="permuta"
-        )
-
-        cuenta.recalcular_saldo()
+    # Los gastos de ingreso son un costo de la concesionaria: NO se imputan a
+    # la cuenta corriente del cliente. El pago queda registrado en "Pago de
+    # gastos" de la ficha del vehículo (PagoGastoIngreso, recién creado arriba).
 
     if mantiene_deuda:
         messages.success(
             request,
-            f"Cobro registrado. {CONCEPTOS[concepto_key]}: ${monto}. "
-            "Se descontó de la cuenta corriente, pero el gasto sigue figurando "
-            "como deuda del vehículo (todavía no se pagó al ente)."
+            f"Pago registrado en la ficha. {CONCEPTOS[concepto_key]}: ${monto}. "
+            "El gasto sigue figurando como deuda del vehículo (todavía no se pagó al ente)."
         )
     else:
         messages.success(
             request,
-            f"Pago registrado. {CONCEPTOS[concepto_key]}: ${monto}"
+            f"Pago registrado en la ficha. {CONCEPTOS[concepto_key]}: ${monto}"
         )
 
     return redirect("vehiculos:ficha_completa", vehiculo_id=vehiculo.id)
@@ -1327,18 +1311,8 @@ def registrar_pagos_gastos_lote(request):
         )
         creados += 1
 
-        if cuenta:
-            MovimientoCuenta.objects.create(
-                cuenta=cuenta,
-                vehiculo=vehiculo,
-                descripcion=label,
-                tipo="haber",
-                monto=monto,
-                origen="permuta",
-            )
-
-    if cuenta:
-        cuenta.recalcular_saldo()
+    # Los gastos de ingreso NO se imputan a la cuenta corriente del cliente
+    # (son costo de la concesionaria). Quedan registrados en la ficha.
 
     if creados:
         msg = f"Se registraron {creados} pago(s) en lote."

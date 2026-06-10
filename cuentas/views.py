@@ -586,12 +586,13 @@ def cuenta_corriente_detalle(request, cuenta_id):
     )
     gastos_extra_saldo = ge_debe - ge_haber
 
-    # Deuda total = saldo de cuotas + gestoría pendiente + gastos de ingreso
-    #               pendientes + gastos extra / ajustes manuales pendientes
+    # Deuda total = saldo de cuotas + gestoría pendiente + gastos extra /
+    #               ajustes manuales pendientes.
+    # Los gastos de ingreso NO se incluyen: los paga la concesionaria y se
+    # administran en la ficha del vehículo, no en la cuenta corriente.
     deuda_total = (
         deuda_cuotas
         + max(total_gestoria, Decimal("0"))
-        + saldo_gastos_ingreso
         + max(gastos_extra_saldo, Decimal("0"))
     )
 

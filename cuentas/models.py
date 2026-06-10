@@ -293,15 +293,8 @@ class CuentaCorriente(models.Model):
             # (espejo del saldo sin plan, que es debe − haber excepto permuta)
             total += self._suma_mov(movs, excl_origen="permuta", tipos=["debe", "deuda"])
 
-        # Gastos de ingreso totales (vehículos de permuta vinculados)
-        for vehiculo in self._vehiculos_para_gastos():
-            try:
-                ficha = vehiculo.ficha
-                for _, monto in ficha.mapa_gastos_ingreso().items():
-                    if monto:
-                        total += Decimal(monto)
-            except Exception:
-                pass
+        # Los gastos de ingreso NO son deuda del cliente (los paga la
+        # concesionaria); se administran en la ficha del vehículo.
 
         return total
 
@@ -343,20 +336,16 @@ class CuentaCorriente(models.Model):
             if man_pendiente > 0:
                 total += man_pendiente
         else:
-            # Sin plan: el saldo (debe − haber) representa la deuda, PERO los
-            # gastos de ingreso de permuta se cuentan aparte (vía la ficha, que
-            # ya descuenta lo pagado). Los excluimos del saldo para no duplicar.
+            # Sin plan: el saldo (debe − haber) representa la deuda.
+            # Los movimientos de permuta (gastos de ingreso) NO son deuda del
+            # cliente —los paga la concesionaria—, por eso se excluyen.
             debe = self._suma_mov(movs, excl_origen="permuta", tipos=["debe", "deuda"])
             haber = self._suma_mov(movs, excl_origen="permuta", tipos=["haber", "pago"])
             total += max(debe - haber, Decimal("0"))
 
-        # Gastos de ingreso pendientes (suma de todos los vehículos vinculados)
-        for vehiculo in self._vehiculos_para_gastos():
-            try:
-                ficha = vehiculo.ficha
-                total += ficha.saldo_total_gastos()
-            except Exception:
-                pass
+        # Los gastos de ingreso del vehículo NO forman parte de la deuda del
+        # cliente: son un costo de la concesionaria y se administran en la
+        # ficha del vehículo, no en la cuenta corriente.
 
         return total
 
