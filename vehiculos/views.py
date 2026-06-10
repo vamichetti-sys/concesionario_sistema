@@ -662,6 +662,13 @@ def guardar_ficha_vehicular(request, vehiculo_id):
                 else:
                     ficha.gasto_patentes = ficha.patentes_monto or Decimal("0")
 
+            # Un 0km NO tiene gastos de ingreso: se fuerzan a 0.
+            if vehiculo_guardado.es_0km:
+                for _g in ("gasto_f08", "gasto_informes", "gasto_patentes",
+                           "gasto_infracciones", "gasto_verificacion", "gasto_autopartes",
+                           "gasto_vtv", "gasto_r541", "gasto_firmas"):
+                    setattr(ficha, _g, Decimal("0"))
+
             ficha.save()
 
             # ===============================

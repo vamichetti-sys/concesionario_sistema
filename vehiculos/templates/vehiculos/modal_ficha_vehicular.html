@@ -167,6 +167,16 @@
       <small class="text-muted">Ingreso del vehículo al stock</small>
     </div>
 
+    <div class="col-md-4 d-flex align-items-center">
+      <div class="form-check p-2 mt-3" style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;width:100%;">
+        {{ vehiculo_form.es_0km }}
+        <label class="form-check-label" for="{{ vehiculo_form.es_0km.id_for_label }}">
+          <strong>¿Es 0km?</strong>
+          <small class="text-muted d-block">Un 0km no tiene gastos de ingreso.</small>
+        </label>
+      </div>
+    </div>
+
     <hr class="my-3">
 
     <div class="col-md-4">
@@ -440,6 +450,12 @@
     Gastos de ingreso
   </h4>
 
+  {% if vehiculo.es_0km %}
+  <div class="alert alert-info d-flex align-items-center gap-2" style="border-radius:10px;">
+    <i data-lucide="info" style="width:20px;height:20px;flex-shrink:0;"></i>
+    <div><strong>Vehículo 0km:</strong> no tiene gastos de ingreso.</div>
+  </div>
+  {% else %}
   <div class="row g-3">
     <div class="col-md-4">
       <label class="fw-bold">Formulario 08</label>
@@ -494,6 +510,7 @@
              readonly>
     </div>
   </div>
+  {% endif %}
 
   <div class="d-flex justify-content-end mt-3">
     <a href="{% url 'vehiculos:gastos_ingreso_pdf' vehiculo.id %}" target="_blank"

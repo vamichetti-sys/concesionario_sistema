@@ -154,6 +154,15 @@
                 {{ vehiculo_form.fecha_ingreso }}
                 <small class="text-muted">Ingreso del vehículo al stock</small>
             </div>
+            <div class="col-md-4 d-flex align-items-center">
+                <div class="form-check p-2 mt-3" style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;width:100%;">
+                    {{ vehiculo_form.es_0km }}
+                    <label class="form-check-label" for="{{ vehiculo_form.es_0km.id_for_label }}">
+                        <strong>¿Es 0km?</strong>
+                        <small class="text-muted d-block">Un 0km no tiene gastos de ingreso.</small>
+                    </label>
+                </div>
+            </div>
         </div>
 
         <!-- Campos de la ficha que se guardan junto -->
@@ -434,6 +443,13 @@
         <h5 class="fw-bold mb-0">Gastos de ingreso</h5>
     </div>
 
+    {% if vehiculo.es_0km %}
+    <div class="alert alert-info d-flex align-items-center gap-2 mb-0" style="border-radius:10px;">
+        <i data-lucide="info" style="width:20px;height:20px;flex-shrink:0;"></i>
+        <div><strong>Vehículo 0km:</strong> no tiene gastos de ingreso.</div>
+    </div>
+    {% else %}
+
     <!-- RESUMEN -->
     <div class="p-3 mb-4" style="background:#fef2f2;border-radius:12px;">
         <div class="d-flex justify-content-between align-items-center">
@@ -501,6 +517,7 @@
             </div>
         </div>
     </div>
+    {% endif %}
 </div>
 
 <!-- ===============================
