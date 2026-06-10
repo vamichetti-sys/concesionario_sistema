@@ -205,11 +205,14 @@
                     </td>
                     <td class="text-end">
                         <div class="d-flex gap-1 justify-content-end">
-                            <a href="{% url 'cheques:editar' cheque.pk %}" class="btn btn-secondary btn-sm py-1 px-2">
+                            <a href="{% url 'cheques:editar' cheque.pk %}" class="btn btn-secondary btn-sm py-1 px-2" title="Editar">
                                 <i data-lucide="pencil" style="width:12px;height:12px;"></i>
                             </a>
-                            <button type="button" class="btn btn-primary btn-sm py-1 px-2" data-bs-toggle="modal" data-bs-target="#modalEstado{{ cheque.pk }}">
+                            <button type="button" class="btn btn-primary btn-sm py-1 px-2" data-bs-toggle="modal" data-bs-target="#modalEstado{{ cheque.pk }}" title="Cambiar estado">
                                 <i data-lucide="refresh-cw" style="width:12px;height:12px;"></i>
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm py-1 px-2" data-bs-toggle="modal" data-bs-target="#modalHist{{ cheque.pk }}" title="Historial">
+                                <i data-lucide="history" style="width:12px;height:12px;"></i>
                             </button>
                         </div>
                     </td>
@@ -250,9 +253,12 @@
                                 <input type="date" name="fecha_endoso" class="form-control" value="{{ cheque.fecha_endoso|date:'Y-m-d' }}">
                             </div>
                             <div class="mb-3">
-                                <label class="form-label">Destinatario del endoso</label>
-                                <input type="text" name="destinatario_endoso" class="form-control" value="{{ cheque.destinatario_endoso }}">
+                                <label class="form-label">Destinatario del endoso <span class="text-danger">*</span></label>
+                                <input type="text" name="destinatario_endoso" class="form-control" value="{{ cheque.destinatario_endoso }}" placeholder="A quién se lo entregaste (obligatorio)">
                             </div>
+                        </div>
+                        <div id="avisoRechazo{{ cheque.pk }}" class="alert alert-warning py-2 mb-0" style="{% if cheque.estado != 'rechazado' %}display:none;{% endif %}font-size:13px;">
+                            Al rechazar, si este cheque había saldado un cobro, se <strong>revierte</strong>: la cuota se reabre y la deuda del cliente vuelve a subir.
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -260,6 +266,40 @@
                         <button type="submit" class="btn btn-primary">Guardar</button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- HISTORIAL -->
+    <div class="modal fade" id="modalHist{{ cheque.pk }}" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h6 class="modal-title">Historial - #{{ cheque.numero_cheque }}</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-start">
+                    {% if cheque.movimientos.all %}
+                    <ul class="list-group list-group-flush">
+                        {% for m in cheque.movimientos.all %}
+                        <li class="list-group-item px-0">
+                            <div class="d-flex justify-content-between">
+                                <strong>{{ m.get_estado_nuevo_display }}</strong>
+                                <small class="text-muted">{{ m.fecha|date:"d/m/Y H:i" }}</small>
+                            </div>
+                            {% if m.destinatario %}<div class="small">Endosado a: {{ m.destinatario }}</div>{% endif %}
+                            {% if m.detalle %}<div class="small text-muted">{{ m.detalle }}</div>{% endif %}
+                            {% if m.usuario %}<div class="small text-muted">por {{ m.usuario.get_full_name|default:m.usuario.username }}</div>{% endif %}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="text-muted mb-0">Sin movimientos registrados todavía.</p>
+                    {% endif %}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
             </div>
         </div>
     </div>
@@ -282,6 +322,8 @@
         var estado = document.getElementById('selectEstado' + id).value;
         document.getElementById('campoDepositado' + id).style.display = (estado === 'depositado') ? 'block' : 'none';
         document.getElementById('camposEndoso' + id).style.display = (estado === 'endosado') ? 'block' : 'none';
+        var aviso = document.getElementById('avisoRechazo' + id);
+        if (aviso) aviso.style.display = (estado === 'rechazado') ? 'block' : 'none';
     }
     
     if (typeof lucide !== 'undefined') lucide.createIcons();

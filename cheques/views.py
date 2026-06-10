@@ -1,11 +1,56 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.db import transaction
 from django.db.models import Q, Sum
 from datetime import date, timedelta
 
 from .models import Cheque
 from .forms import ChequeForm
+
+
+def _revertir_cobro_de_cheque(cheque, usuario=None):
+    """
+    Si el cheque saldó un cobro (cheque.cobro = cuentas.Pago), revierte ese
+    cobro con el mismo patrón que `eliminar_pago`: borra sus movimientos,
+    reabre las cuotas, reactiva el plan y recalcula el saldo. Devuelve True si
+    revirtió algo. Se llama dentro de una vista @transaction.atomic.
+    """
+    pago = cheque.cobro
+    if pago is None:
+        return False
+
+    from cuentas.models import CuotaPlan
+
+    cuenta = pago.cuenta
+    cuotas_afectadas = list(CuotaPlan.objects.filter(pagos__pago=pago).distinct())
+    recibo = pago.numero_recibo
+
+    # Borrar el rastro contable del cobro
+    pago.movimientos_creados.all().delete()
+    # Desvincular el cheque antes de borrar el pago
+    cheque.cobro = None
+    cheque.save(update_fields=["cobro"])
+    pago.delete()
+
+    # Reabrir cuotas que quedaron "pagadas" pero con saldo pendiente
+    for cuota in cuotas_afectadas:
+        if cuota.saldo_pendiente > 0 and cuota.estado == "pagada":
+            cuota.estado = "pendiente"
+            cuota.save(update_fields=["estado"])
+
+    # Reactivar el plan si estaba finalizado y volvió a tener cuotas pendientes
+    plan = getattr(cuenta, "plan_pago", None)
+    if plan and plan.estado == "finalizado" and plan.cuotas.filter(estado="pendiente").exists():
+        plan.estado = "activo"
+        plan.save(update_fields=["estado"])
+
+    cuenta.recalcular_saldo()
+    try:
+        cuenta.log("Cheque rechazado", f"Recibo {recibo} revertido (cheque #{cheque.numero_cheque})")
+    except Exception:
+        pass
+    return True
 
 
 def usuario_autorizado(user):
@@ -143,32 +188,75 @@ def eliminar_cheque(request, pk):
 
 
 @login_required
+@transaction.atomic
 def cambiar_estado_cheque(request, pk):
     if not usuario_autorizado(request.user):
         messages.error(request, 'No tenés permiso para acceder a esta sección.')
         return redirect('inicio')
-    
+
     cheque = get_object_or_404(Cheque, pk=pk)
-    
-    if request.method == 'POST':
-        nuevo_estado = request.POST.get('estado')
-        depositado_en = request.POST.get('depositado_en', '')
-        fecha_endoso = request.POST.get('fecha_endoso', '')
-        destinatario_endoso = request.POST.get('destinatario_endoso', '')
-        
-        if nuevo_estado in ['a_depositar', 'depositado', 'endosado', 'rechazado']:
-            cheque.estado = nuevo_estado
-            
-            if nuevo_estado == 'depositado':
-                cheque.depositado_en = depositado_en
-            elif nuevo_estado == 'endosado':
-                if fecha_endoso:
-                    cheque.fecha_endoso = fecha_endoso
-                cheque.destinatario_endoso = destinatario_endoso
-            
-            cheque.save()
-            messages.success(request, f'Estado actualizado a {cheque.get_estado_display()}.')
-    
+    if request.method != 'POST':
+        return redirect('cheques:lista')
+
+    nuevo_estado = request.POST.get('estado')
+    if nuevo_estado not in ('a_depositar', 'depositado', 'endosado', 'rechazado'):
+        messages.error(request, 'Estado inválido.')
+        return redirect('cheques:lista')
+
+    # ── DEPOSITADO ──
+    if nuevo_estado == 'depositado':
+        depositado_en = (request.POST.get('depositado_en') or '').strip()
+        cheque.estado = 'depositado'
+        cheque.depositado_en = depositado_en
+        cheque.save(update_fields=['estado', 'depositado_en'])
+        cheque.registrar_movimiento(
+            'depositado', usuario=request.user,
+            detalle=(f"Depositado en {depositado_en}" if depositado_en else "Depositado"),
+        )
+        messages.success(request, f'Cheque #{cheque.numero_cheque} marcado como depositado.')
+
+    # ── ENDOSADO (destinatario OBLIGATORIO) ──
+    elif nuevo_estado == 'endosado':
+        destinatario = (request.POST.get('destinatario_endoso') or '').strip()
+        if not destinatario:
+            messages.error(request, 'Para endosar el cheque es obligatorio indicar a quién se lo entregaste.')
+            return redirect('cheques:lista')
+        fecha_endoso = request.POST.get('fecha_endoso') or date.today()
+        cheque.estado = 'endosado'
+        cheque.fecha_endoso = fecha_endoso
+        cheque.destinatario_endoso = destinatario
+        cheque.save(update_fields=['estado', 'fecha_endoso', 'destinatario_endoso'])
+        cheque.registrar_movimiento(
+            'endosado', usuario=request.user, destinatario=destinatario,
+            detalle=f"Endosado a {destinatario}",
+        )
+        messages.success(request, f'Cheque #{cheque.numero_cheque} endosado a {destinatario}.')
+
+    # ── RECHAZADO (revierte el cobro si lo había) ──
+    elif nuevo_estado == 'rechazado':
+        revertido = _revertir_cobro_de_cheque(cheque, request.user)
+        cheque.estado = 'rechazado'
+        cheque.save(update_fields=['estado'])
+        detalle = "Rechazado por el banco"
+        if revertido:
+            detalle += " · cobro revertido (la deuda del cliente volvió a subir)"
+        cheque.registrar_movimiento('rechazado', usuario=request.user, detalle=detalle)
+        if revertido:
+            messages.warning(
+                request,
+                f'Cheque #{cheque.numero_cheque} rechazado. Se revirtió el cobro: '
+                'la cuota se reabrió y la deuda del cliente volvió a subir.'
+            )
+        else:
+            messages.warning(request, f'Cheque #{cheque.numero_cheque} rechazado.')
+
+    # ── VOLVER A "A DEPOSITAR" ──
+    else:
+        cheque.estado = 'a_depositar'
+        cheque.save(update_fields=['estado'])
+        cheque.registrar_movimiento('a_depositar', usuario=request.user, detalle='Volvió a "a depositar"')
+        messages.success(request, f'Cheque #{cheque.numero_cheque} vuelto a "a depositar".')
+
     return redirect('cheques:lista')
 
 # ==========================================================

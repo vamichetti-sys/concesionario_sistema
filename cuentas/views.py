@@ -882,127 +882,132 @@ def registrar_movimiento(request, cuenta_id):
             messages.error(request, "El monto debe ser mayor a 0.")
             return redirect("cuentas:registrar_movimiento", cuenta_id=cuenta.id)
 
-        # Para compatibilidad (recibo): datos del primer cheque
-        _primer = cheques_data[0] if cheques_data else {}
-        cheque_banco       = _primer.get("banco", "")
-        cheque_numero      = _primer.get("numero", "")
-        cheque_fecha_cobro = _primer.get("fecha", "")
-        cheque_titular     = _primer.get("titular", "")
-
-        saldo_anterior = cuenta.saldo
-
-        pago = Pago.objects.create(
-            cuenta=cuenta,
-            monto_total=monto,
-            forma_pago=forma_pago,
-            observaciones=observaciones,
-            saldo_anterior=saldo_anterior,
-            banco=cheque_banco if forma_pago == "cheque" else "",
-            numero_cheque=cheque_numero if forma_pago == "cheque" else "",
-            fecha_cobro_cheque=cheque_fecha_cobro if forma_pago == "cheque" else None,
-            titular_cheque=cheque_titular if forma_pago == "cheque" else "",
-        )
-
-        # Si es cheque, replicar CADA cheque al módulo Cheques
+        # Sub-pagos: UN Pago por cheque (para que rechazar un cheque revierta
+        # solo su parte). Si no es cheque, un único sub-pago por el total.
         if forma_pago == "cheque":
-            try:
-                from cheques.models import Cheque
-                primer_cheque = None
-                for cd in cheques_data:
-                    ch = Cheque.objects.create(
+            sub_pagos = list(cheques_data)
+        else:
+            sub_pagos = [{"monto": monto}]
+
+        excedente_total = Decimal("0")
+        ultimo_pago = None
+
+        for sp in sub_pagos:
+            sp_monto = sp["monto"]
+
+            pago = Pago.objects.create(
+                cuenta=cuenta,
+                monto_total=sp_monto,
+                forma_pago=forma_pago,
+                observaciones=observaciones,
+                saldo_anterior=cuenta.saldo,
+                banco=sp.get("banco", "") if forma_pago == "cheque" else "",
+                numero_cheque=sp.get("numero", "") if forma_pago == "cheque" else "",
+                fecha_cobro_cheque=sp.get("fecha") if forma_pago == "cheque" else None,
+                titular_cheque=sp.get("titular", "") if forma_pago == "cheque" else "",
+            )
+            ultimo_pago = pago
+
+            # Replicar el cheque al módulo Cheques y ENLAZAR el cobro (cobro=pago)
+            if forma_pago == "cheque":
+                try:
+                    from cheques.models import Cheque
+                    ch = Cheque.crear_desde_cobro(
                         cliente=str(cuenta.cliente) if cuenta.cliente_id else "",
-                        banco_emision=cd["banco"],
-                        numero_cheque=cd["numero"],
-                        titular_cheque=cd["titular"],
-                        monto=cd["monto"],
-                        fecha_deposito=cd["fecha"],
-                        estado="a_depositar",
+                        banco_emision=sp["banco"],
+                        numero_cheque=sp["numero"],
+                        titular_cheque=sp["titular"],
+                        monto=sp_monto,
+                        fecha_deposito=sp["fecha"],
+                        creado_por=request.user if request.user.is_authenticated else None,
                         observaciones=(
                             f"Generado desde cuenta corriente #{cuenta.id} "
                             f"(recibo {pago.numero_recibo})"
                         ),
-                        creado_por=request.user if request.user.is_authenticated else None,
+                        cobro=pago,
                     )
-                    if primer_cheque is None:
-                        primer_cheque = ch
-                if primer_cheque is not None:
-                    pago.cheque_vinculado = primer_cheque
+                    ch.registrar_movimiento(
+                        "a_depositar", usuario=request.user, detalle="Ingresó a cartera"
+                    )
+                    pago.cheque_vinculado = ch
                     pago.save(update_fields=["cheque_vinculado"])
-            except Exception as exc:
-                # No bloqueamos el cobro si falla la sincronización a Cheques,
-                # pero avisamos al usuario.
-                messages.warning(
-                    request,
-                    f"El pago se registró pero no pudo vincularse al módulo Cheques: {exc}"
-                )
+                except Exception as exc:
+                    messages.warning(
+                        request,
+                        f"El pago se registró pero un cheque no pudo vincularse al módulo Cheques: {exc}"
+                    )
 
-        if tipo_movimiento == "gasto_extra":
-            # Pago dirigido a los gastos extra / ajustes manuales: NO toca las
-            # cuotas del plan, baja directamente el saldo de los gastos extra.
-            MovimientoCuenta.objects.create(
-                cuenta=cuenta,
-                descripcion=f"Pago de gasto extra ({forma_pago}) {observaciones}".strip(),
-                tipo="haber",
-                monto=monto,
-                origen="manual",
-                pago=pago,
-            )
-            cuenta.recalcular_saldo()
-        else:
-            # Cuota puntual elegida por el usuario (si corresponde)
-            cuota_preferida = None
-            if tipo_movimiento == "cuota" and cuota_id:
-                cuota_preferida = get_object_or_404(
-                    CuotaPlan, id=cuota_id, plan__cuenta=cuenta
-                )
-
-            tenia_pendientes = CuotaPlan.objects.filter(
-                plan__cuenta=cuenta, estado="pendiente"
-            ).exists()
-
-            # Aplica el pago a las cuotas (el sobrante de una pasa a la siguiente).
-            # Devuelve lo que NO entró en ninguna cuota.
-            restante = cuenta.aplicar_pago_a_cuotas(
-                pago, monto, cuota_preferida=cuota_preferida
-            )
-
-            # El excedente NUNCA se pierde: queda como pago a favor (o como pago
-            # manual si la cuenta no tenía cuotas pendientes).
-            if restante > 0:
+            # Aplicar este sub-pago (gasto extra / cuotas / excedente)
+            if tipo_movimiento == "gasto_extra":
                 MovimientoCuenta.objects.create(
                     cuenta=cuenta,
-                    descripcion=(
-                        f"Pago a favor ({forma_pago}) {observaciones}".strip()
-                        if tenia_pendientes
-                        else f"Pago ({forma_pago}) {observaciones}".strip()
-                    ),
+                    descripcion=f"Pago de gasto extra ({forma_pago}) {observaciones}".strip(),
                     tipo="haber",
-                    monto=restante,
+                    monto=sp_monto,
                     origen="manual",
                     pago=pago,
                 )
                 cuenta.recalcular_saldo()
-                if tenia_pendientes:
-                    messages.info(
-                        request,
-                        "El pago superó el saldo de las cuotas pendientes. "
-                        f"El excedente de $ {restante:,.0f} quedó registrado como pago a favor."
+            else:
+                cuota_preferida = None
+                if tipo_movimiento == "cuota" and cuota_id:
+                    cuota_preferida = get_object_or_404(
+                        CuotaPlan, id=cuota_id, plan__cuenta=cuenta
                     )
+                tenia_pendientes = CuotaPlan.objects.filter(
+                    plan__cuenta=cuenta, estado="pendiente"
+                ).exists()
 
-        pago.saldo_posterior = cuenta.saldo
-        pago.save(update_fields=["saldo_posterior"])
+                restante = cuenta.aplicar_pago_a_cuotas(
+                    pago, sp_monto, cuota_preferida=cuota_preferida
+                )
+                if restante > 0:
+                    MovimientoCuenta.objects.create(
+                        cuenta=cuenta,
+                        descripcion=(
+                            f"Pago a favor ({forma_pago}) {observaciones}".strip()
+                            if tenia_pendientes
+                            else f"Pago ({forma_pago}) {observaciones}".strip()
+                        ),
+                        tipo="haber",
+                        monto=restante,
+                        origen="manual",
+                        pago=pago,
+                    )
+                    cuenta.recalcular_saldo()
+                    if tenia_pendientes:
+                        excedente_total += restante
 
+            pago.saldo_posterior = cuenta.saldo
+            pago.save(update_fields=["saldo_posterior"])
+
+        if excedente_total > 0:
+            messages.info(
+                request,
+                "El pago superó el saldo de las cuotas pendientes. "
+                f"El excedente de $ {excedente_total:,.0f} quedó registrado como pago a favor."
+            )
+
+        cantidad = len(sub_pagos)
         cuenta.log(
             "Pago registrado",
-            f"Recibo {pago.numero_recibo} · $ {monto} · {forma_pago}"
+            f"$ {monto} · {forma_pago}"
+            + (f" · {cantidad} cheque(s)" if forma_pago == "cheque" else "")
             + (f" · {observaciones}" if observaciones else "")
         )
 
-        messages.success(
-            request,
-            f"Pago Nº {pago.numero_recibo} registrado correctamente. "
-            "Podés imprimirlo desde el listado de pagos."
-        )
+        if forma_pago == "cheque" and cantidad > 1:
+            messages.success(
+                request,
+                f"Pago de $ {monto:,.0f} registrado con {cantidad} cheques "
+                "(un recibo por cheque). Quedaron en la cartera de Cheques."
+            )
+        else:
+            messages.success(
+                request,
+                f"Pago Nº {ultimo_pago.numero_recibo} registrado correctamente. "
+                "Podés imprimirlo desde el listado de pagos."
+            )
         return redirect("cuentas:cuenta_corriente_detalle", cuenta_id=cuenta.id)
 
     return render(
