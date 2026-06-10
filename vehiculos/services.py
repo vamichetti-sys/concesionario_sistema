@@ -99,8 +99,14 @@ def actualizar_gastos_por_vencimientos():
             ficha.gc_grabado_autopartes = ficha.gasto_autopartes
             cambios.append("gc_grabado_autopartes")
 
-        # Patentes vencidas (acumula por cada cuota vencida)
-        if ficha.patentes_monto and ficha.patentes_monto > 0:
+        # Patentes mensuales: cada vencimiento que cae DESPUÉS de la fecha de
+        # ingreso y que ya pasó suma una "patente mensual" a gastos de
+        # concesionario, acumulando hasta que el vehículo se vende.
+        # (La deuda de patentes AL ingreso —patentes_monto— es otra cosa: es un
+        #  gasto de INGRESO, no de concesionario.)
+        mensual = ficha.patente_mensual or Decimal("0")
+        if mensual > 0:
+            f_ing = getattr(ficha.vehiculo, "fecha_ingreso", None)
             vencimientos_patentes = [
                 ficha.patentes_vto1,
                 ficha.patentes_vto2,
@@ -110,10 +116,10 @@ def actualizar_gastos_por_vencimientos():
             ]
             cuotas_vencidas = sum(
                 1 for vto in vencimientos_patentes
-                if vto and vto < hoy
+                if vto and vto < hoy and (f_ing is None or vto >= f_ing)
             )
 
-            total_patentes_esperado = ficha.patentes_monto * cuotas_vencidas
+            total_patentes_esperado = mensual * cuotas_vencidas
 
             if total_patentes_esperado > ficha.gc_patentes:
                 ficha.gc_patentes = total_patentes_esperado

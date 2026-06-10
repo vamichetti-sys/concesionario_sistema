@@ -648,6 +648,14 @@ def guardar_ficha_vehicular(request, vehiculo_id):
                     continue
                 setattr(ficha, campo, nuevo)
 
+            # Vincular el "Monto adeudado" de patentes con el gasto de ingreso
+            # de Patentes (la deuda de patentes es un gasto de ingreso).
+            if "patentes_monto" in request.POST or "patentes_adeuda" in request.POST:
+                if ficha.patentes_adeuda == "no":
+                    ficha.gasto_patentes = Decimal("0")
+                else:
+                    ficha.gasto_patentes = ficha.patentes_monto or Decimal("0")
+
             ficha.save()
 
             # ===============================
@@ -2131,6 +2139,17 @@ def guardar_ficha_parcial(request, vehiculo_id):
 
             if ficha_form.is_valid():
                 ficha_form.save()
+
+                # Vincular el "Monto adeudado" de patentes con el gasto de
+                # ingreso de Patentes: si el auto adeuda patentes, esa deuda
+                # es un gasto de ingreso que paga la concesionaria.
+                if "patentes_monto" in campos_enviados or "patentes_adeuda" in campos_enviados:
+                    if ficha.patentes_adeuda == "no":
+                        ficha.gasto_patentes = Decimal("0")
+                    else:
+                        ficha.gasto_patentes = ficha.patentes_monto or Decimal("0")
+                    ficha.save(update_fields=["gasto_patentes"])
+
                 sincronizar_turnos_calendario(vehiculo, ficha)
                 from vehiculos.services import recalcular_cuentas_vinculadas
                 recalcular_cuentas_vinculadas(vehiculo)
