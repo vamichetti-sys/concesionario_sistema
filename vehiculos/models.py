@@ -292,6 +292,13 @@ class FichaVehicular(models.Model):
         null=True
     )
 
+    # Título del automotor escaneado o fotografiado (PDF o imagen)
+    titulo_archivo = models.FileField(
+        upload_to="titulos/",
+        blank=True,
+        null=True
+    )
+
     cedula_check_estado = models.CharField(
         max_length=2,
         choices=SI_NO,

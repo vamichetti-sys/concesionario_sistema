@@ -565,14 +565,14 @@ def guardar_ficha_vehicular(request, vehiculo_id):
         # que realmente vinieron en el POST.
         campos_enviados = [
             campo for campo in FichaVehicularForm.Meta.fields
-            if campo in request.POST
+            if campo in request.POST or campo in request.FILES
         ]
 
         class FichaParcialForm(FichaVehicularForm):
             class Meta(FichaVehicularForm.Meta):
                 fields = campos_enviados
 
-        ficha_form = FichaParcialForm(request.POST, instance=ficha)
+        ficha_form = FichaParcialForm(request.POST, request.FILES, instance=ficha)
         ficha_tecnica_form = FichaTecnicaForm(request.POST, instance=ficha_tec)
 
         if vehiculo_form.is_valid() and ficha_form.is_valid():

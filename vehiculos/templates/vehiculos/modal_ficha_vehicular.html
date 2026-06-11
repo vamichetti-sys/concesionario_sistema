@@ -40,6 +40,7 @@
 
         <form id="formFichaVehicular"
               method="post"
+              enctype="multipart/form-data"
               action="{% url 'vehiculos:guardar_ficha_vehicular' vehiculo.id %}">
           {% csrf_token %}
 
@@ -213,6 +214,25 @@
     <div class="col-md-4">
       <label class="fw-bold">N° consignación / factura</label>
       {{ ficha_form.numero_consignacion_factura }}
+    </div>
+  </div>
+
+  <!-- TÍTULO ESCANEADO / FOTO DEL TÍTULO -->
+  <div class="row g-3 mb-2">
+    <div class="col-md-8">
+      <label class="fw-bold">Título del automotor (escaneado o foto)</label>
+      {{ ficha_form.titulo_archivo }}
+      <small class="text-muted">Subí el título en PDF o una foto/imagen.</small>
+    </div>
+    <div class="col-md-4 d-flex align-items-end">
+      {% if ficha_form.instance.titulo_archivo %}
+      <a href="{{ ficha_form.instance.titulo_archivo.url }}" target="_blank" class="btn btn-outline-primary w-100">
+        <i data-lucide="file-text" style="width:15px;height:15px;margin-right:5px;"></i>
+        Ver título cargado
+      </a>
+      {% else %}
+      <span class="text-muted">Sin título cargado todavía</span>
+      {% endif %}
     </div>
   </div>
 

@@ -277,6 +277,7 @@ class FichaVehicularForm(forms.ModelForm):
 
             'tipo_ingreso',
             'numero_consignacion_factura',
+            'titulo_archivo',
 
             'patentes_estado',
             'patentes_adeuda',
@@ -425,6 +426,7 @@ class FichaVehicularForm(forms.ModelForm):
             'autopartes_estado': forms.Select(attrs={'class': 'form-control'}),
             'vtv_estado': forms.Select(attrs={'class': 'form-control'}),
             'tipo_ingreso': forms.Select(attrs={'class': 'form-control'}),
+            'titulo_archivo': forms.ClearableFileInput(attrs={'class': 'form-control', 'accept': 'image/*,application/pdf'}),
             'duplicado_llave_estado': forms.Select(attrs={'class': 'form-control'}),
             'codigo_llave_estado': forms.Select(attrs={'class': 'form-control'}),
             'codigo_radio_estado': forms.Select(attrs={'class': 'form-control'}),
