@@ -212,6 +212,13 @@ def lista_pagos(request):
     cant_prox = proximos_7.count()
     total_prox = proximos_7.aggregate(t=Sum("monto"))["t"] or Decimal("0")
 
+    # Pagados (abonados) del mes/año consultado
+    pagados_mes = PagoFuturo.objects.filter(
+        pagado=True, fecha_pago__year=anio, fecha_pago__month=mes
+    )
+    total_pagado = pagados_mes.aggregate(t=Sum("monto"))["t"] or Decimal("0")
+    cant_pagado = pagados_mes.count()
+
     anios = list(
         PagoFuturo.objects.values_list("fecha_vencimiento__year", flat=True)
         .distinct().order_by("-fecha_vencimiento__year")
@@ -240,6 +247,8 @@ def lista_pagos(request):
         "vencidos_sin_monto_count": vencidos_sin_monto_count,
         "total_prox": total_prox,
         "cant_prox": cant_prox,
+        "total_pagado": total_pagado,
+        "cant_pagado": cant_pagado,
     })
 
 

@@ -40,7 +40,7 @@
 
 <!-- INDICADORES -->
 <div class="row g-3 mb-4">
-    <div class="col-6 col-md-4">
+    <div class="col-6 col-md-3">
         <div class="card p-3" style="position:relative;">
             <div class="d-flex justify-content-between align-items-start mb-2">
                 <span class="text-muted" style="font-size:13px;">Total pendiente</span>
@@ -53,7 +53,7 @@
             <div style="position:absolute;top:0;left:0;width:4px;height:100%;background:#f59e0b;border-radius:14px 0 0 14px;"></div>
         </div>
     </div>
-    <div class="col-6 col-md-4">
+    <div class="col-6 col-md-3">
         <a href="{% url 'agenda_pagos:lista' %}?filtro=vencidos" class="text-decoration-none text-reset">
             <div class="card p-3 h-100" style="position:relative;cursor:pointer;" title="Ver listado de pagos vencidos">
                 <div class="d-flex justify-content-between align-items-start mb-2">
@@ -68,7 +68,7 @@
             </div>
         </a>
     </div>
-    <div class="col-6 col-md-4">
+    <div class="col-6 col-md-3">
         <div class="card p-3" style="position:relative;">
             <div class="d-flex justify-content-between align-items-start mb-2">
                 <span class="text-muted" style="font-size:13px;">Próximos 7 días</span>
@@ -80,6 +80,21 @@
             <small class="text-muted">{{ cant_prox }} pago{{ cant_prox|pluralize:"s" }}</small>
             <div style="position:absolute;top:0;left:0;width:4px;height:100%;background:#3b82f6;border-radius:14px 0 0 14px;"></div>
         </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <a href="{% url 'agenda_pagos:lista' %}?filtro=pagados&mes={{ mes }}&anio={{ anio }}" class="text-decoration-none text-reset">
+            <div class="card p-3 h-100" style="position:relative;cursor:pointer;" title="Ver listado de pagos abonados del mes">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <span class="text-muted" style="font-size:13px;">Pagados del mes <i data-lucide="arrow-right" style="width:13px;height:13px;"></i></span>
+                    <div style="width:36px;height:36px;background:rgba(16,185,129,0.1);border-radius:8px;display:flex;align-items:center;justify-content:center;">
+                        <i data-lucide="check-circle" style="width:18px;height:18px;color:#10b981;"></i>
+                    </div>
+                </div>
+                <h4 class="fw-bold mb-0 text-success">${{ total_pagado|floatformat:0 }}</h4>
+                <small class="text-success">{{ cant_pagado }} abonado{{ cant_pagado|pluralize:"s" }} · ver listado</small>
+                <div style="position:absolute;top:0;left:0;width:4px;height:100%;background:#10b981;border-radius:14px 0 0 14px;"></div>
+            </div>
+        </a>
     </div>
 </div>
 
@@ -185,6 +200,7 @@
                         </span>
                         {% endif %}
                         {% if p.observaciones %}<br><small class="text-muted">{{ p.observaciones|truncatechars:60 }}</small>{% endif %}
+                        {% if p.creado_por %}<br><small class="text-muted"><i data-lucide="user" style="width:11px;height:11px;"></i> Cargado por {{ p.creado_por.get_full_name|default:p.creado_por.username }}</small>{% endif %}
                     </td>
                     <td>{% if p.categoria %}<span class="badge" style="background:rgba(139,92,246,0.1);color:#7c3aed;">{{ p.categoria.nombre }}</span>{% else %}<small class="text-muted">–</small>{% endif %}</td>
                     <td>
