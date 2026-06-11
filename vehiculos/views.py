@@ -1990,7 +1990,7 @@ def stock_pdf(request):
 
     label_estado = {
         "stock": "En stock",
-        "temporal": "Temporalmente no disponibles",
+        "temporal": "No disponibles",
         "vendido": "Vendidos",
         "reventa": "En reventa",
     }.get(estado_filtro, "Todos los vehículos")

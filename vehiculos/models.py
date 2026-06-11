@@ -11,7 +11,7 @@ class Vehiculo(models.Model):
     ESTADOS = [
         ('a_ingresar', 'A ingresar'),
         ('stock', 'En stock'),
-        ('temporal', 'Temporalmente no disponible'),
+        ('temporal', 'No disponible'),
         ('vendido', 'Vendido'),
         ('reventa', 'En reventa'),
     ]

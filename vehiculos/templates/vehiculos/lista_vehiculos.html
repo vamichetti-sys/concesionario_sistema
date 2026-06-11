@@ -52,7 +52,7 @@
         <a href="{% url 'vehiculos:lista_vehiculos' %}?estado=temporal{% if query %}&q={{ query }}{% endif %}" 
            class="btn {% if estado_filtro == 'temporal' %}btn-warning{% else %}btn-secondary{% endif %}">
             <i data-lucide="clock" style="width:16px;height:16px;margin-right:6px;"></i>
-            Temporal
+            No disponible
             <span class="badge bg-white text-warning ms-2">{{ total_temporal }}</span>
         </a>
         <a href="{% url 'vehiculos:lista_vehiculos' %}?estado=vendido{% if query %}&q={{ query }}{% endif %}"
@@ -192,7 +192,7 @@
                             <select name="estado" class="form-select form-select-sm" style="width:auto;">
                                 <option value="a_ingresar" {% if v.estado == 'a_ingresar' %}selected{% endif %}>A ingresar</option>
                                 <option value="stock" {% if v.estado == 'stock' %}selected{% endif %}>En stock</option>
-                                <option value="temporal" {% if v.estado == 'temporal' %}selected{% endif %}>Temporal</option>
+                                <option value="temporal" {% if v.estado == 'temporal' %}selected{% endif %}>No disponible</option>
                                 <option value="vendido" {% if v.estado == 'vendido' %}selected{% endif %}>Vendido</option>
                                 <option value="reventa" {% if v.estado == 'reventa' %}selected{% endif %}>Reventa</option>
                             </select>
@@ -255,9 +255,9 @@
                             </div>
                             {% endif %}
 
-                            <form method="POST" action="{% url 'vehiculos:eliminar_vehiculo' v.id %}" data-no-confirm onsubmit="return confirm('¿Quitar este vehículo del listado de stock?\n\nNo se borra: queda en estado Temporal y podés reactivarlo cuando quieras desde el filtro Temporal.');">
+                            <form method="POST" action="{% url 'vehiculos:eliminar_vehiculo' v.id %}" data-no-confirm onsubmit="return confirm('¿Quitar este vehículo del listado de stock?\n\nNo se borra: queda en estado No disponible y podés reactivarlo cuando quieras desde el filtro No disponible.');">
                                 {% csrf_token %}
-                                <button type="submit" class="btn btn-outline-secondary btn-sm" title="Quitar del listado de stock (queda como Temporal)">
+                                <button type="submit" class="btn btn-outline-secondary btn-sm" title="Quitar del listado de stock (queda como No disponible)">
                                     <i data-lucide="archive" style="width:14px;height:14px;"></i>
                                 </button>
                             </form>
@@ -337,8 +337,8 @@ if (typeof lucide !== 'undefined') lucide.createIcons();
                             <label class="form-label" style="font-size:12px;">Estado</label>
                             <select name="estado" class="form-select form-select-sm">
                                 <option value="activos" {% if estado_filtro == "" or estado_filtro == "activos" %}selected{% endif %}>Activos (sin vendidos)</option>
-                                <option value="stock" {% if estado_filtro == "stock" %}selected{% endif %}>En stock + temporal</option>
-                                <option value="temporal" {% if estado_filtro == "temporal" %}selected{% endif %}>Solo temporal</option>
+                                <option value="stock" {% if estado_filtro == "stock" %}selected{% endif %}>En stock + no disponible</option>
+                                <option value="temporal" {% if estado_filtro == "temporal" %}selected{% endif %}>Solo no disponible</option>
                                 <option value="reventa" {% if estado_filtro == "reventa" %}selected{% endif %}>En reventa</option>
                                 <option value="vendido" {% if estado_filtro == "vendido" %}selected{% endif %}>Vendidos</option>
                                 <option value="todos" {% if estado_filtro == "todos" %}selected{% endif %}>Todos (incluye vendidos)</option>
