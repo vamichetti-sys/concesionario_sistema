@@ -387,11 +387,13 @@
     <div class="col-md-3">
       <label class="fw-bold">Verificación policial</label>
       {{ ficha_form.verificacion_estado }}
+      {% if ficha.verificacion_vencida %}<span class="badge bg-danger mt-1">Vencida</span>{% endif %}
     </div>
 
     <div class="col-md-3">
       <label class="fw-bold">Vencimiento</label>
       {{ ficha_form.verificacion_vencimiento }}
+      {% if ficha.verificacion_vencida %}<small class="text-danger d-block mt-1">Venció el {{ ficha.verificacion_vencimiento|date:"d/m/Y" }}</small>{% endif %}
     </div>
   </div>
 
@@ -410,11 +412,13 @@
     <div class="col-md-3">
       <label class="fw-bold">VTV</label>
       {{ ficha_form.vtv_estado }}
+      {% if ficha.vtv_vencida %}<span class="badge bg-danger mt-1">Vencida</span>{% endif %}
     </div>
 
     <div class="col-md-3">
       <label class="fw-bold">Vencimiento</label>
       {{ ficha_form.vtv_vencimiento }}
+      {% if ficha.vtv_vencida %}<small class="text-danger d-block mt-1">Venció el {{ ficha.vtv_vencimiento|date:"d/m/Y" }}</small>{% endif %}
     </div>
   </div>
 </div>

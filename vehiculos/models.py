@@ -405,6 +405,16 @@ class FichaVehicular(models.Model):
     # COMPATIBILIDAD PARA PDF / TEMPLATES
     # ======================================================
     @property
+    def verificacion_vencida(self):
+        """True si la verificación policial tiene vencimiento y ya pasó."""
+        return bool(self.verificacion_vencimiento and self.verificacion_vencimiento < date.today())
+
+    @property
+    def vtv_vencida(self):
+        """True si la VTV tiene vencimiento y ya pasó."""
+        return bool(self.vtv_vencimiento and self.vtv_vencimiento < date.today())
+
+    @property
     def fecha_inscripcion(self):
         return self.fecha_inscripcion_inicial
 
