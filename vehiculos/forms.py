@@ -431,8 +431,12 @@ class FichaVehicularForm(forms.ModelForm):
             'manuales_estado': forms.Select(attrs={'class': 'form-control'}),
             'oblea_gnc_estado': forms.Select(attrs={'class': 'form-control'}),
             'observaciones': forms.Textarea(attrs={'rows': 5, 'class': 'form-control'}),
-            'oblea_gnc_obs': forms.Textarea(attrs={'rows': 2, 'class': 'form-control'}),
-            'duplicado_llave_obs': forms.Textarea(attrs={'rows': 2, 'class': 'form-control'}),
+            # Observaciones de accesorios: todas iguales, una sola línea
+            'duplicado_llave_obs': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Observación'}),
+            'codigo_llave_obs': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Observación'}),
+            'codigo_radio_obs': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Observación'}),
+            'manuales_obs': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Observación'}),
+            'oblea_gnc_obs': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Observación'}),
         }
 
     # ======================================================

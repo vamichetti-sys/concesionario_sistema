@@ -192,10 +192,10 @@
     </div>
   </div>
 
-  <hr class="my-4">
+  <hr class="mt-5 mb-4">
 
   <!-- ===== TITULARIDAD (dentro de Datos básicos) ===== -->
-  <h4 class="fw-bold mb-3" style="color:#002855;">
+  <h4 class="fw-bold mb-4 mt-2" style="color:#002855;">
     Titularidad / Ingreso
   </h4>
 
@@ -501,10 +501,10 @@
       Descargar PDF
     </a>
   </div>
-  <hr class="my-4">
+  <hr class="mt-5 mb-4">
 
   <!-- ===== PAGO DE GASTOS (dentro de Gastos de ingreso) ===== -->
-  <h4 class="fw-bold mb-3" style="color:#002855;">
+  <h4 class="fw-bold mb-4 mt-2" style="color:#002855;">
     Pago de gastos de ingreso
   </h4>
 
@@ -1317,61 +1317,51 @@
 </div>
 
 <div class="tab-pane fade" id="tab-observaciones">
-  <div class="row g-3">
 
-    <div class="col-12">
-      <label class="fw-bold">Observaciones generales</label>
-      {{ ficha_form.observaciones }}
-    </div>
-
-    <hr class="my-3">
-
-    <!-- SEGUNDA LLAVE -->
-    <div class="col-md-3 fw-bold">Segunda llave</div>
-    <div class="col-md-2">
-      {{ ficha_form.duplicado_llave_estado }}
-    </div>
-    <div class="col-md-7">
-      {{ ficha_form.duplicado_llave_obs }}
-    </div>
-
-    <!-- CÓDIGO DE LLAVE -->
-    <div class="col-md-3 fw-bold">Código de llave</div>
-    <div class="col-md-2">
-      {{ ficha_form.codigo_llave_estado }}
-    </div>
-    <div class="col-md-7">
-      {{ ficha_form.codigo_llave_obs }}
-    </div>
-
-    <!-- OBLEA GNC -->
-    <div class="col-md-3 fw-bold">Oblea GNC</div>
-    <div class="col-md-2">
-      {{ ficha_form.oblea_gnc_estado }}
-    </div>
-    <div class="col-md-7">
-      {{ ficha_form.oblea_gnc_obs }}
-    </div>
-
-    <!-- CÓDIGO DE RADIO -->
-    <div class="col-md-3 fw-bold">Código de radio</div>
-    <div class="col-md-2">
-      {{ ficha_form.codigo_radio_estado }}
-    </div>
-    <div class="col-md-7">
-      {{ ficha_form.codigo_radio_obs }}
-    </div>
-
-    <!-- MANUALES -->
-    <div class="col-md-3 fw-bold">Manuales</div>
-    <div class="col-md-2">
-      {{ ficha_form.manuales_estado }}
-    </div>
-    <div class="col-md-7">
-      {{ ficha_form.manuales_obs }}
-    </div>
-
+  <div class="mb-3">
+    <label class="fw-bold">Observaciones generales</label>
+    {{ ficha_form.observaciones }}
   </div>
+
+  <hr class="my-3">
+
+  <h6 class="fw-bold mb-3" style="color:#002855;">Accesorios y documentación de entrega</h6>
+
+  <!-- SEGUNDA LLAVE -->
+  <div class="row g-2 align-items-center mb-2">
+    <div class="col-md-3 fw-bold">Segunda llave</div>
+    <div class="col-md-3">{{ ficha_form.duplicado_llave_estado }}</div>
+    <div class="col-md-6">{{ ficha_form.duplicado_llave_obs }}</div>
+  </div>
+
+  <!-- CÓDIGO DE LLAVE -->
+  <div class="row g-2 align-items-center mb-2">
+    <div class="col-md-3 fw-bold">Código de llave</div>
+    <div class="col-md-3">{{ ficha_form.codigo_llave_estado }}</div>
+    <div class="col-md-6">{{ ficha_form.codigo_llave_obs }}</div>
+  </div>
+
+  <!-- OBLEA GNC -->
+  <div class="row g-2 align-items-center mb-2">
+    <div class="col-md-3 fw-bold">Oblea GNC</div>
+    <div class="col-md-3">{{ ficha_form.oblea_gnc_estado }}</div>
+    <div class="col-md-6">{{ ficha_form.oblea_gnc_obs }}</div>
+  </div>
+
+  <!-- CÓDIGO DE RADIO -->
+  <div class="row g-2 align-items-center mb-2">
+    <div class="col-md-3 fw-bold">Código de radio</div>
+    <div class="col-md-3">{{ ficha_form.codigo_radio_estado }}</div>
+    <div class="col-md-6">{{ ficha_form.codigo_radio_obs }}</div>
+  </div>
+
+  <!-- MANUALES -->
+  <div class="row g-2 align-items-center mb-2">
+    <div class="col-md-3 fw-bold">Manuales</div>
+    <div class="col-md-3">{{ ficha_form.manuales_estado }}</div>
+    <div class="col-md-6">{{ ficha_form.manuales_obs }}</div>
+  </div>
+
 </div>
 
 <!-- 🔴 CIERRO ACÁ EL FORM PRINCIPAL DE LA FICHA -->
