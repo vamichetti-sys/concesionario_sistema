@@ -105,11 +105,21 @@ def construir_gastos_conc_pago(vehiculo, ficha, gastos_extras):
     total_pendiente = sum((i["saldo"] for i in items if i["saldo"] > 0), Decimal("0"))
     total_pagado = sum((i["total_pagado"] for i in items), Decimal("0"))
 
+    # Historial con etiqueta legible del concepto
+    extras_labels = {f"extra:{e.pk}": e.concepto for e in gastos_extras}
+    pagos = list(pagos_qs.order_by("-fecha_pago", "-creado"))
+    for p in pagos:
+        p.concepto_label = (
+            GASTOS_CONC_LABELS.get(p.concepto)
+            or extras_labels.get(p.concepto)
+            or p.concepto
+        )
+
     return {
         "gastos_conc_pago": items,
         "total_pendiente_conc": total_pendiente,
         "total_pagado_conc": total_pagado,
-        "pagos_conc": pagos_qs.order_by("-fecha_pago", "-creado"),
+        "pagos_conc": pagos,
     }
 
 
