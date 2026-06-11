@@ -59,8 +59,6 @@ def actualizar_gastos_por_vencimientos():
     si la concesionaria efectivamente lo paga, se carga A MANO en
     "Gastos concesionario".
     """
-    hoy = date.today()
-
     fichas = FichaVehicular.objects.filter(
         vehiculo__estado="stock",
     ).select_related("vehiculo")
@@ -68,36 +66,47 @@ def actualizar_gastos_por_vencimientos():
     actualizados = 0
 
     for ficha in fichas:
-        cambios = []
-
-        # Patentes mensuales: cada vencimiento que cae DESPUÉS de la fecha de
-        # ingreso y que ya pasó suma una "patente mensual" a gastos de
-        # concesionario, acumulando hasta que el vehículo se vende.
-        # (La deuda de patentes AL ingreso —patentes_monto— es otra cosa: es un
-        #  gasto de INGRESO, no de concesionario.)
-        mensual = ficha.patente_mensual or Decimal("0")
-        if mensual > 0:
-            f_ing = getattr(ficha.vehiculo, "fecha_ingreso", None)
-            vencimientos_patentes = [
-                ficha.patentes_vto1,
-                ficha.patentes_vto2,
-                ficha.patentes_vto3,
-                ficha.patentes_vto4,
-                ficha.patentes_vto5,
-            ]
-            cuotas_vencidas = sum(
-                1 for vto in vencimientos_patentes
-                if vto and vto < hoy and (f_ing is None or vto >= f_ing)
-            )
-
-            total_patentes_esperado = mensual * cuotas_vencidas
-
-            if total_patentes_esperado > ficha.gc_patentes:
-                ficha.gc_patentes = total_patentes_esperado
-                cambios.append("gc_patentes")
-
-        if cambios:
-            ficha.save(update_fields=cambios)
+        if acumular_patentes_mensuales(ficha):
+            ficha.save(update_fields=["gc_patentes"])
             actualizados += 1
 
     return actualizados
+
+
+def acumular_patentes_mensuales(ficha, hoy=None):
+    """Para UNA ficha: acumula en gc_patentes una "patente mensual" por cada
+    vencimiento que YA pasó y es POSTERIOR (o igual) a la fecha de ingreso.
+
+    Devuelve True si modificó ficha.gc_patentes (NO guarda; eso lo hace quien
+    llama). Solo aumenta gc_patentes, nunca lo baja, para no pisar cargas
+    manuales.
+
+    (La deuda de patentes AL ingreso —patentes_monto— es otra cosa: es un gasto
+     de INGRESO, no de concesionario.)
+    """
+    hoy = hoy or date.today()
+
+    mensual = ficha.patente_mensual or Decimal("0")
+    if mensual <= 0:
+        return False
+
+    f_ing = getattr(ficha.vehiculo, "fecha_ingreso", None)
+    vencimientos_patentes = [
+        ficha.patentes_vto1,
+        ficha.patentes_vto2,
+        ficha.patentes_vto3,
+        ficha.patentes_vto4,
+        ficha.patentes_vto5,
+    ]
+    cuotas_vencidas = sum(
+        1 for vto in vencimientos_patentes
+        if vto and vto < hoy and (f_ing is None or vto >= f_ing)
+    )
+
+    total_patentes_esperado = mensual * cuotas_vencidas
+    actual = ficha.gc_patentes or Decimal("0")
+
+    if total_patentes_esperado > actual:
+        ficha.gc_patentes = total_patentes_esperado
+        return True
+    return False

@@ -171,6 +171,17 @@ urlpatterns = [
         views.eliminar_gasto_extra,
         name="eliminar_gasto_extra"
     ),
+    # Pago de gastos de concesionario (registrar / eliminar)
+    path(
+        "pago-gasto-concesionario/",
+        views.registrar_pago_gasto_concesionario,
+        name="registrar_pago_gasto_concesionario"
+    ),
+    path(
+        "pago-gasto-concesionario/eliminar/<int:pago_id>/",
+        views.eliminar_pago_gasto_concesionario,
+        name="eliminar_pago_gasto_concesionario"
+    ),
     # ==================================================
     # GASTOS – CONFIGURACIÓN GLOBAL
     # ==================================================

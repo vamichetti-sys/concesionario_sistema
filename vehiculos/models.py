@@ -579,6 +579,43 @@ class GastoConcesionario(models.Model):
 
 
 # ============================================================
+# PAGO DE GASTOS DE CONCESIONARIO
+# ============================================================
+class PagoGastoConcesionario(models.Model):
+    """Pago registrado contra un gasto de concesionario.
+
+    Mismo patrón que PagoGastoIngreso, pero SIN situación: estos gastos los
+    paga siempre la concesionaria (no hay organismo / cliente / proveedor que
+    los reintegre). El campo `concepto` guarda la clave del gasto:
+      - un campo fijo de la ficha: "gc_service", "gc_mecanica", ...
+      - o un gasto adicional: "extra:<pk>" (GastoConcesionario)
+    """
+    vehiculo = models.ForeignKey(
+        Vehiculo,
+        on_delete=models.CASCADE,
+        related_name="pagos_gastos_concesionario",
+    )
+
+    concepto = models.CharField(max_length=100)
+    fecha_pago = models.DateField()
+    monto = models.DecimalField(max_digits=12, decimal_places=2)
+
+    # A quién se le pagó (taller, proveedor de servicio, etc.). Texto libre.
+    ente = models.CharField(max_length=120, blank=True)
+    observaciones = models.TextField(blank=True, null=True)
+
+    creado = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-fecha_pago", "-creado"]
+        verbose_name = "Pago de gasto de concesionario"
+        verbose_name_plural = "Pagos de gastos de concesionario"
+
+    def __str__(self):
+        return f"{self.vehiculo} - {self.concepto} - ${self.monto}"
+
+
+# ============================================================
 # FICHA TÉCNICA DEL VEHÍCULO
 # ============================================================
 class FichaTecnica(models.Model):

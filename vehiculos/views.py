@@ -18,6 +18,7 @@ from .models import (
     PagoGastoIngreso,
     ConfiguracionGastosIngreso,
     GastoConcesionario,
+    PagoGastoConcesionario,
     Mantenimiento,
 )
 
@@ -30,6 +31,86 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
+
+
+# ==========================================================
+# GASTOS DE CONCESIONARIO — conceptos fijos + pago de gastos
+# ==========================================================
+GASTOS_CONC_CAMPOS = [
+    ("gc_service", "Service"),
+    ("gc_mecanica", "Mecanica"),
+    ("gc_chapa_pintura", "Chapa y pintura"),
+    ("gc_tapizado", "Tapizado"),
+    ("gc_neumaticos", "Neumaticos"),
+    ("gc_vidrios", "Vidrios"),
+    ("gc_cerrajeria", "Cerrajeria"),
+    ("gc_lavado", "Lavado / Pulido"),
+    ("gc_gnc", "GNC"),
+    ("gc_grabado_autopartes", "Grabado autopartes"),
+    ("gc_vtv", "VTV"),
+    ("gc_verificacion", "Verificacion policial"),
+    ("gc_patentes", "Patentes"),
+    ("gc_otros", "Otros"),
+]
+
+# Etiquetas para resolver el nombre de un concepto de gasto de concesionario
+GASTOS_CONC_LABELS = dict(GASTOS_CONC_CAMPOS)
+
+
+def construir_gastos_conc_pago(vehiculo, ficha, gastos_extras):
+    """Data para 'Pago de gastos de concesionario'.
+
+    Para cada gasto fijo (gc_*) con monto > 0 y para cada gasto adicional,
+    calcula total pagado y saldo (mismo patrón que gastos de ingreso). Devuelve
+    también el historial de pagos del vehículo.
+    """
+    pagos_qs = PagoGastoConcesionario.objects.filter(vehiculo=vehiculo)
+
+    def _pagado(key):
+        return pagos_qs.filter(concepto=key).aggregate(t=Sum("monto"))["t"] or Decimal("0")
+
+    items = []
+
+    for campo, label in GASTOS_CONC_CAMPOS:
+        monto = Decimal(getattr(ficha, campo, None) or 0)
+        if monto <= 0:
+            continue
+        pagado = Decimal(_pagado(campo))
+        saldo = monto - pagado
+        items.append({
+            "key": campo,
+            "concepto": label,
+            "monto": monto,
+            "total_pagado": pagado,
+            "saldo": saldo,
+            "esta_pagado": saldo <= 0,
+        })
+
+    for extra in gastos_extras:
+        monto = Decimal(extra.monto or 0)
+        if monto <= 0:
+            continue
+        key = f"extra:{extra.pk}"
+        pagado = Decimal(_pagado(key))
+        saldo = monto - pagado
+        items.append({
+            "key": key,
+            "concepto": extra.concepto,
+            "monto": monto,
+            "total_pagado": pagado,
+            "saldo": saldo,
+            "esta_pagado": saldo <= 0,
+        })
+
+    total_pendiente = sum((i["saldo"] for i in items if i["saldo"] > 0), Decimal("0"))
+    total_pagado = sum((i["total_pagado"] for i in items), Decimal("0"))
+
+    return {
+        "gastos_conc_pago": items,
+        "total_pendiente_conc": total_pendiente,
+        "total_pagado_conc": total_pagado,
+        "pagos_conc": pagos_qs.order_by("-fecha_pago", "-creado"),
+    }
 
 
 # ==========================================================
@@ -522,6 +603,9 @@ def ficha_vehicular_ajax(request, vehiculo_id):
     total_extras = gastos_extras.aggregate(t=Sum("monto"))["t"] or Decimal("0")
     total_gastos_conc += total_extras
 
+    # Pago de gastos de concesionario (mismo patrón que gastos de ingreso)
+    ctx_pago_conc = construir_gastos_conc_pago(vehiculo, ficha, gastos_extras)
+
     html = render_to_string(
         "vehiculos/modal_ficha_vehicular.html",
         {
@@ -538,6 +622,7 @@ def ficha_vehicular_ajax(request, vehiculo_id):
             "mantenimientos": vehiculo.mantenimientos.all(),
             "clientes_titular": _clientes_para_titular(),
             "tiene_proveedor": ficha.vendedor_id is not None,
+            **ctx_pago_conc,
         },
         request=request,
     )
@@ -670,6 +755,12 @@ def guardar_ficha_vehicular(request, vehiculo_id):
                     setattr(ficha, _g, Decimal("0"))
 
             ficha.save()
+
+            # Patentes mensuales vencidas (posteriores al ingreso) → se acumulan
+            # automáticamente en gastos de concesionario al guardar la ficha.
+            from vehiculos.services import acumular_patentes_mensuales
+            if acumular_patentes_mensuales(ficha):
+                ficha.save(update_fields=["gc_patentes"])
 
             # ===============================
             # GUARDAR FICHA TÉCNICA
@@ -836,6 +927,9 @@ def ficha_completa(request, vehiculo_id):
     total_extras = gastos_extras.aggregate(t=Sum("monto"))["t"] or Decimal("0")
     total_gastos_conc += total_extras
 
+    # Pago de gastos de concesionario (mismo patrón que gastos de ingreso)
+    ctx_pago_conc = construir_gastos_conc_pago(vehiculo, ficha, gastos_extras)
+
     return render(
         request,
         "vehiculos/ficha_completa.html",
@@ -853,6 +947,7 @@ def ficha_completa(request, vehiculo_id):
             "ficha_tecnica_form": ficha_tecnica_form,
             "clientes_titular": _clientes_para_titular(),
             "tiene_proveedor": ficha.vendedor_id is not None,
+            **ctx_pago_conc,
         },
     )
 
@@ -1558,6 +1653,89 @@ def eliminar_pago_gasto(request, pago_id):
         pago.delete()
         messages.success(request, "Pago eliminado y movimientos vinculados revertidos.")
 
+    return redirect("vehiculos:ficha_completa", vehiculo_id=vehiculo_id)
+
+
+# ==========================================================
+# PAGO DE GASTOS DE CONCESIONARIO (registrar / eliminar)
+# ==========================================================
+@login_required
+@transaction.atomic
+def registrar_pago_gasto_concesionario(request):
+    """Registra un pago contra un gasto de concesionario (gc_* o extra:<pk>).
+
+    A diferencia de los gastos de ingreso, NO hay situación: estos gastos los
+    paga siempre la concesionaria. Solo guardamos cuánto, cuándo, a quién y una
+    observación.
+    """
+    if request.method != "POST":
+        return redirect("vehiculos:inicio")
+
+    vehiculo_id = request.POST.get("vehiculo_id")
+    concepto_key = (request.POST.get("gasto_id") or "").strip()
+    fecha_pago = request.POST.get("fecha_pago")
+    monto_raw = request.POST.get("monto")
+    ente = (request.POST.get("ente") or "").strip()
+    observaciones = request.POST.get("observaciones") or ""
+
+    if not vehiculo_id:
+        messages.error(request, "Vehículo inválido.")
+        return redirect(request.META.get("HTTP_REFERER", "vehiculos:inicio"))
+    if not fecha_pago:
+        messages.error(request, "Para registrar un pago es obligatorio ingresar la fecha.")
+        return redirect(request.META.get("HTTP_REFERER", "vehiculos:inicio"))
+    if not monto_raw:
+        messages.error(request, "El monto del pago debe ser mayor a 0.")
+        return redirect(request.META.get("HTTP_REFERER", "vehiculos:inicio"))
+
+    vehiculo = get_object_or_404(Vehiculo, id=vehiculo_id)
+
+    # Validar el concepto: campo fijo (gc_*) o un adicional (extra:<pk>)
+    concepto_valido = False
+    if concepto_key in GASTOS_CONC_LABELS:
+        concepto_valido = True
+    elif concepto_key.startswith("extra:"):
+        try:
+            extra_pk = int(concepto_key.split(":", 1)[1])
+            concepto_valido = GastoConcesionario.objects.filter(
+                pk=extra_pk, vehiculo=vehiculo
+            ).exists()
+        except (ValueError, IndexError):
+            concepto_valido = False
+    if not concepto_valido:
+        messages.error(request, "Concepto de gasto de concesionario inválido.")
+        return redirect("vehiculos:ficha_completa", vehiculo_id=vehiculo.id)
+
+    try:
+        monto = Decimal(str(monto_raw).replace(",", "."))
+    except (ValueError, InvalidOperation):
+        messages.error(request, "Monto inválido.")
+        return redirect("vehiculos:ficha_completa", vehiculo_id=vehiculo.id)
+    if monto <= 0:
+        messages.error(request, "El monto del pago debe ser mayor a 0.")
+        return redirect("vehiculos:ficha_completa", vehiculo_id=vehiculo.id)
+
+    PagoGastoConcesionario.objects.create(
+        vehiculo=vehiculo,
+        concepto=concepto_key,
+        fecha_pago=fecha_pago,
+        monto=monto,
+        ente=ente,
+        observaciones=observaciones,
+    )
+    messages.success(request, f"Pago de gasto de concesionario registrado: ${monto}.")
+    return redirect(
+        reverse("vehiculos:ficha_completa", args=[vehiculo.id]) + "#gastos-concesionario"
+    )
+
+
+@login_required
+def eliminar_pago_gasto_concesionario(request, pago_id):
+    pago = get_object_or_404(PagoGastoConcesionario, id=pago_id)
+    vehiculo_id = pago.vehiculo_id
+    if request.method == "POST":
+        pago.delete()
+        messages.success(request, "Pago de gasto de concesionario eliminado.")
     return redirect("vehiculos:ficha_completa", vehiculo_id=vehiculo_id)
 
 
