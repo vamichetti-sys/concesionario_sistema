@@ -21,10 +21,15 @@
     <form method="post">
         {% csrf_token %}
 
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+        {% endif %}
+
         <div class="row g-4">
             <div class="col-12">
                 <label class="form-label">Nombre y apellido</label>
                 {{ form.nombre_completo }}
+                {% for e in form.nombre_completo.errors %}<div class="text-danger small mt-1">{{ e }}</div>{% endfor %}
             </div>
 
             <div class="col-md-6">
@@ -40,6 +45,7 @@
             <div class="col-md-6">
                 <label class="form-label">DNI / CUIT</label>
                 {{ form.dni_cuit }}
+                {% for e in form.dni_cuit.errors %}<div class="text-danger small mt-1">{{ e }}</div>{% endfor %}
             </div>
 
             <div class="col-md-6">
