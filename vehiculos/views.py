@@ -1191,17 +1191,27 @@ def registrar_pago_gasto(request):
         messages.error(request, "El monto del pago debe ser mayor a 0.")
         return redirect(request.META.get("HTTP_REFERER"))
 
-    # ── Interruptor: ¿de quién es el gasto? Lo decide el proveedor (Titularidad) ──
-    proveedor = ficha.vendedor   # compraventa.Proveedor o None
-    pertenece = "proveedor" if proveedor_id_de(ficha) else "cliente"
-
-    # Validar coherencia de la situación con a quién pertenece
-    if pertenece == "proveedor":
-        opciones_validas = SITUACIONES_PROVEEDOR
+    # ── La situación elegida define a quién pertenece el gasto ──
+    # prov_* = lo asume el proveedor (me lo reintegra / pagó él);
+    # cli_*/pendiente = lo asume el cliente.
+    # Ya NO depende de Titularidad: cualquier gasto puede marcarse como
+    # "lo pagué yo y el proveedor me reintegra".
+    if situacion in SITUACIONES_PROVEEDOR:
+        pertenece = "proveedor"
+    elif situacion in SITUACIONES_CLIENTE:
+        pertenece = "cliente"
     else:
-        opciones_validas = SITUACIONES_CLIENTE
-    if situacion not in opciones_validas:
         messages.error(request, "Elegí una situación válida para este pago.")
+        return redirect("vehiculos:ficha_completa", vehiculo_id=vehiculo.id)
+
+    # Para el reintegro necesitamos saber QUÉ proveedor me debe.
+    proveedor = _proveedor_de_vehiculo(vehiculo, ficha)
+    if situacion == "prov_reintegro" and proveedor is None:
+        messages.error(
+            request,
+            "Para marcar que el proveedor te reintegra, primero cargá el "
+            "proveedor del vehículo en la pestaña Titularidad."
+        )
         return redirect("vehiculos:ficha_completa", vehiculo_id=vehiculo.id)
 
     saldado = situacion in SITUACIONES_SALDADAS
@@ -1297,6 +1307,27 @@ def registrar_pago_gasto(request):
 def proveedor_id_de(ficha):
     """True si la ficha tiene proveedor cargado en Titularidad."""
     return getattr(ficha, "vendedor_id", None) is not None
+
+
+def _proveedor_de_vehiculo(vehiculo, ficha):
+    """
+    Resuelve el proveedor de un vehículo para los reintegros.
+    Primero mira Titularidad (ficha.vendedor); si no hay, busca la operación
+    de compra-venta cargada para ese vehículo.
+    """
+    if getattr(ficha, "vendedor_id", None):
+        return ficha.vendedor
+    try:
+        from compraventa.models import CompraVentaOperacion
+        op = (
+            CompraVentaOperacion.objects
+            .filter(vehiculo=vehiculo, proveedor__isnull=False)
+            .select_related("proveedor")
+            .first()
+        )
+        return op.proveedor if op else None
+    except Exception:
+        return None
 
 
 # ==========================================================

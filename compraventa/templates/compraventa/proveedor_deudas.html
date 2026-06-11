@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Deudas del proveedor{% endblock %}
+{% block content %}
+
+<div class="mb-4">
+    <a href="{% url 'compraventa:proveedor_detalle' proveedor.id %}" class="text-muted text-decoration-none d-inline-flex align-items-center mb-2" style="font-size:14px;">
+        <i data-lucide="arrow-left" style="width:16px;height:16px;margin-right:6px;"></i>
+        Volver al proveedor
+    </a>
+    <h3 class="fw-bold mb-1">Deudas — {{ proveedor.nombre_empresa }}</h3>
+    <p class="text-muted mb-0">Gastos de ingreso que pagó la concesionaria y el proveedor tiene que reintegrar.</p>
+</div>
+
+<!-- TOTAL PENDIENTE -->
+<div class="card p-3 mb-4" style="border-left:4px solid #f59e0b;">
+    <small class="text-muted">El proveedor me debe (pendiente de reintegro)</small>
+    <h3 class="fw-bold mb-0 text-danger">$ {{ total_pendiente|floatformat:0 }}</h3>
+    <small class="text-muted">{{ cant_pendiente }} gasto{{ cant_pendiente|pluralize:"s" }} pendiente{{ cant_pendiente|pluralize:"s" }}</small>
+</div>
+
+<div class="card p-4">
+    {% if reintegros %}
+    <div class="table-responsive">
+        <table class="table align-middle mb-0">
+            <thead>
+                <tr>
+                    <th style="width:60px;">Pagado</th>
+                    <th>Vehículo</th>
+                    <th>Concepto</th>
+                    <th>Organismo</th>
+                    <th class="text-end">Monto</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in reintegros %}
+                <tr class="{% if r.estado == 'reintegrado' %}table-light text-muted{% endif %}">
+                    <td>
+                        <form method="post" action="{% url 'compraventa:reintegro_marcar' r.id %}" data-no-confirm
+                              onsubmit="return confirm('{% if r.estado == 'pendiente' %}¿Marcar como reintegrado (pagado por el proveedor)? El gasto queda saldado en la ficha del vehículo.{% else %}¿Volver a pendiente?{% endif %}');">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm p-0" style="border:none;background:none;"
+                                    title="{% if r.estado == 'pendiente' %}Marcar como pagado{% else %}Volver a pendiente{% endif %}">
+                                {% if r.estado == 'reintegrado' %}
+                                <i data-lucide="check-circle-2" style="width:22px;height:22px;color:#10b981;"></i>
+                                {% else %}
+                                <i data-lucide="circle" style="width:22px;height:22px;color:#d1d5db;"></i>
+                                {% endif %}
+                            </button>
+                        </form>
+                    </td>
+                    <td>
+                        {% if r.vehiculo %}
+                        <div class="fw-semibold">{{ r.vehiculo }}</div>
+                        <small class="text-muted">{{ r.vehiculo.dominio|default:"—" }}</small>
+                        {% else %}—{% endif %}
+                    </td>
+                    <td>{{ r.concepto }}</td>
+                    <td>{{ r.ente|default:"—" }}</td>
+                    <td class="text-end fw-semibold">$ {{ r.monto|floatformat:0 }}</td>
+                    <td>
+                        {% if r.estado == 'reintegrado' %}
+                        <span class="badge bg-success">Reintegrado{% if r.fecha_reintegro %} · {{ r.fecha_reintegro|date:"d/m/Y" }}{% endif %}</span>
+                        {% else %}
+                        <span class="badge bg-warning text-dark">Pendiente</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="p-4 text-center" style="background:#f0fdf4;border-radius:12px;">
+        <i data-lucide="check-circle" style="width:32px;height:32px;color:#10b981;margin-bottom:8px;"></i>
+        <p class="text-success fw-semibold mb-0">Este proveedor no te debe gastos.</p>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+</script>
+{% endblock %}

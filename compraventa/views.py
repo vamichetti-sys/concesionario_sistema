@@ -10,6 +10,7 @@ from .models import (
     CompraVentaOperacion,
     DeudaProveedor,
     PagoProveedor,
+    ReintegroProveedor,
 )
 from .forms import (
     ProveedorForm,
@@ -166,13 +167,15 @@ def proveedor_unidades(request, proveedor_id):
         )
     }
     
-    # Agregar información de deuda a cada operación
+    # Agregar información de deuda a cada operación y separar stock / vendidas
+    en_stock = []
+    vendidas = []
     for op in operaciones:
         if not op.vehiculo:
             op.deuda_vehiculo = 0
             op.total_pagado_vehiculo = 0
             continue
-            
+
         deuda = deudas_dict.get(op.vehiculo.id)
         if deuda:
             op.deuda_vehiculo = deuda.saldo
@@ -181,13 +184,21 @@ def proveedor_unidades(request, proveedor_id):
             # Si no existe deuda registrada, la deuda es el precio total
             op.deuda_vehiculo = op.precio_compra or 0
             op.total_pagado_vehiculo = 0
-    
+
+        # Separar lo que todavía tenemos (no vendido) de lo vendido
+        if op.vehiculo.estado == "vendido":
+            vendidas.append(op)
+        else:
+            en_stock.append(op)
+
     return render(
         request,
         "compraventa/proveedor_unidades.html",
         {
             "proveedor": proveedor,
             "operaciones": operaciones,
+            "en_stock": en_stock,
+            "vendidas": vendidas,
         }
     )
 
@@ -234,6 +245,60 @@ def proveedor_cuenta_corriente(request, proveedor_id):
             "saldo_total": saldo_total,
         }
     )
+
+# ==========================================================
+# 💵 DEUDAS DEL PROVEEDOR (reintegros de gastos — situación B)
+# ==========================================================
+@login_required
+def proveedor_deudas(request, proveedor_id):
+    """Lo que el PROVEEDOR me debe: reintegros de gastos de ingreso que pagué yo."""
+    proveedor = get_object_or_404(Proveedor, id=proveedor_id)
+    reintegros = (
+        ReintegroProveedor.objects
+        .filter(proveedor=proveedor)
+        .select_related("vehiculo")
+        .order_by("estado", "-creado")
+    )
+    pendientes = [r for r in reintegros if r.estado == "pendiente"]
+    total_pendiente = sum((r.monto or Decimal("0") for r in pendientes), Decimal("0"))
+    return render(
+        request,
+        "compraventa/proveedor_deudas.html",
+        {
+            "proveedor": proveedor,
+            "reintegros": reintegros,
+            "total_pendiente": total_pendiente,
+            "cant_pendiente": len(pendientes),
+        },
+    )
+
+
+@login_required
+@transaction.atomic
+def reintegro_marcar(request, reintegro_id):
+    """
+    Marca un reintegro como pagado (reintegrado) o lo vuelve a pendiente.
+    Al marcarlo pagado, cierra el gasto en la ficha del vehículo
+    (PagoGastoIngreso.saldado=True) → aparece en 0/saldado.
+    """
+    rein = get_object_or_404(ReintegroProveedor, id=reintegro_id)
+    if request.method == "POST":
+        from vehiculos.models import PagoGastoIngreso
+        pagos = PagoGastoIngreso.objects.filter(reintegro_proveedor_id=rein.pk)
+        if rein.estado == "pendiente":
+            rein.estado = "reintegrado"
+            rein.fecha_reintegro = date.today()
+            rein.save(update_fields=["estado", "fecha_reintegro"])
+            pagos.update(saldado=True, fecha_saldado=date.today())
+            messages.success(request, "Reintegro marcado como pagado. El gasto quedó saldado en la ficha.")
+        else:
+            rein.estado = "pendiente"
+            rein.fecha_reintegro = None
+            rein.save(update_fields=["estado", "fecha_reintegro"])
+            pagos.update(saldado=False, fecha_saldado=None)
+            messages.info(request, "Reintegro vuelto a pendiente.")
+    return redirect("compraventa:proveedor_deudas", proveedor_id=rein.proveedor_id)
+
 
 # ==========================================================
 # 🔁 REGISTRAR COMPRA / INGRESO

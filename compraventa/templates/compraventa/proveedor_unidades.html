@@ -31,12 +31,18 @@
 </div>
 
 <!-- ===============================
-     TABLA DE UNIDADES
+     EN STOCK
 =============================== -->
-<div class="card p-0">
-    {% if operaciones %}
+<div class="d-flex align-items-center gap-2 mb-2">
+    <i data-lucide="package" style="width:18px;height:18px;color:#3b82f6;"></i>
+    <h6 class="fw-bold mb-0">En stock</h6>
+    <span class="badge bg-primary">{{ en_stock|length }}</span>
+    <small class="text-muted">— unidades que todavía tenemos del proveedor</small>
+</div>
+<div class="card p-0 mb-4">
+    {% if en_stock %}
     <div class="table-responsive">
-        <table class="table align-middle mb-0" id="tablaUnidades">
+        <table class="table align-middle mb-0 tablaUnidades">
             <thead>
                 <tr>
                     <th>Vehículo</th>
@@ -45,7 +51,7 @@
                 </tr>
             </thead>
             <tbody>
-                {% for op in operaciones %}
+                {% for op in en_stock %}
                 {% with ficha=op.vehiculo.ficha|default_if_none:None %}
                 <tr>
                     <td>
@@ -77,9 +83,67 @@
         </table>
     </div>
     {% else %}
-    <div class="p-5 text-center">
-        <i data-lucide="car" style="width:48px;height:48px;color:#9ca3af;margin-bottom:12px;"></i>
-        <p class="text-muted mb-0">No hay unidades vinculadas a este proveedor</p>
+    <div class="p-4 text-center">
+        <p class="text-muted mb-0">No hay unidades en stock de este proveedor</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- ===============================
+     VENDIDAS
+=============================== -->
+<div class="d-flex align-items-center gap-2 mb-2">
+    <i data-lucide="check-circle" style="width:18px;height:18px;color:#10b981;"></i>
+    <h6 class="fw-bold mb-0">Vendidas</h6>
+    <span class="badge bg-success">{{ vendidas|length }}</span>
+    <small class="text-muted">— unidades de este proveedor que ya vendimos</small>
+</div>
+<div class="card p-0">
+    {% if vendidas %}
+    <div class="table-responsive">
+        <table class="table align-middle mb-0 tablaUnidades">
+            <thead>
+                <tr>
+                    <th>Vehículo</th>
+                    <th class="text-end">Deuda gastos</th>
+                    <th class="text-end">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for op in vendidas %}
+                {% with ficha=op.vehiculo.ficha|default_if_none:None %}
+                <tr class="table-light">
+                    <td>
+                        <div class="d-flex align-items-center gap-3">
+                            <div style="width:40px;height:40px;background:rgba(16,185,129,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                                <i data-lucide="car" style="width:18px;height:18px;color:#10b981;"></i>
+                            </div>
+                            <div>
+                                <div class="fw-semibold">{{ op.vehiculo.marca }} {{ op.vehiculo.modelo }}</div>
+                                <small class="text-muted">{{ op.vehiculo.dominio|default:"Sin dominio" }}</small>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="text-end">
+                        <span class="fw-bold {% if ficha and ficha.saldo_gastos > 0 %}text-danger{% else %}text-success{% endif %}">
+                            {% if ficha %}${{ ficha.saldo_gastos|floatformat:2|default:"0" }}{% else %}$0{% endif %}
+                        </span>
+                    </td>
+                    <td class="text-end">
+                        <a href="{% url 'vehiculos:ficha_completa' op.vehiculo.id %}" class="btn btn-secondary btn-sm">
+                            <i data-lucide="eye" style="width:14px;height:14px;margin-right:4px;"></i>
+                            Ver ficha
+                        </a>
+                    </td>
+                </tr>
+                {% endwith %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="p-4 text-center">
+        <p class="text-muted mb-0">Todavía no se vendió ninguna unidad de este proveedor</p>
     </div>
     {% endif %}
 </div>
@@ -87,8 +151,8 @@
 <script>
 document.getElementById('buscarUnidad').addEventListener('keyup', function() {
     const filtro = this.value.toLowerCase();
-    const filas = document.querySelectorAll('#tablaUnidades tbody tr');
-    
+    const filas = document.querySelectorAll('.tablaUnidades tbody tr');
+
     filas.forEach(function(fila) {
         const texto = fila.textContent.toLowerCase();
         fila.style.display = texto.includes(filtro) ? '' : 'none';

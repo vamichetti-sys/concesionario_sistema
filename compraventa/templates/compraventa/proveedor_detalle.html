@@ -117,6 +117,18 @@
             </a>
         </div>
 
+        <div class="col-md-4">
+            <a href="{% url 'compraventa:proveedor_deudas' proveedor.id %}"
+               class="d-block p-4 text-decoration-none text-center"
+               style="background:#f8f9fa;border-radius:12px;">
+                <div style="width:50px;height:50px;background:rgba(245,158,11,0.12);border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;">
+                    <i data-lucide="hand-coins" style="width:24px;height:24px;color:#f59e0b;"></i>
+                </div>
+                <div class="fw-semibold text-dark">Deudas</div>
+                <small class="text-muted">Gastos que el proveedor me debe</small>
+            </a>
+        </div>
+
         {% if proveedor.activo %}
         <div class="col-md-4">
             <a href="{% url 'compraventa:compra_registrar_proveedor' proveedor.id %}"

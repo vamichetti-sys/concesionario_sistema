@@ -586,15 +586,16 @@
         <div class="mt-3">
           <label class="fw-bold">Situación</label>
           <select name="situacion" class="form-select" required>
-            {% if tiene_proveedor %}
-            <option value="prov_directo">El proveedor pagó directo al organismo (saldado)</option>
-            <option value="prov_reintegro">Lo pagué yo, el proveedor me reintegra</option>
-            {% else %}
-            <option value="cli_directo">El cliente pagó directo al organismo (saldado)</option>
-            <option value="cli_concesion">El cliente me pagó, todavía no pagué al organismo</option>
-            <option value="cli_adelanto">Adelanté yo al organismo, el cliente me debe</option>
-            <option value="pendiente">Nadie pagó todavía</option>
-            {% endif %}
+            <optgroup label="Proveedor">
+              <option value="prov_directo" {% if tiene_proveedor %}selected{% endif %}>El proveedor pagó directo al organismo (saldado)</option>
+              <option value="prov_reintegro">Lo pagué yo, el proveedor me reintegra (queda en Deudas del proveedor)</option>
+            </optgroup>
+            <optgroup label="Cliente">
+              <option value="cli_directo" {% if not tiene_proveedor %}selected{% endif %}>El cliente pagó directo al organismo (saldado)</option>
+              <option value="cli_concesion">El cliente me pagó, todavía no pagué al organismo</option>
+              <option value="cli_adelanto">Adelanté yo al organismo, el cliente me debe</option>
+              <option value="pendiente">Nadie pagó todavía</option>
+            </optgroup>
           </select>
         </div>
       </form>

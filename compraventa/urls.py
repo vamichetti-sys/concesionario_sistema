@@ -90,4 +90,18 @@ urlpatterns = [
         views.proveedor_cuenta_corriente_pdf,
         name="proveedor_cuenta_corriente_pdf"
     ),
+
+    # =========================
+    # DEUDAS (el proveedor me debe — reintegros)
+    # =========================
+    path(
+        "proveedor/<int:proveedor_id>/deudas/",
+        views.proveedor_deudas,
+        name="proveedor_deudas"
+    ),
+    path(
+        "reintegro/<int:reintegro_id>/marcar/",
+        views.reintegro_marcar,
+        name="reintegro_marcar"
+    ),
 ]
