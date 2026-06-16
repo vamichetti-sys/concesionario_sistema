@@ -67,7 +67,10 @@ class Vehiculo(models.Model):
     # REPRESENTACIÓN
     # ======================================================
     def __str__(self):
-        return f"{self.marca} {self.modelo} ({self.dominio})"
+        base = f"{self.marca} {self.modelo} ({self.dominio})"
+        if self.anio:
+            base += f" · {self.anio}"
+        return base
 
     # ======================================================
     # PROPIEDADES DE VENTA (SE CONSERVAN TODAS)
