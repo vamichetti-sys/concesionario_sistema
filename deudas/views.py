@@ -80,13 +80,38 @@ def listado_deudas(request):
             "estado": "Gastos de ingreso",
             "total_deuda": saldo,
             "cuenta": None,
+            "vendido": ficha.vehiculo.estado == "vendido",
         })
+
+    # Dividir: vehículos vendidos vs en stock (todo lo que no está vendido)
+    deudas_vendidos = [d for d in deudas if d.get("vendido")]
+    deudas_stock = [d for d in deudas if not d.get("vendido")]
+
+    grupos = [
+        {
+            "titulo": "En stock",
+            "subtitulo": "Vehículos que tenemos y todavía adeudan gastos",
+            "icono": "package",
+            "color": "#3b82f6",
+            "items": deudas_stock,
+            "total": sum((d["total_deuda"] for d in deudas_stock), 0),
+        },
+        {
+            "titulo": "Vendidos",
+            "subtitulo": "Vehículos ya vendidos que siguen con deuda de gastos",
+            "icono": "check-circle",
+            "color": "#10b981",
+            "items": deudas_vendidos,
+            "total": sum((d["total_deuda"] for d in deudas_vendidos), 0),
+        },
+    ]
 
     return render(
         request,
         "deudas/listado.html",
         {
             "deudas": deudas,
+            "grupos": grupos,
             "query": q,
         }
     )
