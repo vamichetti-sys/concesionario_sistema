@@ -142,10 +142,22 @@
 </div>
 
 <!-- TABLA DE CHEQUES -->
+<style>
+    /* Columna Acciones siempre visible (pegada a la derecha) aunque la tabla
+       sea ancha y haya scroll horizontal. */
+    .tabla-cheques th.col-acc, .tabla-cheques td.col-acc {
+        position: sticky;
+        right: 0;
+        background: #fff;
+        box-shadow: -6px 0 8px -6px rgba(0,0,0,0.18);
+        z-index: 2;
+    }
+    .tabla-cheques thead th.col-acc { z-index: 3; }
+</style>
 <div class="card p-0">
     {% if cheques %}
     <div class="table-responsive">
-        <table class="table align-middle mb-0" style="font-size:13px;">
+        <table class="table align-middle mb-0 tabla-cheques" style="font-size:13px;">
             <thead>
                 <tr>
                     <th>Fecha Ingreso</th>
@@ -161,7 +173,7 @@
                     <th>Fecha Endoso</th>
                     <th>Destinatario</th>
                     <th>Obs.</th>
-                    <th class="text-end">Acciones</th>
+                    <th class="text-end col-acc">Acciones</th>
                 </tr>
             </thead>
             <tbody>
@@ -203,7 +215,7 @@
                         —
                         {% endif %}
                     </td>
-                    <td class="text-end">
+                    <td class="text-end col-acc">
                         <div class="d-flex gap-1 justify-content-end">
                             <a href="{% url 'cheques:editar' cheque.pk %}" class="btn btn-secondary btn-sm py-1 px-2" title="Editar">
                                 <i data-lucide="pencil" style="width:12px;height:12px;"></i>
