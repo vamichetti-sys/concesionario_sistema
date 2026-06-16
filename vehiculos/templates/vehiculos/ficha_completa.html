@@ -1090,6 +1090,29 @@
 
 <script>
     if (typeof lucide !== 'undefined') lucide.createIcons();
+
+    // Patentes: al cambiar el Vencimiento 1, autocompletar Vto 2-5 con el
+    // mismo día de los meses siguientes (consecutivos).
+    (function () {
+        var vto1 = document.getElementById("id_patentes_vto1");
+        if (!vto1) return;
+        vto1.addEventListener("change", function () {
+            if (!vto1.value) return;
+            var p = vto1.value.split("-");
+            if (p.length !== 3) return;
+            var y = parseInt(p[0], 10), m = parseInt(p[1], 10), d = parseInt(p[2], 10);
+            for (var i = 2; i <= 5; i++) {
+                var el = document.getElementById("id_patentes_vto" + i);
+                if (!el) continue;
+                var total = (m - 1) + (i - 1);
+                var ty = y + Math.floor(total / 12);
+                var tm = (total % 12) + 1;
+                var last = new Date(ty, tm, 0).getDate();
+                var td = Math.min(d, last);
+                el.value = ty + "-" + ("0" + tm).slice(-2) + "-" + ("0" + td).slice(-2);
+            }
+        });
+    })();
 </script>
 
 {% endblock %}
