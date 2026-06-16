@@ -496,10 +496,10 @@ def cambiar_estado_vehiculo(request, vehiculo_id):
             return redirect("reventa:lista")
 
         # ===============================
-        # CAMBIO SEGURO ENTRE STOCK / TEMPORAL
+        # CAMBIO SEGURO ENTRE A INGRESAR / STOCK / TEMPORAL
         # (no toca venta/gestoría/cuenta corriente)
         # ===============================
-        if nuevo_estado in ("stock", "temporal"):
+        if nuevo_estado in ("a_ingresar", "stock", "temporal"):
             vehiculo.estado = nuevo_estado
             vehiculo.save(update_fields=["estado"])
             messages.success(
