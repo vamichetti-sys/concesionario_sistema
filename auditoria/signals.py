@@ -1,6 +1,6 @@
 import threading
 from datetime import date, datetime
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 
 from django.db.models.signals import post_save, post_delete, pre_save
 from django.contrib.auth.signals import user_logged_in, user_logged_out, user_login_failed
@@ -119,6 +119,23 @@ def _snapshot(instance):
     return data
 
 
+def _valores_iguales(a, b):
+    """Compara dos valores serializados evitando falsos cambios.
+
+    Los montos se guardan como texto ("0.00", "0", "15950.00"), así que una
+    comparación de strings marca "0.00 → 0" como cambio cuando NO lo es. Si
+    ambos valores representan el mismo número, los consideramos iguales.
+    """
+    if a == b:
+        return True
+    if a is None or b is None:
+        return False
+    try:
+        return Decimal(str(a)) == Decimal(str(b))
+    except (InvalidOperation, TypeError, ValueError):
+        return False
+
+
 def _desc_obj(instance):
     try:
         return str(instance)[:200]
@@ -217,7 +234,7 @@ def _handler_save(sender, instance, created, **kwargs):
             diff_despues = {}
             for campo, val_antes in snap_antes.items():
                 val_despues = snap_despues.get(campo)
-                if val_antes != val_despues:
+                if not _valores_iguales(val_antes, val_despues):
                     diff_antes[campo] = val_antes
                     diff_despues[campo] = val_despues
             if diff_antes:
