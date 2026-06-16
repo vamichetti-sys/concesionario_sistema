@@ -169,6 +169,7 @@ class FichaVehicular(models.Model):
         ("concesionario", "Concesionario"),
         ("proveedor", "Proveedor"),
         ("reventa", "Reventa"),
+        ("en_proceso", "En proceso"),
         ("no_tiene", "No tiene"),
     ]
 
