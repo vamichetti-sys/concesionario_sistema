@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.db import transaction
 from django.db.models import Sum, Count, F, Q
 from django.db.models.functions import Coalesce
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime, date
 from decimal import Decimal, InvalidOperation
 from django.utils import timezone
 from django.http import HttpResponse
