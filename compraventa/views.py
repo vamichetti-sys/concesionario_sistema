@@ -117,6 +117,28 @@ def proveedor_editar(request, proveedor_id):
     })
 
 
+@login_required
+def proveedor_datos_rapido(request, proveedor_id):
+    """Carga/edición rápida de contacto o datos bancarios desde el detalle.
+
+    Actualiza SOLO los campos que vienen en el POST, así el formulario de
+    contacto no pisa los datos bancarios ni al revés.
+    """
+    proveedor = get_object_or_404(Proveedor, id=proveedor_id)
+    if request.method == "POST":
+        campos = [
+            "contacto_nombre", "telefono", "email", "domicilio", "ciudad",
+            "banco", "cbu", "alias_bancario", "titular_cuenta",
+        ]
+        cambiados = [c for c in campos if c in request.POST]
+        for c in cambiados:
+            setattr(proveedor, c, (request.POST.get(c) or "").strip())
+        if cambiados:
+            proveedor.save(update_fields=cambiados)
+            messages.success(request, "Datos del proveedor actualizados.")
+    return redirect("compraventa:proveedor_detalle", proveedor_id=proveedor.id)
+
+
 # ==========================================================
 # 📂 DETALLE PROVEEDOR
 # ==========================================================

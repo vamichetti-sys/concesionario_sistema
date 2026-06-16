@@ -23,6 +23,11 @@ urlpatterns = [
         views.proveedor_editar,
         name="proveedor_editar"
     ),
+    path(
+        "proveedor/<int:proveedor_id>/datos-rapido/",
+        views.proveedor_datos_rapido,
+        name="proveedor_datos_rapido"
+    ),
 
     path(
     "proveedor/<int:proveedor_id>/eliminar/",

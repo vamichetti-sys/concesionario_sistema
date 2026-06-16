@@ -33,9 +33,15 @@
     <!-- Contacto -->
     <div class="col-md-6">
         <div class="card p-4 h-100">
-            <div class="d-flex align-items-center gap-2 mb-3">
-                <i data-lucide="user" style="width:18px;height:18px;color:#10b981;"></i>
-                <h6 class="fw-bold mb-0">Contacto</h6>
+            <div class="d-flex align-items-center justify-content-between gap-2 mb-3">
+                <div class="d-flex align-items-center gap-2">
+                    <i data-lucide="user" style="width:18px;height:18px;color:#10b981;"></i>
+                    <h6 class="fw-bold mb-0">Contacto</h6>
+                </div>
+                <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#formContacto">
+                    <i data-lucide="pencil" style="width:13px;height:13px;margin-right:4px;"></i>
+                    {% if proveedor.contacto_nombre or proveedor.telefono or proveedor.email or proveedor.domicilio %}Editar{% else %}Agregar{% endif %}
+                </button>
             </div>
             <div class="row g-2" style="font-size:14px;">
                 {% if proveedor.contacto_nombre %}
@@ -54,15 +60,51 @@
                 <div class="col-12 text-muted">Sin datos de contacto cargados</div>
                 {% endif %}
             </div>
+
+            <!-- FORM INLINE CONTACTO -->
+            <div class="collapse mt-3" id="formContacto">
+                <form method="post" action="{% url 'compraventa:proveedor_datos_rapido' proveedor.id %}" class="row g-2">
+                    {% csrf_token %}
+                    <div class="col-md-6">
+                        <label class="form-label" style="font-size:12px;">Nombre de contacto</label>
+                        <input type="text" name="contacto_nombre" class="form-control form-control-sm" value="{{ proveedor.contacto_nombre|default:'' }}">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" style="font-size:12px;">Teléfono</label>
+                        <input type="text" name="telefono" class="form-control form-control-sm" value="{{ proveedor.telefono|default:'' }}">
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label" style="font-size:12px;">Email</label>
+                        <input type="email" name="email" class="form-control form-control-sm" value="{{ proveedor.email|default:'' }}">
+                    </div>
+                    <div class="col-md-8">
+                        <label class="form-label" style="font-size:12px;">Domicilio</label>
+                        <input type="text" name="domicilio" class="form-control form-control-sm" value="{{ proveedor.domicilio|default:'' }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" style="font-size:12px;">Ciudad</label>
+                        <input type="text" name="ciudad" class="form-control form-control-sm" value="{{ proveedor.ciudad|default:'' }}">
+                    </div>
+                    <div class="col-12 d-grid">
+                        <button type="submit" class="btn btn-success btn-sm">Guardar contacto</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 
     <!-- Datos bancarios -->
     <div class="col-md-6">
         <div class="card p-4 h-100">
-            <div class="d-flex align-items-center gap-2 mb-3">
-                <i data-lucide="landmark" style="width:18px;height:18px;color:#8b5cf6;"></i>
-                <h6 class="fw-bold mb-0">Datos bancarios</h6>
+            <div class="d-flex align-items-center justify-content-between gap-2 mb-3">
+                <div class="d-flex align-items-center gap-2">
+                    <i data-lucide="landmark" style="width:18px;height:18px;color:#8b5cf6;"></i>
+                    <h6 class="fw-bold mb-0">Datos bancarios</h6>
+                </div>
+                <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#formBancario">
+                    <i data-lucide="pencil" style="width:13px;height:13px;margin-right:4px;"></i>
+                    {% if proveedor.banco or proveedor.cbu or proveedor.alias_bancario or proveedor.titular_cuenta %}Editar{% else %}Agregar{% endif %}
+                </button>
             </div>
             <div class="row g-2" style="font-size:14px;">
                 {% if proveedor.banco %}
@@ -80,6 +122,32 @@
                 {% if not proveedor.banco and not proveedor.cbu and not proveedor.alias_bancario %}
                 <div class="col-12 text-muted">Sin datos bancarios cargados</div>
                 {% endif %}
+            </div>
+
+            <!-- FORM INLINE BANCARIO -->
+            <div class="collapse mt-3" id="formBancario">
+                <form method="post" action="{% url 'compraventa:proveedor_datos_rapido' proveedor.id %}" class="row g-2">
+                    {% csrf_token %}
+                    <div class="col-md-6">
+                        <label class="form-label" style="font-size:12px;">Banco</label>
+                        <input type="text" name="banco" class="form-control form-control-sm" value="{{ proveedor.banco|default:'' }}">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" style="font-size:12px;">Alias</label>
+                        <input type="text" name="alias_bancario" class="form-control form-control-sm" value="{{ proveedor.alias_bancario|default:'' }}">
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label" style="font-size:12px;">CBU</label>
+                        <input type="text" name="cbu" class="form-control form-control-sm" value="{{ proveedor.cbu|default:'' }}">
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label" style="font-size:12px;">Titular de la cuenta</label>
+                        <input type="text" name="titular_cuenta" class="form-control form-control-sm" value="{{ proveedor.titular_cuenta|default:'' }}">
+                    </div>
+                    <div class="col-12 d-grid">
+                        <button type="submit" class="btn btn-success btn-sm">Guardar datos bancarios</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
