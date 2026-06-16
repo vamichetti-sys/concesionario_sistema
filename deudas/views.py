@@ -87,6 +87,30 @@ def listado_deudas(request):
     deudas_vendidos = [d for d in deudas if d.get("vendido")]
     deudas_stock = [d for d in deudas if not d.get("vendido")]
 
+    # ======================================================
+    # 3️⃣ VENDIDOS QUE QUEDARON ADEUDANDO PATENTES O INFRACCIONES
+    # ======================================================
+    from decimal import Decimal as _D
+    vendidos_pat_inf = []
+    for ficha in fichas:
+        veh = ficha.vehiculo
+        if veh.estado != "vendido":
+            continue
+        saldo_pat = ficha.saldo_por_concepto("Patentes") or _D("0")
+        saldo_inf = ficha.saldo_por_concepto("Infracciones") or _D("0")
+        saldo_pat = saldo_pat if saldo_pat > 0 else _D("0")
+        saldo_inf = saldo_inf if saldo_inf > 0 else _D("0")
+        if saldo_pat <= 0 and saldo_inf <= 0:
+            continue
+        vendidos_pat_inf.append({
+            "vehiculo": veh,
+            "saldo_patentes": saldo_pat,
+            "saldo_infracciones": saldo_inf,
+            "total": saldo_pat + saldo_inf,
+        })
+    vendidos_pat_inf.sort(key=lambda x: x["total"], reverse=True)
+    total_vendidos_pat_inf = sum((d["total"] for d in vendidos_pat_inf), _D("0"))
+
     grupos = [
         {
             "titulo": "En stock",
@@ -112,6 +136,8 @@ def listado_deudas(request):
         {
             "deudas": deudas,
             "grupos": grupos,
+            "vendidos_pat_inf": vendidos_pat_inf,
+            "total_vendidos_pat_inf": total_vendidos_pat_inf,
             "query": q,
         }
     )

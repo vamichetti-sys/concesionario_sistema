@@ -124,6 +124,65 @@
         {% endif %}
     </div>
     {% endfor %}
+
+    <!-- ===============================
+         VENDIDOS QUE ADEUDAN PATENTES / INFRACCIONES
+    =============================== -->
+    <div class="d-flex align-items-center gap-2 mb-2 mt-2">
+        <i data-lucide="alert-triangle" style="width:18px;height:18px;color:#dc2626;"></i>
+        <h6 class="fw-bold mb-0">Vendidos que adeudan patentes o infracciones</h6>
+        <span class="badge" style="background:#dc2626;">{{ vendidos_pat_inf|length }}</span>
+        <span class="text-muted" style="font-size:13px;">— autos ya vendidos con patentes o infracciones impagas</span>
+        <span class="ms-auto fw-bold text-danger">Total: $ {{ total_vendidos_pat_inf|floatformat:0 }}</span>
+    </div>
+    <div class="card p-0 mb-4">
+        {% if vendidos_pat_inf %}
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Vehículo</th>
+                        <th>Dominio</th>
+                        <th class="text-end">Patentes</th>
+                        <th class="text-end">Infracciones</th>
+                        <th class="text-end">Total</th>
+                        <th class="text-end">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in vendidos_pat_inf %}
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center gap-3">
+                                <div style="width:40px;height:40px;background:rgba(220,38,38,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                                    <i data-lucide="car" style="width:18px;height:18px;color:#dc2626;"></i>
+                                </div>
+                                <span class="fw-semibold">{{ item.vehiculo.marca }} {{ item.vehiculo.modelo }}{% if item.vehiculo.anio %} · {{ item.vehiculo.anio }}{% endif %}</span>
+                            </div>
+                        </td>
+                        <td>
+                            {% if item.vehiculo.dominio %}
+                            <span class="badge bg-secondary">{{ item.vehiculo.dominio }}</span>
+                            {% else %}<span class="text-muted">—</span>{% endif %}
+                        </td>
+                        <td class="text-end">{% if item.saldo_patentes > 0 %}<span class="text-danger fw-semibold">$ {{ item.saldo_patentes|floatformat:0 }}</span>{% else %}<span class="text-muted">—</span>{% endif %}</td>
+                        <td class="text-end">{% if item.saldo_infracciones > 0 %}<span class="text-danger fw-semibold">$ {{ item.saldo_infracciones|floatformat:0 }}</span>{% else %}<span class="text-muted">—</span>{% endif %}</td>
+                        <td class="text-end"><span class="fw-bold text-danger" style="font-size:16px;">$ {{ item.total|floatformat:0 }}</span></td>
+                        <td class="text-end">
+                            <a href="{% url 'vehiculos:ficha_completa' item.vehiculo.id %}" class="btn btn-secondary btn-sm">
+                                <i data-lucide="car" style="width:14px;height:14px;margin-right:4px;"></i>
+                                Ver vehículo
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="p-4 text-center text-muted">Ningún auto vendido adeuda patentes ni infracciones.</div>
+        {% endif %}
+    </div>
 {% else %}
 <div class="card p-0">
     <div class="p-5 text-center">
