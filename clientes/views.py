@@ -142,7 +142,9 @@ def crear_cliente(request):
 # ==========================================================
 @login_required(login_url='ingreso')
 def detalle_cliente(request, cliente_id):
-    cliente = get_object_or_404(Cliente, id=cliente_id, activo=True)
+    # No exigimos activo=True: un cliente desactivado igual puede tener cuentas
+    # corrientes / historial que se necesitan consultar desde la lista.
+    cliente = get_object_or_404(Cliente, id=cliente_id)
 
     # CUENTAS ACTIVAS (al_dia / deuda) — un cliente puede tener varios negocios
     # (un auto comprado por cuenta). Mostramos TODAS, no solo la primera.
