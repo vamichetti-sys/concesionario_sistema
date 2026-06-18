@@ -61,9 +61,16 @@ def listado_deudas(request):
         if total_gastos <= 0:
             continue
 
+        # La deuda de gastos de ingreso es CON EL ENTE. Solo la reducen los
+        # pagos que efectivamente saldaron con el organismo. Un "cli_concesion"
+        # (el cliente me pagó pero no le pagué al ente) o "pendiente" NO bajan
+        # esta deuda. Sin el filtro, la pantalla subdeclaraba la deuda real.
         total_pagado = (
             PagoGastoIngreso.objects
-            .filter(vehiculo=ficha.vehiculo)
+            .filter(
+                vehiculo=ficha.vehiculo,
+                situacion__in=["prov_directo", "cli_directo", "cli_adelanto", "prov_reintegro"],
+            )
             .aggregate(total=Sum("monto"))["total"]
             or 0
         )
@@ -165,7 +172,10 @@ def pdf_listado_deudas(request):
         if total_gastos <= 0:
             continue
         total_pagado = (
-            PagoGastoIngreso.objects.filter(vehiculo=ficha.vehiculo)
+            PagoGastoIngreso.objects.filter(
+                vehiculo=ficha.vehiculo,
+                situacion__in=["prov_directo", "cli_directo", "cli_adelanto", "prov_reintegro"],
+            )
             .aggregate(total=Sum("monto"))["total"] or 0
         )
         saldo = total_gastos - total_pagado

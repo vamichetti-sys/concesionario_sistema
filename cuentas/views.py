@@ -272,7 +272,7 @@ def lista_cuentas_corrientes(request):
 
     cuentas_qs = (
         CuentaCorriente.objects
-        .select_related("cliente", "venta")
+        .select_related("cliente", "venta", "venta__vehiculo")
         .prefetch_related(
             "movimientos",
             "planes",
@@ -385,7 +385,7 @@ def pdf_deudores(request):
 
     cuentas_qs = (
         CuentaCorriente.objects
-        .select_related("cliente", "venta")
+        .select_related("cliente", "venta", "venta__vehiculo")
         .prefetch_related(
             "movimientos",
             "planes",

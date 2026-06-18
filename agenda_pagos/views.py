@@ -148,7 +148,10 @@ def _crear_proximo_mes(pago, request_user):
         observaciones=pago.observaciones,
         creado_por=request_user,
     )
-    _sync_destino(nuevo, request_user)
+    # No sincronizamos el destino todavía: el pago del mes siguiente nace en $0
+    # y crearía una fila fantasma en $0 en Gastos Personales/Concesionario. El
+    # reflejo se crea cuando se le carga monto (al editar o al pagar, que llaman
+    # a _sync_destino).
     return nuevo
 
 

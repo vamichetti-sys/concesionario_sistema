@@ -759,6 +759,7 @@ def guardar_ficha_vehicular(request, vehiculo_id):
                 "gc_neumaticos", "gc_vidrios", "gc_cerrajeria", "gc_lavado",
                 "gc_gnc", "gc_grabado_autopartes", "gc_vtv", "gc_verificacion", "gc_patentes", "gc_otros",
             ]
+            gc_invalidos = []
             for campo in campos_gc:
                 if campo not in request.POST:
                     continue
@@ -766,8 +767,17 @@ def guardar_ficha_vehicular(request, vehiculo_id):
                 try:
                     nuevo = Decimal(valor_raw) if valor_raw else Decimal("0")
                 except Exception:
+                    # Monto mal formateado: NO lo guardamos, pero avisamos para
+                    # que el usuario no crea que se guardó.
+                    gc_invalidos.append(campo.replace("gc_", "").replace("_", " "))
                     continue
                 setattr(ficha, campo, nuevo)
+            if gc_invalidos:
+                messages.warning(
+                    request,
+                    "Estos montos de gastos de concesionario tenían un formato "
+                    "inválido y no se guardaron: " + ", ".join(gc_invalidos) + "."
+                )
 
             # Vincular el "Monto adeudado" de patentes con el gasto de ingreso
             # de Patentes (la deuda de patentes es un gasto de ingreso).
@@ -1002,6 +1012,7 @@ def guardar_gastos_concesionario(request, vehiculo_id):
             "gc_gnc", "gc_grabado_autopartes", "gc_vtv", "gc_verificacion", "gc_patentes", "gc_otros",
         ]
 
+        gc_invalidos = []
         for campo in campos_gc:
             if campo not in request.POST:
                 # El campo no vino en el POST: no tocar el valor guardado.
@@ -1010,10 +1021,17 @@ def guardar_gastos_concesionario(request, vehiculo_id):
             try:
                 nuevo = Decimal(valor_raw) if valor_raw else Decimal("0")
             except Exception:
+                gc_invalidos.append(campo.replace("gc_", "").replace("_", " "))
                 continue
             # Tomamos el valor del form tal cual: si manda 0, se borra a 0.
             setattr(ficha, campo, nuevo)
 
+        if gc_invalidos:
+            messages.warning(
+                request,
+                "Estos montos tenían un formato inválido y no se guardaron: "
+                + ", ".join(gc_invalidos) + "."
+            )
         ficha.save(update_fields=campos_gc)
         from vehiculos.services import recalcular_cuentas_vinculadas
         recalcular_cuentas_vinculadas(vehiculo)
@@ -1078,7 +1096,11 @@ def eliminar_gasto_extra(request, pk):
 @transaction.atomic
 def agregar_gasto_ingreso(request, vehiculo_id):
     vehiculo = get_object_or_404(Vehiculo, id=vehiculo_id)
-    cuenta = vehiculo.venta.cuenta_corriente
+    _venta = getattr(vehiculo, "venta", None)
+    cuenta = getattr(_venta, "cuenta_corriente", None) if _venta else None
+    if cuenta is None:
+        messages.error(request, "Este vehículo no tiene una cuenta corriente asociada.")
+        return redirect(request.META.get("HTTP_REFERER") or "vehiculos:lista_vehiculos")
 
     if request.method == "POST":
         from cuentas.models import MovimientoCuenta

@@ -15,11 +15,30 @@ MESES = ["", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
          "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
 
 
+def _mes_anio(request):
+    """Parsea mes/anio de la query string de forma robusta.
+
+    Si el valor no es numérico o el mes no está en 1..12, usa el mes/año
+    actual como default en vez de tirar un error 500.
+    """
+    hoy = date.today()
+    try:
+        mes = int(request.GET.get("mes", hoy.month))
+    except (TypeError, ValueError):
+        mes = hoy.month
+    if not (1 <= mes <= 12):
+        mes = hoy.month
+    try:
+        anio = int(request.GET.get("anio", hoy.year))
+    except (TypeError, ValueError):
+        anio = hoy.year
+    return mes, anio
+
+
 @solo_gestion_personal
 def resumen_mensual(request):
     hoy = date.today()
-    mes = int(request.GET.get("mes", hoy.month))
-    anio = int(request.GET.get("anio", hoy.year))
+    mes, anio = _mes_anio(request)
 
     # Solo los gastos del usuario logueado
     gastos = GastoPersonal.objects.filter(
@@ -200,8 +219,7 @@ def duplicar_fijos(request):
 @solo_gestion_personal
 def ingresos_resumen(request):
     hoy = date.today()
-    mes = int(request.GET.get("mes", hoy.month))
-    anio = int(request.GET.get("anio", hoy.year))
+    mes, anio = _mes_anio(request)
 
     ingresos = IngresoPersonal.objects.filter(
         usuario=request.user, mes=mes, anio=anio,

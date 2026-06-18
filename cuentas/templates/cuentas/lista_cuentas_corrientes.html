@@ -119,6 +119,12 @@
                     <td>
                         {% if cuenta.venta %}
                         <span class="badge bg-info">#{{ cuenta.venta.id }}</span>
+                        {% if cuenta.venta.vehiculo %}
+                        <div class="mt-1" style="font-size:12px;line-height:1.3;">
+                            <span class="fw-semibold">{{ cuenta.venta.vehiculo.marca }} {{ cuenta.venta.vehiculo.modelo }}{% if cuenta.venta.vehiculo.anio %} · {{ cuenta.venta.vehiculo.anio }}{% endif %}</span>
+                            {% if cuenta.venta.vehiculo.dominio %}<span class="text-muted">({{ cuenta.venta.vehiculo.dominio }})</span>{% endif %}
+                        </div>
+                        {% endif %}
                         {% else %}
                         <span class="text-muted">Sin venta</span>
                         {% endif %}

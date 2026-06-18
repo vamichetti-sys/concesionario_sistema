@@ -28,13 +28,44 @@ COLOR_GRIS = colors.HexColor("#F4F6F8")
 
 
 # ==========================================================
+# HELPERS
+# ==========================================================
+def _mes_anio(request):
+    """Parsea mes/anio de la query string de forma robusta.
+
+    Si el valor no es numérico o el mes no está en 1..12, usa el mes/año
+    actual como default en vez de tirar un error 500.
+    """
+    hoy = date.today()
+    try:
+        mes = int(request.GET.get("mes", hoy.month))
+    except (TypeError, ValueError):
+        mes = hoy.month
+    if not (1 <= mes <= 12):
+        mes = hoy.month
+    try:
+        anio = _anio(request)
+    except (TypeError, ValueError):
+        anio = hoy.year
+    return mes, anio
+
+
+def _anio(request):
+    """Parsea anio de la query string de forma robusta."""
+    hoy = date.today()
+    try:
+        return int(request.GET.get("anio", hoy.year))
+    except (TypeError, ValueError):
+        return hoy.year
+
+
+# ==========================================================
 # LISTA FACTURACIÓN
 # ==========================================================
 @login_required
 def lista_facturacion(request):
     hoy = date.today()
-    mes = int(request.GET.get("mes", hoy.month))
-    anio = int(request.GET.get("anio", hoy.year))
+    mes, anio = _mes_anio(request)
 
     # Listado completo (todas las facturas válidas, sin filtrar por mes)
     facturas = (
@@ -118,8 +149,7 @@ def crear_factura(request):
 @login_required
 def exportar_excel_mensual(request):
     hoy = date.today()
-    mes = int(request.GET.get("mes", hoy.month))
-    anio = int(request.GET.get("anio", hoy.year))
+    mes, anio = _mes_anio(request)
 
     facturas = FacturaRegistrada.objects.filter(
         estado="valida",
@@ -167,7 +197,7 @@ def exportar_excel_mensual(request):
 @login_required
 def exportar_excel_anual(request):
     hoy = date.today()
-    anio = int(request.GET.get("anio", hoy.year))
+    anio = _anio(request)
 
     facturas = FacturaRegistrada.objects.filter(
         estado="valida",
@@ -214,8 +244,7 @@ def exportar_excel_anual(request):
 @login_required
 def exportar_pdf_mensual(request):
     hoy = date.today()
-    mes = int(request.GET.get("mes", hoy.month))
-    anio = int(request.GET.get("anio", hoy.year))
+    mes, anio = _mes_anio(request)
 
     facturas = FacturaRegistrada.objects.filter(
         estado="valida",
@@ -351,7 +380,7 @@ def exportar_pdf_mensual(request):
 @login_required
 def exportar_pdf_anual(request):
     hoy = date.today()
-    anio = int(request.GET.get("anio", hoy.year))
+    anio = _anio(request)
 
     facturas = FacturaRegistrada.objects.filter(
         estado="valida",
@@ -498,8 +527,7 @@ def eliminar_factura(request, pk):
 @login_required
 def lista_compras(request):
     hoy = date.today()
-    mes = int(request.GET.get("mes", hoy.month))
-    anio = int(request.GET.get("anio", hoy.year))
+    mes, anio = _mes_anio(request)
 
     # Listado completo (todas las compras, sin filtrar por mes)
     compras = CompraRegistrada.objects.all().order_by("-fecha")
@@ -578,8 +606,7 @@ def eliminar_compra(request, pk):
 @login_required
 def compras_pdf_mensual(request):
     hoy = date.today()
-    mes = int(request.GET.get("mes", hoy.month))
-    anio = int(request.GET.get("anio", hoy.year))
+    mes, anio = _mes_anio(request)
 
     MESES = [
         "", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
@@ -668,7 +695,7 @@ def compras_pdf_mensual(request):
 @login_required
 def compras_pdf_anual(request):
     hoy = date.today()
-    anio = int(request.GET.get("anio", hoy.year))
+    anio = _anio(request)
 
     compras = CompraRegistrada.objects.filter(fecha__year=anio).order_by("-fecha")
 
@@ -749,8 +776,7 @@ def compras_pdf_anual(request):
 @login_required
 def compras_excel_mensual(request):
     hoy = date.today()
-    mes = int(request.GET.get("mes", hoy.month))
-    anio = int(request.GET.get("anio", hoy.year))
+    mes, anio = _mes_anio(request)
 
     compras = CompraRegistrada.objects.filter(
         fecha__year=anio, fecha__month=mes,
@@ -784,7 +810,7 @@ def compras_excel_mensual(request):
 @login_required
 def compras_excel_anual(request):
     hoy = date.today()
-    anio = int(request.GET.get("anio", hoy.year))
+    anio = _anio(request)
 
     compras = CompraRegistrada.objects.filter(fecha__year=anio).order_by("-fecha")
 
@@ -816,8 +842,7 @@ def compras_excel_anual(request):
 @login_required
 def posicion_iva(request):
     hoy = date.today()
-    mes = int(request.GET.get("mes", hoy.month))
-    anio = int(request.GET.get("anio", hoy.year))
+    mes, anio = _mes_anio(request)
 
     facturas = FacturaRegistrada.objects.filter(
         estado="valida", fecha__year=anio, fecha__month=mes,
@@ -886,8 +911,7 @@ def posicion_iva(request):
 @login_required
 def iva_pdf(request):
     hoy = date.today()
-    mes = int(request.GET.get("mes", hoy.month))
-    anio = int(request.GET.get("anio", hoy.year))
+    mes, anio = _mes_anio(request)
 
     facturas = FacturaRegistrada.objects.filter(
         estado="valida", fecha__year=anio, fecha__month=mes,
