@@ -38,6 +38,7 @@ class PlanPagoForm(forms.ModelForm):
             'cantidad_cuotas',
             'monto_cuota',
             'cuota_extra',
+            'cuota_extra_fecha',
             'fecha_inicio',
             'interes_financiacion',
             'interes_mora_mensual',
@@ -73,6 +74,10 @@ class PlanPagoForm(forms.ModelForm):
                     'step': '0.01',
                     'placeholder': 'Importe de una cuota adicional al final (opcional)'
                 }
+            ),
+            'cuota_extra_fecha': forms.DateInput(
+                format='%Y-%m-%d',
+                attrs={'type': 'date', 'class': 'form-control'}
             ),
             'cantidad_cuotas': forms.NumberInput(
                 attrs={'class': 'form-control'}

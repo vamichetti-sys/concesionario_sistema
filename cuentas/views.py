@@ -732,11 +732,14 @@ def crear_plan_pago(request, cuenta_id):
                 fecha += timedelta(days=30)
 
             # Cuota extra (opcional): se agrega como una cuota más al final.
+            # Vencimiento: el que cargó el usuario (cuota_extra_fecha) o, si lo
+            # dejó vacío, el mes siguiente a la última cuota.
             if plan.cuota_extra and plan.cuota_extra > 0:
+                venc_extra = plan.cuota_extra_fecha or fecha
                 CuotaPlan.objects.create(
                     plan=plan,
                     numero=ultimo_numero + 1,
-                    vencimiento=fecha,
+                    vencimiento=venc_extra,
                     monto=plan.cuota_extra,
                     estado="pendiente"
                 )

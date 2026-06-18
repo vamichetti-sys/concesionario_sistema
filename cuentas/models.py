@@ -475,6 +475,12 @@ class PlanPago(models.Model):
         default=0,
         help_text="Si se carga, se agrega una cuota adicional con este importe al final del plan.",
     )
+    cuota_extra_fecha = models.DateField(
+        "Vencimiento de la cuota extra",
+        null=True,
+        blank=True,
+        help_text="Fecha de vencimiento de la cuota extra. Si se deja vacía, se usa el mes siguiente a la última cuota.",
+    )
 
     tipo_plan = models.CharField(
         max_length=20,
