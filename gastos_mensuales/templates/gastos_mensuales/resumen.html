@@ -13,10 +13,21 @@
             <i data-lucide="trending-up" style="width:16px;height:16px;margin-right:6px;"></i>
             Control de Ingresos
         </a>
-        <a href="{% url 'gastos_mensuales:pdf_mensual' %}?mes={{ mes }}&anio={{ anio }}" target="_blank" class="btn btn-outline-secondary">
-            <i data-lucide="file-down" style="width:16px;height:16px;margin-right:6px;"></i>
-            PDF
-        </a>
+        <div class="dropdown d-inline-block">
+            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i data-lucide="file-down" style="width:16px;height:16px;margin-right:6px;"></i>
+                PDF
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" target="_blank" href="{% url 'gastos_mensuales:pdf_mensual' %}?mes={{ mes }}&anio={{ anio }}&tipo=todos">Todos los gastos</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" target="_blank" href="{% url 'gastos_mensuales:pdf_mensual' %}?mes={{ mes }}&anio={{ anio }}&tipo=pagos">Pagados</a></li>
+                <li><a class="dropdown-item" target="_blank" href="{% url 'gastos_mensuales:pdf_mensual' %}?mes={{ mes }}&anio={{ anio }}&tipo=adeudados">Adeudados (pendientes)</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" target="_blank" href="{% url 'gastos_mensuales:pdf_mensual' %}?mes={{ mes }}&anio={{ anio }}&tipo=generales">Gastos generales</a></li>
+                <li><a class="dropdown-item" target="_blank" href="{% url 'gastos_mensuales:pdf_mensual' %}?mes={{ mes }}&anio={{ anio }}&tipo=vehiculos">Gastos sobre vehículos</a></li>
+            </ul>
+        </div>
         <a href="{% url 'gastos_mensuales:categorias' %}" class="btn btn-secondary">
             <i data-lucide="tag" style="width:16px;height:16px;margin-right:6px;"></i>
             Categorias

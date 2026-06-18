@@ -226,16 +226,43 @@ def pdf_mensual(request):
     except (TypeError, ValueError):
         anio = hoy.year
 
+    import re
+
+    # Tipo de listado a exportar:
+    #   todos | pagos | adeudados | generales | vehiculos
+    tipo = (request.GET.get("tipo") or "todos").lower()
+
     qs = (
         GastoMensual.objects.filter(mes=mes, anio=anio)
         .select_related("categoria")
         .order_by("categoria__nombre", "descripcion")
     )
 
+    if tipo == "pagos":
+        qs = qs.filter(pagado=True)
+    elif tipo == "adeudados":
+        qs = qs.filter(pagado=False)
+
+    gastos = list(qs)
+    # Generales vs Gastos de vehículos: los de vehículos llevan el tag [GCF:...]
+    if tipo == "generales":
+        gastos = [g for g in gastos if not (g.descripcion and "[GCF:" in g.descripcion)]
+    elif tipo == "vehiculos":
+        gastos = [g for g in gastos if g.descripcion and "[GCF:" in g.descripcion]
+
+    SUBTITULOS = {
+        "todos": "Todos los gastos",
+        "pagos": "Pagados",
+        "adeudados": "Adeudados (pendientes de pago)",
+        "generales": "Gastos generales",
+        "vehiculos": "Gastos sobre vehículos",
+    }
+    etiqueta = SUBTITULOS.get(tipo, "Todos los gastos")
+
     total = Decimal("0")
     total_pagado = Decimal("0")
     filas = []
-    for g in qs:
+    for g in gastos:
         total += g.monto or Decimal("0")
         if g.pagado:
             total_pagado += g.monto or Decimal("0")
@@ -243,9 +270,11 @@ def pdf_mensual(request):
             unidad = g.get_unidad_display()
         except Exception:
             unidad = g.unidad or "—"
+        # Limpiar tags internos ([GCF:...], [GC#...]) de la descripción
+        desc = re.sub(r"\s*\[GC[^\]]*\]", "", g.descripcion or "").strip() or "—"
         filas.append([
             g.categoria.nombre if g.categoria_id else "—",
-            g.descripcion or "—",
+            desc,
             unidad,
             f"$ {(g.monto or 0):,.0f}".replace(",", "."),
             "Sí" if g.pagado else "No",
@@ -255,8 +284,8 @@ def pdf_mensual(request):
                f"Pagado: $ {total_pagado:,.0f}".replace(",", ".")]
 
     return render_pdf_listado(
-        filename=f"control_gastos_{mes:02d}_{anio}.pdf",
-        titulo="Gastos Concesionario",
+        filename=f"gastos_concesionario_{tipo}_{mes:02d}_{anio}.pdf",
+        titulo=f"Gastos Concesionario — {etiqueta}",
         subtitulo=f"{MESES_ES[mes]} {anio} – {len(filas)} gasto(s)",
         columnas=["Categoría", "Detalle", "Unidad", "Monto", "Pagado"],
         filas=filas,
