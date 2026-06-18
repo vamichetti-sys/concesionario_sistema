@@ -39,6 +39,14 @@ class Vehiculo(models.Model):
 
     precio = models.DecimalField(max_digits=12, decimal_places=2)
 
+    # Precio sugerido para reventa (opcional). Se usa, por ejemplo, para
+    # imprimir el listado de stock con un precio distinto al de lista.
+    precio_reventa = models.DecimalField(
+        "Precio de reventa",
+        max_digits=12, decimal_places=2,
+        null=True, blank=True,
+    )
+
     estado = models.CharField(
         max_length=20,
         choices=ESTADOS,

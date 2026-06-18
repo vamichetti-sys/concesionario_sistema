@@ -58,6 +58,7 @@ class VehiculoBasicoForm(CarpetaUnicaMixin, forms.ModelForm):
             'anio',
             'kilometros',
             'precio',
+            'precio_reventa',
             'estado',
             'numero_carpeta',
             'fecha_ingreso',
@@ -72,6 +73,7 @@ class VehiculoBasicoForm(CarpetaUnicaMixin, forms.ModelForm):
             'anio': 'Año',
             'kilometros': 'Kilometraje',
             'precio': 'Precio',
+            'precio_reventa': 'Precio de reventa',
             'estado': 'Estado',
             'numero_carpeta': 'Número de carpeta',
             'fecha_ingreso': 'Fecha de ingreso',
@@ -86,6 +88,7 @@ class VehiculoBasicoForm(CarpetaUnicaMixin, forms.ModelForm):
             'anio': forms.NumberInput(attrs={'class': 'form-control'}),
             'kilometros': forms.NumberInput(attrs={'class': 'form-control'}),
             'precio': forms.NumberInput(attrs={'class': 'form-control'}),
+            'precio_reventa': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Opcional'}),
             'estado': forms.Select(attrs={'class': 'form-control'}),
             'numero_carpeta': forms.TextInput(
                 attrs={'class': 'form-control', 'placeholder': 'Ej: C-2025-014'}
@@ -111,6 +114,7 @@ class VehiculoForm(CarpetaUnicaMixin, forms.ModelForm):
             'kilometros',
             'dominio',
             'precio',
+            'precio_reventa',
             'estado',
             'numero_carpeta',
             'fecha_ingreso',
@@ -118,6 +122,7 @@ class VehiculoForm(CarpetaUnicaMixin, forms.ModelForm):
         ]
 
         labels = {
+            'precio_reventa': 'Precio de reventa',
             'fecha_ingreso': 'Fecha de ingreso',
             'es_0km': '¿Es 0km?',
         }
@@ -130,6 +135,7 @@ class VehiculoForm(CarpetaUnicaMixin, forms.ModelForm):
             'kilometros': forms.NumberInput(attrs={'class': 'form-control'}),
             'dominio': forms.TextInput(attrs={'class': 'form-control'}),
             'precio': forms.NumberInput(attrs={'class': 'form-control'}),
+            'precio_reventa': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Opcional'}),
             'estado': forms.Select(attrs={'class': 'form-control'}),
             'numero_carpeta': forms.TextInput(attrs={'class': 'form-control'}),
             'fecha_ingreso': forms.DateInput(

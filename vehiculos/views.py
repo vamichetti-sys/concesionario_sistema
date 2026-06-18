@@ -2017,6 +2017,10 @@ def stock_pdf(request):
     col_dias = request.GET.get("col_dias")
     col_carpeta = request.GET.get("col_carpeta")
 
+    # Qué precio imprimir: "lista" (precio normal) o "reventa".
+    # Si el vehículo no tiene precio de reventa cargado, se usa el de lista.
+    precio_tipo = request.GET.get("precio_tipo", "lista")
+
     vehiculos = Vehiculo.objects.all().order_by("-id")
 
     if query:
@@ -2078,6 +2082,8 @@ def stock_pdf(request):
             dias = (hoy - v.ficha_reporte.fecha_compra).days
         vehiculos_data.append((v, dias))
 
+    precio_header = "Precio reventa" if precio_tipo == "reventa" else "Precio"
+
     # ── Construir columnas dinámicas ──────────────────────
     columnas = [("Marca / Modelo", 0.38)]  # siempre presente, más ancho
 
@@ -2090,7 +2096,7 @@ def stock_pdf(request):
     if col_km:
         columnas.append(("Kilómetros", 0.14))
     if col_precio:
-        columnas.append(("Precio", 0.16))
+        columnas.append((precio_header, 0.16))
     if col_dias:
         columnas.append(("Días", 0.10))
 
@@ -2101,7 +2107,7 @@ def stock_pdf(request):
             ("Dominio", 0.12),
             ("Año", 0.08),
             ("Kilómetros", 0.14),
-            ("Precio", 0.16),
+            (precio_header, 0.16),
             ("Días", 0.10),
             ("Carpeta", 0.10),
         ]
@@ -2133,8 +2139,12 @@ def stock_pdf(request):
                 fila.append(str(v.anio))
             elif col_name == "Kilómetros":
                 fila.append(f"{v.kilometros:,}".replace(",", ".") if v.kilometros else "–")
-            elif col_name == "Precio":
-                fila.append(f"$ {v.precio:,.0f}".replace(",", "."))
+            elif col_name in ("Precio", "Precio reventa"):
+                if precio_tipo == "reventa":
+                    valor_precio = v.precio_reventa if v.precio_reventa is not None else v.precio
+                else:
+                    valor_precio = v.precio
+                fila.append(f"$ {valor_precio:,.0f}".replace(",", "."))
             elif col_name == "Días":
                 fila.append(f"{dias}d" if dias is not None else "–")
         filas.append(fila)
@@ -2194,6 +2204,8 @@ def stock_pdf(request):
     filtros_str = (" &nbsp;|&nbsp; ".join(filtros_txt)) if filtros_txt else ""
 
     sub = f"Listado de vehículos – {label_estado} &nbsp;|&nbsp; {hoy.strftime('%d/%m/%Y')}"
+    if precio_tipo == "reventa":
+        sub += " &nbsp;|&nbsp; Precios de reventa"
     if filtros_str:
         sub += f"<br/><font size='8'>{filtros_str}</font>"
 
