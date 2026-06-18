@@ -528,8 +528,14 @@ def cuenta_corriente_detalle(request, cuenta_id):
                     vehiculo=veh,
                     concepto__in=[concepto, key],
                 )
+                # Solo los pagos que saldaron CON EL ENTE reducen el saldo del
+                # gasto (igual que ficha.total_pagado_por_concepto). Si no se
+                # filtra por situación, el detalle muestra una deuda menor que
+                # la del listado (deuda_total_real). Bug #4.
+                SIT_ENTE_PAGADO = ["prov_directo", "cli_directo", "cli_adelanto", "prov_reintegro"]
                 total_pagado = (
-                    pagos_concepto.aggregate(total=Sum("monto"))["total"]
+                    pagos_concepto.filter(situacion__in=SIT_ENTE_PAGADO)
+                    .aggregate(total=Sum("monto"))["total"]
                     or Decimal("0")
                 )
                 # Lo pagó el concesionario pero el cliente lo debe (cli_adelanto):

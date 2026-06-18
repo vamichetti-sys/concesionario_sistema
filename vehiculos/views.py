@@ -668,7 +668,23 @@ def guardar_ficha_vehicular(request, vehiculo_id):
                 fields = campos_enviados
 
         ficha_form = FichaParcialForm(request.POST, request.FILES, instance=ficha)
-        ficha_tecnica_form = FichaTecnicaForm(request.POST, instance=ficha_tec)
+
+        # 🔒 ANTI-BORRADO ficha técnica: igual que la ficha vehicular, solo
+        # tocamos los campos técnicos que realmente vinieron en el POST. Si la
+        # pestaña que se guardó NO incluye campos técnicos (ej. "Datos del
+        # Vehículo"), no construimos el form → no se pisa la ficha técnica.
+        tecnica_campos_enviados = [
+            c for c in FichaTecnicaForm.base_fields.keys()
+            if c in request.POST or c in request.FILES
+        ]
+        if tecnica_campos_enviados:
+            class FichaTecnicaParcialForm(FichaTecnicaForm):
+                class Meta(FichaTecnicaForm.Meta):
+                    fields = tecnica_campos_enviados
+                    exclude = None
+            ficha_tecnica_form = FichaTecnicaParcialForm(request.POST, instance=ficha_tec)
+        else:
+            ficha_tecnica_form = None
 
         if vehiculo_form.is_valid() and ficha_form.is_valid():
 
@@ -697,6 +713,10 @@ def guardar_ficha_vehicular(request, vehiculo_id):
             ]
             for campo in campos_a_preservar:
                 gastos_preservar[campo] = getattr(ficha, campo, None)
+
+            # Valor anterior del monto adeudado de patentes, para decidir si
+            # corresponde re-sincronizar gasto_patentes (ver más abajo).
+            _patentes_monto_old = getattr(ficha, "patentes_monto", None)
 
             # Lista de campos de gasto que están en el form: si el POST no los
             # mandó (porque el form de edición no incluye la sección de gastos),
@@ -751,11 +771,16 @@ def guardar_ficha_vehicular(request, vehiculo_id):
 
             # Vincular el "Monto adeudado" de patentes con el gasto de ingreso
             # de Patentes (la deuda de patentes es un gasto de ingreso).
-            # ⚠️ SOLO cuando el auto adeuda patentes (si). Si NO adeuda, NO tocamos
-            # gasto_patentes: puede haberse cargado a mano en "Gastos de ingreso"
-            # y no debe borrarse en cada guardado.
+            # ⚠️ SOLO sincronizamos cuando el monto de patentes CAMBIÓ en este
+            # guardado, o cuando gasto_patentes todavía estaba vacío. Así no
+            # pisamos un gasto_patentes ajustado a mano en cada guardado de la
+            # pestaña Documentación (el select patentes_adeuda viaja siempre).
             if "patentes_adeuda" in request.POST and ficha.patentes_adeuda == "si":
-                ficha.gasto_patentes = ficha.patentes_monto or Decimal("0")
+                monto_nuevo = ficha.patentes_monto or Decimal("0")
+                monto_old = _patentes_monto_old or Decimal("0")
+                gasto_pat_old = gastos_preservar.get("gasto_patentes") or Decimal("0")
+                if monto_nuevo != monto_old or gasto_pat_old == 0:
+                    ficha.gasto_patentes = monto_nuevo
 
             # Un 0km NO tiene gastos de ingreso: se fuerzan a 0.
             if vehiculo_guardado.es_0km:
@@ -775,7 +800,7 @@ def guardar_ficha_vehicular(request, vehiculo_id):
             # ===============================
             # GUARDAR FICHA TÉCNICA
             # ===============================
-            if ficha_tecnica_form.is_valid():
+            if ficha_tecnica_form is not None and ficha_tecnica_form.is_valid():
                 ficha_tecnica_form.save()
 
             # ===============================
@@ -1339,10 +1364,24 @@ def registrar_pago_gasto(request):
     )
 
     marca = f"[GI:{pago.pk}]"
+    # ¿A qué cuenta corriente pertenece este gasto? Bug #3:
+    # Si el vehículo fue ENTREGADO (permuta) en alguna cuenta, la deuda del
+    # gasto adelantado es de QUIEN LO ENTREGÓ → esa cuenta. Solo si el vehículo
+    # no es permuta de nadie, usamos la venta (el comprador).
     cuenta = None
-    _venta = getattr(vehiculo, "venta", None)
-    if _venta is not None:
-        cuenta = getattr(_venta, "cuenta_corriente", None)
+    from cuentas.models import MovimientoCuenta
+    perm_mov = (
+        MovimientoCuenta.objects
+        .filter(vehiculo=vehiculo, origen="permuta")
+        .select_related("cuenta")
+        .first()
+    )
+    if perm_mov is not None:
+        cuenta = perm_mov.cuenta
+    else:
+        _venta = getattr(vehiculo, "venta", None)
+        if _venta is not None:
+            cuenta = getattr(_venta, "cuenta_corriente", None)
 
     # ── Efectos por situación (atómico) ──
     if situacion == "prov_reintegro":
@@ -2547,17 +2586,24 @@ def guardar_ficha_parcial(request, vehiculo_id):
 
             ficha_form = FichaParcialForm(request.POST, instance=ficha)
 
+            # Valores anteriores para decidir si re-sincronizar gasto_patentes.
+            _patentes_monto_old = getattr(ficha, "patentes_monto", None) or Decimal("0")
+            _gasto_pat_old = getattr(ficha, "gasto_patentes", None) or Decimal("0")
+
             if ficha_form.is_valid():
                 ficha_form.save()
 
                 # Vincular el "Monto adeudado" de patentes con el gasto de
                 # ingreso de Patentes: si el auto adeuda patentes, esa deuda
                 # es un gasto de ingreso que paga la concesionaria.
-                # ⚠️ SOLO cuando adeuda patentes (si). Si NO adeuda, no tocar
-                # gasto_patentes (evita borrar lo cargado en Gastos de ingreso).
+                # ⚠️ SOLO sincronizamos cuando el monto de patentes CAMBIÓ en
+                # este guardado, o cuando gasto_patentes estaba vacío. Así no
+                # pisamos un gasto_patentes ajustado a mano en cada guardado.
                 if "patentes_adeuda" in campos_enviados and ficha.patentes_adeuda == "si":
-                    ficha.gasto_patentes = ficha.patentes_monto or Decimal("0")
-                    ficha.save(update_fields=["gasto_patentes"])
+                    monto_nuevo = ficha.patentes_monto or Decimal("0")
+                    if monto_nuevo != _patentes_monto_old or _gasto_pat_old == 0:
+                        ficha.gasto_patentes = monto_nuevo
+                        ficha.save(update_fields=["gasto_patentes"])
 
                 sincronizar_turnos_calendario(vehiculo, ficha)
                 from vehiculos.services import recalcular_cuentas_vinculadas

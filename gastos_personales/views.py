@@ -108,6 +108,22 @@ def editar_gasto(request, pk):
 @solo_gestion_personal
 def eliminar_gasto(request, pk):
     gasto = get_object_or_404(GastoPersonal, pk=pk, usuario=request.user)
+    # Si este gasto se generó desde la Agenda de Pagos, borrarlo acá deja el
+    # pago de la agenda apuntando a un id inexistente y el próximo sync lo
+    # vuelve a crear (registro "zombie"). En ese caso hay que borrarlo desde
+    # la agenda, donde se elimina el pago y su reflejo personal a la vez.
+    from agenda_pagos.models import PagoFuturo
+    origen_agenda = PagoFuturo.objects.filter(gasto_personal_id=gasto.pk).first()
+    if origen_agenda is not None:
+        if request.method == "POST":
+            messages.warning(
+                request,
+                "Este gasto se generó desde la Agenda de Pagos. Para que no "
+                "vuelva a aparecer, eliminá el pago desde la Agenda de Pagos."
+            )
+            return redirect(f"{reverse('gastos_personales:resumen')}?mes={gasto.mes}&anio={gasto.anio}")
+        return render(request, "gastos_personales/eliminar.html",
+                      {"gasto": gasto, "origen_agenda": origen_agenda})
     if request.method == "POST":
         mes, anio = gasto.mes, gasto.anio
         gasto.delete()
@@ -266,6 +282,16 @@ def eliminar_ingreso(request, pk):
     ing = get_object_or_404(IngresoPersonal, pk=pk, usuario=request.user)
     mes, anio = ing.mes, ing.anio
     if request.method == "POST":
+        # Igual que con los gastos: si vino de la Agenda de Ingresos, borrarlo
+        # acá lo resucitaría en el próximo sync. Hay que borrarlo desde la agenda.
+        from agenda_ingresos.models import IngresoFuturo
+        if IngresoFuturo.objects.filter(ingreso_personal_id=ing.pk).exists():
+            messages.warning(
+                request,
+                "Este ingreso se generó desde la Agenda de Ingresos. Para que no "
+                "vuelva a aparecer, eliminalo desde la Agenda de Ingresos."
+            )
+            return redirect(f"{reverse('gastos_personales:ingresos')}?mes={mes}&anio={anio}")
         ing.delete()
         messages.success(request, "Ingreso eliminado.")
     return redirect(f"{reverse('gastos_personales:ingresos')}?mes={mes}&anio={anio}")

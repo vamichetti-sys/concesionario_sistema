@@ -72,10 +72,11 @@ def _sync_destino(pago, default_user):
         return True, None
 
     if pago.destino == PagoFuturo.DESTINO_GASTOS_PERSONALES:
-        # Para Gastos Personales necesitamos un usuario. Mientras no esté
-        # pagado, lo asignamos al usuario que creó el pago (admin).
-        # Al pagarlo, lo reasignamos a pagado_por.
-        user_destino = pago.pagado_por or pago.creado_por or default_user
+        # El gasto personal pertenece a QUIEN LO AGENDÓ (creado_por), no a
+        # quien ejecuta el pago. Si otro usuario lo marca pagado, el gasto NO
+        # debe migrar a su lista (cada uno ve solo los suyos). pagado_por queda
+        # solo como dato informativo en el PagoFuturo.
+        user_destino = pago.creado_por or pago.pagado_por or default_user
         if pago.gasto_personal_id and GastoPersonal.objects.filter(pk=pago.gasto_personal_id).exists():
             GastoPersonal.objects.filter(pk=pago.gasto_personal_id).update(
                 usuario=user_destino,

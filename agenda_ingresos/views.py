@@ -42,7 +42,9 @@ def _sync_destino_ingreso(ingreso, default_user):
             ingreso.ingreso_mensual_id = im.id
             ingreso.save(update_fields=["ingreso_mensual_id"])
     else:
-        user_destino = ingreso.cobrado_por or ingreso.creado_por or default_user
+        # El ingreso personal pertenece a QUIEN LO AGENDÓ (creado_por), no a
+        # quien lo cobra. cobrado_por queda solo como dato informativo.
+        user_destino = ingreso.creado_por or ingreso.cobrado_por or default_user
         if ingreso.ingreso_personal_id and IngresoPersonal.objects.filter(pk=ingreso.ingreso_personal_id).exists():
             IngresoPersonal.objects.filter(pk=ingreso.ingreso_personal_id).update(
                 usuario=user_destino, concepto=concepto, descripcion=ingreso.descripcion,
@@ -183,6 +185,9 @@ def crear_ingreso(request):
             if obj.monto is None:
                 obj.monto = 0
             obj.save()
+            # Reflejar el ingreso en su módulo destino desde que se agenda
+            # (pendiente de cobro), igual que hacen los pagos.
+            _sync_destino_ingreso(obj, request.user)
             messages.success(request, "Ingreso agendado.")
             return redirect("agenda_ingresos:lista")
     else:
@@ -201,8 +206,9 @@ def editar_ingreso(request, pk):
             if obj.monto is None:
                 obj.monto = 0
             obj.save()
-            if obj.cobrado:
-                _sync_destino_ingreso(obj, request.user)
+            # Sincronizar siempre (no solo si está cobrado), para que los
+            # cambios se reflejen también en ingresos pendientes.
+            _sync_destino_ingreso(obj, request.user)
             messages.success(request, "Ingreso actualizado.")
             return redirect("agenda_ingresos:lista")
     else:
