@@ -107,7 +107,13 @@
                             <div style="width:40px;height:40px;background:rgba(59,130,246,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
                                 <i data-lucide="user" style="width:20px;height:20px;color:#3b82f6;"></i>
                             </div>
-                            <span class="fw-semibold">{{ cuenta.cliente }}</span>
+                            <div class="d-flex flex-column">
+                                {% if cuenta.cliente_id %}
+                                <a href="{% url 'clientes:detalle_cliente' cuenta.cliente_id %}" class="fw-semibold text-decoration-none" title="Ver ficha del cliente (todos sus negocios)">{{ cuenta.cliente }}</a>
+                                {% else %}
+                                <span class="fw-semibold">{{ cuenta.cliente }}</span>
+                                {% endif %}
+                            </div>
                         </div>
                     </td>
                     <td>

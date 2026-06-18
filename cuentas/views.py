@@ -524,11 +524,20 @@ def cuenta_corriente_detalle(request, cuenta_id):
                     continue
                 monto_dec = Decimal(monto)
                 key = CONCEPTOS_KEYS.get(concepto, concepto)
+                pagos_concepto = PagoGastoIngreso.objects.filter(
+                    vehiculo=veh,
+                    concepto__in=[concepto, key],
+                )
                 total_pagado = (
-                    PagoGastoIngreso.objects.filter(
-                        vehiculo=veh,
-                        concepto__in=[concepto, key],
-                    ).aggregate(total=Sum("monto"))["total"]
+                    pagos_concepto.aggregate(total=Sum("monto"))["total"]
+                    or Decimal("0")
+                )
+                # Lo pagó el concesionario pero el cliente lo debe (cli_adelanto):
+                # "Adelanté yo al organismo, el cliente me debe". Aunque figure
+                # pagado al ente, el cliente todavía debe ese dinero.
+                cliente_debe_monto = (
+                    pagos_concepto.filter(situacion="cli_adelanto")
+                    .aggregate(t=Sum("monto"))["t"]
                     or Decimal("0")
                 )
                 saldo = monto_dec - Decimal(total_pagado)
@@ -538,6 +547,8 @@ def cuenta_corriente_detalle(request, cuenta_id):
                     "total_pagado": total_pagado,
                     "saldo": saldo,
                     "pagado": saldo <= 0,
+                    "cliente_debe": cliente_debe_monto > 0,
+                    "cliente_debe_monto": cliente_debe_monto,
                     "vehiculo": veh,
                 }
                 items_veh.append(item)

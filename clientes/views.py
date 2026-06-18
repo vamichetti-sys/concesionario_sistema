@@ -144,15 +144,18 @@ def crear_cliente(request):
 def detalle_cliente(request, cliente_id):
     cliente = get_object_or_404(Cliente, id=cliente_id, activo=True)
 
-    # CUENTA ACTIVA (al_dia / deuda)
-    cuenta_activa = (
+    # CUENTAS ACTIVAS (al_dia / deuda) — un cliente puede tener varios negocios
+    # (un auto comprado por cuenta). Mostramos TODAS, no solo la primera.
+    cuentas_activas = list(
         CuentaCorriente.objects
         .filter(cliente=cliente)
         .exclude(estado='cerrada')
         .select_related('venta', 'venta__vehiculo')
         .prefetch_related('planes')
-        .first()
+        .order_by('-creada')
     )
+    # Compatibilidad: algunos lugares siguen usando una sola cuenta.
+    cuenta_activa = cuentas_activas[0] if cuentas_activas else None
 
     # HISTORIAL (cuentas cerradas)
     cuentas_historial = (
@@ -181,6 +184,7 @@ def detalle_cliente(request, cliente_id):
         {
             'cliente': cliente,
             'cuenta_activa': cuenta_activa,
+            'cuentas_activas': cuentas_activas,
             'cuentas_historial': cuentas_historial,
             'boletos': boletos,
             'tiene_venta_0km': tiene_venta_0km,

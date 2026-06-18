@@ -592,6 +592,13 @@
                         </td>
                         <td class="text-end">
                             {% if g.pagado %}<span class="badge bg-success">PAGADO</span>{% endif %}
+                            {% if g.cliente_debe %}
+                                <div class="mt-1">
+                                    <span class="badge" style="background:#f59e0b;color:#fff;" title="Lo pagaste vos al organismo; el cliente te lo debe">
+                                        El cliente te debe $ {{ g.cliente_debe_monto|miles }}
+                                    </span>
+                                </div>
+                            {% endif %}
                         </td>
                     </tr>
                     {% endfor %}

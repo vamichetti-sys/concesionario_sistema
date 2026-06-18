@@ -119,12 +119,15 @@
 <!-- ===============================
      CUENTA CORRIENTE ACTIVA
 =============================== -->
-{% if cuenta_activa %}
+{% if cuentas_activas %}
 <div class="card p-4 mb-4">
     <div class="d-flex align-items-center justify-content-between mb-4">
         <div class="d-flex align-items-center gap-2">
             <i data-lucide="credit-card" style="width:20px;height:20px;color:#3b82f6;"></i>
-            <h5 class="fw-bold mb-0">Cuenta Corriente</h5>
+            <h5 class="fw-bold mb-0">
+                Cuentas Corrientes
+                {% if cuentas_activas|length > 1 %}<span class="badge bg-primary ms-1">{{ cuentas_activas|length }} negocios</span>{% endif %}
+            </h5>
         </div>
 
         {% with estado=cliente.cumplimiento_pago %}
@@ -138,27 +141,43 @@
         {% endwith %}
     </div>
 
-    <div class="row g-4 mb-4">
-        <div class="col-md-6">
-            <div class="p-3" style="background:#f8f9fa;border-radius:12px;">
-                <small class="text-muted">Estado de la cuenta</small>
-                <div class="fw-semibold">{{ cuenta_activa.get_estado_display }}</div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="p-3" style="background:#f8f9fa;border-radius:12px;">
-                <small class="text-muted">Saldo actual</small>
-                <div class="fw-bold {% if cuenta_activa.saldo > 0 %}text-danger{% else %}text-success{% endif %}" style="font-size:24px;">
-                    $ {{ cuenta_activa.saldo|floatformat:0 }}
-                </div>
-            </div>
-        </div>
-    </div>
+    {% if cuentas_activas|length > 1 %}
+    <p class="text-muted" style="font-size:13px;margin-top:-8px;">
+        Este cliente tiene más de un negocio. Cada auto comprado tiene su propia cuenta corriente independiente.
+    </p>
+    {% endif %}
 
-    <a href="{% url 'cuentas:cuenta_corriente_detalle' cuenta_activa.id %}" class="btn btn-primary">
-        <i data-lucide="external-link" style="width:16px;height:16px;margin-right:6px;"></i>
-        Ver cuenta corriente
-    </a>
+    <div class="row g-3">
+        {% for cta in cuentas_activas %}
+        <div class="col-md-6">
+            <div class="p-3 h-100 d-flex flex-column" style="border:1px solid #e5e7eb;border-radius:12px;">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <i data-lucide="car" style="width:18px;height:18px;color:#3b82f6;"></i>
+                    <span class="fw-semibold">
+                        {% if cta.venta.vehiculo %}
+                            {{ cta.venta.vehiculo.marca }} {{ cta.venta.vehiculo.modelo }}{% if cta.venta.vehiculo.anio %} · {{ cta.venta.vehiculo.anio }}{% endif %}
+                        {% else %}
+                            Venta #{{ cta.venta.id }}
+                        {% endif %}
+                    </span>
+                </div>
+                {% if cta.venta.vehiculo and cta.venta.vehiculo.dominio %}
+                <div class="mb-2"><span class="badge bg-secondary">{{ cta.venta.vehiculo.dominio }}</span></div>
+                {% endif %}
+                <div class="mb-3">
+                    <small class="text-muted">Saldo</small>
+                    <div class="fw-bold {% if cta.saldo > 0 %}text-danger{% else %}text-success{% endif %}" style="font-size:22px;">
+                        $ {{ cta.saldo|floatformat:0 }}
+                    </div>
+                </div>
+                <a href="{% url 'cuentas:cuenta_corriente_detalle' cta.id %}" class="btn btn-primary btn-sm mt-auto">
+                    <i data-lucide="external-link" style="width:16px;height:16px;margin-right:6px;"></i>
+                    Ver cuenta corriente
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
 </div>
 {% endif %}
 
