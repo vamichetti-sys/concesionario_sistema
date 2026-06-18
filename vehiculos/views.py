@@ -751,11 +751,11 @@ def guardar_ficha_vehicular(request, vehiculo_id):
 
             # Vincular el "Monto adeudado" de patentes con el gasto de ingreso
             # de Patentes (la deuda de patentes es un gasto de ingreso).
-            if "patentes_monto" in request.POST or "patentes_adeuda" in request.POST:
-                if ficha.patentes_adeuda == "no":
-                    ficha.gasto_patentes = Decimal("0")
-                else:
-                    ficha.gasto_patentes = ficha.patentes_monto or Decimal("0")
+            # ⚠️ SOLO cuando el auto adeuda patentes (si). Si NO adeuda, NO tocamos
+            # gasto_patentes: puede haberse cargado a mano en "Gastos de ingreso"
+            # y no debe borrarse en cada guardado.
+            if "patentes_adeuda" in request.POST and ficha.patentes_adeuda == "si":
+                ficha.gasto_patentes = ficha.patentes_monto or Decimal("0")
 
             # Un 0km NO tiene gastos de ingreso: se fuerzan a 0.
             if vehiculo_guardado.es_0km:
@@ -2541,11 +2541,10 @@ def guardar_ficha_parcial(request, vehiculo_id):
                 # Vincular el "Monto adeudado" de patentes con el gasto de
                 # ingreso de Patentes: si el auto adeuda patentes, esa deuda
                 # es un gasto de ingreso que paga la concesionaria.
-                if "patentes_monto" in campos_enviados or "patentes_adeuda" in campos_enviados:
-                    if ficha.patentes_adeuda == "no":
-                        ficha.gasto_patentes = Decimal("0")
-                    else:
-                        ficha.gasto_patentes = ficha.patentes_monto or Decimal("0")
+                # ⚠️ SOLO cuando adeuda patentes (si). Si NO adeuda, no tocar
+                # gasto_patentes (evita borrar lo cargado en Gastos de ingreso).
+                if "patentes_adeuda" in campos_enviados and ficha.patentes_adeuda == "si":
+                    ficha.gasto_patentes = ficha.patentes_monto or Decimal("0")
                     ficha.save(update_fields=["gasto_patentes"])
 
                 sincronizar_turnos_calendario(vehiculo, ficha)
