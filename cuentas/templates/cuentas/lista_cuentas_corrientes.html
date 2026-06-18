@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-
+{% load formato_ar %}
 {% block title %}Cuentas Corrientes{% endblock %}
 
 {% block content %}
@@ -119,7 +119,7 @@
                     </td>
                     <td class="text-end">
                         <span class="fw-bold {% if cuenta.deuda_total_real > 0 %}text-danger{% else %}text-success{% endif %}">
-                            $ {{ cuenta.deuda_total_real|floatformat:0 }}
+                            $ {{ cuenta.deuda_total_real|miles }}
                         </span>
                     </td>
                     <td>
@@ -176,7 +176,7 @@
         </div>
         <div class="text-end">
             <span class="badge bg-danger me-2">{{ alerta.cuotas_vencidas }} cuotas</span>
-            <span class="fw-bold text-danger">$ {{ alerta.monto_vencido|floatformat:0 }}</span>
+            <span class="fw-bold text-danger">$ {{ alerta.monto_vencido|miles }}</span>
         </div>
     </div>
     {% endfor %}
