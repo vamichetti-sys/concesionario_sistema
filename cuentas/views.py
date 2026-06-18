@@ -461,9 +461,10 @@ def cuenta_corriente_detalle(request, cuenta_id):
     ]
     movimientos = cuenta.movimientos.order_by("-fecha")
 
-    # Para el modal de Vincular vehículo: mostrar solo los disponibles
-    # (en stock, temporales o en reventa). Los vendidos no se vinculan.
-    vehiculos = Vehiculo.objects.exclude(estado="vendido").order_by("marca", "modelo")
+    # Para el modal de Vincular vehículo: TODOS los vehículos, incluidos los
+    # vendidos. A veces los gastos de ingreso de un auto vendido a otra persona
+    # los paga/debe el cliente de ESTA cuenta, así que hay que poder vincularlo.
+    vehiculos = Vehiculo.objects.all().order_by("marca", "modelo")
 
     gestoria_debe = (
         movimientos.filter(origen="gestoria", tipo="debe")

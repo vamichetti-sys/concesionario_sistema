@@ -685,7 +685,7 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title fw-bold">Vincular vehículo en stock</h5>
+                <h5 class="modal-title fw-bold">Vincular vehículo</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
 
@@ -703,9 +703,12 @@
                         {% for v in vehiculos %}
                         <div class="vehiculo-opt px-3 py-2" style="cursor:pointer;border-bottom:1px solid #f3f4f6;"
                              data-id="{{ v.id }}"
-                             data-texto="{{ v.marca|lower }} {{ v.modelo|lower }} {{ v.dominio|lower }}"
+                             data-texto="{{ v.marca|lower }} {{ v.modelo|lower }} {{ v.dominio|lower }} {{ v.anio }}"
                              onclick="seleccionarVehiculoVincular(this)">
-                            <div class="fw-semibold">{{ v.marca }} {{ v.modelo }}</div>
+                            <div class="fw-semibold">
+                                {{ v.marca }} {{ v.modelo }}{% if v.anio %} · {{ v.anio }}{% endif %}
+                                {% if v.estado == 'vendido' %}<span class="badge bg-secondary ms-1">Vendido</span>{% endif %}
+                            </div>
                             {% if v.dominio %}<small class="text-muted">{{ v.dominio }}</small>{% endif %}
                         </div>
                         {% endfor %}
