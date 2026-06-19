@@ -47,6 +47,7 @@ urlpatterns = [
     # BANCOS (cuentas bancarias propias)
     # ===============================
     path('bancos/', inicio_views.bancos, name='bancos'),
+    path('bancos/pdf/', inicio_views.bancos_pdf, name='bancos_pdf'),
     path('bancos/<int:pk>/editar/', inicio_views.editar_banco, name='editar_banco'),
     path('bancos/<int:pk>/eliminar/', inicio_views.eliminar_banco, name='eliminar_banco'),
 

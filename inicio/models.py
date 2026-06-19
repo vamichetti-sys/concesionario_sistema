@@ -38,6 +38,7 @@ class CuentaBancaria(models.Model):
     """Cuentas bancarias propias (ej. las de Hugo): banco, nº de cuenta y CBU."""
     titular = models.CharField("Titular", max_length=100, default="Hugo")
     banco = models.CharField("Banco", max_length=120)
+    sucursal = models.CharField("Sucursal", max_length=120, blank=True)
     numero_cuenta = models.CharField("Número de cuenta", max_length=80, blank=True)
     cbu = models.CharField("CBU", max_length=40, blank=True)
     alias = models.CharField("Alias", max_length=80, blank=True)

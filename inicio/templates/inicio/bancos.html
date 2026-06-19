@@ -9,9 +9,14 @@
             <h2 class="fw-bold mb-1"><i data-lucide="landmark" style="width:24px;height:24px;vertical-align:-4px;margin-right:6px;"></i>Bancos</h2>
             <p class="text-muted mb-0">Cuentas bancarias propias — banco, número de cuenta y CBU.</p>
         </div>
-        <a href="{% url 'inicio' %}" class="btn btn-secondary btn-sm">
-            <i data-lucide="arrow-left" style="width:16px;height:16px;margin-right:4px;"></i> Volver al panel
-        </a>
+        <div class="d-flex gap-2">
+            <a href="{% url 'bancos_pdf' %}" target="_blank" class="btn btn-danger btn-sm">
+                <i data-lucide="file-down" style="width:16px;height:16px;margin-right:4px;"></i> Imprimir PDF
+            </a>
+            <a href="{% url 'inicio' %}" class="btn btn-secondary btn-sm">
+                <i data-lucide="arrow-left" style="width:16px;height:16px;margin-right:4px;"></i> Volver al panel
+            </a>
+        </div>
     </div>
 
     {% if messages %}
@@ -32,6 +37,10 @@
             <div class="col-md-3">
                 <label class="form-label">Banco *</label>
                 <input type="text" name="banco" class="form-control" placeholder="Ej: Banco Nación" required>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Sucursal</label>
+                <input type="text" name="sucursal" class="form-control">
             </div>
             <div class="col-md-3">
                 <label class="form-label">Número de cuenta</label>
@@ -69,6 +78,10 @@
             <div class="col-md-3">
                 <label class="form-label">Banco</label>
                 <input type="text" name="banco" class="form-control" value="{{ c.banco }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Sucursal</label>
+                <input type="text" name="sucursal" class="form-control" value="{{ c.sucursal }}">
             </div>
             <div class="col-md-3">
                 <label class="form-label">Número de cuenta</label>

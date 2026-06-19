@@ -496,6 +496,7 @@ def bancos(request):
             CuentaBancaria.objects.create(
                 titular=(request.POST.get("titular") or "Hugo").strip() or "Hugo",
                 banco=banco,
+                sucursal=(request.POST.get("sucursal") or "").strip(),
                 numero_cuenta=(request.POST.get("numero_cuenta") or "").strip(),
                 cbu=(request.POST.get("cbu") or "").strip(),
                 alias=(request.POST.get("alias") or "").strip(),
@@ -516,6 +517,7 @@ def editar_banco(request, pk):
     if request.method == "POST":
         cuenta.titular = (request.POST.get("titular") or cuenta.titular).strip() or cuenta.titular
         cuenta.banco = (request.POST.get("banco") or cuenta.banco).strip() or cuenta.banco
+        cuenta.sucursal = (request.POST.get("sucursal") or "").strip()
         cuenta.numero_cuenta = (request.POST.get("numero_cuenta") or "").strip()
         cuenta.cbu = (request.POST.get("cbu") or "").strip()
         cuenta.alias = (request.POST.get("alias") or "").strip()
@@ -534,3 +536,34 @@ def eliminar_banco(request, pk):
         cuenta.delete()
         messages.success(request, "Cuenta bancaria eliminada.")
     return redirect("bancos")
+
+
+@login_required
+def bancos_pdf(request):
+    """PDF con el listado de cuentas bancarias propias."""
+    from inicio.models import CuentaBancaria
+    from reportes.pdf_utils import render_pdf_listado
+
+    cuentas = CuentaBancaria.objects.all()
+    filas = [
+        [
+            c.titular or "—",
+            c.banco or "—",
+            c.sucursal or "—",
+            c.numero_cuenta or "—",
+            c.cbu or "—",
+            c.alias or "—",
+            c.titular_cuenta or "—",
+        ]
+        for c in cuentas
+    ]
+    if not filas:
+        filas = [["—", "Sin cuentas cargadas", "—", "—", "—", "—", "—"]]
+
+    return render_pdf_listado(
+        filename="bancos.pdf",
+        titulo="Cuentas bancarias",
+        subtitulo="AMICHETTI AUTOMOTORES",
+        columnas=["Titular", "Banco", "Sucursal", "N° cuenta", "CBU", "Alias", "Titular de la cuenta"],
+        filas=filas,
+    )
