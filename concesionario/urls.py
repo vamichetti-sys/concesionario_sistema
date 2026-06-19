@@ -44,6 +44,13 @@ urlpatterns = [
     path('recordatorio/<int:pk>/eliminar/', inicio_views.eliminar_recordatorio, name='eliminar_recordatorio'),
 
     # ===============================
+    # BANCOS (cuentas bancarias propias)
+    # ===============================
+    path('bancos/', inicio_views.bancos, name='bancos'),
+    path('bancos/<int:pk>/editar/', inicio_views.editar_banco, name='editar_banco'),
+    path('bancos/<int:pk>/eliminar/', inicio_views.eliminar_banco, name='eliminar_banco'),
+
+    # ===============================
     # 🔁 RECUPERAR CONTRASEÑA
     # ===============================
     path(

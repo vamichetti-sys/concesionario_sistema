@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+{% block title %}Bancos{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3" style="max-width:1100px;">
+
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+            <h2 class="fw-bold mb-1"><i data-lucide="landmark" style="width:24px;height:24px;vertical-align:-4px;margin-right:6px;"></i>Bancos</h2>
+            <p class="text-muted mb-0">Cuentas bancarias propias — banco, número de cuenta y CBU.</p>
+        </div>
+        <a href="{% url 'inicio' %}" class="btn btn-secondary btn-sm">
+            <i data-lucide="arrow-left" style="width:16px;height:16px;margin-right:4px;"></i> Volver al panel
+        </a>
+    </div>
+
+    {% if messages %}
+        {% for m in messages %}
+        <div class="alert alert-{% if m.tags == 'error' %}danger{% else %}{{ m.tags }}{% endif %} py-2">{{ m }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- AGREGAR -->
+    <div class="card p-4 mb-4">
+        <h5 class="fw-bold mb-3"><i data-lucide="plus-circle" style="width:18px;height:18px;vertical-align:-3px;margin-right:6px;"></i>Agregar cuenta bancaria</h5>
+        <form method="post" action="{% url 'bancos' %}" class="row g-3">
+            {% csrf_token %}
+            <div class="col-md-3">
+                <label class="form-label">Titular</label>
+                <input type="text" name="titular" class="form-control" value="Hugo">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Banco *</label>
+                <input type="text" name="banco" class="form-control" placeholder="Ej: Banco Nación" required>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Número de cuenta</label>
+                <input type="text" name="numero_cuenta" class="form-control">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">CBU</label>
+                <input type="text" name="cbu" class="form-control">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Alias</label>
+                <input type="text" name="alias" class="form-control">
+            </div>
+            <div class="col-md-5">
+                <label class="form-label">Titular de la cuenta</label>
+                <input type="text" name="titular_cuenta" class="form-control" placeholder="Nombre y CUIT del titular (opcional)">
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i data-lucide="save" style="width:16px;height:16px;margin-right:6px;"></i> Agregar
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- LISTADO EDITABLE -->
+    {% for c in cuentas %}
+    <div class="card p-4 mb-3">
+        <form method="post" action="{% url 'editar_banco' c.id %}" class="row g-3">
+            {% csrf_token %}
+            <div class="col-md-3">
+                <label class="form-label">Titular</label>
+                <input type="text" name="titular" class="form-control" value="{{ c.titular }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Banco</label>
+                <input type="text" name="banco" class="form-control" value="{{ c.banco }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Número de cuenta</label>
+                <input type="text" name="numero_cuenta" class="form-control" value="{{ c.numero_cuenta }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">CBU</label>
+                <input type="text" name="cbu" class="form-control" value="{{ c.cbu }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Alias</label>
+                <input type="text" name="alias" class="form-control" value="{{ c.alias }}">
+            </div>
+            <div class="col-md-5">
+                <label class="form-label">Titular de la cuenta</label>
+                <input type="text" name="titular_cuenta" class="form-control" value="{{ c.titular_cuenta }}">
+            </div>
+            <div class="col-md-4 d-flex align-items-end gap-2">
+                <button type="submit" class="btn btn-success flex-grow-1">
+                    <i data-lucide="save" style="width:16px;height:16px;margin-right:6px;"></i> Guardar
+                </button>
+            </div>
+        </form>
+        <div class="mt-2 text-end">
+            <form method="post" action="{% url 'eliminar_banco' c.id %}" style="display:inline;"
+                  onsubmit="return confirm('¿Eliminar la cuenta de {{ c.banco }} ({{ c.titular }})?');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline-danger btn-sm">
+                    <i data-lucide="trash-2" style="width:14px;height:14px;margin-right:4px;"></i> Eliminar
+                </button>
+            </form>
+        </div>
+    </div>
+    {% empty %}
+    <div class="card p-5 text-center">
+        <i data-lucide="landmark" style="width:42px;height:42px;color:#9ca3af;margin:0 auto 10px;"></i>
+        <p class="text-muted mb-0">Todavía no hay cuentas bancarias cargadas.</p>
+    </div>
+    {% endfor %}
+
+</div>
+{% endblock %}

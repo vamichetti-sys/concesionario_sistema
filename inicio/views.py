@@ -479,3 +479,58 @@ def doc_entrega_pdf(request):
         columnas=["Documento", "Presentado"],
         filas=filas,
     )
+
+# ==========================================================
+# 🏦 BANCOS (cuentas bancarias propias, ej. las de Hugo)
+# ==========================================================
+@login_required
+def bancos(request):
+    """Listado editable de cuentas bancarias propias (banco, nº de cuenta, CBU)."""
+    from inicio.models import CuentaBancaria
+
+    if request.method == "POST":
+        banco = (request.POST.get("banco") or "").strip()
+        if not banco:
+            messages.error(request, "Ingresá al menos el nombre del banco.")
+        else:
+            CuentaBancaria.objects.create(
+                titular=(request.POST.get("titular") or "Hugo").strip() or "Hugo",
+                banco=banco,
+                numero_cuenta=(request.POST.get("numero_cuenta") or "").strip(),
+                cbu=(request.POST.get("cbu") or "").strip(),
+                alias=(request.POST.get("alias") or "").strip(),
+                titular_cuenta=(request.POST.get("titular_cuenta") or "").strip(),
+                observaciones=(request.POST.get("observaciones") or "").strip(),
+            )
+            messages.success(request, "Cuenta bancaria agregada.")
+        return redirect("bancos")
+
+    cuentas = CuentaBancaria.objects.all()
+    return render(request, "inicio/bancos.html", {"cuentas": cuentas})
+
+
+@login_required
+def editar_banco(request, pk):
+    from inicio.models import CuentaBancaria
+    cuenta = get_object_or_404(CuentaBancaria, pk=pk)
+    if request.method == "POST":
+        cuenta.titular = (request.POST.get("titular") or cuenta.titular).strip() or cuenta.titular
+        cuenta.banco = (request.POST.get("banco") or cuenta.banco).strip() or cuenta.banco
+        cuenta.numero_cuenta = (request.POST.get("numero_cuenta") or "").strip()
+        cuenta.cbu = (request.POST.get("cbu") or "").strip()
+        cuenta.alias = (request.POST.get("alias") or "").strip()
+        cuenta.titular_cuenta = (request.POST.get("titular_cuenta") or "").strip()
+        cuenta.observaciones = (request.POST.get("observaciones") or "").strip()
+        cuenta.save()
+        messages.success(request, "Cuenta bancaria actualizada.")
+    return redirect("bancos")
+
+
+@login_required
+def eliminar_banco(request, pk):
+    from inicio.models import CuentaBancaria
+    cuenta = get_object_or_404(CuentaBancaria, pk=pk)
+    if request.method == "POST":
+        cuenta.delete()
+        messages.success(request, "Cuenta bancaria eliminada.")
+    return redirect("bancos")
