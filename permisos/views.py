@@ -38,7 +38,8 @@ def gestionar_permisos(request):
             perm, _ = PermisoUsuario.objects.get_or_create(usuario=u)
             seleccionadas = request.POST.getlist(f"u{u.id}")
             perm.claves = [c for c in seleccionadas if c in claves_validas]
-            perm.save(update_fields=["claves"])
+            perm.ver_precio = (f"ver_precio_u{u.id}" in request.POST)
+            perm.save(update_fields=["claves", "ver_precio"])
         messages.success(request, "Permisos actualizados correctamente.")
         return redirect("permisos:gestionar")
 
@@ -59,6 +60,6 @@ def gestionar_permisos(request):
                 "items": items,
                 "todos": all(i["checked"] for i in items),
             })
-        filas.append({"usuario": u, "modulos": modulos})
+        filas.append({"usuario": u, "modulos": modulos, "ver_precio": perm.ver_precio})
 
     return render(request, "permisos/lista.html", {"filas": filas})

@@ -23,6 +23,18 @@
             <h5 class="fw-bold mb-0">{{ fila.usuario.username }}</h5>
         </div>
 
+        <!-- Opción especial: ver precios de vehículos -->
+        <div class="form-check form-switch mb-3 p-2" style="background:#f8f9fa;border-radius:8px;padding-left:2.5rem !important;">
+            <input class="form-check-input" type="checkbox"
+                   name="ver_precio_u{{ fila.usuario.id }}"
+                   id="vp_{{ fila.usuario.id }}"
+                   {% if fila.ver_precio %}checked{% endif %}>
+            <label class="form-check-label fw-semibold" for="vp_{{ fila.usuario.id }}">
+                Puede ver los precios de los vehículos
+                <span class="text-muted" style="font-weight:400;">(destildá para ocultar el precio en el listado, la ficha y el PDF)</span>
+            </label>
+        </div>
+
         <div class="row g-3">
             {% for mod in fila.modulos %}
             <div class="col-md-6 col-lg-4">

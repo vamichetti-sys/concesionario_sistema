@@ -118,6 +118,13 @@ def puede_ver_clave(user, clave):
     return clave in (permiso_de(user).claves or [])
 
 
+def puede_ver_precio(user):
+    """True si el usuario puede ver los precios de los vehículos."""
+    if es_admin(user):
+        return True
+    return bool(permiso_de(user).ver_precio)
+
+
 def clave_de_url(path):
     """Devuelve la clave del ítem que controla esta URL, o None si no aplica."""
     for prefijo, clave in URL_CLAVE:

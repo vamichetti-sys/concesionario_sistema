@@ -137,6 +137,7 @@
                 <label class="form-label">Kilómetros</label>
                 {{ vehiculo_form.kilometros }}
             </div>
+            {% if puede_ver_precio %}
             <div class="col-md-3">
                 <label class="form-label">Precio</label>
                 {{ vehiculo_form.precio }}
@@ -145,6 +146,7 @@
                 <label class="form-label">Precio de reventa</label>
                 {{ vehiculo_form.precio_reventa }}
             </div>
+            {% endif %}
             <div class="col-md-4">
                 <label class="form-label">Estado</label>
                 {{ vehiculo_form.estado }}

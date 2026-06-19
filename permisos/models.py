@@ -14,6 +14,9 @@ class PermisoUsuario(models.Model):
         User, on_delete=models.CASCADE, related_name="permisos_secciones"
     )
     claves = models.JSONField(default=list, blank=True)
+    # Si está en False, el usuario NO ve los precios de los vehículos
+    # (listado, ficha y PDF). Admins siempre ven precios.
+    ver_precio = models.BooleanField("Puede ver precios", default=True)
 
     class Meta:
         verbose_name = "Permiso de usuario"

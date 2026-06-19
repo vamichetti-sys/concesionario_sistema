@@ -2090,6 +2090,12 @@ def stock_pdf(request):
     # Si el vehículo no tiene precio de reventa cargado, se usa el de lista.
     precio_tipo = request.GET.get("precio_tipo", "lista")
 
+    # Usuarios sin permiso de ver precios: nunca se imprime la columna Precio.
+    from permisos.access import puede_ver_precio as _puede_ver_precio
+    ver_precio = _puede_ver_precio(request.user)
+    if not ver_precio:
+        col_precio = None
+
     vehiculos = Vehiculo.objects.all().order_by("-id")
 
     if query:
@@ -2176,10 +2182,11 @@ def stock_pdf(request):
             ("Dominio", 0.12),
             ("Año", 0.08),
             ("Kilómetros", 0.14),
-            (precio_header, 0.16),
             ("Días", 0.10),
             ("Carpeta", 0.10),
         ]
+        if ver_precio:
+            columnas.insert(4, (precio_header, 0.16))
 
     # Ajustar anchos proporcionalmente
     total_w = sum(c[1] for c in columnas)

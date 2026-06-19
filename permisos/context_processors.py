@@ -1,4 +1,4 @@
-from .access import permisos_menu, grupos_menu, es_admin
+from .access import permisos_menu, grupos_menu, es_admin, puede_ver_precio
 
 
 def secciones_permitidas(request):
@@ -15,4 +15,5 @@ def secciones_permitidas(request):
         "permisos_menu": permisos_menu(user),
         "grupos_menu": grupos_menu(user),
         "es_admin": es_admin(user),
+        "puede_ver_precio": puede_ver_precio(user),
     }
