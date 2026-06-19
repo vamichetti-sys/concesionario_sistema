@@ -730,14 +730,22 @@ def guardar_ficha_vehicular(request, vehiculo_id):
             #   - el form mandó None / 0 pero el valor anterior era > 0
             # Esto evita que ediciones parciales de la ficha zerifiquen los
             # gastos cargados.
+            # Cuando el POST viene del editor de gastos (modal completo) trae el
+            # marcador "gastos_editables": ahí el usuario PUEDE poner un gasto en
+            # 0 a propósito, así que NO restauramos el valor anterior si el campo
+            # vino en el form. Sin marcador, se mantiene la protección (otras
+            # pestañas no pueden zerificar los gastos por accidente).
+            gastos_editables = bool(request.POST.get("gastos_editables"))
             for campo, valor_previo in gastos_preservar.items():
                 if valor_previo is None or valor_previo == 0:
                     continue
                 if campo not in campos_form_recibidos:
+                    # No vino en el POST (otra pestaña) → preservar siempre.
                     setattr(ficha, campo, valor_previo)
                     continue
                 nuevo = getattr(ficha, campo, None)
-                if nuevo is None or nuevo == 0:
+                if (nuevo is None or nuevo == 0) and not gastos_editables:
+                    # Vino en 0 pero sin edición explícita de gastos → preservar.
                     setattr(ficha, campo, valor_previo)
 
             # ===============================

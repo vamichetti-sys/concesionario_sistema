@@ -43,6 +43,8 @@
               enctype="multipart/form-data"
               action="{% url 'vehiculos:guardar_ficha_vehicular' vehiculo.id %}">
           {% csrf_token %}
+          {# Editor completo de la ficha: habilita poner gastos en 0 a propósito #}
+          <input type="hidden" name="gastos_editables" value="1">
 
           <!-- ================= TABS ================= -->
           <ul class="nav nav-tabs mb-3 fw-semibold">
