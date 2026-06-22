@@ -1065,6 +1065,9 @@ def registrar_pago_gestoria(request, cuenta_id):
     if request.method == "POST":
         monto_raw     = request.POST.get("monto")
         observaciones = request.POST.get("observaciones", "")
+        forma_pago    = request.POST.get("forma_pago") or "efectivo"
+        if forma_pago not in ("efectivo", "transferencia"):
+            forma_pago = "efectivo"
 
         try:
             monto = _parse_monto_argentino(monto_raw)
@@ -1076,17 +1079,34 @@ def registrar_pago_gestoria(request, cuenta_id):
             messages.error(request, "El monto debe ser mayor a 0.")
             return redirect("cuentas:registrar_pago_gestoria", cuenta_id=cuenta.id)
 
+        # Creamos el Pago (genera numero_recibo) para poder emitir el recibo,
+        # igual que el resto de los pagos de la cuenta.
+        pago = Pago.objects.create(
+            cuenta=cuenta,
+            monto_total=monto,
+            forma_pago=forma_pago,
+            observaciones=f"Gestoría {observaciones}".strip(),
+            saldo_anterior=cuenta.saldo,
+        )
+
         MovimientoCuenta.objects.create(
             cuenta=cuenta,
             descripcion=f"Pago gestoría {observaciones}".strip(),
             tipo="haber",
             monto=monto,
-            origen="gestoria"
+            origen="gestoria",
+            pago=pago,
         )
         cuenta.recalcular_saldo()
 
-        messages.success(request, "Pago de gestoría registrado.")
-        return redirect("cuentas:cuenta_corriente_detalle", cuenta_id=cuenta.id)
+        pago.saldo_posterior = cuenta.saldo
+        pago.save(update_fields=["saldo_posterior"])
+
+        messages.success(
+            request,
+            f"Pago de gestoría registrado. Recibo Nº {pago.numero_recibo}."
+        )
+        return redirect("cuentas:recibo_pago_pdf", pago_id=pago.id)
 
     return render(
         request,
