@@ -73,6 +73,24 @@ def actualizar_gastos_por_vencimientos():
     return actualizados
 
 
+def _patentes_las_paga_el_cliente(ficha):
+    """True si las patentes las paga/pagó el cliente (las trajo pagas o pagó
+    directo al organismo), por lo que NO son un gasto del concesionario."""
+    # El auto no adeudaba patentes al ingreso → las trajo pagas.
+    if (ficha.patentes_adeuda or "").lower() == "no":
+        return True
+    # Hay un pago de Patentes con "el cliente pagó directo al organismo".
+    try:
+        from vehiculos.models import PagoGastoIngreso
+        return PagoGastoIngreso.objects.filter(
+            vehiculo=ficha.vehiculo,
+            concepto__in=["patentes", "Patentes"],
+            situacion="cli_directo",
+        ).exists()
+    except Exception:
+        return False
+
+
 def acumular_patentes_mensuales(ficha, hoy=None):
     """Para UNA ficha: acumula en gc_patentes una "patente mensual" por cada
     vencimiento que YA pasó y es POSTERIOR (o igual) a la fecha de ingreso.
@@ -85,6 +103,16 @@ def acumular_patentes_mensuales(ficha, hoy=None):
      de INGRESO, no de concesionario.)
     """
     hoy = hoy or date.today()
+
+    # Si el usuario ajustó/borró gc_patentes a mano, respetamos su valor y no
+    # volvemos a inflarlo automáticamente.
+    if getattr(ficha, "gc_patentes_manual", False):
+        return False
+
+    # Si las patentes las paga/pagó el cliente (las trajo pagas o pagó directo
+    # al organismo), NO son un gasto del concesionario: no se acumulan.
+    if _patentes_las_paga_el_cliente(ficha):
+        return False
 
     mensual = ficha.patente_mensual or Decimal("0")
     if mensual <= 0:

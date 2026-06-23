@@ -1035,6 +1035,7 @@ def guardar_gastos_concesionario(request, vehiculo_id):
             "gc_gnc", "gc_grabado_autopartes", "gc_vtv", "gc_verificacion", "gc_patentes", "gc_otros",
         ]
 
+        gc_patentes_old = ficha.gc_patentes or Decimal("0")
         gc_invalidos = []
         for campo in campos_gc:
             if campo not in request.POST:
@@ -1049,13 +1050,20 @@ def guardar_gastos_concesionario(request, vehiculo_id):
             # Tomamos el valor del form tal cual: si manda 0, se borra a 0.
             setattr(ficha, campo, nuevo)
 
+        # Si el usuario BAJÓ gc_patentes a mano (lo borró/redujo), marcamos que es
+        # manual para que la acumulación automática de patentes no lo re-infle.
+        campos_guardar = list(campos_gc)
+        if "gc_patentes" in request.POST and (ficha.gc_patentes or Decimal("0")) < gc_patentes_old:
+            ficha.gc_patentes_manual = True
+            campos_guardar.append("gc_patentes_manual")
+
         if gc_invalidos:
             messages.warning(
                 request,
                 "Estos montos tenían un formato inválido y no se guardaron: "
                 + ", ".join(gc_invalidos) + "."
             )
-        ficha.save(update_fields=campos_gc)
+        ficha.save(update_fields=campos_guardar)
         from vehiculos.services import recalcular_cuentas_vinculadas
         recalcular_cuentas_vinculadas(vehiculo)
         messages.success(request, "Gastos de concesionario actualizados.")

@@ -263,6 +263,9 @@ class FichaVehicular(models.Model):
     gc_vtv = models.DecimalField("VTV", max_digits=12, decimal_places=2, default=0)
     gc_verificacion = models.DecimalField("Verificacion policial", max_digits=12, decimal_places=2, default=0)
     gc_patentes = models.DecimalField("Patentes", max_digits=12, decimal_places=2, default=0)
+    # Si el usuario ajustó/borró gc_patentes a mano, no volver a inflarlo
+    # automáticamente con la acumulación de patentes mensuales.
+    gc_patentes_manual = models.BooleanField(default=False)
     gc_otros = models.DecimalField("Otros", max_digits=12, decimal_places=2, default=0)
 
     observaciones = models.TextField(blank=True, null=True)
