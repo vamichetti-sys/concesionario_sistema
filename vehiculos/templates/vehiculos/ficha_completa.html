@@ -326,6 +326,25 @@
             </button>
         </div>
 
+        {% if puede_ver_precio %}
+        <!-- PRECIO DE REVENTA -->
+        <div class="p-3 mb-4" style="background:#eff6ff;border-radius:12px;">
+            <h6 class="fw-bold mb-3">Precio de reventa</h6>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Precio para revendedores</label>
+                    <div class="input-group">
+                        <span class="input-group-text">$</span>
+                        <input type="number" step="0.01" min="0" name="precio_reventa"
+                               class="form-control" value="{{ vehiculo.precio_reventa|default_if_none:'' }}"
+                               placeholder="Opcional">
+                    </div>
+                    <small class="text-muted">Se usa para imprimir la lista de stock con precios de reventa y enviarla a los revendedores.</small>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
         <!-- PATENTES -->
         <div class="p-3 mb-4" style="background:#f8f9fa;border-radius:12px;">
             <h6 class="fw-bold mb-3">Patentes</h6>

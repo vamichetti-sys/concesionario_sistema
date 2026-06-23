@@ -2631,6 +2631,18 @@ def guardar_ficha_parcial(request, vehiculo_id):
     ficha, _ = FichaVehicular.objects.get_or_create(vehiculo=vehiculo)
 
     if request.method == "POST":
+        # Precio de reventa: es un campo del Vehiculo (no de la ficha), editable
+        # desde la pestaña Documentación. Lo guardamos aparte.
+        if "precio_reventa" in request.POST:
+            pr_raw = (request.POST.get("precio_reventa") or "").strip().replace("$", "").replace(" ", "")
+            if "," in pr_raw:
+                pr_raw = pr_raw.replace(".", "").replace(",", ".")
+            try:
+                vehiculo.precio_reventa = Decimal(pr_raw) if pr_raw else None
+                vehiculo.save(update_fields=["precio_reventa"])
+            except Exception:
+                pass
+
         # Solo actualizar los campos que vienen en el POST,
         # sin tocar los demás (evita borrar datos de otras secciones)
         campos_enviados = [
