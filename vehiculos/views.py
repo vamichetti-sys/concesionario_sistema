@@ -216,6 +216,9 @@ def lista_vehiculos(request):
     total_vendido = Vehiculo.objects.filter(estado='vendido').count()
     total_reventa = Vehiculo.objects.filter(estado='reventa').count()
 
+    from django.contrib.auth.models import User
+    usuarios_vendedores = User.objects.filter(is_active=True).order_by("username")
+
     return render(
         request,
         "vehiculos/lista_vehiculos.html",
@@ -228,6 +231,7 @@ def lista_vehiculos(request):
             "total_temporal": total_temporal,
             "total_vendido": total_vendido,
             "total_reventa": total_reventa,
+            "usuarios_vendedores": usuarios_vendedores,
         },
     )
 
@@ -402,11 +406,19 @@ def cambiar_estado_vehiculo(request, vehiculo_id):
             except ValueError:
                 fecha_venta = date.today()
 
+            # ¿Quién lo vendió? (opcional, llega del modal)
+            vendido_por = None
+            vendedor_id = (request.POST.get("vendido_por") or "").strip()
+            if vendedor_id:
+                from django.contrib.auth.models import User
+                vendido_por = User.objects.filter(pk=vendedor_id).first()
+
             venta, creada = Venta.objects.get_or_create(
                 vehiculo=vehiculo,
                 defaults={
                     "estado": "confirmada",
                     "precio_venta": precio_venta,
+                    "vendido_por": vendido_por,
                 }
             )
 
@@ -418,6 +430,9 @@ def cambiar_estado_vehiculo(request, vehiculo_id):
             if venta.precio_venta != precio_venta:
                 venta.precio_venta = precio_venta
                 campos_venta.append("precio_venta")
+            if vendido_por is not None and venta.vendido_por_id != vendido_por.id:
+                venta.vendido_por = vendido_por
+                campos_venta.append("vendido_por")
             if campos_venta:
                 venta.save(update_fields=campos_venta)
 

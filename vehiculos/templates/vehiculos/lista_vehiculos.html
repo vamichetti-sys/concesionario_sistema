@@ -189,6 +189,7 @@
                             {% csrf_token %}
                             <input type="hidden" name="precio_venta" value="">
                             <input type="hidden" name="fecha_venta" value="">
+                            <input type="hidden" name="vendido_por" value="">
                             <select name="estado" class="form-select form-select-sm" style="width:auto;">
                                 <option value="a_ingresar" {% if v.estado == 'a_ingresar' %}selected{% endif %}>A ingresar</option>
                                 <option value="stock" {% if v.estado == 'stock' %}selected{% endif %}>En stock</option>
@@ -501,6 +502,14 @@ if (typeof lucide !== 'undefined') lucide.createIcons();
 
                 <label class="form-label">Fecha de venta</label>
                 <input type="date" id="inputFechaVenta" class="form-control">
+
+                <label class="form-label mt-3">¿Quién lo vendió?</label>
+                <select id="inputVendidoPor" class="form-select">
+                    <option value="">— Seleccionar vendedor —</option>
+                    {% for us in usuarios_vendedores %}
+                    <option value="{{ us.id }}">{{ us.get_full_name|default:us.username }}</option>
+                    {% endfor %}
+                </select>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
@@ -529,6 +538,7 @@ if (typeof lucide !== 'undefined') lucide.createIcons();
         var inputPrecio = document.getElementById('inputPrecioVenta');
         var inputFecha  = document.getElementById('inputFechaVenta');
         var nombreVeh   = document.getElementById('precioVentaVehiculo');
+        var inputVendedor = document.getElementById('inputVendidoPor');
         var btnConfirm  = document.getElementById('confirmarPrecioVenta');
         var formActivo  = null;
 
@@ -558,6 +568,7 @@ if (typeof lucide !== 'undefined') lucide.createIcons();
             inputPrecio.classList.remove('is-invalid');
             formActivo.querySelector('input[name="precio_venta"]').value = precio;
             formActivo.querySelector('input[name="fecha_venta"]').value = inputFecha.value || '';
+            formActivo.querySelector('input[name="vendido_por"]').value = (inputVendedor ? inputVendedor.value : '') || '';
             formActivo.dataset.confirmado = '1';
             modal.hide();
             formActivo.submit();

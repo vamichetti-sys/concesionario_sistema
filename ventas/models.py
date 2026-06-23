@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.auth.models import User
 from vehiculos.models import Vehiculo
 from clientes.models import Cliente
 
@@ -45,6 +46,15 @@ class Venta(models.Model):
         decimal_places=2,
         null=True,
         blank=True
+    )
+
+    vendido_por = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        related_name="ventas_realizadas",
+        null=True,
+        blank=True,
+        verbose_name="Vendido por",
     )
 
     observaciones = models.TextField(
