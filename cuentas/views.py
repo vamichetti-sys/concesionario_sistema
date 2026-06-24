@@ -1255,8 +1255,10 @@ def refinanciar_plan(request, plan_id):
             fecha += timedelta(days=30)
 
         plan.estado = "activo"
-        nota = (f"Refinanciación: +{interes}% sobre saldo $ {saldo:,.0f} "
-                f"el {fecha_inicio.strftime('%d/%m/%Y')} → $ {total_refin:,.0f} en {cantidad} cuota(s).")
+        _saldo_str = f"{saldo:,.0f}".replace(",", ".")
+        _total_str = f"{total_refin:,.0f}".replace(",", ".")
+        nota = (f"Refinanciación: +{interes}% sobre saldo $ {_saldo_str} "
+                f"el {fecha_inicio.strftime('%d/%m/%Y')} → $ {_total_str} en {cantidad} cuota(s).")
         plan.interes_descripcion = (
             (plan.interes_descripcion + "\n" + nota).strip()
             if plan.interes_descripcion else nota
