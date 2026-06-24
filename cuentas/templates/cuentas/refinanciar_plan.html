@@ -42,10 +42,28 @@
             </div>
         </div>
 
-        <div class="alert alert-info mt-3 mb-0" style="border-radius:12px;font-size:13px;">
-            <i data-lucide="info" style="width:16px;height:16px;vertical-align:-3px;"></i>
-            Se cierra el saldo actual y se generan cuotas nuevas por <strong>saldo + interés</strong>.
-            Ejemplo: saldo $ {{ saldo|miles }} + 5% = se cuotifica $ {{ saldo|miles }} con el interés que pongas.
+        <!-- VISTA PREVIA EN VIVO -->
+        <div class="mt-4 p-3" style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:12px;">
+            <div class="fw-bold mb-2" style="font-size:13px;color:#0369a1;">
+                <i data-lucide="eye" style="width:15px;height:15px;vertical-align:-3px;"></i> Así quedaría:
+            </div>
+            <div class="row g-2 text-center">
+                <div class="col-4">
+                    <small class="text-muted d-block">Interés</small>
+                    <span class="fw-semibold" id="pvInteres">$ 0</span>
+                </div>
+                <div class="col-4">
+                    <small class="text-muted d-block">Nuevo saldo a pagar</small>
+                    <span class="fw-bold text-danger" id="pvTotal" style="font-size:18px;">$ {{ saldo|miles }}</span>
+                </div>
+                <div class="col-4">
+                    <small class="text-muted d-block">Por cuota</small>
+                    <span class="fw-semibold" id="pvCuota">$ {{ saldo|miles }}</span>
+                </div>
+            </div>
+            <div class="text-muted mt-2" style="font-size:12px;" id="pvDetalle">
+                Sobre el saldo de $ {{ saldo|miles }}, sin interés todavía.
+            </div>
         </div>
 
         <div class="d-flex gap-2 mt-4">
@@ -64,4 +82,46 @@
     {% endif %}
 
 </div>
+
+{% if saldo > 0 %}
+<script>
+(function () {
+    var SALDO = parseFloat("{{ saldo|stringformat:'f' }}") || 0;
+    var inpInteres = document.querySelector('input[name="interes"]');
+    var inpCuotas  = document.querySelector('input[name="cantidad_cuotas"]');
+    var pvInteres  = document.getElementById('pvInteres');
+    var pvTotal    = document.getElementById('pvTotal');
+    var pvCuota    = document.getElementById('pvCuota');
+    var pvDetalle  = document.getElementById('pvDetalle');
+
+    function fmt(n) {
+        // separador de miles con puntos, sin decimales
+        var s = Math.round(n).toString();
+        return '$ ' + s.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    }
+
+    function recalcular() {
+        var pct = parseFloat((inpInteres.value || '0').replace(',', '.')) || 0;
+        if (pct < 0) pct = 0;
+        var cuotas = parseInt(inpCuotas.value || '1', 10);
+        if (!cuotas || cuotas < 1) cuotas = 1;
+
+        var interes = SALDO * pct / 100;
+        var total = SALDO + interes;
+        var porCuota = total / cuotas;
+
+        pvInteres.textContent = fmt(interes);
+        pvTotal.textContent = fmt(total);
+        pvCuota.textContent = fmt(porCuota);
+        pvDetalle.textContent = 'Saldo ' + fmt(SALDO) + ' + ' + pct + '% (' + fmt(interes) + ') = '
+            + fmt(total) + ' en ' + cuotas + ' cuota(s) de ' + fmt(porCuota) + '.';
+    }
+
+    [inpInteres, inpCuotas].forEach(function (el) {
+        if (el) { el.addEventListener('input', recalcular); el.addEventListener('change', recalcular); }
+    });
+    recalcular();
+})();
+</script>
+{% endif %}
 {% endblock %}
