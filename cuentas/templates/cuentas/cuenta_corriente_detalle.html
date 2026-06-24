@@ -274,6 +274,9 @@
                 <a href="{% url 'cuentas:crear_plan_pago' cuenta.id %}?plan_id={{ plan.id }}" class="btn btn-outline-secondary btn-sm" title="Editar plan">
                     <i data-lucide="pencil" style="width:14px;height:14px;"></i>
                 </a>
+                <a href="{% url 'cuentas:refinanciar_plan' plan.id %}" class="btn btn-outline-warning btn-sm" title="Refinanciar (interés solo sobre el saldo adeudado)">
+                    <i data-lucide="refresh-ccw" style="width:14px;height:14px;margin-right:3px;"></i>Refinanciar
+                </a>
                 <a href="{% url 'cuentas:eliminar_plan_pago' cuenta.id %}?plan_id={{ plan.id }}" class="btn btn-outline-danger btn-sm" title="Eliminar plan"
                    onclick="return confirm('¿Eliminar este plan de pago?\n\nSe borrarán sus cuotas y los pagos registrados de este plan.\nEsta acción no se puede deshacer.');">
                     <i data-lucide="x" style="width:14px;height:14px;"></i>

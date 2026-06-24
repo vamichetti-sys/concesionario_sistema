@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% load formato_ar %}
+{% block title %}Refinanciar plan{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3" style="max-width:680px;">
+
+    <div class="d-flex align-items-center gap-2 mb-4">
+        <i data-lucide="refresh-ccw" style="width:24px;height:24px;color:#3b82f6;"></i>
+        <div>
+            <h3 class="fw-bold mb-0">Refinanciar plan</h3>
+            <p class="text-muted mb-0" style="font-size:13px;">El interés se aplica <strong>solo sobre el saldo adeudado</strong>. Lo ya pagado no se toca.</p>
+        </div>
+    </div>
+
+    <div class="card p-4 mb-3">
+        <div class="d-flex justify-content-between align-items-center">
+            <span class="text-muted">Saldo adeudado de este plan</span>
+            <span class="fw-bold text-danger" style="font-size:26px;">$ {{ saldo|miles }}</span>
+        </div>
+        <small class="text-muted">{{ plan.descripcion }}</small>
+    </div>
+
+    {% if saldo > 0 %}
+    <form method="post" action="{% url 'cuentas:refinanciar_plan' plan.id %}" class="card p-4">
+        {% csrf_token %}
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Interés (%)</label>
+                <div class="input-group">
+                    <input type="number" step="0.01" min="0" name="interes" class="form-control" value="0" required>
+                    <span class="input-group-text">%</span>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Cantidad de cuotas</label>
+                <input type="number" min="1" name="cantidad_cuotas" class="form-control" value="1" required>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Primer vencimiento</label>
+                <input type="date" name="fecha_inicio" class="form-control" value="{{ hoy_iso }}">
+            </div>
+        </div>
+
+        <div class="alert alert-info mt-3 mb-0" style="border-radius:12px;font-size:13px;">
+            <i data-lucide="info" style="width:16px;height:16px;vertical-align:-3px;"></i>
+            Se cierra el saldo actual y se generan cuotas nuevas por <strong>saldo + interés</strong>.
+            Ejemplo: saldo $ {{ saldo|miles }} + 5% = se cuotifica $ {{ saldo|miles }} con el interés que pongas.
+        </div>
+
+        <div class="d-flex gap-2 mt-4">
+            <button type="submit" class="btn btn-primary">
+                <i data-lucide="check" style="width:16px;height:16px;margin-right:6px;"></i>
+                Refinanciar saldo
+            </button>
+            <a href="{% url 'cuentas:cuenta_corriente_detalle' cuenta.id %}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+    {% else %}
+    <div class="card p-4 text-center text-muted">
+        Este plan no tiene saldo adeudado para refinanciar.
+        <div class="mt-2"><a href="{% url 'cuentas:cuenta_corriente_detalle' cuenta.id %}" class="btn btn-secondary btn-sm">Volver</a></div>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

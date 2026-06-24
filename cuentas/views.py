@@ -1177,6 +1177,107 @@ def conectar_vehiculo_permuta(request, cuenta_id, vehiculo_id):
 
 # ==========================================================
 # ELIMINAR PLAN DE PAGO
+# ==========================================================
+# REFINANCIAR PLAN (interés SOLO sobre el saldo adeudado)
+# ==========================================================
+@login_required
+@transaction.atomic
+def refinanciar_plan(request, plan_id):
+    plan = get_object_or_404(PlanPago, id=plan_id)
+    cuenta = plan.cuenta
+
+    if cuenta.estado == "cerrada":
+        messages.error(request, "La cuenta está cerrada.")
+        return redirect("cuentas:cuenta_corriente_detalle", cuenta_id=cuenta.id)
+
+    # Saldo que queda adeudado de ESTE plan (lo ya pagado NO se toca).
+    saldo = sum((c.saldo_pendiente for c in plan.cuotas.all()), Decimal("0"))
+
+    if request.method == "POST":
+        if saldo <= 0:
+            messages.error(request, "Este plan no tiene saldo adeudado para refinanciar.")
+            return redirect("cuentas:cuenta_corriente_detalle", cuenta_id=cuenta.id)
+
+        try:
+            interes = Decimal(str(request.POST.get("interes") or "0").replace(",", "."))
+        except (InvalidOperation, ValueError):
+            interes = Decimal("0")
+        if interes < 0:
+            interes = Decimal("0")
+
+        try:
+            cantidad = int(request.POST.get("cantidad_cuotas") or "1")
+        except ValueError:
+            cantidad = 1
+        if cantidad < 1:
+            cantidad = 1
+
+        fecha_raw = (request.POST.get("fecha_inicio") or "").strip()
+        try:
+            fecha_inicio = datetime.strptime(fecha_raw, "%Y-%m-%d").date() if fecha_raw else date.today()
+        except ValueError:
+            fecha_inicio = date.today()
+
+        interes_monto = (saldo * interes / Decimal("100")).quantize(Decimal("0.01"))
+        total_refin   = (saldo + interes_monto).quantize(Decimal("0.01"))
+
+        # 1) Cerramos las cuotas con saldo del plan al monto YA pagado (saldo→0),
+        #    preservando los pagos hechos (no se borra ninguna imputación).
+        max_num = 0
+        for c in plan.cuotas.all():
+            if c.saldo_pendiente > 0:
+                c.monto = c.total_pagado
+                c.estado = "pagada"
+                c.save(update_fields=["monto", "estado"])
+            max_num = max(max_num, c.numero)
+
+        # 2) Debe por el interés de refinanciación. Origen 'venta' para que NO se
+        #    duplique en deuda_total_real (que ya lo toma de las cuotas nuevas);
+        #    solo ajusta el saldo por movimientos.
+        if interes_monto > 0:
+            MovimientoCuenta.objects.create(
+                cuenta=cuenta,
+                descripcion=f"Interés refinanciación {interes}% sobre saldo $ {saldo:,.0f} (plan #{plan.pk})",
+                tipo="debe", monto=interes_monto, origen="venta",
+            )
+
+        # 3) Cuotas nuevas por el saldo refinanciado (saldo + interés).
+        base = (total_refin / cantidad).quantize(Decimal("0.01"))
+        fecha = fecha_inicio
+        acum = Decimal("0")
+        for i in range(1, cantidad + 1):
+            monto_c = base if i < cantidad else (total_refin - acum)
+            acum += monto_c
+            CuotaPlan.objects.create(
+                plan=plan, numero=max_num + i, vencimiento=fecha,
+                monto=monto_c, estado="pendiente",
+            )
+            fecha += timedelta(days=30)
+
+        plan.estado = "activo"
+        nota = (f"Refinanciación: +{interes}% sobre saldo $ {saldo:,.0f} "
+                f"el {fecha_inicio.strftime('%d/%m/%Y')} → $ {total_refin:,.0f} en {cantidad} cuota(s).")
+        plan.interes_descripcion = (
+            (plan.interes_descripcion + "\n" + nota).strip()
+            if plan.interes_descripcion else nota
+        )
+        plan.save(update_fields=["estado", "interes_descripcion"])
+
+        cuenta.recalcular_saldo()
+        messages.success(
+            request,
+            f"Plan refinanciado: interés sobre el saldo de $ {saldo:,.0f}. "
+            f"Nuevo saldo $ {total_refin:,.0f} en {cantidad} cuota(s)."
+        )
+        return redirect("cuentas:cuenta_corriente_detalle", cuenta_id=cuenta.id)
+
+    return render(request, "cuentas/refinanciar_plan.html", {
+        "plan": plan, "cuenta": cuenta, "saldo": saldo,
+        "hoy_iso": date.today().strftime("%Y-%m-%d"),
+    })
+
+
+# ==========================================================
 # Borra el plan, todas sus cuotas, los pagos asociados
 # y los movimientos contables que generó.
 # ==========================================================
