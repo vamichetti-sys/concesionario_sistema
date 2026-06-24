@@ -416,6 +416,29 @@ class FichaVehicular(models.Model):
         """
         return self.saldo_total_gastos()
 
+    @property
+    def titulo_archivo_url(self):
+        """URL del título lista para abrir.
+
+        Cloudinary sube los PDF como recurso 'image' y bloquea su entrega por
+        esa vía. Para los PDF reescribimos a '/raw/upload/' (igual que los
+        boletos) para que el link funcione. Las imágenes (JPG/PNG) se sirven tal
+        cual.
+        """
+        f = self.titulo_archivo
+        if not f:
+            return ""
+        try:
+            url = f.url
+        except Exception:
+            return ""
+        name = (getattr(f, "name", "") or "").lower()
+        if "cloudinary.com" in url and name.endswith(".pdf"):
+            url = url.replace("/image/upload/", "/raw/upload/")
+            if "?" not in url:
+                url = url + "?fl_attachment"
+        return url
+
     # ======================================================
     # COMPATIBILIDAD PARA PDF / TEMPLATES
     # ======================================================

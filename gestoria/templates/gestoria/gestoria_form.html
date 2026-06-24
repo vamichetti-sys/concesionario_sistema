@@ -209,7 +209,7 @@
                         <div class="fw-semibold">
                             {{ ficha.get_titulo_estado_display|default:"—" }}
                             {% if ficha.titulo_archivo %}
-                            · <a href="{{ ficha.titulo_archivo.url }}" target="_blank">
+                            · <a href="{{ ficha.titulo_archivo_url }}" target="_blank">
                                 <i data-lucide="file-text" style="width:13px;height:13px;margin-right:3px;"></i>Ver título cargado
                             </a>
                             {% endif %}
