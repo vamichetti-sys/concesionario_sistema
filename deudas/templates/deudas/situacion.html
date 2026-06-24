@@ -34,6 +34,12 @@
         </a>
     </li>
     <li class="nav-item">
+        <a class="nav-link {% if tab == 'vendidos' %}active{% endif %}" href="?tab=vendidos">
+            Vendidos con deuda
+            {% if counts.vendidos %}<span class="badge bg-danger ms-1">{{ counts.vendidos }}</span>{% endif %}
+        </a>
+    </li>
+    <li class="nav-item">
         <a class="nav-link {% if tab == 'saldadas' %}active{% endif %}" href="?tab=saldadas">
             Saldadas
             {% if counts.saldadas %}<span class="badge bg-secondary ms-1">{{ counts.saldadas }}</span>{% endif %}

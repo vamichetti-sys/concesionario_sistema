@@ -219,13 +219,42 @@ def deudas_situacion(request):
     }
 
     tab = request.GET.get("tab", "impagas")
-    if tab not in ("impagas", "clientes", "proveedores", "saldadas"):
+    if tab not in ("impagas", "clientes", "proveedores", "saldadas", "vendidos"):
         tab = "impagas"
 
     filas = []
     total = Decimal("0")
 
-    if tab == "proveedores":
+    if tab == "vendidos":
+        # Vehículos ya VENDIDOS (salieron de stock) que todavía tienen saldo de
+        # gastos de ingreso pendiente.
+        from vehiculos.models import FichaVehicular
+        fichas = (
+            FichaVehicular.objects
+            .filter(vehiculo__estado="vendido")
+            .select_related("vehiculo")
+        )
+        for ficha in fichas:
+            try:
+                mapa = ficha.mapa_gastos_ingreso()
+            except Exception:
+                continue
+            for concepto_label, monto in mapa.items():
+                if not monto or Decimal(monto) <= 0:
+                    continue
+                saldo = ficha.saldo_por_concepto(concepto_label) or Decimal("0")
+                if saldo > 0:
+                    filas.append({
+                        "vehiculo": ficha.vehiculo,
+                        "estado_vehiculo": ficha.vehiculo.get_estado_display(),
+                        "concepto": concepto_label,
+                        "ente": "—",
+                        "monto": saldo,
+                        "estado": "Vendido — adeuda gastos",
+                    })
+                    total += saldo
+        filas.sort(key=lambda f: f["monto"], reverse=True)
+    elif tab == "proveedores":
         qs = (
             ReintegroProveedor.objects
             .filter(estado="pendiente")
@@ -276,11 +305,20 @@ def deudas_situacion(request):
 
     # Contadores para los badges de las solapas
     base = PagoGastoIngreso.objects
+    from vehiculos.models import FichaVehicular
+    vendidos_con_deuda = 0
+    for f in FichaVehicular.objects.filter(vehiculo__estado="vendido").select_related("vehiculo"):
+        try:
+            if f.tiene_saldo_pendiente():
+                vendidos_con_deuda += 1
+        except Exception:
+            pass
     counts = {
         "impagas": base.filter(situacion="cli_concesion", saldado=False).count(),
         "clientes": base.filter(situacion="cli_adelanto", saldado=False).count(),
         "proveedores": ReintegroProveedor.objects.filter(estado="pendiente").count(),
         "saldadas": base.filter(saldado=True).count(),
+        "vendidos": vendidos_con_deuda,
     }
 
     return render(request, "deudas/situacion.html", {
