@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+{% load formato_ar %}
+{% block title %}Cuentas por tipo de deuda{% endblock %}
+
+{% block content %}
+<div class="mb-4 d-flex justify-content-between align-items-start flex-wrap gap-2">
+    <div>
+        <h3 class="fw-bold mb-1">Cuentas por tipo de deuda</h3>
+        <p class="text-muted mb-0">Qué cuentas deben gestoría y cuáles deben gastos de ingreso.</p>
+    </div>
+    <a href="{% url 'cuentas:lista_cuentas_corrientes' %}" class="btn btn-secondary">
+        <i data-lucide="arrow-left" style="width:16px;height:16px;margin-right:4px;"></i> Volver
+    </a>
+</div>
+
+<div class="row g-4">
+    <!-- GESTORÍA -->
+    <div class="col-lg-6">
+        <div class="card p-4 h-100">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <h5 class="fw-bold mb-0">
+                    <i data-lucide="clipboard-list" style="width:18px;height:18px;color:#8b5cf6;vertical-align:-3px;margin-right:5px;"></i>
+                    Deben Gestoría
+                    <span class="badge bg-secondary ms-1">{{ deben_gestoria|length }}</span>
+                </h5>
+                <span class="fw-bold text-danger">$ {{ total_gestoria|miles }}</span>
+            </div>
+            {% if deben_gestoria %}
+            <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                    <thead><tr><th>Cliente</th><th>Vehículo</th><th class="text-end">Debe</th><th></th></tr></thead>
+                    <tbody>
+                        {% for d in deben_gestoria %}
+                        <tr>
+                            <td class="fw-semibold">{{ d.cuenta.cliente }}</td>
+                            <td style="font-size:12px;">
+                                {% if d.cuenta.venta.vehiculo %}{{ d.cuenta.venta.vehiculo.marca }} {{ d.cuenta.venta.vehiculo.modelo }}{% if d.cuenta.venta.vehiculo.dominio %} ({{ d.cuenta.venta.vehiculo.dominio }}){% endif %}{% else %}—{% endif %}
+                            </td>
+                            <td class="text-end fw-bold text-danger">$ {{ d.monto|miles }}</td>
+                            <td class="text-end">
+                                <a href="{% url 'cuentas:cuenta_corriente_detalle' d.cuenta.id %}" class="btn btn-outline-secondary btn-sm">Ver</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted mb-0">Ninguna cuenta debe gestoría.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- GASTOS DE INGRESO -->
+    <div class="col-lg-6">
+        <div class="card p-4 h-100">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <h5 class="fw-bold mb-0">
+                    <i data-lucide="receipt" style="width:18px;height:18px;color:#ef4444;vertical-align:-3px;margin-right:5px;"></i>
+                    Deben Gastos de ingreso
+                    <span class="badge bg-secondary ms-1">{{ deben_gastos|length }}</span>
+                </h5>
+                <span class="fw-bold text-danger">$ {{ total_gastos|miles }}</span>
+            </div>
+            {% if deben_gastos %}
+            <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                    <thead><tr><th>Cliente</th><th>Vehículo</th><th class="text-end">Debe</th><th></th></tr></thead>
+                    <tbody>
+                        {% for d in deben_gastos %}
+                        <tr>
+                            <td class="fw-semibold">{{ d.cuenta.cliente }}</td>
+                            <td style="font-size:12px;">
+                                {% if d.cuenta.venta.vehiculo %}{{ d.cuenta.venta.vehiculo.marca }} {{ d.cuenta.venta.vehiculo.modelo }}{% if d.cuenta.venta.vehiculo.dominio %} ({{ d.cuenta.venta.vehiculo.dominio }}){% endif %}{% else %}—{% endif %}
+                            </td>
+                            <td class="text-end fw-bold text-danger">$ {{ d.monto|miles }}</td>
+                            <td class="text-end">
+                                <a href="{% url 'cuentas:cuenta_corriente_detalle' d.cuenta.id %}" class="btn btn-outline-secondary btn-sm">Ver</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted mb-0">Ninguna cuenta debe gastos de ingreso.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- EL CLIENTE ME DEBE (lo pagué yo — cli_adelanto) -->
+    <div class="col-12">
+        <div class="card p-4">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <h5 class="fw-bold mb-0">
+                    <i data-lucide="hand-coins" style="width:18px;height:18px;color:#f59e0b;vertical-align:-3px;margin-right:5px;"></i>
+                    Lo pagué yo, el cliente me debe
+                    <span class="badge bg-secondary ms-1">{{ deben_adelanto|length }}</span>
+                </h5>
+                <span class="fw-bold text-danger">$ {{ total_adelanto|miles }}</span>
+            </div>
+            <p class="text-muted" style="font-size:12.5px;margin-top:-8px;">
+                Gastos de ingreso que adelantó la concesionaria al organismo y el cliente todavía debe.
+            </p>
+            {% if deben_adelanto %}
+            <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                    <thead><tr><th>Cliente</th><th>Vehículo</th><th class="text-end">Me debe</th><th></th></tr></thead>
+                    <tbody>
+                        {% for d in deben_adelanto %}
+                        <tr>
+                            <td class="fw-semibold">{{ d.cuenta.cliente }}</td>
+                            <td style="font-size:12px;">
+                                {% if d.cuenta.venta.vehiculo %}{{ d.cuenta.venta.vehiculo.marca }} {{ d.cuenta.venta.vehiculo.modelo }}{% if d.cuenta.venta.vehiculo.dominio %} ({{ d.cuenta.venta.vehiculo.dominio }}){% endif %}{% else %}—{% endif %}
+                            </td>
+                            <td class="text-end fw-bold text-danger">$ {{ d.monto|miles }}</td>
+                            <td class="text-end">
+                                <a href="{% url 'cuentas:cuenta_corriente_detalle' d.cuenta.id %}" class="btn btn-outline-secondary btn-sm">Ver</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted mb-0">No hay gastos adelantados pendientes de cobro.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

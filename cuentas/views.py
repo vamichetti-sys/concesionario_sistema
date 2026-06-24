@@ -371,6 +371,79 @@ def lista_cuentas_corrientes(request):
 
 
 # ==========================================================
+# CUENTAS CORRIENTES POR TIPO DE DEUDA
+# (qué cuentas deben gestoría / qué cuentas deben gastos de ingreso)
+# ==========================================================
+@login_required
+def cuentas_por_tipo_deuda(request):
+    cuentas = (
+        CuentaCorriente.objects
+        .exclude(estado="cerrada")
+        .select_related("cliente", "venta", "venta__vehiculo")
+        .prefetch_related("movimientos")
+        .order_by("id")
+    )
+
+    from vehiculos.models import PagoGastoIngreso
+
+    deben_gestoria = []
+    deben_gastos = []
+    deben_adelanto = []          # lo pagué yo, el cliente me debe (cli_adelanto)
+    total_gestoria = Decimal("0")
+    total_gastos = Decimal("0")
+    total_adelanto = Decimal("0")
+
+    for cuenta in cuentas:
+        movs = list(cuenta.movimientos.all())
+
+        # Gestoría pendiente = debe − haber (origen gestoria)
+        g_debe = sum((m.monto for m in movs if m.origen == "gestoria" and m.tipo in ("debe", "deuda")), Decimal("0"))
+        g_haber = sum((m.monto for m in movs if m.origen == "gestoria" and m.tipo in ("haber", "pago")), Decimal("0"))
+        gestoria_pend = g_debe - g_haber
+
+        # Gastos de ingreso pendientes y "el cliente me debe" (cli_adelanto)
+        gastos_pend = Decimal("0")
+        adelanto = Decimal("0")
+        for veh in cuenta._vehiculos_para_gastos():
+            try:
+                gastos_pend += veh.ficha.saldo_total_gastos()
+            except Exception:
+                pass
+            adelanto += (
+                PagoGastoIngreso.objects
+                .filter(vehiculo=veh, situacion="cli_adelanto")
+                .aggregate(t=Sum("monto"))["t"] or Decimal("0")
+            )
+
+        if gestoria_pend > 0:
+            deben_gestoria.append({"cuenta": cuenta, "monto": gestoria_pend})
+            total_gestoria += gestoria_pend
+        if gastos_pend > 0:
+            deben_gastos.append({"cuenta": cuenta, "monto": gastos_pend})
+            total_gastos += gastos_pend
+        if adelanto > 0:
+            deben_adelanto.append({"cuenta": cuenta, "monto": adelanto})
+            total_adelanto += adelanto
+
+    deben_gestoria.sort(key=lambda x: x["monto"], reverse=True)
+    deben_gastos.sort(key=lambda x: x["monto"], reverse=True)
+    deben_adelanto.sort(key=lambda x: x["monto"], reverse=True)
+
+    return render(
+        request,
+        "cuentas/por_tipo_deuda.html",
+        {
+            "deben_gestoria": deben_gestoria,
+            "deben_gastos": deben_gastos,
+            "deben_adelanto": deben_adelanto,
+            "total_gestoria": total_gestoria,
+            "total_gastos": total_gastos,
+            "total_adelanto": total_adelanto,
+        },
+    )
+
+
+# ==========================================================
 # PDF: LISTADO DE DEUDORES CON DETALLE DE DEUDA
 # ==========================================================
 @login_required

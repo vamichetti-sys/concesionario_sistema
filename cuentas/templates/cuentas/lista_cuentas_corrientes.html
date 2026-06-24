@@ -12,10 +12,16 @@
         <h3 class="fw-bold mb-1">Cuentas Corrientes</h3>
         <p class="text-muted mb-0">Gestión de cuentas por venta y estado financiero</p>
     </div>
-    <a href="{% url 'cuentas:pdf_deudores' %}" class="btn btn-danger" target="_blank">
-        <i data-lucide="file-down" style="width:16px;height:16px;margin-right:6px;"></i>
-        PDF de deudores
-    </a>
+    <div class="d-flex gap-2">
+        <a href="{% url 'cuentas:cuentas_por_tipo_deuda' %}" class="btn btn-primary">
+            <i data-lucide="layers" style="width:16px;height:16px;margin-right:6px;"></i>
+            Por tipo de deuda
+        </a>
+        <a href="{% url 'cuentas:pdf_deudores' %}" class="btn btn-danger" target="_blank">
+            <i data-lucide="file-down" style="width:16px;height:16px;margin-right:6px;"></i>
+            PDF de deudores
+        </a>
+    </div>
 </div>
 
 <!-- ===============================
