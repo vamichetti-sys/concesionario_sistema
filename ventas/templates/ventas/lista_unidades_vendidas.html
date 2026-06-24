@@ -50,6 +50,7 @@
                     <th>Dominio</th>
                     <th class="text-end">Precio</th>
                     <th>Cliente</th>
+                    <th>Vendedor</th>
                     <th>Estado</th>
                     <th class="text-end">Acciones</th>
                 </tr>
@@ -86,6 +87,18 @@
                         <span class="fw-semibold">{{ venta.cliente.nombre_completo }}</span>
                         {% else %}
                         <span class="text-muted">Sin asignar</span>
+                        {% endif %}
+                    </td>
+
+                    <!-- VENDEDOR -->
+                    <td>
+                        {% if venta.vendido_por %}
+                        <span class="badge bg-light text-dark border">
+                            <i data-lucide="user" style="width:12px;height:12px;vertical-align:-2px;margin-right:3px;"></i>
+                            {{ venta.vendido_por.get_full_name|default:venta.vendido_por.username }}
+                        </span>
+                        {% else %}
+                        <span class="text-muted">—</span>
                         {% endif %}
                     </td>
 

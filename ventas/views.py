@@ -56,6 +56,7 @@ def lista_unidades_vendidas(request):
         "vehiculo",
         "cliente",
         "vehiculo__ficha",
+        "vendido_por",
     ]
     if cuenta_field:
         related_fields.append(cuenta_field)
