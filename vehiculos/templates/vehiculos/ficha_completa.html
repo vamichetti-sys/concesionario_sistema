@@ -757,6 +757,9 @@
                                     </form>
                                     {% endif %}
                                 {% endif %}
+                                <a href="{% url 'vehiculos:recibo_gasto_ingreso_pdf' pago.id %}" target="_blank" class="btn btn-outline-primary btn-sm" title="Imprimir recibo">
+                                    <i data-lucide="receipt" style="width:14px;height:14px;"></i>
+                                </a>
                                 <form method="post" action="{% url 'vehiculos:eliminar_pago_gasto' pago.id %}" style="display:inline;" onsubmit="return confirm('¿Eliminar este pago de ${{ pago.monto }}?');">
                                     {% csrf_token %}
                                     <button type="submit" class="btn btn-outline-danger btn-sm" title="Eliminar pago">

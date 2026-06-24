@@ -1716,6 +1716,40 @@ def agregar_gasto_a_agenda(request, pago_id):
 
 
 # ==========================================================
+# RECIBO DE UN PAGO DE GASTO DE INGRESO (PDF)
+# ==========================================================
+@login_required
+def recibo_gasto_ingreso_pdf(request, pago_id):
+    pago = get_object_or_404(PagoGastoIngreso, id=pago_id)
+    from reportes.pdf_utils import render_pdf_listado
+
+    v = pago.vehiculo
+    veh = f"{v.marca} {v.modelo}"
+    if v.dominio:
+        veh += f" ({v.dominio})"
+    concepto = CONCEPTOS_GASTO.get(pago.concepto, pago.concepto)
+
+    filas = [
+        ["Vehículo", veh],
+        ["Concepto", concepto],
+        ["Importe", f"$ {pago.monto:,.0f}".replace(",", ".")],
+        ["Fecha de pago", pago.fecha_pago.strftime("%d/%m/%Y") if pago.fecha_pago else "—"],
+        ["Ente / organismo", pago.ente or "—"],
+        ["Situación", pago.get_situacion_display()],
+    ]
+    if pago.observaciones:
+        filas.append(["Observaciones", pago.observaciones])
+
+    return render_pdf_listado(
+        filename=f"recibo_gasto_ingreso_{pago.id}.pdf",
+        titulo="Recibo de pago — Gasto de ingreso",
+        subtitulo="AMICHETTI AUTOMOTORES",
+        columnas=["Concepto", "Detalle"],
+        filas=filas,
+    )
+
+
+# ==========================================================
 # ELIMINAR PAGO DE GASTO DE INGRESO
 # ==========================================================
 @login_required
