@@ -4,6 +4,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}Concesionario{% endblock %}</title>
 
     <!-- BOOTSTRAP -->
@@ -237,6 +238,55 @@
             margin-left: 260px;
             padding: 28px 36px;
             min-height: calc(100vh - 64px);
+        }
+
+        /* =========================
+           RESPONSIVE / MOBILE
+        ========================= */
+        .menu-toggle { display: none; }
+        .sidebar-backdrop { display: none; }
+
+        @media (max-width: 991px) {
+            /* El sidebar se esconde y se abre con el botón hamburguesa */
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform .25s ease;
+                box-shadow: 4px 0 18px rgba(0,0,0,.25);
+            }
+            .sidebar.open { transform: translateX(0); }
+
+            .topbar  { margin-left: 0; padding: 0 14px; }
+            .content { margin-left: 0; padding: 18px 14px; }
+
+            .menu-toggle {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                width: 42px; height: 42px;
+                border: 1px solid #e5e7eb;
+                border-radius: 10px;
+                background: #fff;
+                color: #1a1a2e;
+                cursor: pointer;
+                flex-shrink: 0;
+            }
+
+            .sidebar-backdrop.show {
+                display: block;
+                position: fixed;
+                inset: 0;
+                background: rgba(0,0,0,.45);
+                z-index: 999;
+            }
+
+            /* Las tablas anchas pueden desplazarse en lugar de desbordar */
+            .content .table-responsive { -webkit-overflow-scrolling: touch; }
+            .user-name { display: none; }
+        }
+
+        @media (max-width: 575px) {
+            .content { padding: 14px 10px; }
+            .card { padding: 16px !important; }
         }
 
         /* =========================
@@ -820,7 +870,12 @@
 
 <!-- TOPBAR -->
 <div class="topbar">
-    <div class="page-title">{{ page_title|default:"Panel" }}</div>
+    <div class="d-flex align-items-center gap-2" style="min-width:0;">
+        <button type="button" class="menu-toggle" id="menuToggle" aria-label="Abrir menú">
+            <i data-lucide="menu" style="width:22px;height:22px;"></i>
+        </button>
+        <div class="page-title text-truncate">{{ page_title|default:"Panel" }}</div>
+    </div>
     {% if user.is_authenticated %}
         <div class="user-info">
             <div class="user-avatar">{{ user.username|slice:":1"|upper }}</div>
@@ -837,6 +892,9 @@
     .app-message.warning { background: #fef3c7; color: #92400e; }
     .app-message.info    { background: #dbeafe; color: #1e40af; }
 </style>
+
+<!-- BACKDROP PARA EL MENÚ EN MOBILE -->
+<div class="sidebar-backdrop" id="sidebarBackdrop"></div>
 
 <!-- CONTENIDO -->
 <div class="content">
@@ -877,6 +935,28 @@
     }, true);
 
     lucide.createIcons();
+
+    // ==========================================================
+    // Menú lateral en mobile: abrir/cerrar con el botón hamburguesa
+    // ==========================================================
+    (function () {
+        var toggle   = document.getElementById('menuToggle');
+        var sidebar  = document.querySelector('.sidebar');
+        var backdrop = document.getElementById('sidebarBackdrop');
+        if (!toggle || !sidebar) return;
+        function abrir()  { sidebar.classList.add('open');  if (backdrop) backdrop.classList.add('show'); }
+        function cerrar() { sidebar.classList.remove('open'); if (backdrop) backdrop.classList.remove('show'); }
+        toggle.addEventListener('click', function () {
+            sidebar.classList.contains('open') ? cerrar() : abrir();
+        });
+        if (backdrop) backdrop.addEventListener('click', cerrar);
+        // Al tocar un link del menú, se cierra (en mobile)
+        sidebar.querySelectorAll('a.nav-link').forEach(function (a) {
+            a.addEventListener('click', function () {
+                if (window.innerWidth <= 991) cerrar();
+            });
+        });
+    })();
 
     function toggleCategory(header) {
         const items   = header.nextElementSibling;
