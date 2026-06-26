@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Comisiones por vendedor{% endblock %}
+
+{% block content %}
+
+<!-- ===============================
+     ENCABEZADO
+=============================== -->
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-4">
+    <div>
+        <h3 class="fw-bold mb-1">Comisiones por vendedor</h3>
+        <p class="text-muted mb-0">Cuenta corriente de comisiones de cada vendedor</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+        <a href="{% url 'ventas:lista_unidades_vendidas' %}" class="btn btn-outline-secondary">
+            <i data-lucide="arrow-left" style="width:16px;height:16px;margin-right:6px;"></i>
+            Volver a Ventas
+        </a>
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevaComision">
+            <i data-lucide="plus" style="width:16px;height:16px;margin-right:6px;"></i>
+            Cargar comisión
+        </button>
+    </div>
+</div>
+
+<!-- ===============================
+     RESUMEN
+=============================== -->
+<div class="card p-3 mb-4">
+    <div class="d-flex align-items-center gap-3">
+        <div style="width:44px;height:44px;background:rgba(16,185,129,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+            <i data-lucide="wallet" style="width:20px;height:20px;color:#10b981;"></i>
+        </div>
+        <div>
+            <small class="text-muted d-block">Total a pagar a vendedores</small>
+            <span class="fw-bold fs-5 text-success">${{ total_adeudado }}</span>
+        </div>
+    </div>
+</div>
+
+<!-- ===============================
+     TABLA
+=============================== -->
+<div class="card p-0">
+    {% if cuentas %}
+    <div class="table-responsive">
+        <table class="table align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Vendedor</th>
+                    <th class="text-end">Saldo (se le debe)</th>
+                    <th class="text-end">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cuenta in cuentas %}
+                <tr>
+                    <td>
+                        <div class="d-flex align-items-center gap-3">
+                            <div style="width:40px;height:40px;background:rgba(59,130,246,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                                <i data-lucide="user" style="width:18px;height:18px;color:#3b82f6;"></i>
+                            </div>
+                            <div class="fw-semibold">{{ cuenta.vendedor.get_full_name|default:cuenta.vendedor.username }}</div>
+                        </div>
+                    </td>
+                    <td class="text-end">
+                        <span class="fw-bold {% if cuenta.saldo > 0 %}text-success{% else %}text-muted{% endif %}">${{ cuenta.saldo }}</span>
+                    </td>
+                    <td class="text-end">
+                        <a href="{% url 'ventas:detalle_comision_vendedor' cuenta.vendedor.id %}" class="btn btn-secondary btn-sm">
+                            <i data-lucide="eye" style="width:14px;height:14px;margin-right:4px;"></i>
+                            Detalle
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="p-5 text-center">
+        <i data-lucide="wallet" style="width:48px;height:48px;color:#9ca3af;margin-bottom:12px;"></i>
+        <p class="text-muted mb-0">Todavía no hay comisiones cargadas</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- ===============================
+     MODAL: NUEVA COMISIÓN
+=============================== -->
+<div class="modal fade" id="modalNuevaComision" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold">Cargar comisión</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'ventas:registrar_comision' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <label class="form-label">Vendedor</label>
+                    <select name="vendedor_id" class="form-select mb-3" required>
+                        <option value="">Elegí un vendedor...</option>
+                        {% for u in usuarios %}
+                        <option value="{{ u.id }}">{{ u.get_full_name|default:u.username }}</option>
+                        {% endfor %}
+                    </select>
+
+                    <label class="form-label">Monto de la comisión</label>
+                    <div class="input-group mb-3">
+                        <span class="input-group-text">$</span>
+                        <input type="number" name="monto" step="0.01" min="0" class="form-control" placeholder="0,00" required>
+                    </div>
+
+                    <label class="form-label">Descripción <span class="text-muted">(opcional)</span></label>
+                    <input type="text" name="descripcion" class="form-control" placeholder="Ej: comisión Ford Focus KOH008" maxlength="255">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i data-lucide="check" style="width:16px;height:16px;margin-right:6px;"></i>
+                        Cargar comisión
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+</script>
+
+{% endblock %}

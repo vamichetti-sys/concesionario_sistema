@@ -15,7 +15,8 @@ from cuentas.models import (
 )
 
 from gestoria.models import Gestoria
-from .models import Venta
+from permisos.views import solo_admin
+from .models import Venta, CuentaVendedor, MovimientoComision
 
 
 # ==========================================================
@@ -376,3 +377,156 @@ def actualizar_precio_venta(request, venta_id):
             messages.error(request, "Monto inválido.")
 
     return redirect("ventas:crear_venta", venta_id=venta.id)
+
+
+# ==========================================================
+# COMISIONES POR VENDEDOR (solo admin)
+# ==========================================================
+def _parse_monto(raw):
+    """Devuelve un Decimal > 0 o None si el valor es inválido."""
+    from decimal import Decimal, InvalidOperation
+    try:
+        monto = Decimal((raw or "").strip().replace(",", "."))
+    except (InvalidOperation, ValueError):
+        return None
+    return monto if monto > 0 else None
+
+
+@solo_admin
+def comisiones_vendedores(request):
+    """Listado de cuentas corrientes de comisiones, una por vendedor."""
+    from django.contrib.auth.models import User
+    from django.db.models import Sum
+
+    cuentas = (
+        CuentaVendedor.objects
+        .select_related("vendedor")
+        .order_by("vendedor__first_name", "vendedor__username")
+    )
+
+    total_adeudado = cuentas.aggregate(t=Sum("saldo"))["t"] or 0
+
+    # Vendedores disponibles para cargar una comisión nueva:
+    # los que figuran como vendido_por en alguna venta + los que ya tienen cuenta.
+    ids_vendedores = set(
+        Venta.objects
+        .exclude(vendido_por__isnull=True)
+        .values_list("vendido_por_id", flat=True)
+    )
+    ids_vendedores |= set(cuentas.values_list("vendedor_id", flat=True))
+    usuarios = (
+        User.objects
+        .filter(id__in=ids_vendedores)
+        .order_by("first_name", "username")
+    )
+
+    return render(
+        request,
+        "ventas/comisiones_vendedores.html",
+        {
+            "cuentas": cuentas,
+            "usuarios": usuarios,
+            "total_adeudado": total_adeudado,
+        },
+    )
+
+
+@solo_admin
+def detalle_comision_vendedor(request, user_id):
+    """Detalle de movimientos (comisiones y pagos) de un vendedor."""
+    from django.contrib.auth.models import User
+
+    vendedor = get_object_or_404(User, id=user_id)
+    cuenta, _ = CuentaVendedor.objects.get_or_create(vendedor=vendedor)
+
+    movimientos = (
+        cuenta.movimientos
+        .select_related("venta", "venta__vehiculo")
+        .all()
+    )
+
+    # Ventas de este vendedor, para vincularlas al cargar una comisión.
+    ventas_vendedor = (
+        Venta.objects
+        .filter(vendido_por=vendedor)
+        .select_related("vehiculo")
+        .order_by("-id")
+    )
+
+    return render(
+        request,
+        "ventas/detalle_comision_vendedor.html",
+        {
+            "vendedor": vendedor,
+            "cuenta": cuenta,
+            "movimientos": movimientos,
+            "ventas_vendedor": ventas_vendedor,
+        },
+    )
+
+
+@solo_admin
+def registrar_comision(request):
+    """Carga manual de una comisión (haber) a la cuenta de un vendedor."""
+    from django.contrib.auth.models import User
+
+    if request.method != "POST":
+        return redirect("ventas:comisiones_vendedores")
+
+    vendedor = get_object_or_404(User, id=request.POST.get("vendedor_id"))
+    monto = _parse_monto(request.POST.get("monto"))
+    if monto is None:
+        messages.error(request, "El monto de la comisión debe ser mayor a 0.")
+        return redirect("ventas:detalle_comision_vendedor", user_id=vendedor.id)
+
+    venta = None
+    venta_id = (request.POST.get("venta_id") or "").strip()
+    if venta_id:
+        venta = Venta.objects.filter(id=venta_id, vendido_por=vendedor).first()
+
+    cuenta, _ = CuentaVendedor.objects.get_or_create(vendedor=vendedor)
+    MovimientoComision.objects.create(
+        cuenta=cuenta,
+        tipo="comision",
+        monto=monto,
+        descripcion=(request.POST.get("descripcion") or "").strip(),
+        venta=venta,
+    )
+    messages.success(request, "Comisión registrada.")
+    return redirect("ventas:detalle_comision_vendedor", user_id=vendedor.id)
+
+
+@solo_admin
+def registrar_pago_comision(request):
+    """Registra un pago al vendedor (debe), que descuenta del saldo."""
+    from django.contrib.auth.models import User
+
+    if request.method != "POST":
+        return redirect("ventas:comisiones_vendedores")
+
+    vendedor = get_object_or_404(User, id=request.POST.get("vendedor_id"))
+    monto = _parse_monto(request.POST.get("monto"))
+    if monto is None:
+        messages.error(request, "El monto del pago debe ser mayor a 0.")
+        return redirect("ventas:detalle_comision_vendedor", user_id=vendedor.id)
+
+    cuenta, _ = CuentaVendedor.objects.get_or_create(vendedor=vendedor)
+    MovimientoComision.objects.create(
+        cuenta=cuenta,
+        tipo="pago",
+        monto=monto,
+        descripcion=(request.POST.get("descripcion") or "").strip(),
+    )
+    messages.success(request, "Pago registrado.")
+    return redirect("ventas:detalle_comision_vendedor", user_id=vendedor.id)
+
+
+@solo_admin
+def eliminar_movimiento_comision(request, movimiento_id):
+    """Elimina un movimiento de comisión y recalcula el saldo."""
+    movimiento = get_object_or_404(MovimientoComision, id=movimiento_id)
+    user_id = movimiento.cuenta.vendedor_id
+    if request.method == "POST":
+        movimiento.delete()
+        messages.success(request, "Movimiento eliminado.")
+    return redirect("ventas:detalle_comision_vendedor", user_id=user_id)

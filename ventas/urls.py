@@ -68,4 +68,33 @@ urlpatterns = [
         views.actualizar_precio_venta,
         name="actualizar_precio_venta"
     ),
+
+    # ===============================
+    # COMISIONES POR VENDEDOR (solo admin)
+    # ===============================
+    path(
+        "comisiones/",
+        views.comisiones_vendedores,
+        name="comisiones_vendedores"
+    ),
+    path(
+        "comisiones/<int:user_id>/",
+        views.detalle_comision_vendedor,
+        name="detalle_comision_vendedor"
+    ),
+    path(
+        "comisiones/registrar/",
+        views.registrar_comision,
+        name="registrar_comision"
+    ),
+    path(
+        "comisiones/pago/",
+        views.registrar_pago_comision,
+        name="registrar_pago_comision"
+    ),
+    path(
+        "comisiones/movimiento/<int:movimiento_id>/eliminar/",
+        views.eliminar_movimiento_comision,
+        name="eliminar_movimiento_comision"
+    ),
 ]

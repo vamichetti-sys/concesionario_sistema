@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.db import models
 from django.contrib.auth.models import User
 from vehiculos.models import Vehiculo
@@ -166,4 +168,89 @@ class Venta(models.Model):
         gestoria.save()
 
         return self
+
+
+# ==========================================================
+# CUENTA CORRIENTE DE COMISIONES POR VENDEDOR
+# ==========================================================
+class CuentaVendedor(models.Model):
+    """
+    Cuenta corriente de un vendedor para llevar sus comisiones.
+
+    Convención de saldo:
+        saldo = comisiones generadas (haber) - pagos realizados (debe)
+    Un saldo positivo es lo que la agencia todavía le debe al vendedor.
+    """
+
+    vendedor = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name="cuenta_comisiones",
+        verbose_name="Vendedor",
+    )
+
+    saldo = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    activa = models.BooleanField(default=True)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["vendedor__first_name", "vendedor__username"]
+        verbose_name = "Cuenta de vendedor (comisiones)"
+        verbose_name_plural = "Cuentas de vendedores (comisiones)"
+
+    def __str__(self):
+        nombre = self.vendedor.get_full_name() or self.vendedor.username
+        return f"{nombre} – Saldo: ${self.saldo}"
+
+    def recalcular_saldo(self):
+        from django.db.models import Sum
+        comisiones = self.movimientos.filter(tipo="comision").aggregate(
+            t=Sum("monto")
+        )["t"] or Decimal("0")
+        pagos = self.movimientos.filter(tipo="pago").aggregate(
+            t=Sum("monto")
+        )["t"] or Decimal("0")
+        self.saldo = comisiones - pagos
+        self.save(update_fields=["saldo"])
+
+
+class MovimientoComision(models.Model):
+    TIPOS = [
+        ("comision", "Comisión generada"),
+        ("pago", "Pago al vendedor"),
+    ]
+
+    cuenta = models.ForeignKey(
+        CuentaVendedor,
+        on_delete=models.CASCADE,
+        related_name="movimientos",
+    )
+    tipo = models.CharField(max_length=10, choices=TIPOS)
+    monto = models.DecimalField(max_digits=14, decimal_places=2)
+    descripcion = models.CharField(max_length=255, blank=True)
+    fecha = models.DateField(auto_now_add=True)
+    venta = models.ForeignKey(
+        Venta,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="movimientos_comision",
+    )
+
+    class Meta:
+        ordering = ["-fecha", "-id"]
+        verbose_name = "Movimiento de comisión"
+        verbose_name_plural = "Movimientos de comisión"
+
+    def __str__(self):
+        return f"{self.get_tipo_display()} ${self.monto} – {self.cuenta}"
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self.cuenta.recalcular_saldo()
+
+    def delete(self, *args, **kwargs):
+        cuenta = self.cuenta
+        super().delete(*args, **kwargs)
+        cuenta.recalcular_saldo()
 

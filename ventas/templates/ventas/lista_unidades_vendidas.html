@@ -13,10 +13,18 @@
         <h3 class="fw-bold mb-1">Ventas</h3>
         <p class="text-muted mb-0">Unidades vendidas y pendientes de confirmación</p>
     </div>
-    <a href="{% url 'ventas:pdf_unidades_vendidas' %}{% if query %}?q={{ query|urlencode }}{% endif %}" target="_blank" class="btn btn-outline-secondary">
-        <i data-lucide="file-down" style="width:16px;height:16px;margin-right:6px;"></i>
-        Descargar PDF
-    </a>
+    <div class="d-flex gap-2 flex-wrap">
+        {% if es_admin %}
+        <a href="{% url 'ventas:comisiones_vendedores' %}" class="btn btn-outline-primary">
+            <i data-lucide="wallet" style="width:16px;height:16px;margin-right:6px;"></i>
+            Comisiones
+        </a>
+        {% endif %}
+        <a href="{% url 'ventas:pdf_unidades_vendidas' %}{% if query %}?q={{ query|urlencode }}{% endif %}" target="_blank" class="btn btn-outline-secondary">
+            <i data-lucide="file-down" style="width:16px;height:16px;margin-right:6px;"></i>
+            Descargar PDF
+        </a>
+    </div>
 </div>
 
 <!-- ===============================
