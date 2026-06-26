@@ -636,9 +636,15 @@
             </a>
             {% endif %}
             {% if permisos_menu.ventas %}
-            <a href="/ventas/" class="nav-link {% if '/ventas/' in request.path %}active{% endif %}">
+            <a href="/ventas/" class="nav-link {% if request.path == '/ventas/' %}active{% endif %}">
                 <i data-lucide="shopping-cart"></i>
                 <span>Ventas</span>
+            </a>
+            {% endif %}
+            {% if es_admin %}
+            <a href="/ventas/comisiones/" class="nav-link {% if '/ventas/comisiones/' in request.path %}active{% endif %}">
+                <i data-lucide="badge-dollar-sign"></i>
+                <span>Comisiones</span>
             </a>
             {% endif %}
             {% if permisos_menu.boletos %}
