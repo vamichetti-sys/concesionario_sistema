@@ -846,6 +846,36 @@ def crear_plan_pago(request, cuenta_id):
                 banco_anticipo      = request.POST.get("banco_anticipo", "")
                 cheque_anticipo     = request.POST.get("numero_cheque_anticipo", "")
 
+                # Si el anticipo se paga con CHEQUE, pueden cargarse VARIOS cheques.
+                cheques_anticipo = []
+                if forma_pago_anticipo == "cheque":
+                    _bancos    = request.POST.getlist("anticipo_cheque_banco[]")
+                    _numeros   = request.POST.getlist("anticipo_cheque_numero[]")
+                    _titulares = request.POST.getlist("anticipo_cheque_titular[]")
+                    _montos    = request.POST.getlist("anticipo_cheque_monto[]")
+                    _fechas    = request.POST.getlist("anticipo_cheque_fecha[]")
+                    for i in range(max(len(_bancos), len(_numeros), len(_montos))):
+                        b   = (_bancos[i] if i < len(_bancos) else "").strip()
+                        num = (_numeros[i] if i < len(_numeros) else "").strip()
+                        tit = (_titulares[i] if i < len(_titulares) else "").strip()
+                        mraw = (_montos[i] if i < len(_montos) else "").strip()
+                        fraw = (_fechas[i] if i < len(_fechas) else "").strip()
+                        if not (b or num or mraw):
+                            continue
+                        try:
+                            m = _parse_monto_argentino(mraw) if mraw else Decimal("0")
+                        except (ValueError, InvalidOperation):
+                            m = Decimal("0")
+                        try:
+                            fdep = datetime.strptime(fraw, "%Y-%m-%d").date() if fraw else None
+                        except ValueError:
+                            fdep = None
+                        cheques_anticipo.append({"banco": b, "numero": num, "titular": tit, "monto": m, "fecha": fdep})
+                    # Datos para el recibo (resumen)
+                    if cheques_anticipo:
+                        banco_anticipo = cheques_anticipo[0]["banco"]
+                        cheque_anticipo = cheques_anticipo[0]["numero"] if len(cheques_anticipo) == 1 else "Varios"
+
                 # Registrar el haber del anticipo en la cuenta
                 MovimientoCuenta.objects.create(
                     cuenta=cuenta,
@@ -867,6 +897,31 @@ def crear_plan_pago(request, cuenta_id):
                     saldo_anterior=cuenta.saldo + anticipo,
                     saldo_posterior=cuenta.saldo,
                 )
+
+                # Registrar cada cheque del anticipo en el módulo Cheques
+                for _idx, ch in enumerate(cheques_anticipo, start=1):
+                    try:
+                        from cheques.models import Cheque
+                        nombre_cliente = str(cuenta.cliente) if cuenta.cliente_id else ""
+                        Cheque.objects.create(
+                            cliente=nombre_cliente,
+                            banco_emision=ch["banco"],
+                            numero_cheque=ch["numero"],
+                            titular_cheque=ch["titular"] or nombre_cliente,
+                            monto=ch["monto"],
+                            fecha_deposito=ch["fecha"] or date.today(),
+                            estado="a_depositar",
+                            observaciones=(
+                                f"Anticipo plan #{plan.pk} - cheque {_idx} "
+                                f"(cuenta corriente #{cuenta.id})"
+                            ),
+                            creado_por=request.user if request.user.is_authenticated else None,
+                        )
+                    except Exception as exc:
+                        messages.warning(
+                            request,
+                            f"Un cheque del anticipo no se pudo registrar: {exc}"
+                        )
 
                 messages.success(
                     request,

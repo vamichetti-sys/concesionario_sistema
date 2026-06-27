@@ -109,17 +109,13 @@
                         <option value="cheque">Cheque</option>
                     </select>
                 </div>
-                <div id="bloque-cheque-anticipo" class="col-md-8" style="display:none;">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Banco</label>
-                            <input type="text" name="banco_anticipo" class="form-control" placeholder="Nombre del banco">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">N° de cheque</label>
-                            <input type="text" name="numero_cheque_anticipo" class="form-control" placeholder="Número">
-                        </div>
-                    </div>
+                <div id="bloque-cheque-anticipo" class="col-12" style="display:none;">
+                    <label class="form-label fw-semibold">Cheques del anticipo</label>
+                    <div id="anticipo-cheques-lista"></div>
+                    <button type="button" class="btn btn-outline-success btn-sm mt-1" onclick="agregarChequeAnticipo()">
+                        <i data-lucide="plus" style="width:14px;height:14px;margin-right:4px;"></i> Agregar cheque
+                    </button>
+                    <small class="text-muted d-block mt-1">Podés cargar uno o varios cheques. La suma debería coincidir con el anticipo.</small>
                 </div>
             </div>
         </div>
@@ -529,9 +525,33 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 // Mostrar/ocultar datos de cheque en anticipo
+function agregarChequeAnticipo() {
+    const cont = document.getElementById('anticipo-cheques-lista');
+    if (!cont) return;
+    const div = document.createElement('div');
+    div.className = 'row g-2 mb-2 anticipo-cheque-row align-items-end';
+    div.innerHTML =
+        '<div class="col-md-3"><input type="text" name="anticipo_cheque_banco[]" class="form-control form-control-sm" placeholder="Banco"></div>' +
+        '<div class="col-md-2"><input type="text" name="anticipo_cheque_numero[]" class="form-control form-control-sm" placeholder="N°"></div>' +
+        '<div class="col-md-3"><input type="text" name="anticipo_cheque_titular[]" class="form-control form-control-sm" placeholder="Titular"></div>' +
+        '<div class="col-md-2"><input type="number" step="0.01" name="anticipo_cheque_monto[]" class="form-control form-control-sm" placeholder="Monto"></div>' +
+        '<div class="col-md-2 d-flex gap-1">' +
+            '<input type="date" name="anticipo_cheque_fecha[]" class="form-control form-control-sm">' +
+            '<button type="button" class="btn btn-outline-danger btn-sm" onclick="this.closest(\'.anticipo-cheque-row\').remove()">&times;</button>' +
+        '</div>';
+    cont.appendChild(div);
+    if (window.lucide) lucide.createIcons();
+}
+
 function toggleChequeAnticipo(valor) {
     const bloque = document.getElementById('bloque-cheque-anticipo');
-    if (bloque) bloque.style.display = valor === 'cheque' ? 'block' : 'none';
+    if (!bloque) return;
+    bloque.style.display = valor === 'cheque' ? 'block' : 'none';
+    // Al elegir cheque, asegurar al menos una fila para cargar.
+    if (valor === 'cheque') {
+        const lista = document.getElementById('anticipo-cheques-lista');
+        if (lista && lista.children.length === 0) agregarChequeAnticipo();
+    }
 }
 </script>
 
