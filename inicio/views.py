@@ -272,6 +272,9 @@ def inicio(request):
         # Recordatorios
         "recordatorios": RecordatorioDashboard.objects.all()[:20],
 
+        # Vehículos que un cliente va a venir a ver (hay que tenerlos a mano)
+        "vehiculos_visita": Vehiculo.objects.filter(visita_pendiente=True).order_by("marca", "modelo"),
+
         # Agenda de pagos
         "pagos_vencidos": pagos_vencidos,
         "pagos_proximos": pagos_proximos,

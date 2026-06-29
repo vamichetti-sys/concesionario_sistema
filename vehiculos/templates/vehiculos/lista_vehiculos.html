@@ -117,6 +117,7 @@
                     {% if puede_ver_precio %}<th class="text-end">Precio</th>{% endif %}
                     <th class="text-center">Días</th>
                     <th>Estado</th>
+                    <th class="text-center" title="Van a venir a verlo">Visita</th>
                     <th class="text-end">Acciones</th>
                 </tr>
             </thead>
@@ -200,6 +201,16 @@
                             <button type="submit" class="btn btn-secondary btn-sm">
                                 <i data-lucide="check" style="width:14px;height:14px;"></i>
                             </button>
+                        </form>
+                    </td>
+
+                    <!-- VISITA (van a venir a verlo) -->
+                    <td class="text-center">
+                        <form method="post" action="{% url 'vehiculos:toggle_visita_vehiculo' v.id %}" data-no-confirm style="display:inline;">
+                            {% csrf_token %}
+                            <input type="checkbox" class="form-check-input" style="width:20px;height:20px;cursor:pointer;"
+                                   onchange="this.form.submit()" {% if v.visita_pendiente %}checked{% endif %}
+                                   title="Marcá si un cliente va a venir a ver este vehículo">
                         </form>
                     </td>
 

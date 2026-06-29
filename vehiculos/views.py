@@ -1122,6 +1122,18 @@ def eliminar_gasto_extra(request, pk):
 
 
 # ==========================================================
+# TOGGLE "VAN A VENIR A VERLO" (visita pendiente)
+# ==========================================================
+@login_required
+def toggle_visita_vehiculo(request, vehiculo_id):
+    vehiculo = get_object_or_404(Vehiculo, id=vehiculo_id)
+    if request.method == "POST":
+        vehiculo.visita_pendiente = not vehiculo.visita_pendiente
+        vehiculo.save(update_fields=["visita_pendiente"])
+    return redirect(request.META.get("HTTP_REFERER") or "vehiculos:lista_vehiculos")
+
+
+# ==========================================================
 # AGREGAR GASTO INGRESO (CUENTA CORRIENTE)
 # ==========================================================
 @transaction.atomic

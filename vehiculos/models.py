@@ -58,6 +58,13 @@ class Vehiculo(models.Model):
         help_text="Indica si el vehículo es 0 km"
     )
 
+    # Marca que un cliente va a venir a ver el vehículo (hay que tenerlo a mano
+    # para mostrarlo). Se muestra como aviso en el panel de inicio.
+    visita_pendiente = models.BooleanField(
+        "Van a venir a verlo",
+        default=False,
+    )
+
     numero_carpeta = models.CharField(
         max_length=50,
         blank=True,

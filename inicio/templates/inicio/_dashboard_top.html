@@ -217,6 +217,27 @@
 </div>
 
 <!-- ===============================
+     AVISO: VEHÍCULOS QUE VAN A VENIR A VER
+=============================== -->
+{% if vehiculos_visita %}
+<div class="card p-4 mb-4" style="border-left:4px solid #f59e0b;background:#fffbeb;">
+    <div class="d-flex align-items-center gap-2 mb-2">
+        <i data-lucide="eye" style="width:20px;height:20px;color:#f59e0b;"></i>
+        <h6 class="fw-bold mb-0" style="color:#92400e;">Vehículos a mostrar (vienen a verlos)</h6>
+        <span class="badge bg-warning text-dark">{{ vehiculos_visita|length }}</span>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        {% for v in vehiculos_visita %}
+        <a href="{% url 'vehiculos:lista_vehiculos' %}" class="badge bg-white text-dark border" style="font-size:13px;font-weight:500;text-decoration:none;">
+            <i data-lucide="car" style="width:13px;height:13px;vertical-align:-2px;margin-right:3px;"></i>
+            {{ v.marca }} {{ v.modelo }}{% if v.dominio %} ({{ v.dominio }}){% endif %}
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- ===============================
      RECORDATORIOS
 =============================== -->
 <div class="card p-4 mb-4">
