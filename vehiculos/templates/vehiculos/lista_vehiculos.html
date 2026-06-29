@@ -132,7 +132,10 @@
                                 <i data-lucide="car" style="width:20px;height:20px;color:{% if v.estado == 'stock' %}#3b82f6{% elif v.estado == 'vendido' %}#10b981{% else %}#f59e0b{% endif %};"></i>
                             </div>
                             <div>
-                                <div class="fw-semibold">{{ v.marca }} {{ v.modelo }}</div>
+                                <div class="fw-semibold">
+                                    {{ v.marca }} {{ v.modelo }}
+                                    {% if item.es_consignacion %}<span class="badge bg-warning text-dark ms-1" style="font-size:10px;" title="Está en consignación con un revendedor (prestado)">Consignación</span>{% endif %}
+                                </div>
                             </div>
                         </div>
                     </td>

@@ -161,10 +161,14 @@ def lista_vehiculos(request):
     # el usuario tiene que cambiar de tab.
     estado_filtro = request.GET.get("estado", "stock")
 
+    # Un auto en CONSIGNACIÓN sigue siendo nuestro (prestado al revendedor):
+    # debe aparecer también en stock. Los de reventa por COMPRA no.
+    consignacion_q = Q(estado="reventa", reventa__tipo="consignacion")
+
     vehiculos = (
         Vehiculo.objects
         .all()
-        .select_related('ficha', 'ficha_reporte')
+        .select_related('ficha', 'ficha_reporte', 'reventa')
         .annotate(
             estado_orden=Case(
                 When(estado="a_ingresar", then=Value(0)),
@@ -190,7 +194,10 @@ def lista_vehiculos(request):
     # Filtro por estado:
     #   "todos" → no filtra (incluye todos los estados)
     #   <estado puntual> → filtra por ese estado exacto
-    if estado_filtro and estado_filtro != "todos":
+    if estado_filtro == "stock":
+        # Stock = los propios + los que están en consignación (prestados).
+        vehiculos = vehiculos.filter(Q(estado="stock") | consignacion_q).distinct()
+    elif estado_filtro and estado_filtro != "todos":
         vehiculos = vehiculos.filter(estado=estado_filtro)
 
     # Calcular días en stock para cada vehículo
@@ -199,19 +206,28 @@ def lista_vehiculos(request):
     
     for v in vehiculos:
         dias_en_stock = None
-        
+
         # Buscar fecha_compra en FichaReporteInterno
         if hasattr(v, 'ficha_reporte') and v.ficha_reporte and v.ficha_reporte.fecha_compra:
             dias_en_stock = (hoy - v.ficha_reporte.fecha_compra).days
-        
+
+        es_consignacion = False
+        if v.estado == "reventa":
+            try:
+                es_consignacion = (v.reventa.tipo == "consignacion")
+            except Exception:
+                es_consignacion = False
+
         vehiculos_con_dias.append({
             'vehiculo': v,
-            'dias_en_stock': dias_en_stock
+            'dias_en_stock': dias_en_stock,
+            'es_consignacion': es_consignacion,
         })
 
     # Contadores para los filtros
     total_a_ingresar = Vehiculo.objects.filter(estado='a_ingresar').count()
-    total_stock = Vehiculo.objects.filter(estado='stock').count()
+    # En stock contamos también los que están en consignación (siguen siendo nuestros).
+    total_stock = Vehiculo.objects.filter(Q(estado="stock") | consignacion_q).distinct().count()
     total_temporal = Vehiculo.objects.filter(estado='temporal').count()
     total_vendido = Vehiculo.objects.filter(estado='vendido').count()
     total_reventa = Vehiculo.objects.filter(estado='reventa').count()
