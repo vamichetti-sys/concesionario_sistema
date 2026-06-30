@@ -392,40 +392,52 @@ def _parse_monto(raw):
     return monto if monto > 0 else None
 
 
+# Dueños que NO cobran comisión (no aparecen en Comisiones).
+VENDEDORES_SIN_COMISION = {"hamichetti"}
+
+
 @solo_admin
 def comisiones_vendedores(request):
-    """Listado de cuentas corrientes de comisiones, una por vendedor."""
+    """Una tarjeta por vendedor (excepto Hamichetti) con sus ventas = comisiones
+    que se le deben. Aparecen todos los que vendieron, aunque no se les haya
+    cargado todavía ninguna comisión a mano."""
     from django.contrib.auth.models import User
-    from django.db.models import Sum
+    from decimal import Decimal
 
-    cuentas = (
-        CuentaVendedor.objects
-        .select_related("vendedor")
-        .order_by("vendedor__first_name", "vendedor__username")
-    )
-
-    total_adeudado = cuentas.aggregate(t=Sum("saldo"))["t"] or 0
-
-    # Vendedores disponibles para cargar una comisión nueva:
-    # los que figuran como vendido_por en alguna venta + los que ya tienen cuenta.
+    # Todos los que figuran como vendedor en alguna venta + los que ya tienen
+    # cuenta de comisiones, EXCLUYENDO a los dueños sin comisión.
     ids_vendedores = set(
         Venta.objects
         .exclude(vendido_por__isnull=True)
         .values_list("vendido_por_id", flat=True)
     )
-    ids_vendedores |= set(cuentas.values_list("vendedor_id", flat=True))
+    ids_vendedores |= set(CuentaVendedor.objects.values_list("vendedor_id", flat=True))
+
     usuarios = (
         User.objects
         .filter(id__in=ids_vendedores)
         .order_by("first_name", "username")
     )
 
+    filas = []
+    total_adeudado = Decimal("0")
+    for u in usuarios:
+        if u.username.lower() in VENDEDORES_SIN_COMISION:
+            continue
+        cuenta, _ = CuentaVendedor.objects.get_or_create(vendedor=u)
+        n_ventas = Venta.objects.filter(vendido_por=u).count()
+        filas.append({"vendedor": u, "cuenta": cuenta, "n_ventas": n_ventas})
+        total_adeudado += cuenta.saldo or Decimal("0")
+
+    # Usuarios para el modal "cargar comisión" (mismos, sin los excluidos)
+    usuarios_modal = [f["vendedor"] for f in filas]
+
     return render(
         request,
         "ventas/comisiones_vendedores.html",
         {
-            "cuentas": cuentas,
-            "usuarios": usuarios,
+            "filas": filas,
+            "usuarios": usuarios_modal,
             "total_adeudado": total_adeudado,
         },
     )

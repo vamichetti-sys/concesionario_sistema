@@ -110,6 +110,48 @@
 </div>
 
 <!-- ===============================
+     VENTAS DEL VENDEDOR (comisiones que se le deben)
+=============================== -->
+<div class="card p-4 mt-4">
+    <div class="d-flex align-items-center gap-2 mb-3">
+        <i data-lucide="car" style="width:18px;height:18px;color:#3b82f6;"></i>
+        <h6 class="fw-bold mb-0">Ventas de este vendedor</h6>
+        <span class="badge bg-secondary">{{ ventas_vendedor|length }}</span>
+    </div>
+    {% if ventas_vendedor %}
+    <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+            <thead>
+                <tr><th>Vehículo</th><th>Cliente</th><th class="text-end">Precio de venta</th><th></th></tr>
+            </thead>
+            <tbody>
+                {% for v in ventas_vendedor %}
+                <tr>
+                    <td class="fw-semibold">
+                        {{ v.vehiculo.marca }} {{ v.vehiculo.modelo }}
+                        {% if v.vehiculo.dominio %}<span class="badge bg-secondary ms-1">{{ v.vehiculo.dominio }}</span>{% endif %}
+                    </td>
+                    <td>{% if v.cliente %}{{ v.cliente.nombre_completo }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
+                    <td class="text-end fw-semibold">${% if v.precio_venta %}{{ v.precio_venta }}{% else %}{{ v.vehiculo.precio }}{% endif %}</td>
+                    <td class="text-end">
+                        <button type="button" class="btn btn-outline-success btn-sm"
+                                data-bs-toggle="modal" data-bs-target="#modalNuevaComision"
+                                data-venta="{{ v.id }}"
+                                onclick="document.querySelector('#modalNuevaComision [name=venta_id]') && (document.querySelector('#modalNuevaComision [name=venta_id]').value='{{ v.id }}')">
+                            <i data-lucide="plus" style="width:13px;height:13px;margin-right:3px;"></i>Cargar comisión
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="text-muted mb-0">Este vendedor no tiene ventas registradas.</p>
+    {% endif %}
+</div>
+
+<!-- ===============================
      MODAL: CARGAR COMISIÓN
 =============================== -->
 <div class="modal fade" id="modalComision" tabindex="-1">
