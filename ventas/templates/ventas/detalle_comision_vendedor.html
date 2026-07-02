@@ -83,7 +83,17 @@
                         {% endif %}
                     </td>
                     <td class="text-end">
-                        {% if m.tipo == "comision" %}<span class="fw-semibold text-success">${{ m.monto }}</span>{% else %}<span class="text-muted">—</span>{% endif %}
+                        {% if m.tipo == "comision" %}
+                        <form method="post" action="{% url 'ventas:editar_movimiento_comision' m.id %}" class="d-flex gap-1 justify-content-end" data-no-confirm>
+                            {% csrf_token %}
+                            <span class="align-self-center">$</span>
+                            <input type="number" step="0.01" min="0" name="monto" value="{{ m.monto|stringformat:'.0f' }}"
+                                   class="form-control form-control-sm text-end" style="width:110px;">
+                            <button type="submit" class="btn btn-outline-success btn-sm" title="Guardar monto">
+                                <i data-lucide="check" style="width:13px;height:13px;"></i>
+                            </button>
+                        </form>
+                        {% else %}<span class="text-muted">—</span>{% endif %}
                     </td>
                     <td class="text-end">
                         {% if m.tipo == "pago" %}<span class="fw-semibold">${{ m.monto }}</span>{% else %}<span class="text-muted">—</span>{% endif %}

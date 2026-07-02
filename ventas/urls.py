@@ -97,4 +97,9 @@ urlpatterns = [
         views.eliminar_movimiento_comision,
         name="eliminar_movimiento_comision"
     ),
+    path(
+        "comisiones/movimiento/<int:movimiento_id>/editar/",
+        views.editar_movimiento_comision,
+        name="editar_movimiento_comision"
+    ),
 ]

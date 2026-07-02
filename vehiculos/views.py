@@ -452,6 +452,30 @@ def cambiar_estado_vehiculo(request, vehiculo_id):
             if campos_venta:
                 venta.save(update_fields=campos_venta)
 
+            # Comisión automática: cada auto que venda HAMICHETTI genera una
+            # comisión (editable) de $100.000 en la cuenta de comisiones de
+            # VAMICHETTI. Se crea una sola vez por venta.
+            try:
+                if venta.vendido_por and venta.vendido_por.username.lower() == "hamichetti":
+                    from django.contrib.auth.models import User
+                    from ventas.models import CuentaVendedor, MovimientoComision
+                    vami = User.objects.filter(username__iexact="vamichetti").first()
+                    if vami:
+                        cta_com, _ = CuentaVendedor.objects.get_or_create(vendedor=vami)
+                        ya_existe = MovimientoComision.objects.filter(
+                            cuenta=cta_com, venta=venta, tipo="comision"
+                        ).exists()
+                        if not ya_existe:
+                            MovimientoComision.objects.create(
+                                cuenta=cta_com,
+                                tipo="comision",
+                                monto=Decimal("100000"),
+                                descripcion=f"Comisión por venta de Hamichetti — {vehiculo}",
+                                venta=venta,
+                            )
+            except Exception:
+                pass
+
             vehiculo.estado = "vendido"
             vehiculo.save(update_fields=["estado"])
 

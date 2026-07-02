@@ -542,3 +542,22 @@ def eliminar_movimiento_comision(request, movimiento_id):
         movimiento.delete()
         messages.success(request, "Movimiento eliminado.")
     return redirect("ventas:detalle_comision_vendedor", user_id=user_id)
+
+
+@solo_admin
+def editar_movimiento_comision(request, movimiento_id):
+    """Edita el monto (y descripción) de un movimiento de comisión."""
+    movimiento = get_object_or_404(MovimientoComision, id=movimiento_id)
+    user_id = movimiento.cuenta.vendedor_id
+    if request.method == "POST":
+        monto = _parse_monto(request.POST.get("monto"))
+        if monto is None:
+            messages.error(request, "El monto debe ser mayor a 0.")
+        else:
+            movimiento.monto = monto
+            desc = request.POST.get("descripcion")
+            if desc is not None:
+                movimiento.descripcion = desc.strip()
+            movimiento.save()  # recalcula el saldo
+            messages.success(request, "Comisión actualizada.")
+    return redirect("ventas:detalle_comision_vendedor", user_id=user_id)
