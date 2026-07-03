@@ -107,7 +107,12 @@
                         <option value="efectivo">Efectivo</option>
                         <option value="transferencia">Transferencia</option>
                         <option value="cheque">Cheque</option>
+                        <option value="mixto">Mixto (efectivo + cheques)</option>
                     </select>
+                </div>
+                <div id="bloque-efectivo-anticipo" class="col-md-4" style="display:none;">
+                    <label class="form-label fw-semibold">Monto en efectivo</label>
+                    <input type="number" step="0.01" min="0" name="monto_efectivo_anticipo" class="form-control" placeholder="0">
                 </div>
                 <div id="bloque-cheque-anticipo" class="col-12" style="display:none;">
                     <label class="form-label fw-semibold">Cheques del anticipo</label>
@@ -115,7 +120,7 @@
                     <button type="button" class="btn btn-outline-success btn-sm mt-1" onclick="agregarChequeAnticipo()">
                         <i data-lucide="plus" style="width:14px;height:14px;margin-right:4px;"></i> Agregar cheque
                     </button>
-                    <small class="text-muted d-block mt-1">Podés cargar uno o varios cheques. La suma debería coincidir con el anticipo.</small>
+                    <small class="text-muted d-block mt-1">Podés cargar uno o varios cheques. En "Mixto", efectivo + cheques debería coincidir con el anticipo.</small>
                 </div>
             </div>
         </div>
@@ -544,11 +549,13 @@ function agregarChequeAnticipo() {
 }
 
 function toggleChequeAnticipo(valor) {
-    const bloque = document.getElementById('bloque-cheque-anticipo');
-    if (!bloque) return;
-    bloque.style.display = valor === 'cheque' ? 'block' : 'none';
-    // Al elegir cheque, asegurar al menos una fila para cargar.
-    if (valor === 'cheque') {
+    const bloqueChq = document.getElementById('bloque-cheque-anticipo');
+    const bloqueEf  = document.getElementById('bloque-efectivo-anticipo');
+    const conCheques = (valor === 'cheque' || valor === 'mixto');
+    if (bloqueChq) bloqueChq.style.display = conCheques ? 'block' : 'none';
+    if (bloqueEf)  bloqueEf.style.display  = (valor === 'mixto') ? 'block' : 'none';
+    // Al elegir cheque/mixto, asegurar al menos una fila de cheque.
+    if (conCheques) {
         const lista = document.getElementById('anticipo-cheques-lista');
         if (lista && lista.children.length === 0) agregarChequeAnticipo();
     }

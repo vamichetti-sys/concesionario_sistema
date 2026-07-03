@@ -642,6 +642,7 @@ class Pago(models.Model):
         ('efectivo', 'Efectivo'),
         ('transferencia', 'Transferencia'),  # ✅ agregado
         ('cheque', 'Cheque'),
+        ('mixto', 'Mixto (efectivo + cheques)'),
     )
 
     cuenta = models.ForeignKey(

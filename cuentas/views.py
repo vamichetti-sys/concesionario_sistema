@@ -846,9 +846,17 @@ def crear_plan_pago(request, cuenta_id):
                 banco_anticipo      = request.POST.get("banco_anticipo", "")
                 cheque_anticipo     = request.POST.get("numero_cheque_anticipo", "")
 
-                # Si el anticipo se paga con CHEQUE, pueden cargarse VARIOS cheques.
+                # Parte en efectivo (solo cuando el anticipo es "mixto").
+                monto_efectivo = Decimal("0")
+                if forma_pago_anticipo == "mixto":
+                    try:
+                        monto_efectivo = _parse_monto_argentino(request.POST.get("monto_efectivo_anticipo") or "0")
+                    except (ValueError, InvalidOperation):
+                        monto_efectivo = Decimal("0")
+
+                # Si el anticipo se paga con CHEQUE o MIXTO, pueden cargarse VARIOS cheques.
                 cheques_anticipo = []
-                if forma_pago_anticipo == "cheque":
+                if forma_pago_anticipo in ("cheque", "mixto"):
                     _bancos    = request.POST.getlist("anticipo_cheque_banco[]")
                     _numeros   = request.POST.getlist("anticipo_cheque_numero[]")
                     _titulares = request.POST.getlist("anticipo_cheque_titular[]")
@@ -876,6 +884,15 @@ def crear_plan_pago(request, cuenta_id):
                         banco_anticipo = cheques_anticipo[0]["banco"]
                         cheque_anticipo = cheques_anticipo[0]["numero"] if len(cheques_anticipo) == 1 else "Varios"
 
+                # Detalle para el recibo (en mixto, desglose efectivo + cheques).
+                obs_anticipo = f"Anticipo plan de pago - {plan.descripcion}"
+                if forma_pago_anticipo == "mixto":
+                    _tot_chq = sum((c["monto"] for c in cheques_anticipo), Decimal("0"))
+                    obs_anticipo += (
+                        " — Mixto: efectivo $ " + f"{monto_efectivo:,.0f}".replace(",", ".") +
+                        " + cheques $ " + f"{_tot_chq:,.0f}".replace(",", ".")
+                    )
+
                 # Registrar el haber del anticipo en la cuenta
                 MovimientoCuenta.objects.create(
                     cuenta=cuenta,
@@ -893,7 +910,7 @@ def crear_plan_pago(request, cuenta_id):
                     banco=banco_anticipo,
                     numero_cheque=cheque_anticipo,
                     monto_total=anticipo,
-                    observaciones=f"Anticipo plan de pago - {plan.descripcion}",
+                    observaciones=obs_anticipo,
                     saldo_anterior=cuenta.saldo + anticipo,
                     saldo_posterior=cuenta.saldo,
                 )
