@@ -364,7 +364,13 @@ class FichaVehicular(models.Model):
     }
 
 
-    def total_pagado_por_concepto(self, concepto):
+    # Situaciones en las que el gasto quedó saldado CON EL ENTE.
+    SIT_ENTE_PAGADO = ["prov_directo", "cli_directo", "cli_adelanto", "prov_reintegro"]
+    # Situaciones en las que el CLIENTE ya no debe el gasto (pagó él, pagó el
+    # proveedor, o me pagó a mí aunque yo todavía no le pague al organismo).
+    SIT_CLIENTE_PAGADO = ["prov_directo", "cli_directo", "cli_adelanto", "prov_reintegro", "cli_concesion"]
+
+    def total_pagado_por_concepto(self, concepto, situaciones=None):
         # Mapeo entre los labels de mapa_gastos_ingreso y las keys cortas
         # con las que se guardan los pagos en PagoGastoIngreso
         LABEL_TO_KEY = {
@@ -381,17 +387,15 @@ class FichaVehicular(models.Model):
         # Aceptar tanto label como key
         key_corta = LABEL_TO_KEY.get(concepto, concepto)
 
-        # El saldo de la ficha es la deuda del vehículo CON EL ENTE. Solo lo
-        # reducen los pagos en los que el ente quedó efectivamente pagado
-        # (prov_directo, cli_directo, cli_adelanto, prov_reintegro). Los que
-        # quedan "cli_concesion" (cliente me pagó, no pagué al organismo) o
-        # "pendiente" NO saldan el gasto con el ente.
+        # Por defecto: saldo CON EL ENTE (solo los que efectivamente pagaron al
+        # organismo). Pasando `situaciones` se puede calcular otra óptica.
+        sits = situaciones or self.SIT_ENTE_PAGADO
         PagoGasto = apps.get_model("vehiculos", "PagoGastoIngreso")
         total = (
             PagoGasto.objects.filter(
                 vehiculo=self.vehiculo,
                 concepto__in=[concepto, key_corta],
-                situacion__in=["prov_directo", "cli_directo", "cli_adelanto", "prov_reintegro"],
+                situacion__in=sits,
             ).aggregate(total=models.Sum("monto"))["total"]
         )
         return Decimal(total) if total else Decimal("0")
@@ -399,6 +403,18 @@ class FichaVehicular(models.Model):
     def saldo_por_concepto(self, concepto):
         monto = self.mapa_gastos_ingreso().get(concepto) or Decimal("0")
         return Decimal(monto) - self.total_pagado_por_concepto(concepto)
+
+    def saldo_total_gastos_cliente(self):
+        """Saldo de gastos que TODAVÍA DEBE EL CLIENTE. A diferencia del saldo
+        con el ente, acá 'cli_concesion' (el cliente ya me pagó) cuenta como
+        pagado, así el saldo del cliente baja cuando paga."""
+        total = Decimal("0")
+        for concepto, monto in self.mapa_gastos_ingreso().items():
+            if monto and Decimal(monto) > 0:
+                total += Decimal(monto) - self.total_pagado_por_concepto(
+                    concepto, situaciones=self.SIT_CLIENTE_PAGADO
+                )
+        return total
 
     def saldo_total_gastos(self):
         total = Decimal("0")

@@ -353,12 +353,12 @@ class CuentaCorriente(models.Model):
             total += max(debe - haber, Decimal("0"))
 
         # Gastos de ingreso del/los vehículo(s) de permuta: los paga el CLIENTE,
-        # así que son deuda suya y entran en la cuenta corriente. Se calculan
-        # desde la ficha (saldo pendiente = gasto − pagos registrados), por eso
-        # bajan solos a medida que se registran pagos en "Pago de gastos".
+        # así que son deuda suya y entran en la cuenta corriente. Usamos el saldo
+        # DEL CLIENTE: si marcó "el cliente me pagó" (cli_concesion), ese gasto ya
+        # no se lo debe (aunque el concesionario todavía no le pagó al organismo).
         for vehiculo in self._vehiculos_para_gastos():
             try:
-                total += vehiculo.ficha.saldo_total_gastos()
+                total += vehiculo.ficha.saldo_total_gastos_cliente()
             except Exception:
                 pass
 
