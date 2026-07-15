@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, login_not_required
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -226,6 +226,7 @@ def toggle_publicacion(request, vehiculo_id, plataforma):
 # ==========================================================
 # CATÁLOGO PÚBLICO (SIN LOGIN, SIN PRECIO)
 # ==========================================================
+@login_not_required
 def catalogo_publico(request):
     vehiculos = Vehiculo.objects.filter(estado="stock").order_by("marca", "modelo")
 
@@ -249,6 +250,7 @@ def catalogo_publico(request):
 # ==========================================================
 # PDF CATÁLOGO (SIN PRECIO)
 # ==========================================================
+@login_not_required
 def catalogo_pdf(request):
     vehiculos = Vehiculo.objects.filter(
         estado__in=["stock", "temporal"]
