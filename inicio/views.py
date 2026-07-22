@@ -340,6 +340,38 @@ def inicio(request):
         cuentas_internas = CuentaInterna.objects.filter(activa=True).order_by("-saldo")
         cuentas_internas_total = cuentas_internas.aggregate(t=Sum("saldo"))["t"] or 0
 
+        # =============================
+        # AUTOS ENTREGADOS CON DEUDA
+        # Vehículos ya vendidos (entregados) que todavía adeudan gastos de
+        # ingreso (patentes, infracciones, etc.). Misma lógica que la solapa
+        # "Vendidos con deuda" del módulo Deudas.
+        # =============================
+        entregados_deuda = []
+        total_entregados_deuda = Decimal("0")
+        for f in (
+            FichaVehicular.objects
+            .filter(vehiculo__estado="vendido")
+            .select_related("vehiculo")
+        ):
+            try:
+                if not f.tiene_saldo_pendiente():
+                    continue
+                mapa = f.mapa_gastos_ingreso()
+            except Exception:
+                continue
+            saldo_veh = Decimal("0")
+            for concepto_label, monto in mapa.items():
+                if not monto or Decimal(monto) <= 0:
+                    continue
+                saldo = f.saldo_por_concepto(concepto_label) or Decimal("0")
+                if saldo > 0:
+                    saldo_veh += saldo
+            if saldo_veh > 0:
+                entregados_deuda.append({"vehiculo": f.vehiculo, "total": saldo_veh})
+                total_entregados_deuda += saldo_veh
+        entregados_deuda.sort(key=lambda x: x["total"], reverse=True)
+        entregados_deuda_count = len(entregados_deuda)
+
         context.update({
             "deuda_reventa": deuda_reventa,
             "reventa_count": reventa_count,
@@ -349,6 +381,9 @@ def inicio(request):
             "docs_verif_vencida": docs_verif_vencida,
             "cuentas_internas": cuentas_internas,
             "cuentas_internas_total": cuentas_internas_total,
+            "entregados_deuda": entregados_deuda[:6],
+            "entregados_deuda_count": entregados_deuda_count,
+            "total_entregados_deuda": total_entregados_deuda,
             "alquileres_por_vencer": alquileres_por_vencer,
             "aviso_aumentos_alquileres": aviso_aumentos_alquileres,
             "alquileres_activos_count": alquileres_activos_count,

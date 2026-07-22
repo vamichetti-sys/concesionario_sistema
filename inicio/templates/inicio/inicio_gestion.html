@@ -8,6 +8,52 @@
 {# 1. BOTONES DE VENTA + 2. RECORDATORIOS #}
 {% include "inicio/_dashboard_top.html" %}
 
+{# 2b. RESUMEN — AUTOS ENTREGADOS CON DEUDA #}
+<div class="card shadow-sm mb-4" style="border-radius:14px;">
+    <div class="card-header bg-white d-flex align-items-center justify-content-between flex-wrap gap-2" style="border-radius:14px 14px 0 0;">
+        <div class="d-flex align-items-center gap-2 fw-bold">
+            <i data-lucide="alert-circle" style="width:18px;height:18px;color:#ef4444;"></i>
+            Autos entregados con deuda
+            <span class="badge bg-danger ms-1">{{ entregados_deuda_count }}</span>
+        </div>
+        <a href="{% url 'deudas:situacion' %}?tab=vendidos" class="btn btn-outline-secondary btn-sm">
+            Ver todos
+            <i data-lucide="arrow-right" style="width:14px;height:14px;margin-left:4px;"></i>
+        </a>
+    </div>
+    <div class="card-body">
+        {% if entregados_deuda %}
+        <div class="d-flex align-items-baseline gap-2 mb-3">
+            <span class="text-muted" style="font-size:13px;">Total adeudado:</span>
+            <span class="fw-bold" style="font-size:20px;color:#ef4444;">${{ total_entregados_deuda|floatformat:0 }}</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle mb-0">
+                <tbody>
+                    {% for d in entregados_deuda %}
+                    <tr>
+                        <td class="fw-semibold">
+                            {{ d.vehiculo.marca }} {{ d.vehiculo.modelo }}
+                            <small class="text-muted">({{ d.vehiculo.dominio }})</small>
+                        </td>
+                        <td class="text-end fw-semibold" style="color:#ef4444;">${{ d.total|floatformat:0 }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if entregados_deuda_count > 6 %}
+        <small class="text-muted d-block mt-2">Mostrando los 6 de mayor deuda de {{ entregados_deuda_count }}.</small>
+        {% endif %}
+        {% else %}
+        <div class="text-center text-muted py-3">
+            <i data-lucide="check-circle" style="width:32px;height:32px;color:#10b981;opacity:.7;"></i>
+            <p class="mb-0 mt-2">No hay autos entregados con deuda pendiente.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
 {% if agenda_mes_sin_cargar %}
 <div class="alert alert-warning d-flex justify-content-between align-items-center mb-4">
     <div>

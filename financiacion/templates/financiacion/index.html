@@ -1,21 +1,150 @@
 {% extends "base.html" %}
+{% block title %}Financiación{% endblock %}
 {% block content %}
 <div class="container py-5">
-    <div class="d-flex align-items-center gap-3 mb-4">
-        <i data-lucide="landmark" style="width:32px;height:32px;color:#2563eb;"></i>
-        <h2 class="fw-bold mb-0">Financiación</h2>
+
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
+        <div class="d-flex align-items-center gap-3">
+            <i data-lucide="landmark" style="width:32px;height:32px;color:#2563eb;"></i>
+            <h2 class="fw-bold mb-0">Financiación</h2>
+        </div>
+        <a href="{% url 'financiacion:crear_financiera' %}" class="btn btn-primary">
+            <i data-lucide="plus" style="width:16px;height:16px;margin-right:6px;"></i>
+            Nueva financiera
+        </a>
     </div>
 
-    <div class="alert alert-info d-flex align-items-start gap-3" role="alert" style="border-radius:12px;">
-        <i data-lucide="construction" style="width:24px;height:24px;flex-shrink:0;"></i>
-        <div>
-            <div class="fw-bold mb-1">Módulo en construcción</div>
-            <div style="font-size:14px;">
-                Acá vas a poder cargar préstamos y créditos tomados (banco, mutual, tarjeta, particulares),
-                con monto total, cuotas, vencimientos y saldo pendiente.
-                <br>Lo armamos cuando quieras arrancar.
+    {% if messages %}
+    {% for m in messages %}
+    <div class="alert alert-{{ m.tags }} alert-dismissible fade show" role="alert" style="border-radius:12px;">
+        {{ m }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    <!-- ============================================================ -->
+    <!-- FINANCIERAS -->
+    <!-- ============================================================ -->
+    <div class="card shadow-sm mb-5" style="border-radius:14px;">
+        <div class="card-header bg-white fw-bold d-flex align-items-center gap-2" style="border-radius:14px 14px 0 0;">
+            <i data-lucide="building-2" style="width:18px;height:18px;"></i>
+            Financieras con las que trabajamos
+        </div>
+        <div class="card-body p-0">
+            {% if financieras %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Nombre</th>
+                            <th>CUIT</th>
+                            <th>Contacto</th>
+                            <th class="text-center">Ventas financiadas</th>
+                            {% if puede_ver_precio %}<th class="text-end">Deuda que asume</th>{% endif %}
+                            <th class="text-end">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for f in financieras %}
+                        <tr>
+                            <td class="fw-semibold">
+                                {{ f.nombre }}
+                                {% if not f.activa %}<span class="badge bg-secondary ms-1">Inactiva</span>{% endif %}
+                            </td>
+                            <td>{{ f.cuit|default:"–" }}</td>
+                            <td>
+                                {{ f.contacto|default:"" }}
+                                {% if f.telefono %}<small class="text-muted d-block">{{ f.telefono }}</small>{% endif %}
+                                {% if not f.contacto and not f.telefono %}–{% endif %}
+                            </td>
+                            <td class="text-center">{{ f.n_ventas }}</td>
+                            {% if puede_ver_precio %}
+                            <td class="text-end">${{ f.total_deuda|default:0|floatformat:0 }}</td>
+                            {% endif %}
+                            <td class="text-end">
+                                <a href="{% url 'financiacion:editar_financiera' f.id %}" class="btn btn-outline-secondary btn-sm">
+                                    <i data-lucide="pencil" style="width:14px;height:14px;"></i>
+                                </a>
+                                <a href="{% url 'financiacion:eliminar_financiera' f.id %}" class="btn btn-outline-danger btn-sm">
+                                    <i data-lucide="trash-2" style="width:14px;height:14px;"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
+            {% else %}
+            <div class="text-center text-muted py-5">
+                <i data-lucide="building-2" style="width:40px;height:40px;opacity:.4;"></i>
+                <p class="mb-0 mt-2">Todavía no cargaste ninguna financiera.</p>
+            </div>
+            {% endif %}
         </div>
     </div>
+
+    <!-- ============================================================ -->
+    <!-- VENTAS FINANCIADAS -->
+    <!-- ============================================================ -->
+    <div class="card shadow-sm" style="border-radius:14px;">
+        <div class="card-header bg-white fw-bold d-flex align-items-center gap-2" style="border-radius:14px 14px 0 0;">
+            <i data-lucide="handshake" style="width:18px;height:18px;"></i>
+            Ventas financiadas
+        </div>
+        <div class="card-body p-0">
+            {% if ventas_financiadas %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Vehículo</th>
+                            <th>Cliente</th>
+                            {% if puede_ver_precio %}<th class="text-end">Precio</th>{% endif %}
+                            <th style="min-width:260px;">Financiera que asume la deuda</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for v in ventas_financiadas %}
+                        <tr>
+                            <td class="fw-semibold">{{ v.vehiculo|default:"–" }}</td>
+                            <td>{{ v.cliente|default:"—" }}</td>
+                            {% if puede_ver_precio %}
+                            <td class="text-end">{% if v.precio_venta %}${{ v.precio_venta|floatformat:0 }}{% else %}–{% endif %}</td>
+                            {% endif %}
+                            <td>
+                                <form method="post" action="{% url 'financiacion:asignar_financiera' v.id %}"
+                                      class="d-flex align-items-center gap-2" data-no-confirm>
+                                    {% csrf_token %}
+                                    <select name="financiera" class="form-select form-select-sm" onchange="this.form.submit()">
+                                        <option value="">— Sin asignar —</option>
+                                        {% for f in financieras_activas %}
+                                        <option value="{{ f.id }}" {% if v.financiera_id == f.id %}selected{% endif %}>{{ f.nombre }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    {% if not v.financiera_id %}
+                                    <span class="badge bg-warning text-dark">Pendiente</span>
+                                    {% endif %}
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center text-muted py-5">
+                <i data-lucide="handshake" style="width:40px;height:40px;opacity:.4;"></i>
+                <p class="mb-0 mt-2">No hay ventas marcadas como financiadas todavía.</p>
+                <small>Marcá el check "Financiado" al vender un auto y aparecerá acá.</small>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
 </div>
+
+<script>
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+</script>
 {% endblock %}

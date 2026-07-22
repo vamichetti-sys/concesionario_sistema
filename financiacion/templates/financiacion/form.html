@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}{% if editando %}Editar financiera{% else %}Nueva financiera{% endif %}{% endblock %}
+{% block content %}
+<div class="container py-5" style="max-width:640px;">
+
+    <div class="d-flex align-items-center gap-3 mb-4">
+        <i data-lucide="building-2" style="width:28px;height:28px;color:#2563eb;"></i>
+        <h2 class="fw-bold mb-0">{% if editando %}Editar financiera{% else %}Nueva financiera{% endif %}</h2>
+    </div>
+
+    <div class="card shadow-sm" style="border-radius:14px;">
+        <div class="card-body">
+            <form method="post" data-no-confirm>
+                {% csrf_token %}
+
+                <div class="mb-3">
+                    <label class="form-label">{{ form.nombre.label }} <span class="text-danger">*</span></label>
+                    {{ form.nombre }}
+                    {% if form.nombre.errors %}<div class="text-danger small mt-1">{{ form.nombre.errors|striptags }}</div>{% endif %}
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">{{ form.cuit.label }}</label>
+                        {{ form.cuit }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">{{ form.telefono.label }}</label>
+                        {{ form.telefono }}
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">{{ form.contacto.label }}</label>
+                    {{ form.contacto }}
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">{{ form.notas.label }}</label>
+                    {{ form.notas }}
+                </div>
+
+                <div class="form-check mb-4">
+                    {{ form.activa }}
+                    <label class="form-check-label">Financiera activa</label>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i data-lucide="check" style="width:16px;height:16px;margin-right:6px;"></i>
+                        Guardar
+                    </button>
+                    <a href="{% url 'financiacion:index' %}" class="btn btn-secondary">Cancelar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+</script>
+{% endblock %}

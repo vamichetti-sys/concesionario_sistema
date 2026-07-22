@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Eliminar financiera{% endblock %}
+{% block content %}
+<div class="container py-5" style="max-width:560px;">
+
+    <div class="card shadow-sm" style="border-radius:14px;">
+        <div class="card-body text-center p-4">
+            <i data-lucide="alert-triangle" style="width:44px;height:44px;color:#dc2626;"></i>
+            <h4 class="fw-bold mt-3">¿Eliminar esta financiera?</h4>
+            <p class="text-muted">
+                Vas a eliminar <strong>{{ financiera.nombre }}</strong>.
+                {% if financiera.ventas.exists %}
+                <br>Las ventas financiadas que la tenían asignada quedarán sin financiera (no se borran).
+                {% endif %}
+            </p>
+
+            <form method="post" data-no-confirm class="d-flex justify-content-center gap-2 mt-4">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger">
+                    <i data-lucide="trash-2" style="width:16px;height:16px;margin-right:6px;"></i>
+                    Sí, eliminar
+                </button>
+                <a href="{% url 'financiacion:index' %}" class="btn btn-secondary">Cancelar</a>
+            </form>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+</script>
+{% endblock %}

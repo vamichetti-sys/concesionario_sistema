@@ -429,12 +429,17 @@ def cambiar_estado_vehiculo(request, vehiculo_id):
                 from django.contrib.auth.models import User
                 vendido_por = User.objects.filter(pk=vendedor_id).first()
 
+            # ¿Se financió? (check del modal). Si está tildado, la venta queda
+            # registrada en el módulo Financiación para asignarle la financiera.
+            financiado = (request.POST.get("financiado") or "").strip() == "1"
+
             venta, creada = Venta.objects.get_or_create(
                 vehiculo=vehiculo,
                 defaults={
                     "estado": "confirmada",
                     "precio_venta": precio_venta,
                     "vendido_por": vendido_por,
+                    "financiado": financiado,
                 }
             )
 
@@ -449,6 +454,9 @@ def cambiar_estado_vehiculo(request, vehiculo_id):
             if vendido_por is not None and venta.vendido_por_id != vendido_por.id:
                 venta.vendido_por = vendido_por
                 campos_venta.append("vendido_por")
+            if venta.financiado != financiado:
+                venta.financiado = financiado
+                campos_venta.append("financiado")
             if campos_venta:
                 venta.save(update_fields=campos_venta)
 
@@ -2214,19 +2222,32 @@ def stock_pdf(request):
             | Q(dominio__icontains=query)
         )
 
+    # ¿Incluir también los "a ingresar"? (check opcional del modal). Suma esos
+    # vehículos al filtro de estado elegido (salvo que ya estén incluidos).
+    incluir_a_ingresar = request.GET.get("incluir_a_ingresar") == "1"
+
     # Filtrar por estado:
-    # - "" o "activos"  -> todo lo no vendido (stock + temporal + reventa)
+    # - "" o "activos"  -> todo lo no vendido (a_ingresar + stock + temporal + reventa)
     # - "stock"         -> stock + temporal (lo que está disponible)
     # - "todos"         -> absolutamente todos los vehículos
     # - cualquier otro  -> filtro exacto por ese estado
     if estado_filtro in ("", "activos"):
+        # "activos" ya incluye los "a ingresar" (solo excluye vendidos).
         vehiculos = vehiculos.exclude(estado="vendido")
     elif estado_filtro == "stock":
-        vehiculos = vehiculos.filter(estado__in=["stock", "temporal"])
+        estados = ["stock", "temporal"]
+        if incluir_a_ingresar:
+            estados.append("a_ingresar")
+        vehiculos = vehiculos.filter(estado__in=estados)
     elif estado_filtro == "todos":
         pass  # sin filtro de estado
     else:
-        vehiculos = vehiculos.filter(estado=estado_filtro)
+        # Filtro exacto por un estado (temporal, reventa, vendido, a_ingresar…),
+        # sumando los "a ingresar" si se pidió.
+        estados = [estado_filtro]
+        if incluir_a_ingresar and estado_filtro != "a_ingresar":
+            estados.append("a_ingresar")
+        vehiculos = vehiculos.filter(estado__in=estados)
 
     if marca_filtro:
         vehiculos = vehiculos.filter(marca__icontains=marca_filtro)

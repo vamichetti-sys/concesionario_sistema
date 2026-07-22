@@ -59,6 +59,23 @@ class Venta(models.Model):
         verbose_name="Vendido por",
     )
 
+    # ── Financiación ──────────────────────────────────────
+    # Si la venta se financió, una financiera asume la deuda. La financiera
+    # concreta se asigna desde el módulo Financiación.
+    financiado = models.BooleanField(
+        "Financiado",
+        default=False,
+    )
+
+    financiera = models.ForeignKey(
+        "financiacion.Financiera",
+        on_delete=models.SET_NULL,
+        related_name="ventas",
+        null=True,
+        blank=True,
+        verbose_name="Financiera",
+    )
+
     observaciones = models.TextField(
         blank=True,
         null=True

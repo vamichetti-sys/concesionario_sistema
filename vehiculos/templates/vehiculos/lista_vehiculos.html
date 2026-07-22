@@ -194,6 +194,7 @@
                             <input type="hidden" name="precio_venta" value="">
                             <input type="hidden" name="fecha_venta" value="">
                             <input type="hidden" name="vendido_por" value="">
+                            <input type="hidden" name="financiado" value="">
                             <select name="estado" class="form-select form-select-sm" style="width:auto;">
                                 <option value="a_ingresar" {% if v.estado == 'a_ingresar' %}selected{% endif %}>A ingresar</option>
                                 <option value="stock" {% if v.estado == 'stock' %}selected{% endif %}>En stock</option>
@@ -386,6 +387,12 @@ if (typeof lucide !== 'undefined') lucide.createIcons();
                             <input type="text" name="q" value="{{ query }}" class="form-control form-control-sm" placeholder="Ej: Ford Ka">
                         </div>
                     </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="incluir_a_ingresar" value="1" id="chk_a_ingresar">
+                        <label class="form-check-label" for="chk_a_ingresar" style="font-size:13px;">
+                            Incluir también los vehículos <strong>“A ingresar”</strong>
+                        </label>
+                    </div>
                     <div class="row g-2 mb-3">
                         <div class="col-6">
                             <label class="form-label" style="font-size:12px;">Marca exacta</label>
@@ -524,6 +531,14 @@ if (typeof lucide !== 'undefined') lucide.createIcons();
                     <option value="{{ us.id }}">{{ us.get_full_name|default:us.username }}</option>
                     {% endfor %}
                 </select>
+
+                <div class="form-check mt-3">
+                    <input class="form-check-input" type="checkbox" id="inputFinanciado">
+                    <label class="form-check-label" for="inputFinanciado">
+                        Financiado
+                    </label>
+                    <small class="text-muted d-block">Si lo tildás, la venta queda registrada en el módulo Financiación.</small>
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
@@ -553,6 +568,7 @@ if (typeof lucide !== 'undefined') lucide.createIcons();
         var inputFecha  = document.getElementById('inputFechaVenta');
         var nombreVeh   = document.getElementById('precioVentaVehiculo');
         var inputVendedor = document.getElementById('inputVendidoPor');
+        var inputFinanciado = document.getElementById('inputFinanciado');
         var btnConfirm  = document.getElementById('confirmarPrecioVenta');
         var formActivo  = null;
 
@@ -566,6 +582,7 @@ if (typeof lucide !== 'undefined') lucide.createIcons();
                     inputPrecio.value = form.dataset.precio || '';
                     inputPrecio.classList.remove('is-invalid');
                     inputFecha.value = new Date().toISOString().slice(0, 10);
+                    if (inputFinanciado) inputFinanciado.checked = false;
                     modal.show();
                     setTimeout(function () { inputPrecio.focus(); inputPrecio.select(); }, 350);
                 }
@@ -583,6 +600,7 @@ if (typeof lucide !== 'undefined') lucide.createIcons();
             formActivo.querySelector('input[name="precio_venta"]').value = precio;
             formActivo.querySelector('input[name="fecha_venta"]').value = inputFecha.value || '';
             formActivo.querySelector('input[name="vendido_por"]').value = (inputVendedor ? inputVendedor.value : '') || '';
+            formActivo.querySelector('input[name="financiado"]').value = (inputFinanciado && inputFinanciado.checked) ? '1' : '';
             formActivo.dataset.confirmado = '1';
             modal.hide();
             formActivo.submit();
