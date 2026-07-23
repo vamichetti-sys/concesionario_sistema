@@ -172,6 +172,32 @@ def agregar_movimiento(request, pk):
 
 
 @login_required
+def editar_movimiento(request, pk):
+    if not usuario_autorizado(request.user):
+        messages.error(request, 'No tenés permiso para acceder a esta sección.')
+        return redirect('inicio')
+
+    movimiento = get_object_or_404(MovimientoInterno, pk=pk)
+    cuenta = movimiento.cuenta
+
+    if request.method == 'POST':
+        form = MovimientoInternoForm(request.POST, instance=movimiento)
+        if form.is_valid():
+            form.save()  # el save() del modelo recalcula el saldo de la cuenta
+            messages.success(request, 'Movimiento actualizado.')
+            return redirect('cuentas_internas:detalle', pk=cuenta.pk)
+    else:
+        form = MovimientoInternoForm(instance=movimiento)
+
+    return render(request, 'cuentas_internas/movimiento_form.html', {
+        'form': form,
+        'cuenta': cuenta,
+        'editando': True,
+        'movimiento': movimiento,
+    })
+
+
+@login_required
 def eliminar_movimiento(request, pk):
     if not usuario_autorizado(request.user):
         messages.error(request, 'No tenés permiso para acceder a esta sección.')

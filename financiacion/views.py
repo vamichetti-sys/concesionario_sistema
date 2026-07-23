@@ -1,10 +1,27 @@
+from decimal import Decimal, InvalidOperation
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Sum
+from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404, redirect, render
 
 from .forms import FinancieraForm
 from .models import Financiera
+
+
+def _parsear_monto(raw):
+    """Convierte el texto de un monto ('$ 1.500.000' / '1500000,50') a Decimal.
+    Devuelve None si viene vacío."""
+    raw = (raw or "").strip().replace("$", "").replace(" ", "")
+    if not raw:
+        return None
+    if "," in raw:
+        raw = raw.replace(".", "").replace(",", ".")
+    try:
+        return Decimal(raw)
+    except (InvalidOperation, ValueError):
+        return None
 
 
 @login_required
@@ -17,7 +34,9 @@ def index(request):
         Financiera.objects.all()
         .annotate(
             n_ventas=Count("ventas"),
-            total_deuda=Sum("ventas__precio_venta"),
+            # La deuda que asume cada financiera es el monto financiado; si
+            # todavía no se cargó, se usa el precio de venta completo.
+            total_deuda=Sum(Coalesce("ventas__monto_financiado", "ventas__precio_venta")),
         )
     )
 
@@ -80,8 +99,8 @@ def eliminar_financiera(request, pk):
 
 @login_required
 def asignar_financiera(request, venta_id):
-    """Asigna (o desasigna) la financiera que asumió la deuda de una venta
-    financiada, desde el listado del módulo Financiación."""
+    """Guarda la financiera que asumió la deuda y el monto financiado de una
+    venta, desde el listado del módulo Financiación."""
     from ventas.models import Venta
 
     venta = get_object_or_404(Venta, pk=venta_id)
@@ -91,6 +110,24 @@ def asignar_financiera(request, venta_id):
             venta.financiera = get_object_or_404(Financiera, pk=financiera_id)
         else:
             venta.financiera = None
-        venta.save(update_fields=["financiera"])
-        messages.success(request, "Financiera asignada a la venta.")
+        # Monto financiado (puede ser parcial). Vacío => se asume el total.
+        venta.monto_financiado = _parsear_monto(request.POST.get("monto_financiado"))
+        venta.save(update_fields=["financiera", "monto_financiado"])
+        messages.success(request, "Datos de la financiación guardados.")
+    return redirect("financiacion:index")
+
+
+@login_required
+def quitar_financiacion(request, venta_id):
+    """Saca una venta del listado de financiadas (por si se marcó por error).
+    No elimina la venta: solo desmarca el financiado y limpia sus datos."""
+    from ventas.models import Venta
+
+    venta = get_object_or_404(Venta, pk=venta_id)
+    if request.method == "POST":
+        venta.financiado = False
+        venta.financiera = None
+        venta.monto_financiado = None
+        venta.save(update_fields=["financiado", "financiera", "monto_financiado"])
+        messages.success(request, "La venta se quitó de Financiación.")
     return redirect("financiacion:index")

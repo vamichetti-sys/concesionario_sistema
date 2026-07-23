@@ -26,6 +26,7 @@ urlpatterns = [
     path('<int:pk>/editar/', views.editar_cuenta, name='editar'),
     path('<int:pk>/eliminar/', views.eliminar_cuenta, name='eliminar'),
     path('<int:pk>/movimiento/', views.agregar_movimiento, name='agregar_movimiento'),
+    path('movimiento/<int:pk>/editar/', views.editar_movimiento, name='editar_movimiento'),
     path('movimiento/<int:pk>/eliminar/', views.eliminar_movimiento, name='eliminar_movimiento'),
     path('pdf/mensual/', views.pdf_mensual, name='pdf_mensual'),
 ]

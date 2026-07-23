@@ -109,8 +109,11 @@
                         <span class="fw-bold text-success">-${{ mov.monto|floatformat:0 }}</span>
                         {% endif %}
                     </td>
-                    <td class="text-end">
-                        <a href="{% url 'cuentas_internas:eliminar_movimiento' mov.pk %}" class="btn btn-outline-danger btn-sm">
+                    <td class="text-end text-nowrap">
+                        <a href="{% url 'cuentas_internas:editar_movimiento' mov.pk %}" class="btn btn-outline-secondary btn-sm" title="Editar">
+                            <i data-lucide="pencil" style="width:14px;height:14px;"></i>
+                        </a>
+                        <a href="{% url 'cuentas_internas:eliminar_movimiento' mov.pk %}" class="btn btn-outline-danger btn-sm" title="Eliminar">
                             <i data-lucide="trash-2" style="width:14px;height:14px;"></i>
                         </a>
                     </td>

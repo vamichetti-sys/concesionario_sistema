@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}Nuevo Movimiento{% endblock %}
+{% block title %}{% if editando %}Editar Movimiento{% else %}Nuevo Movimiento{% endif %}{% endblock %}
 
 {% block content %}
 
@@ -9,7 +9,7 @@
         <i data-lucide="arrow-left" style="width:16px;height:16px;margin-right:6px;"></i>
         Volver a {{ cuenta.nombre }}
     </a>
-    <h3 class="fw-bold mb-1">Nuevo Movimiento</h3>
+    <h3 class="fw-bold mb-1">{% if editando %}Editar Movimiento{% else %}Nuevo Movimiento{% endif %}</h3>
     <p class="text-muted mb-0">Cuenta: {{ cuenta.nombre }} - {{ cuenta.cargo }}</p>
 </div>
 

@@ -76,6 +76,17 @@ class Venta(models.Model):
         verbose_name="Financiera",
     )
 
+    # Monto que efectivamente financia la financiera. Puede ser menor al
+    # precio total del vehículo (financiación parcial). Si está vacío, se
+    # asume el precio de venta completo.
+    monto_financiado = models.DecimalField(
+        "Monto financiado",
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+    )
+
     observaciones = models.TextField(
         blank=True,
         null=True
