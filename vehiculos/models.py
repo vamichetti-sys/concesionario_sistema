@@ -1,7 +1,21 @@
 from django.db import models
 from decimal import Decimal
 from django.apps import apps
-from datetime import date
+from datetime import date, timedelta
+
+
+def sumar_dias_habiles(fecha, dias):
+    """Devuelve la fecha resultante de sumar `dias` días hábiles (lunes a
+    viernes) a `fecha`. No contempla feriados."""
+    if not fecha:
+        return None
+    resultado = fecha
+    restantes = dias
+    while restantes > 0:
+        resultado += timedelta(days=1)
+        if resultado.weekday() < 5:  # 0=lunes ... 4=viernes
+            restantes -= 1
+    return resultado
 
 
 # ============================================================
@@ -56,6 +70,15 @@ class Vehiculo(models.Model):
     es_0km = models.BooleanField(
         default=False,
         help_text="Indica si el vehículo es 0 km"
+    )
+
+    # Ingresó con beneficio de comerciante habitualista. El beneficio vence a
+    # los 90 días hábiles desde la inscripción a nombre del comerciante (esa
+    # fecha se carga en la ficha del vehículo).
+    es_habitualista = models.BooleanField(
+        "Comerciante habitualista",
+        default=False,
+        help_text="Marcá si el vehículo ingresó con beneficio de comerciante habitualista.",
     )
 
     # Marca que un cliente va a venir a ver el vehículo (hay que tenerlo a mano
@@ -129,6 +152,14 @@ class FichaVehicular(models.Model):
         null=True,
         blank=True,
         verbose_name="Fecha de inscripción inicial"
+    )
+
+    # Fecha en que el vehículo se inscribió a nombre del comerciante
+    # habitualista. Desde acá se cuentan los 90 días hábiles del beneficio.
+    fecha_inscripcion_habitualista = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name="Fecha de inscripción a nombre del comerciante habitualista"
     )
 
 
@@ -455,6 +486,25 @@ class FichaVehicular(models.Model):
     @property
     def fecha_inscripcion(self):
         return self.fecha_inscripcion_inicial
+
+    # ======================================================
+    # BENEFICIO COMERCIANTE HABITUALISTA (90 días hábiles)
+    # ======================================================
+    @property
+    def habitualista_vencimiento(self):
+        """Fecha de vencimiento del beneficio: 90 días hábiles desde la
+        inscripción a nombre del comerciante habitualista. None si no se cargó
+        la fecha."""
+        return sumar_dias_habiles(self.fecha_inscripcion_habitualista, 90)
+
+    @property
+    def habitualista_vencido(self):
+        """True solo si el vehículo es habitualista, tiene fecha de inscripción
+        cargada y el beneficio (90 días hábiles) ya venció."""
+        if not getattr(self.vehiculo, "es_habitualista", False):
+            return False
+        vto = self.habitualista_vencimiento
+        return bool(vto and date.today() > vto)
 
     @property
     def documento_titular(self):

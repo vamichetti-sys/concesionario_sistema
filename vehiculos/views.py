@@ -2750,6 +2750,13 @@ def guardar_ficha_parcial(request, vehiculo_id):
             except Exception:
                 pass
 
+        # Comerciante habitualista: también es un campo del Vehiculo, editable
+        # desde la sección Documentación. El checkbox solo llega si está tildado,
+        # así que usamos el marcador oculto para saber que vino en este form.
+        if "habitualista_present" in request.POST:
+            vehiculo.es_habitualista = bool(request.POST.get("es_habitualista"))
+            vehiculo.save(update_fields=["es_habitualista"])
+
         # Solo actualizar los campos que vienen en el POST,
         # sin tocar los demás (evita borrar datos de otras secciones)
         campos_enviados = [

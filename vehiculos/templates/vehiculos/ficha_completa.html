@@ -345,6 +345,52 @@
         </div>
         {% endif %}
 
+        <!-- COMERCIANTE HABITUALISTA -->
+        <div class="p-3 mb-4" style="background:#f5f3ff;border:1px solid #ddd6fe;border-radius:12px;">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                <h6 class="fw-bold mb-0">Comerciante habitualista</h6>
+                {% if ficha.habitualista_vencido %}
+                <span class="badge bg-danger" style="font-size:13px;">
+                    <i data-lucide="alert-triangle" style="width:14px;height:14px;margin-right:4px;vertical-align:-2px;"></i>
+                    Beneficio VENCIDO
+                </span>
+                {% elif vehiculo.es_habitualista and ficha.habitualista_vencimiento %}
+                <span class="badge bg-success" style="font-size:13px;">Beneficio vigente</span>
+                {% endif %}
+            </div>
+            <!-- marcador para que el guardado sepa que el checkbox vino en este form -->
+            <input type="hidden" name="habitualista_present" value="1">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="es_habitualista"
+                               id="chk_habitualista" {% if vehiculo.es_habitualista %}checked{% endif %}>
+                        <label class="form-check-label" for="chk_habitualista">
+                            Ingresó con beneficio de comerciante habitualista
+                        </label>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Fecha de inscripción a nombre del comerciante</label>
+                    {{ ficha_form.fecha_inscripcion_habitualista }}
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Vencimiento del beneficio (90 días hábiles)</label>
+                    {% if ficha.habitualista_vencimiento %}
+                    <div class="fw-bold {% if ficha.habitualista_vencido %}text-danger{% else %}text-success{% endif %}" style="font-size:16px;">
+                        {{ ficha.habitualista_vencimiento|date:"d/m/Y" }}
+                    </div>
+                    {% if ficha.habitualista_vencido %}
+                    <small class="text-danger d-block">El beneficio venció el {{ ficha.habitualista_vencimiento|date:"d/m/Y" }}.</small>
+                    {% endif %}
+                    {% else %}
+                    <div class="text-muted">Cargá la fecha de inscripción para calcularlo.</div>
+                    {% endif %}
+                </div>
+            </div>
+            <small class="text-muted d-block mt-2">El cálculo cuenta 90 días hábiles (lunes a viernes) desde la inscripción, sin descontar feriados.</small>
+        </div>
+
         <!-- PATENTES -->
         <div class="p-3 mb-4" style="background:#f8f9fa;border-radius:12px;">
             <h6 class="fw-bold mb-3">Patentes</h6>

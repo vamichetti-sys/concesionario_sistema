@@ -63,6 +63,7 @@ class VehiculoBasicoForm(CarpetaUnicaMixin, forms.ModelForm):
             'numero_carpeta',
             'fecha_ingreso',
             'es_0km',
+            'es_habitualista',
         ]
 
         labels = {
@@ -78,6 +79,7 @@ class VehiculoBasicoForm(CarpetaUnicaMixin, forms.ModelForm):
             'numero_carpeta': 'Número de carpeta',
             'fecha_ingreso': 'Fecha de ingreso',
             'es_0km': '¿Es 0km?',
+            'es_habitualista': '¿Comerciante habitualista?',
         }
 
         widgets = {
@@ -97,6 +99,7 @@ class VehiculoBasicoForm(CarpetaUnicaMixin, forms.ModelForm):
                 attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'
             ),
             'es_0km': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'es_habitualista': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
 
@@ -119,12 +122,14 @@ class VehiculoForm(CarpetaUnicaMixin, forms.ModelForm):
             'numero_carpeta',
             'fecha_ingreso',
             'es_0km',
+            'es_habitualista',
         ]
 
         labels = {
             'precio_reventa': 'Precio de reventa',
             'fecha_ingreso': 'Fecha de ingreso',
             'es_0km': '¿Es 0km?',
+            'es_habitualista': '¿Comerciante habitualista?',
         }
 
         widgets = {
@@ -142,6 +147,7 @@ class VehiculoForm(CarpetaUnicaMixin, forms.ModelForm):
                 attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'
             ),
             'es_0km': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'es_habitualista': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
 
@@ -154,6 +160,15 @@ class FichaVehicularForm(forms.ModelForm):
     # 🔑 DEFINICIÓN EXPLÍCITA DE FECHAS (FIX DEFINITIVO)
     # ======================================================
     fecha_inscripcion_inicial = forms.DateField(
+        required=False,
+        input_formats=['%Y-%m-%d'],
+        widget=forms.DateInput(
+            format='%Y-%m-%d',
+            attrs={'type': 'date', 'class': 'form-control'}
+        )
+    )
+
+    fecha_inscripcion_habitualista = forms.DateField(
         required=False,
         input_formats=['%Y-%m-%d'],
         widget=forms.DateInput(
@@ -266,6 +281,7 @@ class FichaVehicularForm(forms.ModelForm):
             'numero_motor',
             'numero_chasis',
             'fecha_inscripcion_inicial',
+            'fecha_inscripcion_habitualista',
 
             'color',
             'combustible',
@@ -341,6 +357,7 @@ class FichaVehicularForm(forms.ModelForm):
             'numero_motor': 'Número motor',
             'numero_chasis': 'Número chasis',
             'fecha_inscripcion_inicial': 'Fecha inscripción inicial',
+            'fecha_inscripcion_habitualista': 'Fecha inscripción comerciante habitualista',
             'color': 'Color',
             'combustible': 'Combustible',
             'transmision': 'Transmisión',
