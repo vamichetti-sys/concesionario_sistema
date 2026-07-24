@@ -513,9 +513,18 @@
      GASTOS DE INGRESO
 =============================== -->
 <div class="card p-4 mb-4">
-    <div class="d-flex align-items-center gap-2 mb-4">
-        <i data-lucide="receipt" style="width:20px;height:20px;color:#ef4444;"></i>
-        <h5 class="fw-bold mb-0">Gastos de ingreso</h5>
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-4">
+        <div class="d-flex align-items-center gap-2">
+            <i data-lucide="receipt" style="width:20px;height:20px;color:#ef4444;"></i>
+            <h5 class="fw-bold mb-0">Gastos de ingreso</h5>
+        </div>
+        {% if not vehiculo.es_0km %}
+        <a href="{% url 'vehiculos:recibo_gastos_pagados_pdf' vehiculo.id %}" target="_blank"
+           class="btn btn-outline-primary btn-sm" title="Recibo general de todos los gastos pagados">
+            <i data-lucide="receipt-text" style="width:14px;height:14px;margin-right:4px;"></i>
+            Recibo de gastos pagados
+        </a>
+        {% endif %}
     </div>
 
     {% if vehiculo.es_0km %}

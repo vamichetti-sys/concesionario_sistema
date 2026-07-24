@@ -22,8 +22,51 @@
             <i data-lucide="external-link" style="width:16px;height:16px;margin-right:6px;"></i>
             Ver catálogo público
         </a>
+        <button type="button" class="btn btn-success" id="btnCopiarCatalogo"
+                data-url="{{ request.scheme }}://{{ request.get_host }}{% url 'community:catalogo_publico' %}">
+            <i data-lucide="link" style="width:16px;height:16px;margin-right:6px;"></i>
+            Copiar link
+        </button>
     </div>
 </div>
+
+<!-- LINK PÚBLICO PARA COMPARTIR -->
+<div class="alert alert-light border d-flex align-items-center gap-2 flex-wrap mb-4" style="border-radius:12px;">
+    <i data-lucide="share-2" style="width:18px;height:18px;color:#16a34a;"></i>
+    <span class="fw-semibold">Link público del catálogo:</span>
+    <input type="text" readonly id="inputLinkCatalogo" class="form-control form-control-sm"
+           style="max-width:520px;flex:1;min-width:240px;"
+           value="{{ request.scheme }}://{{ request.get_host }}{% url 'community:catalogo_publico' %}"
+           onclick="this.select();">
+    <small class="text-muted">El cliente lo abre sin usuario ni contraseña.</small>
+</div>
+
+<script>
+(function () {
+    var btn = document.getElementById('btnCopiarCatalogo');
+    if (!btn) return;
+    btn.addEventListener('click', function () {
+        var url = btn.dataset.url;
+        var input = document.getElementById('inputLinkCatalogo');
+        function feedbackOk() {
+            var original = btn.innerHTML;
+            btn.innerHTML = '<i data-lucide="check" style="width:16px;height:16px;margin-right:6px;"></i>¡Copiado!';
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+            setTimeout(function () {
+                btn.innerHTML = original;
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+            }, 1800);
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(url).then(feedbackOk).catch(function () {
+                if (input) { input.select(); document.execCommand('copy'); feedbackOk(); }
+            });
+        } else if (input) {
+            input.select(); document.execCommand('copy'); feedbackOk();
+        }
+    });
+})();
+</script>
 
 <!-- RESUMEN -->
 <div class="row g-4 mb-4">

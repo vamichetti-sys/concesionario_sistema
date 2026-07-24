@@ -154,6 +154,11 @@ urlpatterns = [
         name="recibo_gasto_ingreso_pdf"
     ),
     path(
+        "<int:vehiculo_id>/recibo-gastos-pagados/",
+        views.recibo_gastos_pagados_pdf,
+        name="recibo_gastos_pagados_pdf"
+    ),
+    path(
         "pago-gasto/agenda/<int:pago_id>/",
         views.agregar_gasto_a_agenda,
         name="agregar_gasto_a_agenda"

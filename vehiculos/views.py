@@ -1795,7 +1795,6 @@ def recibo_gasto_ingreso_pdf(request, pago_id):
         ["Importe", f"$ {pago.monto:,.0f}".replace(",", ".")],
         ["Fecha de pago", pago.fecha_pago.strftime("%d/%m/%Y") if pago.fecha_pago else "—"],
         ["Ente / organismo", pago.ente or "—"],
-        ["Situación", pago.get_situacion_display()],
     ]
     if pago.observaciones:
         filas.append(["Observaciones", pago.observaciones])
@@ -1806,6 +1805,57 @@ def recibo_gasto_ingreso_pdf(request, pago_id):
         subtitulo="AMICHETTI AUTOMOTORES",
         columnas=["Concepto", "Detalle"],
         filas=filas,
+    )
+
+
+# ==========================================================
+# RECIBO GENERAL DE GASTOS PAGADOS DE UN VEHÍCULO
+# ==========================================================
+@login_required
+def recibo_gastos_pagados_pdf(request, vehiculo_id):
+    """Recibo con TODOS los gastos de ingreso pagados de un vehículo,
+    con el total abonado al pie."""
+    from reportes.pdf_utils import render_pdf_listado
+
+    vehiculo = get_object_or_404(Vehiculo, id=vehiculo_id)
+
+    # Pagos registrados de gastos de ingreso (excluye los que quedaron
+    # marcados como pendientes / sin abonar).
+    pagos = (
+        PagoGastoIngreso.objects
+        .filter(vehiculo=vehiculo)
+        .exclude(situacion="pendiente")
+        .order_by("fecha_pago", "id")
+    )
+
+    veh = f"{vehiculo.marca} {vehiculo.modelo}"
+    if vehiculo.dominio:
+        veh += f" ({vehiculo.dominio})"
+
+    filas = []
+    total = Decimal("0")
+    for p in pagos:
+        concepto = CONCEPTOS_GASTO.get(p.concepto, p.concepto)
+        filas.append([
+            concepto,
+            p.fecha_pago.strftime("%d/%m/%Y") if p.fecha_pago else "—",
+            p.ente or "—",
+            f"$ {p.monto:,.0f}".replace(",", "."),
+        ])
+        total += p.monto or Decimal("0")
+
+    if not filas:
+        filas.append(["Sin gastos pagados registrados", "—", "—", "$ 0"])
+
+    totales = ["TOTAL", "", "", f"$ {total:,.0f}".replace(",", ".")]
+
+    return render_pdf_listado(
+        filename=f"recibo_gastos_pagados_{vehiculo.id}.pdf",
+        titulo="Recibo de gastos pagados",
+        subtitulo=f"AMICHETTI AUTOMOTORES · {veh}",
+        columnas=["Concepto", "Fecha de pago", "Ente / organismo", "Importe"],
+        filas=filas,
+        totales=totales,
     )
 
 
