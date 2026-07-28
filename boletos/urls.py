@@ -32,6 +32,10 @@ urlpatterns = [
     path("reservas/eliminar/<int:reserva_id>/", views.eliminar_reserva, name="eliminar_reserva"),
     path("reservas/pdf/<int:reserva_id>/", views.reserva_pdf, name="reserva_pdf"),
 
+    # NOTA DE RETIRO
+    path("nota-retiro/", views.nota_retiro, name="nota_retiro"),
+    path("nota-retiro/pdf/", views.nota_retiro_pdf, name="nota_retiro_pdf"),
+
     # ENTREGA DE DOCUMENTACION
     path("entregas/", views.lista_entregas, name="lista_entregas"),
     path("entregas/nueva/", views.crear_entrega, name="crear_entrega"),

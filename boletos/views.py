@@ -1225,3 +1225,74 @@ def entrega_pdf(request, pk):
     c.showPage()
     c.save()
     return response
+
+
+# ==========================================================
+# NOTA DE RETIRO (autorización para retirar un vehículo)
+# ==========================================================
+@login_required
+def nota_retiro(request):
+    """Formulario para completar y generar la nota de retiro."""
+    return render(request, "boletos/nota_retiro.html", {
+        "hoy_iso": date.today().isoformat(),
+    })
+
+
+@login_required
+def nota_retiro_pdf(request):
+    """Genera la nota de autorización de retiro en PDF con los datos cargados
+    en el formulario (todos manuales)."""
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.units import cm
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+
+    MESES = [
+        "enero", "febrero", "marzo", "abril", "mayo", "junio",
+        "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
+    ]
+    fecha_raw = (request.GET.get("fecha") or "").strip()
+    try:
+        f = date.fromisoformat(fecha_raw) if fecha_raw else date.today()
+    except ValueError:
+        f = date.today()
+    fecha_texto = f"{f.day} de {MESES[f.month - 1]} de {f.year}"
+
+    def _val(campo, default="________"):
+        return (request.GET.get(campo) or "").strip() or default
+
+    concesionaria = _val("concesionaria")
+    marca_modelo = _val("marca_modelo")
+    anio = _val("anio")
+    condicion = (request.GET.get("condicion") or "").strip()
+    dominio = _val("dominio")
+    autorizado = _val("autorizado")
+    dni = _val("dni")
+
+    response = HttpResponse(content_type="application/pdf")
+    response["Content-Disposition"] = 'inline; filename="nota_retiro.pdf"'
+
+    doc = SimpleDocTemplate(
+        response, pagesize=A4,
+        topMargin=3 * cm, bottomMargin=3 * cm,
+        leftMargin=2.5 * cm, rightMargin=2.5 * cm,
+    )
+    styles = getSampleStyleSheet()
+    normal = ParagraphStyle("nota", parent=styles["Normal"], fontSize=12, leading=20)
+    derecha = ParagraphStyle("der", parent=normal, alignment=2)
+
+    condicion_txt = f" {condicion}" if condicion else ""
+
+    elementos = [
+        Paragraph(f"ROJAS, {fecha_texto}", derecha),
+        Spacer(1, 40),
+        Paragraph(f"Sres. concesionaria {concesionaria} :", normal),
+        Spacer(1, 30),
+        Paragraph(
+            f"Autorizo a retirar vehículo marca {marca_modelo} AÑO {anio}{condicion_txt} "
+            f"patentado a mi nombre ({dominio}) al señor {autorizado} DNI N° {dni}.-",
+            normal,
+        ),
+    ]
+    doc.build(elementos)
+    return response

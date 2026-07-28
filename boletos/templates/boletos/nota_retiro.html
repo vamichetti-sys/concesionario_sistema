@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Nota de retiro{% endblock %}
+{% block content %}
+
+<div class="mb-4">
+    <a href="{% url 'boletos:panel' %}" class="text-muted text-decoration-none d-inline-flex align-items-center mb-2" style="font-size:14px;">
+        <i data-lucide="arrow-left" style="width:16px;height:16px;margin-right:6px;"></i>
+        Volver a Boletos
+    </a>
+    <h3 class="fw-bold mb-1">Nota de retiro</h3>
+    <p class="text-muted mb-0">Autorización para que una persona retire un vehículo de la concesionaria</p>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card p-4">
+            <form method="get" action="{% url 'boletos:nota_retiro_pdf' %}" target="_blank">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Fecha</label>
+                        <input type="date" name="fecha" class="form-control" value="{{ hoy_iso }}">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Concesionaria</label>
+                        <input type="text" name="concesionaria" class="form-control" placeholder="Ej: Dietrich" required>
+                    </div>
+                    <div class="col-md-8">
+                        <label class="form-label">Marca y modelo</label>
+                        <input type="text" name="marca_modelo" class="form-control" placeholder="Ej: FORD TERRITORY" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Año</label>
+                        <input type="text" name="anio" class="form-control" placeholder="Ej: 2026" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Condición</label>
+                        <input type="text" name="condicion" class="form-control" placeholder="Ej: 0KM (opcional)">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Dominio / Patente</label>
+                        <input type="text" name="dominio" class="form-control" placeholder="Ej: AI409AA" required>
+                    </div>
+                    <div class="col-md-8">
+                        <label class="form-label">Autorizado a retirar (nombre y apellido)</label>
+                        <input type="text" name="autorizado" class="form-control" placeholder="Ej: LEANDRO CARAMELO" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">DNI</label>
+                        <input type="text" name="dni" class="form-control" placeholder="Ej: 28365988" required>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2 mt-4">
+                    <button type="submit" class="btn btn-primary">
+                        <i data-lucide="printer" style="width:16px;height:16px;margin-right:6px;"></i>
+                        Generar nota (PDF)
+                    </button>
+                    <a href="{% url 'boletos:panel' %}" class="btn btn-secondary">Cancelar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+</script>
+{% endblock %}
