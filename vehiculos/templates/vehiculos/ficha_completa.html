@@ -71,6 +71,77 @@
             Cuenta Corriente
         </a>
         {% endif %}
+
+        <button type="button" class="btn btn-outline-dark" data-bs-toggle="modal" data-bs-target="#modalNotaRetiro">
+            <i data-lucide="file-signature" style="width:16px;height:16px;margin-right:6px;"></i>
+            Nota de retiro
+        </button>
+    </div>
+</div>
+
+<!-- ===============================
+     MODAL NOTA DE RETIRO
+=============================== -->
+<div class="modal fade" id="modalNotaRetiro" tabindex="-1">
+    <div class="modal-dialog">
+        <form method="get" action="{% url 'vehiculos:nota_retiro_pdf' vehiculo.id %}" target="_blank">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">
+                        <i data-lucide="file-signature" style="width:18px;height:18px;margin-right:8px;"></i>
+                        Nota de retiro
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted mb-3" style="font-size:13px;">
+                        Autorización para retirar el vehículo. Los datos vienen precargados del vehículo; podés editarlos.
+                    </p>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Fecha</label>
+                            <input type="date" name="fecha" class="form-control" value="{{ hoy_iso }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Concesionaria</label>
+                            <input type="text" name="concesionaria" class="form-control" placeholder="Ej: Dietrich">
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label">Marca y modelo</label>
+                            <input type="text" name="marca_modelo" class="form-control"
+                                   value="{{ vehiculo.marca }} {{ vehiculo.modelo }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Año</label>
+                            <input type="text" name="anio" class="form-control" value="{{ vehiculo.anio }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Condición</label>
+                            <input type="text" name="condicion" class="form-control" value="{% if vehiculo.es_0km %}0KM{% else %}USADO{% endif %}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Dominio / Patente</label>
+                            <input type="text" name="dominio" class="form-control" value="{{ vehiculo.dominio }}">
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label">Autorizado a retirar (nombre)</label>
+                            <input type="text" name="autorizado" class="form-control" placeholder="Nombre y apellido" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">DNI</label>
+                            <input type="text" name="dni" class="form-control" placeholder="00000000" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i data-lucide="printer" style="width:16px;height:16px;margin-right:6px;"></i>
+                        Generar nota
+                    </button>
+                </div>
+            </div>
+        </form>
     </div>
 </div>
 

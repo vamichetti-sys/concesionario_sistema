@@ -1063,6 +1063,7 @@ def ficha_completa(request, vehiculo_id):
             "ficha_tecnica_form": ficha_tecnica_form,
             "clientes_titular": _clientes_para_titular(),
             "tiene_proveedor": ficha.vendedor_id is not None,
+            "hoy_iso": date.today().isoformat(),
             **ctx_pago_conc,
         },
     )
@@ -1857,6 +1858,72 @@ def recibo_gastos_pagados_pdf(request, vehiculo_id):
         filas=filas,
         totales=totales,
     )
+
+
+# ==========================================================
+# NOTA DE RETIRO (autorización para retirar un vehículo)
+# ==========================================================
+@login_required
+def nota_retiro_pdf(request, vehiculo_id):
+    """Genera la nota de autorización para que una persona retire un vehículo
+    de la concesionaria. Los datos vienen del modal (precargados del vehículo,
+    editables)."""
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.units import cm
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+
+    vehiculo = get_object_or_404(Vehiculo, id=vehiculo_id)
+
+    MESES = [
+        "enero", "febrero", "marzo", "abril", "mayo", "junio",
+        "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
+    ]
+    fecha_raw = (request.GET.get("fecha") or "").strip()
+    try:
+        f = date.fromisoformat(fecha_raw) if fecha_raw else date.today()
+    except ValueError:
+        f = date.today()
+    fecha_texto = f"{f.day} de {MESES[f.month - 1]} de {f.year}"
+
+    def _val(campo, default=""):
+        return (request.GET.get(campo) or "").strip() or default
+
+    concesionaria = _val("concesionaria", "________")
+    marca_modelo = _val("marca_modelo", f"{vehiculo.marca} {vehiculo.modelo}")
+    anio = _val("anio", str(vehiculo.anio or ""))
+    condicion = _val("condicion", "0KM" if vehiculo.es_0km else "")
+    dominio = _val("dominio", vehiculo.dominio or "")
+    autorizado = _val("autorizado", "________")
+    dni = _val("dni", "________")
+
+    response = HttpResponse(content_type="application/pdf")
+    response["Content-Disposition"] = f'inline; filename="nota_retiro_{vehiculo.id}.pdf"'
+
+    doc = SimpleDocTemplate(
+        response, pagesize=A4,
+        topMargin=3 * cm, bottomMargin=3 * cm,
+        leftMargin=2.5 * cm, rightMargin=2.5 * cm,
+    )
+    styles = getSampleStyleSheet()
+    normal = ParagraphStyle("nota", parent=styles["Normal"], fontSize=12, leading=20)
+    derecha = ParagraphStyle("der", parent=normal, alignment=2)
+
+    condicion_txt = f" {condicion}" if condicion else ""
+
+    elementos = [
+        Paragraph(f"ROJAS, {fecha_texto}", derecha),
+        Spacer(1, 40),
+        Paragraph(f"Sres. concesionaria {concesionaria} :", normal),
+        Spacer(1, 30),
+        Paragraph(
+            f"Autorizo a retirar vehículo marca {marca_modelo} AÑO {anio}{condicion_txt} "
+            f"patentado a mi nombre ({dominio}) al señor {autorizado} DNI N° {dni}.-",
+            normal,
+        ),
+    ]
+    doc.build(elementos)
+    return response
 
 
 # ==========================================================

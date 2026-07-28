@@ -159,6 +159,11 @@ urlpatterns = [
         name="recibo_gastos_pagados_pdf"
     ),
     path(
+        "<int:vehiculo_id>/nota-retiro/",
+        views.nota_retiro_pdf,
+        name="nota_retiro_pdf"
+    ),
+    path(
         "pago-gasto/agenda/<int:pago_id>/",
         views.agregar_gasto_a_agenda,
         name="agregar_gasto_a_agenda"
