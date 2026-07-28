@@ -145,9 +145,9 @@
                     <td class="text-end fw-semibold">${% if v.precio_venta %}{{ v.precio_venta }}{% else %}{{ v.vehiculo.precio }}{% endif %}</td>
                     <td class="text-end">
                         <button type="button" class="btn btn-outline-success btn-sm"
-                                data-bs-toggle="modal" data-bs-target="#modalNuevaComision"
+                                data-bs-toggle="modal" data-bs-target="#modalComision"
                                 data-venta="{{ v.id }}"
-                                onclick="document.querySelector('#modalNuevaComision [name=venta_id]') && (document.querySelector('#modalNuevaComision [name=venta_id]').value='{{ v.id }}')">
+                                onclick="document.querySelector('#modalComision [name=venta_id]') && (document.querySelector('#modalComision [name=venta_id]').value='{{ v.id }}')">
                             <i data-lucide="plus" style="width:13px;height:13px;margin-right:3px;"></i>Cargar comisión
                         </button>
                     </td>
