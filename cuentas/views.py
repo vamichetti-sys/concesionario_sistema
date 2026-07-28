@@ -37,6 +37,7 @@ from .models import (
     Pago,
     PagoCuota,
     BitacoraCuenta,
+    Refinanciacion,
 )
 
 # ===============================
@@ -1328,6 +1329,8 @@ def conectar_vehiculo_permuta(request, cuenta_id, vehiculo_id):
 @login_required
 @transaction.atomic
 def refinanciar_plan(request, plan_id):
+    from django.db.models import Sum as _Sum
+
     plan = get_object_or_404(PlanPago, id=plan_id)
     cuenta = plan.cuenta
 
@@ -1338,9 +1341,45 @@ def refinanciar_plan(request, plan_id):
     # Saldo que queda adeudado de ESTE plan (lo ya pagado NO se toca).
     saldo = sum((c.saldo_pendiente for c in plan.cuotas.all()), Decimal("0"))
 
+    # ── Otras deudas de la cuenta (para el modo "toda la deuda") ──────────
+    # Gestoría y ajustes/manuales pendientes se pueden consolidar en el plan
+    # nuevo neutralizándolos con un haber (así no se duplican).
+    def _pendiente(origenes, tipos_debe, tipos_haber):
+        debe = cuenta.movimientos.filter(
+            origen__in=origenes, tipo__in=tipos_debe
+        ).aggregate(t=_Sum("monto"))["t"] or Decimal("0")
+        haber = cuenta.movimientos.filter(
+            origen__in=origenes, tipo__in=tipos_haber
+        ).aggregate(t=_Sum("monto"))["t"] or Decimal("0")
+        return max(debe - haber, Decimal("0"))
+
+    gestoria_pend = _pendiente(["gestoria"], ["debe"], ["haber"])
+    manual_pend = _pendiente(["manual", "ajuste"], ["debe", "deuda"], ["haber", "pago"])
+
+    # Gastos de ingreso de un usado de permuta que paga el cliente: NO se
+    # consolidan acá (viven en la ficha del vehículo). Se avisa si existen.
+    gastos_permuta = Decimal("0")
+    for _veh in cuenta._vehiculos_para_gastos():
+        try:
+            gastos_permuta += _veh.ficha.saldo_total_gastos_cliente()
+        except Exception:
+            pass
+
+    # Deuda total consolidable de la cuenta (plan + gestoría + ajustes).
+    saldo_total = saldo + gestoria_pend + manual_pend
+
     if request.method == "POST":
-        if saldo <= 0:
-            messages.error(request, "Este plan no tiene saldo adeudado para refinanciar.")
+        # Sobre qué se aplica el interés / qué se refinancia:
+        #   "plan"  → solo el saldo del plan (comportamiento clásico)
+        #   "total" → toda la deuda de la cuenta (plan + gestoría + ajustes)
+        base_modo = (request.POST.get("base_modo") or "plan").strip()
+        if base_modo not in ("plan", "total"):
+            base_modo = "plan"
+
+        base = saldo_total if base_modo == "total" else saldo
+
+        if base <= 0:
+            messages.error(request, "No hay saldo adeudado para refinanciar.")
             return redirect("cuentas:cuenta_corriente_detalle", cuenta_id=cuenta.id)
 
         try:
@@ -1363,14 +1402,25 @@ def refinanciar_plan(request, plan_id):
         except ValueError:
             fecha_inicio = date.today()
 
-        interes_monto = (saldo * interes / Decimal("100")).quantize(Decimal("0.01"))
-        total_refin   = (saldo + interes_monto).quantize(Decimal("0.01"))
+        interes_monto = (base * interes / Decimal("100")).quantize(Decimal("0.01"))
+        total_refin   = (base + interes_monto).quantize(Decimal("0.01"))
+
+        _base_label = "toda la deuda de la cuenta" if base_modo == "total" else "el saldo del plan"
+
+        # Registros para poder REVERTIR después.
+        cuotas_previas_snap = []   # [{"id","monto","estado"}]
+        movimientos_ids = []       # ids de movimientos creados por esta refin.
+        cuotas_nuevas_ids = []     # ids de cuotas creadas por esta refin.
 
         # 1) Cerramos las cuotas con saldo del plan al monto YA pagado (saldo→0),
         #    preservando los pagos hechos (no se borra ninguna imputación).
+        #    Antes de tocarlas, guardamos su monto/estado para poder revertir.
         max_num = 0
         for c in plan.cuotas.all():
             if c.saldo_pendiente > 0:
+                cuotas_previas_snap.append({
+                    "id": c.id, "monto": str(c.monto), "estado": c.estado,
+                })
                 c.monto = c.total_pagado
                 c.estado = "pagada"
                 c.save(update_fields=["monto", "estado"])
@@ -1380,29 +1430,50 @@ def refinanciar_plan(request, plan_id):
         #    duplique en deuda_total_real (que ya lo toma de las cuotas nuevas);
         #    solo ajusta el saldo por movimientos.
         if interes_monto > 0:
-            MovimientoCuenta.objects.create(
+            _mi = MovimientoCuenta.objects.create(
                 cuenta=cuenta,
-                descripcion=f"Interés refinanciación {interes}% sobre saldo $ {saldo:,.0f} (plan #{plan.pk})",
+                descripcion=f"Interés refinanciación {interes}% sobre {_base_label} $ {base:,.0f} (plan #{plan.pk})",
                 tipo="debe", monto=interes_monto, origen="venta",
             )
+            movimientos_ids.append(_mi.id)
 
-        # 3) Cuotas nuevas por el saldo refinanciado (saldo + interés).
-        base = (total_refin / cantidad).quantize(Decimal("0.01"))
+        # 2b) MODO "TOTAL": la gestoría y los ajustes pendientes se consolidan en
+        #     el plan nuevo. Se neutralizan con un haber para que NO queden
+        #     contados dos veces (una en su rubro y otra en las cuotas nuevas).
+        if base_modo == "total":
+            if gestoria_pend > 0:
+                _mg = MovimientoCuenta.objects.create(
+                    cuenta=cuenta,
+                    descripcion=f"Gestoría $ {gestoria_pend:,.0f} consolidada en refinanciación (plan #{plan.pk})",
+                    tipo="haber", monto=gestoria_pend, origen="gestoria",
+                )
+                movimientos_ids.append(_mg.id)
+            if manual_pend > 0:
+                _ma = MovimientoCuenta.objects.create(
+                    cuenta=cuenta,
+                    descripcion=f"Ajustes $ {manual_pend:,.0f} consolidados en refinanciación (plan #{plan.pk})",
+                    tipo="haber", monto=manual_pend, origen="ajuste",
+                )
+                movimientos_ids.append(_ma.id)
+
+        # 3) Cuotas nuevas por el saldo refinanciado (base + interés).
+        monto_cuota = (total_refin / cantidad).quantize(Decimal("0.01"))
         fecha = fecha_inicio
         acum = Decimal("0")
         for i in range(1, cantidad + 1):
-            monto_c = base if i < cantidad else (total_refin - acum)
+            monto_c = monto_cuota if i < cantidad else (total_refin - acum)
             acum += monto_c
-            CuotaPlan.objects.create(
+            _cn = CuotaPlan.objects.create(
                 plan=plan, numero=max_num + i, vencimiento=fecha,
                 monto=monto_c, estado="pendiente",
             )
+            cuotas_nuevas_ids.append(_cn.id)
             fecha += timedelta(days=30)
 
         plan.estado = "activo"
-        _saldo_str = f"{saldo:,.0f}".replace(",", ".")
+        _base_str = f"{base:,.0f}".replace(",", ".")
         _total_str = f"{total_refin:,.0f}".replace(",", ".")
-        nota = (f"Refinanciación: +{interes}% sobre saldo $ {_saldo_str} "
+        nota = (f"Refinanciación ({_base_label}): +{interes}% sobre $ {_base_str} "
                 f"el {fecha_inicio.strftime('%d/%m/%Y')} → $ {_total_str} en {cantidad} cuota(s).")
         plan.interes_descripcion = (
             (plan.interes_descripcion + "\n" + nota).strip()
@@ -1410,18 +1481,107 @@ def refinanciar_plan(request, plan_id):
         )
         plan.save(update_fields=["estado", "interes_descripcion"])
 
+        # Registro para poder revertir esta refinanciación.
+        Refinanciacion.objects.create(
+            plan=plan, cuenta=cuenta,
+            base_modo=base_modo, interes=interes, base=base,
+            interes_monto=interes_monto, total_refin=total_refin,
+            cantidad_cuotas=cantidad,
+            cuotas_previas=cuotas_previas_snap,
+            cuotas_nuevas=cuotas_nuevas_ids,
+            movimientos=movimientos_ids,
+            nota=nota,
+        )
+
         cuenta.recalcular_saldo()
         messages.success(
             request,
-            f"Plan refinanciado: interés sobre el saldo de $ {saldo:,.0f}. "
+            f"Plan refinanciado sobre {_base_label} ($ {base:,.0f}). "
             f"Nuevo saldo $ {total_refin:,.0f} en {cantidad} cuota(s)."
         )
+        if base_modo == "total" and gastos_permuta > 0:
+            messages.warning(
+                request,
+                f"Atención: quedaron afuera $ {gastos_permuta:,.0f} de gastos de ingreso "
+                "de un usado de permuta (se gestionan desde la ficha del vehículo, no se consolidaron)."
+            )
         return redirect("cuentas:cuenta_corriente_detalle", cuenta_id=cuenta.id)
 
     return render(request, "cuentas/refinanciar_plan.html", {
         "plan": plan, "cuenta": cuenta, "saldo": saldo,
+        "saldo_total": saldo_total,
+        "gestoria_pend": gestoria_pend,
+        "manual_pend": manual_pend,
+        "gastos_permuta": gastos_permuta,
         "hoy_iso": date.today().strftime("%Y-%m-%d"),
     })
+
+
+# ==========================================================
+# REVERTIR UNA REFINANCIACIÓN
+# ==========================================================
+@login_required
+@transaction.atomic
+def revertir_refinanciacion(request, refin_id):
+    from django.utils import timezone
+
+    refin = get_object_or_404(Refinanciacion, id=refin_id)
+    cuenta = refin.cuenta
+    plan = refin.plan
+
+    if refin.revertida:
+        messages.info(request, "Esta refinanciación ya estaba revertida.")
+        return redirect("cuentas:cuenta_corriente_detalle", cuenta_id=cuenta.id)
+
+    if cuenta.estado == "cerrada":
+        messages.error(request, "La cuenta está cerrada.")
+        return redirect("cuentas:cuenta_corriente_detalle", cuenta_id=cuenta.id)
+
+    if request.method != "POST":
+        return redirect("cuentas:cuenta_corriente_detalle", cuenta_id=cuenta.id)
+
+    # 🔒 Seguridad: si alguna de las cuotas nuevas ya recibió pagos, revertir
+    # borraría esas imputaciones. En ese caso NO se permite.
+    cuotas_nuevas = list(CuotaPlan.objects.filter(id__in=refin.cuotas_nuevas))
+    for c in cuotas_nuevas:
+        if c.total_pagado and c.total_pagado > 0:
+            messages.error(
+                request,
+                "No se puede revertir: ya se registraron pagos sobre las cuotas de "
+                "esta refinanciación. Primero quitá esos pagos."
+            )
+            return redirect("cuentas:cuenta_corriente_detalle", cuenta_id=cuenta.id)
+
+    # 1) Borrar las cuotas nuevas creadas por la refinanciación.
+    CuotaPlan.objects.filter(id__in=refin.cuotas_nuevas).delete()
+
+    # 2) Borrar los movimientos creados (interés + consolidaciones de gestoría /
+    #    ajustes). Al borrarlos, esas deudas vuelven a figurar como estaban.
+    MovimientoCuenta.objects.filter(id__in=refin.movimientos).delete()
+
+    # 3) Restaurar las cuotas viejas a su monto/estado anterior.
+    for snap in refin.cuotas_previas:
+        CuotaPlan.objects.filter(id=snap["id"]).update(
+            monto=Decimal(str(snap["monto"])),
+            estado=snap["estado"],
+        )
+
+    # 4) Marcar la refinanciación como revertida y dejar nota en el plan.
+    refin.revertida = True
+    refin.fecha_reversion = timezone.now()
+    refin.save(update_fields=["revertida", "fecha_reversion"])
+
+    nota_rev = f"↩ Refinanciación revertida el {timezone.now().strftime('%d/%m/%Y')}."
+    plan.interes_descripcion = (
+        (plan.interes_descripcion + "\n" + nota_rev).strip()
+        if plan.interes_descripcion else nota_rev
+    )
+    plan.estado = "activo"
+    plan.save(update_fields=["estado", "interes_descripcion"])
+
+    cuenta.recalcular_saldo()
+    messages.success(request, "Refinanciación revertida. El plan volvió a su estado anterior.")
+    return redirect("cuentas:cuenta_corriente_detalle", cuenta_id=cuenta.id)
 
 
 # ==========================================================

@@ -21,9 +21,41 @@
         <small class="text-muted">{{ plan.descripcion }}</small>
     </div>
 
-    {% if saldo > 0 %}
+    {% if saldo_total > 0 %}
     <form method="post" action="{% url 'cuentas:refinanciar_plan' plan.id %}" class="card p-4">
         {% csrf_token %}
+
+        <!-- ¿SOBRE QUÉ SE APLICA? -->
+        <label class="form-label fw-semibold">¿Qué querés refinanciar?</label>
+        <div class="row g-2 mb-3">
+            <div class="col-md-6">
+                <label class="d-flex align-items-start gap-2 p-3 m-0" style="border:1px solid #e5e7eb;border-radius:12px;cursor:pointer;">
+                    <input class="form-check-input mt-1" type="radio" name="base_modo" value="plan" checked>
+                    <span>
+                        <span class="fw-semibold d-block">Solo el plan de pago</span>
+                        <span class="text-muted" style="font-size:13px;">Saldo del plan: <strong>$ {{ saldo|miles }}</strong></span>
+                    </span>
+                </label>
+            </div>
+            <div class="col-md-6">
+                <label class="d-flex align-items-start gap-2 p-3 m-0" style="border:1px solid #e5e7eb;border-radius:12px;cursor:pointer;">
+                    <input class="form-check-input mt-1" type="radio" name="base_modo" value="total">
+                    <span>
+                        <span class="fw-semibold d-block">Toda la deuda de la cuenta</span>
+                        <span class="text-muted" style="font-size:13px;">Total: <strong>$ {{ saldo_total|miles }}</strong>
+                        {% if gestoria_pend or manual_pend %}<br>(plan + gestoría/ajustes){% endif %}</span>
+                    </span>
+                </label>
+            </div>
+        </div>
+        {% if gastos_permuta %}
+        <div class="alert alert-warning py-2 px-3" style="font-size:13px;border-radius:10px;">
+            <i data-lucide="alert-triangle" style="width:15px;height:15px;vertical-align:-3px;"></i>
+            Este cliente adeuda <strong>$ {{ gastos_permuta|miles }}</strong> de gastos de ingreso de un usado de permuta.
+            Eso <strong>no</strong> se consolida acá (se maneja desde la ficha del vehículo).
+        </div>
+        {% endif %}
+
         <div class="row g-3">
             <div class="col-md-4">
                 <label class="form-label">Interés (%)</label>
@@ -83,12 +115,14 @@
 
 </div>
 
-{% if saldo > 0 %}
+{% if saldo_total > 0 %}
 <script>
 (function () {
     var SALDO = parseFloat("{{ saldo|stringformat:'f' }}") || 0;
+    var SALDO_TOTAL = parseFloat("{{ saldo_total|stringformat:'f' }}") || 0;
     var inpInteres = document.querySelector('input[name="interes"]');
     var inpCuotas  = document.querySelector('input[name="cantidad_cuotas"]');
+    var radios     = document.querySelectorAll('input[name="base_modo"]');
     var pvInteres  = document.getElementById('pvInteres');
     var pvTotal    = document.getElementById('pvTotal');
     var pvCuota    = document.getElementById('pvCuota');
@@ -100,26 +134,34 @@
         return '$ ' + s.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
     }
 
+    function baseSeleccionada() {
+        var modo = 'plan';
+        radios.forEach(function (r) { if (r.checked) modo = r.value; });
+        return modo === 'total' ? SALDO_TOTAL : SALDO;
+    }
+
     function recalcular() {
         var pct = parseFloat((inpInteres.value || '0').replace(',', '.')) || 0;
         if (pct < 0) pct = 0;
         var cuotas = parseInt(inpCuotas.value || '1', 10);
         if (!cuotas || cuotas < 1) cuotas = 1;
 
-        var interes = SALDO * pct / 100;
-        var total = SALDO + interes;
+        var base = baseSeleccionada();
+        var interes = base * pct / 100;
+        var total = base + interes;
         var porCuota = total / cuotas;
 
         pvInteres.textContent = fmt(interes);
         pvTotal.textContent = fmt(total);
         pvCuota.textContent = fmt(porCuota);
-        pvDetalle.textContent = 'Saldo ' + fmt(SALDO) + ' + ' + pct + '% (' + fmt(interes) + ') = '
+        pvDetalle.textContent = 'Base ' + fmt(base) + ' + ' + pct + '% (' + fmt(interes) + ') = '
             + fmt(total) + ' en ' + cuotas + ' cuota(s) de ' + fmt(porCuota) + '.';
     }
 
     [inpInteres, inpCuotas].forEach(function (el) {
         if (el) { el.addEventListener('input', recalcular); el.addEventListener('change', recalcular); }
     });
+    radios.forEach(function (r) { r.addEventListener('change', recalcular); });
     recalcular();
 })();
 </script>

@@ -379,6 +379,34 @@
             <div style="font-size:12.5px;color:#92400e;white-space:pre-line;">{{ plan.interes_descripcion }}</div>
         </div>
         {% endif %}
+
+        {% with refins=plan.refinanciaciones.all %}
+        {% if refins %}
+        <div class="mt-2">
+            {% for refin in refins %}
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 p-2 mb-1"
+                 style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;font-size:12.5px;">
+                <span>
+                    <i data-lucide="refresh-ccw" style="width:13px;height:13px;vertical-align:-2px;margin-right:3px;"></i>
+                    {{ refin.creada|date:"d/m/Y" }} —
+                    {% if refin.base_modo == "total" %}toda la deuda{% else %}solo el plan{% endif %}:
+                    +{{ refin.interes }}% sobre $ {{ refin.base|miles }} → $ {{ refin.total_refin|miles }}
+                    {% if refin.revertida %}<span class="badge bg-secondary ms-1">Revertida</span>{% endif %}
+                </span>
+                {% if not refin.revertida %}
+                <form method="post" action="{% url 'cuentas:revertir_refinanciacion' refin.id %}"
+                      onsubmit="return confirm('¿Revertir esta refinanciación? El plan vuelve a como estaba antes (no se puede si ya se cobraron cuotas nuevas).');">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-2">
+                        <i data-lucide="undo-2" style="width:13px;height:13px;margin-right:3px;"></i>Revertir
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
     </div>
     {% endwith %}
     {% empty %}

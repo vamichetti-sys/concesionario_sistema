@@ -81,6 +81,11 @@ urlpatterns = [
         name="refinanciar_plan"
     ),
     path(
+        "refinanciacion/<int:refin_id>/revertir/",
+        views.revertir_refinanciacion,
+        name="revertir_refinanciacion"
+    ),
+    path(
         "por-tipo-deuda/",
         views.cuentas_por_tipo_deuda,
         name="cuentas_por_tipo_deuda"

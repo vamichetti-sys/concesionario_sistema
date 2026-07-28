@@ -781,3 +781,47 @@ class BitacoraCuenta(models.Model):
 
     def __str__(self):
         return f"{self.fecha} - {self.accion}"
+
+
+# ==========================================================
+# REFINANCIACIÓN (registro para poder REVERTIR)
+# ==========================================================
+class Refinanciacion(models.Model):
+    """
+    Guarda una refinanciación aplicada a un plan para poder revertirla.
+    Registra el 'antes' (cuotas que se cerraron con su monto/estado previo) y
+    lo que se creó (cuotas nuevas + movimientos), de modo que revertir sea
+    determinístico y sin pérdida de datos.
+    """
+    plan = models.ForeignKey(
+        PlanPago, on_delete=models.CASCADE, related_name="refinanciaciones"
+    )
+    cuenta = models.ForeignKey(
+        CuentaCorriente, on_delete=models.CASCADE, related_name="refinanciaciones"
+    )
+    creada = models.DateTimeField(auto_now_add=True)
+
+    base_modo = models.CharField(max_length=10, default="plan")  # 'plan' | 'total'
+    interes = models.DecimalField(max_digits=6, decimal_places=2, default=0)
+    base = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    interes_monto = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    total_refin = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    cantidad_cuotas = models.PositiveIntegerField(default=1)
+
+    # Snapshots para revertir:
+    cuotas_previas = models.JSONField(default=list)   # [{"id", "monto", "estado"}]
+    cuotas_nuevas = models.JSONField(default=list)    # [id, ...]
+    movimientos = models.JSONField(default=list)      # [id, ...]
+    nota = models.TextField(blank=True)
+
+    revertida = models.BooleanField(default=False)
+    fecha_reversion = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-creada", "-id"]
+        verbose_name = "Refinanciación"
+        verbose_name_plural = "Refinanciaciones"
+
+    def __str__(self):
+        estado = "revertida" if self.revertida else "activa"
+        return f"Refin. plan #{self.plan_id} — $ {self.total_refin} ({estado})"
