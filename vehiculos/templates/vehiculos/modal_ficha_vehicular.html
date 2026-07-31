@@ -243,6 +243,25 @@
     </div>
   </div>
 
+  <!-- CÉDULA ESCANEADA / FOTO DE LA CÉDULA -->
+  <div class="row g-3 mb-2">
+    <div class="col-md-8">
+      <label class="fw-bold">Cédula verde (escaneada o foto)</label>
+      {{ ficha_form.cedula_archivo }}
+      <small class="text-muted">Subí la cédula en PDF o una foto/imagen.</small>
+    </div>
+    <div class="col-md-4 d-flex align-items-end">
+      {% if ficha_form.instance.cedula_archivo %}
+      <a href="{{ ficha_form.instance.cedula_archivo.url }}" target="_blank" class="btn btn-outline-primary w-100">
+        <i data-lucide="file-text" style="width:15px;height:15px;margin-right:5px;"></i>
+        Ver cédula cargada
+      </a>
+      {% else %}
+      <span class="text-muted">Sin cédula cargada todavía</span>
+      {% endif %}
+    </div>
+  </div>
+
   <hr>
 
   <!-- TITULAR -->

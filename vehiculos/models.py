@@ -352,6 +352,27 @@ class FichaVehicular(models.Model):
         null=True
     )
 
+    # Cédula verde escaneada o fotografiada (PDF o imagen)
+    cedula_archivo = models.FileField(
+        upload_to="cedulas/",
+        blank=True,
+        null=True
+    )
+
+    # Comprobantes de deuda (PDF o imagen) de patentes e infracciones.
+    patentes_archivo = models.FileField(
+        upload_to="deudas/",
+        blank=True,
+        null=True,
+        verbose_name="Comprobante de deuda de patentes"
+    )
+    infracciones_archivo = models.FileField(
+        upload_to="deudas/",
+        blank=True,
+        null=True,
+        verbose_name="Comprobante de deuda de infracciones"
+    )
+
     cedula_check_estado = models.CharField(
         max_length=2,
         choices=SI_NO,

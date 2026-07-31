@@ -2874,11 +2874,11 @@ def guardar_ficha_parcial(request, vehiculo_id):
             vehiculo.es_habitualista = bool(request.POST.get("es_habitualista"))
             vehiculo.save(update_fields=["es_habitualista"])
 
-        # Solo actualizar los campos que vienen en el POST,
+        # Solo actualizar los campos que vienen en el POST (o archivos subidos),
         # sin tocar los demás (evita borrar datos de otras secciones)
         campos_enviados = [
             campo for campo in FichaVehicularForm.Meta.fields
-            if campo in request.POST
+            if campo in request.POST or campo in request.FILES
         ]
 
         if campos_enviados:
@@ -2887,7 +2887,7 @@ def guardar_ficha_parcial(request, vehiculo_id):
                 class Meta(FichaVehicularForm.Meta):
                     fields = campos_enviados
 
-            ficha_form = FichaParcialForm(request.POST, instance=ficha)
+            ficha_form = FichaParcialForm(request.POST, request.FILES, instance=ficha)
 
             # Valores anteriores para decidir si re-sincronizar gasto_patentes.
             _patentes_monto_old = getattr(ficha, "patentes_monto", None) or Decimal("0")
