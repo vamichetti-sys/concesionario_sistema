@@ -59,6 +59,7 @@
                     <th>Dominio</th>
                     <th>Año</th>
                     <th>Estado</th>
+                    <th>Vencimiento</th>
                     <th class="text-end">Acciones</th>
                 </tr>
             </thead>
@@ -88,6 +89,25 @@
                         <span class="badge bg-warning">{{ vehiculo.ficha.autopartes_estado|default:"No informado" }}</span>
                         {% elif tipo_actual == 'verificacion' %}
                         <span class="badge bg-warning">{{ vehiculo.ficha.verificacion_estado|default:"No informado" }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if tipo_actual == 'vtv' %}
+                            {% if vehiculo.ficha.vtv_vencimiento %}
+                            <span class="{% if vehiculo.ficha.vtv_vencida %}text-danger fw-semibold{% endif %}">
+                                {{ vehiculo.ficha.vtv_vencimiento|date:"d/m/Y" }}
+                            </span>
+                            {% if vehiculo.ficha.vtv_vencida %}<span class="badge bg-danger ms-1">Vencida</span>{% endif %}
+                            {% else %}<span class="text-muted">—</span>{% endif %}
+                        {% elif tipo_actual == 'verificacion' %}
+                            {% if vehiculo.ficha.verificacion_vencimiento %}
+                            <span class="{% if vehiculo.ficha.verificacion_vencida %}text-danger fw-semibold{% endif %}">
+                                {{ vehiculo.ficha.verificacion_vencimiento|date:"d/m/Y" }}
+                            </span>
+                            {% if vehiculo.ficha.verificacion_vencida %}<span class="badge bg-danger ms-1">Vencida</span>{% endif %}
+                            {% else %}<span class="text-muted">—</span>{% endif %}
+                        {% else %}
+                            <span class="text-muted">—</span>
                         {% endif %}
                     </td>
                     <td class="text-end">
