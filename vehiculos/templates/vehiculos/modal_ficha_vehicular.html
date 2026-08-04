@@ -167,6 +167,16 @@
       </div>
     </div>
 
+    <div class="col-md-4 d-flex align-items-center">
+      <div class="form-check p-2 mt-3" style="background:#f5f3ff;border:1px solid #ddd6fe;border-radius:8px;width:100%;">
+        {{ vehiculo_form.es_habitualista }}
+        <label class="form-check-label" for="{{ vehiculo_form.es_habitualista.id_for_label }}">
+          <strong>¿Comerciante habitualista?</strong>
+          <small class="text-muted d-block">Beneficio 90 días hábiles. La fecha va en Documentación.</small>
+        </label>
+      </div>
+    </div>
+
     <hr class="my-3">
 
     <div class="col-md-4">
@@ -343,18 +353,20 @@
   <h6 class="fw-bold mb-2" style="color:#002855;">Patentes</h6>
   <div class="row g-3">
     <div class="col-md-3">
-      <label class="fw-bold">¿Adeuda patentes a la fecha de ingreso?</label>
+      <label class="fw-bold">¿Traía deuda de patentes al ingresar?</label>
       {{ ficha_form.patentes_adeuda }}
+      <small class="text-muted d-block">Deuda anterior al ingreso (se salda una vez).</small>
     </div>
 
     <div class="col-md-3">
-      <label class="fw-bold">Monto adeudado</label>
+      <label class="fw-bold">Monto adeudado (al ingreso)</label>
       {{ ficha_form.patentes_monto }}
     </div>
 
     <div class="col-md-3">
       <label class="fw-bold">Patente mensual ($)</label>
       {{ ficha_form.patente_mensual }}
+      <small class="text-muted d-block">Cada vencimiento que pasa en stock suma esta patente a Gastos concesionario.</small>
     </div>
 
     <div class="col-md-3"></div>

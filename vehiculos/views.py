@@ -207,9 +207,12 @@ def lista_vehiculos(request):
     for v in vehiculos:
         dias_en_stock = None
 
-        # Buscar fecha_compra en FichaReporteInterno
-        if hasattr(v, 'ficha_reporte') and v.ficha_reporte and v.ficha_reporte.fecha_compra:
-            dias_en_stock = (hoy - v.ficha_reporte.fecha_compra).days
+        # Un vehículo "a ingresar" todavía NO está físicamente en el
+        # concesionario, así que no cuenta días de ingreso.
+        if v.estado != "a_ingresar":
+            # Buscar fecha_compra en FichaReporteInterno
+            if hasattr(v, 'ficha_reporte') and v.ficha_reporte and v.ficha_reporte.fecha_compra:
+                dias_en_stock = (hoy - v.ficha_reporte.fecha_compra).days
 
         es_consignacion = False
         if v.estado == "reventa":

@@ -109,10 +109,10 @@ def acumular_patentes_mensuales(ficha, hoy=None):
     if getattr(ficha, "gc_patentes_manual", False):
         return False
 
-    # Si las patentes las paga/pagó el cliente (las trajo pagas o pagó directo
-    # al organismo), NO son un gasto del concesionario: no se acumulan.
-    if _patentes_las_paga_el_cliente(ficha):
-        return False
+    # Regla del negocio: TODA patente que se vence estando el vehículo en el
+    # concesionario es gasto del concesionario. No importa si adeudaba patentes
+    # al ingreso: eso es otra cosa (gasto de ingreso). Por eso NO frenamos la
+    # acumulación según esa respuesta.
 
     mensual = ficha.patente_mensual or Decimal("0")
     if mensual <= 0:
