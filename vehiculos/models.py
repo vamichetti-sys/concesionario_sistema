@@ -258,6 +258,11 @@ class FichaVehicular(models.Model):
 
     verificacion_estado = models.CharField(max_length=20, choices=ESTADO_DOC, blank=True, null=True)
     verificacion_vencimiento = models.DateField(blank=True, null=True)
+    # Costo de renovar la verificación. Si vence estando en stock, se suma a
+    # Gastos concesionario automáticamente.
+    costo_verificacion = models.DecimalField(
+        "Costo de verificación", max_digits=12, decimal_places=2, null=True, blank=True
+    )
 
     autopartes_estado = models.CharField(max_length=20, choices=ESTADO_DOC, blank=True, null=True)
     autopartes_turno = models.DateField(blank=True, null=True)
@@ -266,6 +271,11 @@ class FichaVehicular(models.Model):
     vtv_estado = models.CharField(max_length=20, choices=ESTADO_DOC, blank=True, null=True)
     vtv_turno = models.DateField(blank=True, null=True)
     vtv_vencimiento = models.DateField(blank=True, null=True)
+    # Costo de renovar la VTV. Si vence estando en stock, se suma a Gastos
+    # concesionario automáticamente.
+    costo_vtv = models.DecimalField(
+        "Costo de VTV", max_digits=12, decimal_places=2, null=True, blank=True
+    )
 
     # =========================
     # TURNOS ADICIONALES

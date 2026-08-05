@@ -66,11 +66,39 @@ def actualizar_gastos_por_vencimientos():
     actualizados = 0
 
     for ficha in fichas:
+        campos = []
         if acumular_patentes_mensuales(ficha):
-            ficha.save(update_fields=["gc_patentes"])
+            campos.append("gc_patentes")
+        # VTV y verificación: si vencieron estando en stock y tienen costo
+        # cargado, ese costo pasa a ser gasto del concesionario.
+        if acumular_costo_vencido(ficha, "vtv_vencimiento", "costo_vtv", "gc_vtv"):
+            campos.append("gc_vtv")
+        if acumular_costo_vencido(ficha, "verificacion_vencimiento", "costo_verificacion", "gc_verificacion"):
+            campos.append("gc_verificacion")
+        if campos:
+            ficha.save(update_fields=campos)
             actualizados += 1
 
     return actualizados
+
+
+def acumular_costo_vencido(ficha, campo_vencimiento, campo_costo, campo_gasto, hoy=None):
+    """Si un trámite con vencimiento (VTV / verificación) ya venció y tiene un
+    costo de renovación cargado, suma ese costo al gasto de concesionario
+    correspondiente (solo aumenta, nunca baja; no pisa cargas mayores a mano).
+
+    Devuelve True si modificó el campo de gasto (NO guarda; lo hace el llamador).
+    """
+    hoy = hoy or date.today()
+    venc = getattr(ficha, campo_vencimiento, None)
+    costo = getattr(ficha, campo_costo, None) or Decimal("0")
+    if not venc or venc >= hoy or costo <= 0:
+        return False
+    actual = getattr(ficha, campo_gasto, None) or Decimal("0")
+    if costo > actual:
+        setattr(ficha, campo_gasto, costo)
+        return True
+    return False
 
 
 def _patentes_las_paga_el_cliente(ficha):

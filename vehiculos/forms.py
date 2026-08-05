@@ -322,6 +322,7 @@ class FichaVehicularForm(forms.ModelForm):
             'verificacion_estado',
             'verificacion_vencimiento',
             'verificacion_turno',
+            'costo_verificacion',
 
             'autopartes_estado',
             'autopartes_turno',
@@ -329,6 +330,7 @@ class FichaVehicularForm(forms.ModelForm):
             'vtv_estado',
             'vtv_turno',
             'vtv_vencimiento',
+            'costo_vtv',
 
             'gnc_turno',
 
@@ -441,6 +443,8 @@ class FichaVehicularForm(forms.ModelForm):
             'gasto_vtv': forms.NumberInput(attrs={'class': 'form-control'}),
             'gasto_r541': forms.NumberInput(attrs={'class': 'form-control'}),
             'gasto_firmas': forms.NumberInput(attrs={'class': 'form-control'}),
+            'costo_vtv': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': 'Opcional'}),
+            'costo_verificacion': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': 'Opcional'}),
             'patentes_estado': forms.Select(attrs={'class': 'form-control'}),
             'patentes_adeuda': forms.Select(attrs={'class': 'form-control'}),
             'patente_mensual': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),

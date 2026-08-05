@@ -571,6 +571,11 @@
                 <label class="form-label">Turno verificación</label>
                 {{ ficha_form.verificacion_turno }}
             </div>
+            <div class="col-md-3">
+                <label class="form-label">Costo de verificación ($)</label>
+                {{ ficha_form.costo_verificacion }}
+                <small class="text-muted d-block">Si vence en stock, se suma a Gastos concesionario.</small>
+            </div>
         </div>
 
         <!-- AUTOPARTES -->
@@ -600,6 +605,11 @@
             <div class="col-md-3">
                 <label class="form-label">Turno VTV</label>
                 {{ ficha_form.vtv_turno }}
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Costo de VTV ($)</label>
+                {{ ficha_form.costo_vtv }}
+                <small class="text-muted d-block">Si vence en stock, se suma a Gastos concesionario.</small>
             </div>
         </div>
 
