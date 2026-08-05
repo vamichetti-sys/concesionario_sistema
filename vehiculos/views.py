@@ -2749,23 +2749,33 @@ def ficha_vehicular_pdf(request, vehiculo_id):
             ["TOTAL", f"$ {ficha.total_gastos or 0}"],
         ])
 
-        # Gastos del concesionario (gc_*)
-        seccion("Gastos del concesionario", [
-            ["Service",              f"$ {ficha.gc_service or 0}"],
-            ["Mecánica",             f"$ {ficha.gc_mecanica or 0}"],
-            ["Chapa y pintura",      f"$ {ficha.gc_chapa_pintura or 0}"],
-            ["Tapizado",             f"$ {ficha.gc_tapizado or 0}"],
-            ["Neumáticos",           f"$ {ficha.gc_neumaticos or 0}"],
-            ["Vidrios",              f"$ {ficha.gc_vidrios or 0}"],
-            ["Cerrajería",           f"$ {ficha.gc_cerrajeria or 0}"],
-            ["Lavado / Pulido",      f"$ {ficha.gc_lavado or 0}"],
-            ["GNC",                  f"$ {ficha.gc_gnc or 0}"],
-            ["Grabado autopartes",   f"$ {ficha.gc_grabado_autopartes or 0}"],
-            ["VTV",                  f"$ {ficha.gc_vtv or 0}"],
-            ["Verificación policial", f"$ {ficha.gc_verificacion or 0}"],
-            ["Patentes",             f"$ {ficha.gc_patentes or 0}"],
-            ["Otros",                f"$ {ficha.gc_otros or 0}"],
-        ])
+        # Gastos del concesionario (gc_* fijos + gastos extra + TOTAL)
+        gc_campos = [
+            ("Service",               ficha.gc_service),
+            ("Mecánica",              ficha.gc_mecanica),
+            ("Chapa y pintura",       ficha.gc_chapa_pintura),
+            ("Tapizado",              ficha.gc_tapizado),
+            ("Neumáticos",            ficha.gc_neumaticos),
+            ("Vidrios",               ficha.gc_vidrios),
+            ("Cerrajería",            ficha.gc_cerrajeria),
+            ("Lavado / Pulido",       ficha.gc_lavado),
+            ("GNC",                   ficha.gc_gnc),
+            ("Grabado autopartes",    ficha.gc_grabado_autopartes),
+            ("VTV",                   ficha.gc_vtv),
+            ("Verificación policial", ficha.gc_verificacion),
+            ("Patentes",              ficha.gc_patentes),
+            ("Otros",                 ficha.gc_otros),
+        ]
+        filas_conc = [[label, f"$ {m or 0}"] for label, m in gc_campos]
+        total_conc = sum((Decimal(m or 0) for _, m in gc_campos), Decimal("0"))
+
+        # Gastos extra (modelo GastoConcesionario) — antes NO se sumaban.
+        for e in GastoConcesionario.objects.filter(vehiculo=vehiculo):
+            filas_conc.append([e.concepto or "Gasto extra", f"$ {e.monto or 0}"])
+            total_conc += Decimal(e.monto or 0)
+
+        filas_conc.append(["TOTAL", f"$ {total_conc}"])
+        seccion("Gastos del concesionario", filas_conc)
 
     # ==================================================
     # OBSERVACIONES Y DATOS ADICIONALES
