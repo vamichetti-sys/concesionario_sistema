@@ -62,6 +62,113 @@
     </form>
 </div>
 
+<!-- PLANES DE PAGO POR AUTO -->
+<div class="card p-4 mb-4">
+    <h6 class="fw-bold mb-3">
+        <i data-lucide="calendar-clock" style="width:16px;height:16px;margin-right:6px;"></i>
+        Planes de pago por auto
+    </h6>
+
+    <!-- Crear plan -->
+    <form method="post" action="{% url 'reventa:crear_plan' cuenta_pk=cuenta.pk %}" class="row g-2 align-items-end mb-4">
+        {% csrf_token %}
+        <div class="col-md-3">
+            <label class="form-label" style="font-size:12px;">Auto</label>
+            <select name="reventa_id" class="form-select" id="selAutoPlan">
+                <option value="">— General / sin auto —</option>
+                {% for a in autos %}
+                <option value="{{ a.reventa.id }}" data-monto="{{ a.monto|stringformat:'.2f' }}">
+                    {% if a.reventa.vehiculo %}{{ a.reventa.vehiculo.marca }} {{ a.reventa.vehiculo.modelo }}{% if a.reventa.vehiculo.dominio %} ({{ a.reventa.vehiculo.dominio }}){% endif %}{% else %}{{ a.reventa.agencia }}{% endif %} · ${{ a.monto|floatformat:0 }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label" style="font-size:12px;">Monto total</label>
+            <input type="number" name="monto_total" class="form-control" step="0.01" min="0" required placeholder="0.00" id="inpMontoPlan">
+        </div>
+        <div class="col-md-2">
+            <label class="form-label" style="font-size:12px;">Cantidad de cuotas</label>
+            <input type="number" name="cantidad_cuotas" class="form-control" min="1" value="1" required>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label" style="font-size:12px;">Primer vencimiento</label>
+            <input type="date" name="fecha_inicio" class="form-control" value="{{ hoy_iso }}">
+        </div>
+        <div class="col-md-1">
+            <label class="form-label" style="font-size:12px;">Cada (días)</label>
+            <input type="number" name="intervalo_dias" class="form-control" min="1" value="30">
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-primary w-100">
+                <i data-lucide="plus" style="width:14px;height:14px;margin-right:4px;"></i>Crear plan
+            </button>
+        </div>
+    </form>
+
+    {% if planes %}
+    {% for plan in planes %}
+    <div class="border rounded p-3 mb-3" style="border-radius:12px;">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+            <div class="fw-semibold">
+                <i data-lucide="car" style="width:15px;height:15px;vertical-align:-2px;margin-right:4px;"></i>
+                {{ plan.auto_label }}
+                <span class="text-muted" style="font-size:13px;">
+                    · Total $ {{ plan.total|floatformat:0 }} · Pagado $ {{ plan.pagado|floatformat:0 }} · Saldo $ {{ plan.saldo|floatformat:0 }}
+                </span>
+            </div>
+            <form method="post" action="{% url 'reventa:eliminar_plan' plan_id=plan.id %}"
+                  onsubmit="return confirm('¿Eliminar este plan? (no se puede si ya hay cuotas pagadas)');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-2">
+                    <i data-lucide="trash-2" style="width:13px;height:13px;"></i>
+                </button>
+            </form>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+                <thead>
+                    <tr><th>Cuota</th><th>Vencimiento</th><th class="text-end">Monto</th><th>Estado</th><th class="text-end"></th></tr>
+                </thead>
+                <tbody>
+                    {% for cuota in plan.cuotas.all %}
+                    <tr>
+                        <td>{{ cuota.numero }}</td>
+                        <td class="text-muted">{{ cuota.vencimiento|date:"d/m/Y" }}</td>
+                        <td class="text-end fw-semibold">${{ cuota.monto|floatformat:0 }}</td>
+                        <td>
+                            {% if cuota.pagada %}
+                            <span class="badge bg-success">Pagada {{ cuota.fecha_pago|date:"d/m/Y" }}</span>
+                            {% else %}
+                            <span class="badge bg-warning text-dark">Pendiente</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            {% if cuota.pagada %}
+                            <form method="post" action="{% url 'reventa:deshacer_cuota' cuota_id=cuota.id %}" style="display:inline;"
+                                  onsubmit="return confirm('¿Deshacer el pago de esta cuota?');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-outline-secondary btn-sm py-0 px-2">Deshacer</button>
+                            </form>
+                            {% else %}
+                            <form method="post" action="{% url 'reventa:pagar_cuota' cuota_id=cuota.id %}" style="display:inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-outline-success btn-sm py-0 px-2">Marcar pagada</button>
+                            </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <p class="text-muted mb-0">Todavía no hay planes de pago cargados.</p>
+    {% endif %}
+</div>
+
 <!-- MOVIMIENTOS -->
 <div class="card p-4">
     <h6 class="fw-bold mb-3">
@@ -119,5 +226,18 @@
     {% endif %}
 </div>
 
-<script>lucide.createIcons();</script>
+<script>
+    lucide.createIcons();
+    (function () {
+        var sel = document.getElementById('selAutoPlan');
+        var inp = document.getElementById('inpMontoPlan');
+        if (sel && inp) {
+            sel.addEventListener('change', function () {
+                var opt = sel.options[sel.selectedIndex];
+                var m = opt ? opt.getAttribute('data-monto') : '';
+                if (m) inp.value = Math.round(parseFloat(m));
+            });
+        }
+    })();
+</script>
 {% endblock %}

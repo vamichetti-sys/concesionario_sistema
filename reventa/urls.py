@@ -18,4 +18,10 @@ urlpatterns = [
     path("cuentas/<int:pk>/", views.detalle_cuenta_revendedor, name="detalle_cuenta"),
     path("cuentas/<int:pk>/movimiento/", views.agregar_movimiento_revendedor, name="agregar_movimiento"),
     path("movimiento/<int:pk>/eliminar/", views.eliminar_movimiento_revendedor, name="eliminar_movimiento"),
+
+    # Planes de pago por auto
+    path("cuentas/<int:cuenta_pk>/plan/nuevo/", views.crear_plan_reventa, name="crear_plan"),
+    path("plan/cuota/<int:cuota_id>/pagar/", views.pagar_cuota_reventa, name="pagar_cuota"),
+    path("plan/cuota/<int:cuota_id>/deshacer/", views.deshacer_cuota_reventa, name="deshacer_cuota"),
+    path("plan/<int:plan_id>/eliminar/", views.eliminar_plan_reventa, name="eliminar_plan"),
 ]

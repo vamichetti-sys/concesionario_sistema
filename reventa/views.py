@@ -279,13 +279,31 @@ def crear_cuenta_revendedor(request):
 
 @login_required
 def detalle_cuenta_revendedor(request, pk):
-    from .models import CuentaRevendedor
+    from .models import CuentaRevendedor, Reventa
     cuenta = get_object_or_404(CuentaRevendedor, pk=pk)
     movimientos = cuenta.movimientos.all()
+
+    # Autos (reventas) con deuda en esta cuenta, para el plan de pagos por auto.
+    # Se listan los que tienen un movimiento 'debe' vinculado, con su monto.
+    autos = []
+    vistos = set()
+    for m in movimientos:
+        if m.tipo == "debe" and m.reventa_id and m.reventa_id not in vistos:
+            vistos.add(m.reventa_id)
+            autos.append({"reventa": m.reventa, "monto": m.monto})
+
+    planes = (
+        cuenta.planes.all()
+        .select_related("reventa", "reventa__vehiculo")
+        .prefetch_related("cuotas")
+    )
 
     return render(request, "reventa/cuenta_detalle.html", {
         "cuenta": cuenta,
         "movimientos": movimientos,
+        "autos": autos,
+        "planes": planes,
+        "hoy_iso": date.today().isoformat(),
     })
 
 
@@ -651,3 +669,144 @@ def acta_entrega_pdf(request, reventa_id):
         f'inline; filename="acta_entrega_{reventa.id:04d}.pdf"'
     )
     return response
+
+
+# ==========================================================
+# PLAN DE PAGOS POR AUTO (cuenta del revendedor)
+# ==========================================================
+@login_required
+@transaction.atomic
+def crear_plan_reventa(request, cuenta_pk):
+    from decimal import Decimal, InvalidOperation
+    from datetime import timedelta
+    from .models import CuentaRevendedor, Reventa, PlanReventa, CuotaReventa
+
+    cuenta = get_object_or_404(CuentaRevendedor, pk=cuenta_pk)
+
+    if request.method != "POST":
+        return redirect("reventa:detalle_cuenta", pk=cuenta.pk)
+
+    reventa = None
+    reventa_id = (request.POST.get("reventa_id") or "").strip()
+    if reventa_id:
+        reventa = Reventa.objects.filter(pk=reventa_id).first()
+
+    try:
+        monto_total = Decimal(str(request.POST.get("monto_total") or "0").replace(",", "."))
+    except (InvalidOperation, ValueError):
+        monto_total = Decimal("0")
+
+    try:
+        cantidad = int(request.POST.get("cantidad_cuotas") or "1")
+    except ValueError:
+        cantidad = 1
+    if cantidad < 1:
+        cantidad = 1
+
+    try:
+        intervalo = int(request.POST.get("intervalo_dias") or "30")
+    except ValueError:
+        intervalo = 30
+    if intervalo < 1:
+        intervalo = 30
+
+    fecha_raw = (request.POST.get("fecha_inicio") or "").strip()
+    try:
+        fecha_inicio = date.fromisoformat(fecha_raw) if fecha_raw else date.today()
+    except ValueError:
+        fecha_inicio = date.today()
+
+    if monto_total <= 0:
+        messages.error(request, "Ingresá un monto total válido para el plan.")
+        return redirect("reventa:detalle_cuenta", pk=cuenta.pk)
+
+    descripcion = (request.POST.get("descripcion") or "").strip()
+
+    plan = PlanReventa.objects.create(
+        cuenta=cuenta, reventa=reventa,
+        descripcion=descripcion, fecha_inicio=fecha_inicio,
+    )
+
+    base = (monto_total / cantidad).quantize(Decimal("0.01"))
+    acum = Decimal("0")
+    fecha = fecha_inicio
+    for i in range(1, cantidad + 1):
+        monto_c = base if i < cantidad else (monto_total - acum)
+        acum += monto_c
+        CuotaReventa.objects.create(
+            plan=plan, numero=i, vencimiento=fecha, monto=monto_c,
+        )
+        fecha += timedelta(days=intervalo)
+
+    messages.success(
+        request,
+        f"Plan de pagos creado: $ {monto_total:,.0f} en {cantidad} cuota(s)."
+    )
+    return redirect("reventa:detalle_cuenta", pk=cuenta.pk)
+
+
+@login_required
+@transaction.atomic
+def pagar_cuota_reventa(request, cuota_id):
+    from .models import CuotaReventa, MovimientoRevendedor
+
+    cuota = get_object_or_404(CuotaReventa, pk=cuota_id)
+    cuenta = cuota.plan.cuenta
+
+    if request.method == "POST" and not cuota.pagada:
+        auto = cuota.plan.auto_label
+        mov = MovimientoRevendedor.objects.create(
+            cuenta=cuenta, tipo="haber", monto=cuota.monto,
+            descripcion=f"Pago cuota {cuota.numero} – {auto}",
+            reventa=cuota.plan.reventa,
+        )
+        cuota.pagada = True
+        cuota.fecha_pago = date.today()
+        cuota.movimiento = mov
+        cuota.save(update_fields=["pagada", "fecha_pago", "movimiento"])
+        messages.success(request, f"Cuota {cuota.numero} marcada como pagada.")
+
+    return redirect("reventa:detalle_cuenta", pk=cuenta.pk)
+
+
+@login_required
+@transaction.atomic
+def deshacer_cuota_reventa(request, cuota_id):
+    from .models import CuotaReventa
+
+    cuota = get_object_or_404(CuotaReventa, pk=cuota_id)
+    cuenta = cuota.plan.cuenta
+
+    if request.method == "POST" and cuota.pagada:
+        # Borra el pago (haber) generado y desmarca la cuota.
+        if cuota.movimiento_id:
+            cuota.movimiento.delete()
+        cuota.pagada = False
+        cuota.fecha_pago = None
+        cuota.movimiento = None
+        cuota.save(update_fields=["pagada", "fecha_pago", "movimiento"])
+        messages.success(request, f"Se deshizo el pago de la cuota {cuota.numero}.")
+
+    return redirect("reventa:detalle_cuenta", pk=cuenta.pk)
+
+
+@login_required
+@transaction.atomic
+def eliminar_plan_reventa(request, plan_id):
+    from .models import PlanReventa
+
+    plan = get_object_or_404(PlanReventa, pk=plan_id)
+    cuenta = plan.cuenta
+
+    if request.method == "POST":
+        if plan.cuotas.filter(pagada=True).exists():
+            messages.error(
+                request,
+                "No se puede eliminar: el plan ya tiene cuotas pagadas. "
+                "Primero deshacé esos pagos."
+            )
+        else:
+            plan.delete()
+            messages.success(request, "Plan de pagos eliminado.")
+
+    return redirect("reventa:detalle_cuenta", pk=cuenta.pk)

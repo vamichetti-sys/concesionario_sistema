@@ -228,3 +228,76 @@ class MovimientoRevendedor(models.Model):
         cuenta = self.cuenta
         super().delete(*args, **kwargs)
         cuenta.recalcular_saldo()
+
+
+# ==========================================================
+# PLAN DE PAGOS POR AUTO (dentro de la cuenta del revendedor)
+# ==========================================================
+class PlanReventa(models.Model):
+    """
+    Plan de pagos para la deuda de UN auto (reventa) dentro de la cuenta
+    corriente de un revendedor. El plan solo AGENDA las cuotas: la deuda ya
+    existe como movimiento 'debe'. Al marcar una cuota como pagada se registra
+    el pago (haber) en la cuenta.
+    """
+    cuenta = models.ForeignKey(
+        CuentaRevendedor, on_delete=models.CASCADE, related_name="planes"
+    )
+    reventa = models.ForeignKey(
+        Reventa, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="planes",
+    )
+    descripcion = models.CharField(max_length=200, blank=True)
+    fecha_inicio = models.DateField()
+    creado = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-creado", "-id"]
+        verbose_name = "Plan de pagos (reventa)"
+        verbose_name_plural = "Planes de pagos (reventa)"
+
+    def __str__(self):
+        return f"Plan #{self.pk} – {self.cuenta.nombre}"
+
+    @property
+    def total(self):
+        return sum((c.monto for c in self.cuotas.all()), Decimal("0"))
+
+    @property
+    def pagado(self):
+        return sum((c.monto for c in self.cuotas.all() if c.pagada), Decimal("0"))
+
+    @property
+    def saldo(self):
+        return self.total - self.pagado
+
+    @property
+    def auto_label(self):
+        if self.reventa and self.reventa.vehiculo:
+            v = self.reventa.vehiculo
+            dom = f" ({v.dominio})" if v.dominio else ""
+            return f"{v.marca} {v.modelo}{dom}"
+        return self.descripcion or "Sin auto asignado"
+
+
+class CuotaReventa(models.Model):
+    plan = models.ForeignKey(
+        PlanReventa, on_delete=models.CASCADE, related_name="cuotas"
+    )
+    numero = models.PositiveIntegerField()
+    vencimiento = models.DateField()
+    monto = models.DecimalField(max_digits=14, decimal_places=2)
+    pagada = models.BooleanField(default=False)
+    fecha_pago = models.DateField(null=True, blank=True)
+    movimiento = models.ForeignKey(
+        MovimientoRevendedor, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="cuota_reventa",
+    )
+
+    class Meta:
+        ordering = ["numero", "vencimiento"]
+        verbose_name = "Cuota (reventa)"
+        verbose_name_plural = "Cuotas (reventa)"
+
+    def __str__(self):
+        return f"Cuota {self.numero} – ${self.monto}"
