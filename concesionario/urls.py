@@ -31,6 +31,9 @@ urlpatterns = [
     # PDF: documentación para la entrega de un vehículo
     path('doc-entrega/pdf/', inicio_views.doc_entrega_pdf, name='doc_entrega_pdf'),
 
+    # PDF: resumen general (ventas, vendidos con deuda, cuentas con deuda)
+    path('resumen-general/pdf/', inicio_views.resumen_general_pdf, name='resumen_general_pdf'),
+
     # ===============================
     # 🚪 CERRAR SESIÓN
     # ===============================

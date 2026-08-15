@@ -444,6 +444,160 @@ def inicio(request):
 
 
 # ==========================================================
+# RESUMEN GENERAL (PDF)
+# ==========================================================
+@login_required
+def resumen_general_pdf(request):
+    """PDF con un panorama general: cuántos autos se vendieron, qué vendidos
+    quedaron con deuda de gastos, y qué cuentas corrientes tienen deuda."""
+    from decimal import Decimal
+    from django.http import HttpResponse
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.units import cm
+    from reportlab.lib import colors
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+
+    from ventas.models import Venta
+    from cuentas.models import CuentaCorriente
+    from vehiculos.models import FichaVehicular
+
+    hoy = timezone.now().date()
+    AZUL = colors.HexColor("#002855")
+
+    def money(v):
+        try:
+            return "$ " + f"{Decimal(v):,.0f}".replace(",", ".")
+        except Exception:
+            return "$ 0"
+
+    # 1) AUTOS VENDIDOS
+    vendidos_total = Vehiculo.objects.filter(estado="vendido").count()
+    ventas_anio = Venta.objects.filter(estado="confirmada", fecha_venta__year=hoy.year).count()
+    ventas_mes = Venta.objects.filter(
+        estado="confirmada", fecha_venta__year=hoy.year, fecha_venta__month=hoy.month
+    ).count()
+
+    # 2) VENDIDOS CON DEUDA DE GASTOS DE INGRESO
+    vendidos_deuda = []
+    total_vd = Decimal("0")
+    for f in FichaVehicular.objects.filter(vehiculo__estado="vendido").select_related("vehiculo"):
+        try:
+            mapa = f.mapa_gastos_ingreso()
+        except Exception:
+            continue
+        saldo_v = Decimal("0")
+        for concepto, monto in mapa.items():
+            if monto and Decimal(monto) > 0:
+                s = f.saldo_por_concepto(concepto) or Decimal("0")
+                if s > 0:
+                    saldo_v += s
+        if saldo_v > 0:
+            vendidos_deuda.append((f.vehiculo, saldo_v))
+            total_vd += saldo_v
+    vendidos_deuda.sort(key=lambda x: x[1], reverse=True)
+
+    # 3) CUENTAS CORRIENTES CON DEUDA
+    cuentas_deuda = []
+    total_cc = Decimal("0")
+    for cc in CuentaCorriente.objects.exclude(estado="cerrada").select_related("cliente"):
+        try:
+            d = cc.deuda_total_real
+        except Exception:
+            d = Decimal("0")
+        if d and d > 0:
+            cuentas_deuda.append((cc, d))
+            total_cc += d
+    cuentas_deuda.sort(key=lambda x: x[1], reverse=True)
+
+    # ── PDF ───────────────────────────────────────────────
+    response = HttpResponse(content_type="application/pdf")
+    response["Content-Disposition"] = 'inline; filename="resumen_general.pdf"'
+    doc = SimpleDocTemplate(
+        response, pagesize=A4,
+        topMargin=1.5 * cm, bottomMargin=1.5 * cm, leftMargin=1.8 * cm, rightMargin=1.8 * cm,
+    )
+    styles = getSampleStyleSheet()
+    st_titulo = ParagraphStyle("t", fontSize=17, textColor=AZUL, alignment=1, fontName="Helvetica-Bold", spaceAfter=2)
+    st_sub = ParagraphStyle("s", fontSize=10, alignment=1, spaceAfter=14, textColor=colors.grey)
+    st_sec = ParagraphStyle("sec", fontSize=13, textColor=AZUL, fontName="Helvetica-Bold", spaceBefore=16, spaceAfter=8)
+
+    def tabla(cols, filas, anchos, total_row=None):
+        data = [cols] + filas
+        if total_row:
+            data.append(total_row)
+        t = Table(data, colWidths=anchos, repeatRows=1)
+        estilos = [
+            ("BACKGROUND", (0, 0), (-1, 0), AZUL),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("FONTSIZE", (0, 0), (-1, -1), 9),
+            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f1f5f9")]),
+            ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#e5e7eb")),
+            ("TOPPADDING", (0, 0), (-1, -1), 5),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+            ("ALIGN", (-1, 0), (-1, -1), "RIGHT"),
+        ]
+        if total_row:
+            estilos += [
+                ("BACKGROUND", (0, -1), (-1, -1), colors.HexColor("#e2e8f0")),
+                ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"),
+            ]
+        t.setStyle(TableStyle(estilos))
+        return t
+
+    elementos = [
+        Paragraph("AMICHETTI AUTOMOTORES", st_titulo),
+        Paragraph(f"Resumen general · {hoy.strftime('%d/%m/%Y')}", st_sub),
+    ]
+
+    # 1) Ventas
+    elementos.append(Paragraph("Autos vendidos", st_sec))
+    elementos.append(tabla(
+        ["Período", "Cantidad"],
+        [
+            ["Total (histórico)", str(vendidos_total)],
+            [f"Vendidos en {hoy.year}", str(ventas_anio)],
+            ["Vendidos este mes", str(ventas_mes)],
+        ],
+        [12 * cm, 5 * cm],
+    ))
+
+    # 2) Vendidos con deuda
+    elementos.append(Paragraph(f"Autos vendidos con deuda de gastos ({len(vendidos_deuda)})", st_sec))
+    if vendidos_deuda:
+        filas = [
+            [f"{v.marca} {v.modelo}", v.dominio or "—", money(s)]
+            for v, s in vendidos_deuda
+        ]
+        elementos.append(tabla(
+            ["Vehículo", "Dominio", "Deuda de gastos"],
+            filas, [9 * cm, 4 * cm, 4 * cm],
+            total_row=["TOTAL", "", money(total_vd)],
+        ))
+    else:
+        elementos.append(Paragraph("No hay autos vendidos con deuda de gastos.", styles["Normal"]))
+
+    # 3) Cuentas corrientes con deuda
+    elementos.append(Paragraph(f"Cuentas corrientes con deuda ({len(cuentas_deuda)})", st_sec))
+    if cuentas_deuda:
+        filas = [
+            [str(cc.cliente) if cc.cliente else "—", money(d)]
+            for cc, d in cuentas_deuda
+        ]
+        elementos.append(tabla(
+            ["Cliente", "Deuda total"],
+            filas, [13 * cm, 4 * cm],
+            total_row=["TOTAL", money(total_cc)],
+        ))
+    else:
+        elementos.append(Paragraph("No hay cuentas corrientes con deuda.", styles["Normal"]))
+
+    doc.build(elementos)
+    return response
+
+
+# ==========================================================
 # RECORDATORIOS
 # ==========================================================
 @login_required

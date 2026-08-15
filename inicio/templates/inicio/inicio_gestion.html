@@ -76,9 +76,15 @@
 <!-- ===============================
      3. ACCESOS GESTIÓN INTERNA
 =============================== -->
-<div class="d-flex align-items-center gap-2 mb-3 mt-2">
-    <i data-lucide="lock" style="width:20px;height:20px;color:#8b5cf6;"></i>
-    <h5 class="fw-bold mb-0">Gestión Interna</h5>
+<div class="d-flex align-items-center justify-content-between gap-2 mb-3 mt-2 flex-wrap">
+    <div class="d-flex align-items-center gap-2">
+        <i data-lucide="lock" style="width:20px;height:20px;color:#8b5cf6;"></i>
+        <h5 class="fw-bold mb-0">Gestión Interna</h5>
+    </div>
+    <a href="{% url 'resumen_general_pdf' %}" target="_blank" class="btn btn-primary">
+        <i data-lucide="file-text" style="width:16px;height:16px;margin-right:6px;"></i>
+        Resumen general (PDF)
+    </a>
 </div>
 
 <div class="row g-3 mb-4">
