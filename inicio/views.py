@@ -487,11 +487,13 @@ def resumen_general_pdf(request):
         except Exception:
             continue
         saldo_v = Decimal("0")
+        detalle_items = []
         for concepto, monto in mapa.items():
             if monto and Decimal(monto) > 0:
                 s = f.saldo_por_concepto(concepto) or Decimal("0")
                 if s > 0:
                     saldo_v += s
+                    detalle_items.append(f"{concepto}: {money(s)}")
         if saldo_v > 0:
             # A quién le corresponde la deuda: el comprador (cliente de la
             # venta); si no está, el titular cargado en la ficha.
@@ -501,9 +503,10 @@ def resumen_general_pdf(request):
                 comprador = str(venta.cliente)
             if not comprador:
                 comprador = f.titular or "—"
-            vendidos_deuda.append((f.vehiculo, comprador, saldo_v))
+            detalle = "  ·  ".join(detalle_items)
+            vendidos_deuda.append((f.vehiculo, comprador, detalle, saldo_v))
             total_vd += saldo_v
-    vendidos_deuda.sort(key=lambda x: x[2], reverse=True)
+    vendidos_deuda.sort(key=lambda x: x[3], reverse=True)
 
     # 3) CUENTAS CORRIENTES CON DEUDA
     cuentas_deuda = []
@@ -529,6 +532,7 @@ def resumen_general_pdf(request):
     st_titulo = ParagraphStyle("t", fontSize=17, textColor=AZUL, alignment=1, fontName="Helvetica-Bold", spaceAfter=2)
     st_sub = ParagraphStyle("s", fontSize=10, alignment=1, spaceAfter=14, textColor=colors.grey)
     st_sec = ParagraphStyle("sec", fontSize=13, textColor=AZUL, fontName="Helvetica-Bold", spaceBefore=16, spaceAfter=8)
+    st_cell = ParagraphStyle("cell", fontSize=8, leading=10)
 
     def tabla(cols, filas, anchos, total_row=None):
         data = [cols] + filas
@@ -575,12 +579,17 @@ def resumen_general_pdf(request):
     elementos.append(Paragraph(f"Autos vendidos con deuda de gastos ({len(vendidos_deuda)})", st_sec))
     if vendidos_deuda:
         filas = [
-            [f"{v.marca} {v.modelo}", v.dominio or "—", comprador, money(s)]
-            for v, comprador, s in vendidos_deuda
+            [
+                Paragraph(f"<b>{v.marca} {v.modelo}</b><br/>{v.dominio or '—'}", st_cell),
+                Paragraph(comprador, st_cell),
+                Paragraph(detalle or "—", st_cell),
+                money(s),
+            ]
+            for v, comprador, detalle, s in vendidos_deuda
         ]
         elementos.append(tabla(
-            ["Vehículo", "Dominio", "Comprador / Titular", "Deuda de gastos"],
-            filas, [5.5 * cm, 3 * cm, 4.5 * cm, 4 * cm],
+            ["Vehículo", "Comprador / Titular", "Detalle de la deuda", "Total"],
+            filas, [4 * cm, 3.5 * cm, 6 * cm, 3.5 * cm],
             total_row=["TOTAL", "", "", money(total_vd)],
         ))
     else:
