@@ -55,6 +55,7 @@
                 <tr>
                     <th>Vehículo</th>
                     {% if tab == 'proveedores' %}<th>Proveedor</th>{% endif %}
+                    {% if tab == 'vendidos' %}<th>Comprador / Titular</th>{% endif %}
                     <th>Concepto</th>
                     <th>Organismo</th>
                     <th class="text-end">Monto</th>
@@ -73,6 +74,7 @@
                         </small>
                     </td>
                     {% if tab == 'proveedores' %}<td>{{ f.proveedor }}</td>{% endif %}
+                    {% if tab == 'vendidos' %}<td>{{ f.comprador }}</td>{% endif %}
                     <td>{{ f.concepto }}</td>
                     <td>{{ f.ente }}</td>
                     <td class="text-end fw-semibold">$ {{ f.monto|floatformat:0 }}</td>
@@ -93,7 +95,7 @@
             {% if tab != 'saldadas' %}
             <tfoot>
                 <tr class="fw-bold">
-                    <td colspan="{% if tab == 'proveedores' %}4{% else %}3{% endif %}" class="text-end">TOTAL</td>
+                    <td colspan="{% if tab == 'proveedores' or tab == 'vendidos' %}4{% else %}3{% endif %}" class="text-end">TOTAL</td>
                     <td class="text-end">$ {{ total|floatformat:0 }}</td>
                     <td colspan="2"></td>
                 </tr>

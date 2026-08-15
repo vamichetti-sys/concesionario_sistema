@@ -251,9 +251,18 @@ def deudas_situacion(request):
                     saldo_veh += saldo
                     conceptos_deuda.append(concepto_label)
             if saldo_veh > 0:
+                # A quién le corresponde la deuda: comprador (cliente de la
+                # venta) o, si no está, el titular de la ficha.
+                comprador = ""
+                venta = getattr(ficha.vehiculo, "venta", None)
+                if venta and venta.cliente:
+                    comprador = str(venta.cliente)
+                if not comprador:
+                    comprador = ficha.titular or "—"
                 filas.append({
                     "vehiculo": ficha.vehiculo,
                     "estado_vehiculo": ficha.vehiculo.get_estado_display(),
+                    "comprador": comprador,
                     "concepto": ", ".join(conceptos_deuda) or "Gastos de ingreso",
                     "ente": "—",
                     "monto": saldo_veh,

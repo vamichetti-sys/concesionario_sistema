@@ -493,9 +493,17 @@ def resumen_general_pdf(request):
                 if s > 0:
                     saldo_v += s
         if saldo_v > 0:
-            vendidos_deuda.append((f.vehiculo, saldo_v))
+            # A quién le corresponde la deuda: el comprador (cliente de la
+            # venta); si no está, el titular cargado en la ficha.
+            comprador = ""
+            venta = getattr(f.vehiculo, "venta", None)
+            if venta and venta.cliente:
+                comprador = str(venta.cliente)
+            if not comprador:
+                comprador = f.titular or "—"
+            vendidos_deuda.append((f.vehiculo, comprador, saldo_v))
             total_vd += saldo_v
-    vendidos_deuda.sort(key=lambda x: x[1], reverse=True)
+    vendidos_deuda.sort(key=lambda x: x[2], reverse=True)
 
     # 3) CUENTAS CORRIENTES CON DEUDA
     cuentas_deuda = []
@@ -567,13 +575,13 @@ def resumen_general_pdf(request):
     elementos.append(Paragraph(f"Autos vendidos con deuda de gastos ({len(vendidos_deuda)})", st_sec))
     if vendidos_deuda:
         filas = [
-            [f"{v.marca} {v.modelo}", v.dominio or "—", money(s)]
-            for v, s in vendidos_deuda
+            [f"{v.marca} {v.modelo}", v.dominio or "—", comprador, money(s)]
+            for v, comprador, s in vendidos_deuda
         ]
         elementos.append(tabla(
-            ["Vehículo", "Dominio", "Deuda de gastos"],
-            filas, [9 * cm, 4 * cm, 4 * cm],
-            total_row=["TOTAL", "", money(total_vd)],
+            ["Vehículo", "Dominio", "Comprador / Titular", "Deuda de gastos"],
+            filas, [5.5 * cm, 3 * cm, 4.5 * cm, 4 * cm],
+            total_row=["TOTAL", "", "", money(total_vd)],
         ))
     else:
         elementos.append(Paragraph("No hay autos vendidos con deuda de gastos.", styles["Normal"]))
