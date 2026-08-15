@@ -598,6 +598,13 @@
                     <i data-lucide="eye" style="width:14px;height:14px;margin-right:4px;"></i>
                     Ver gastos
                 </a>
+                {% if not vg.sin_gastos %}
+                <a href="{% url 'vehiculos:recibo_gastos_pagados_pdf' vg.vehiculo.id %}" target="_blank" class="btn btn-outline-primary btn-sm"
+                   title="Recibo de todos los gastos pagados de este vehículo">
+                    <i data-lucide="receipt-text" style="width:14px;height:14px;margin-right:4px;"></i>
+                    Recibo de gastos
+                </a>
+                {% endif %}
                 <form method="post" action="{% url 'cuentas:desvincular_vehiculo_permuta' cuenta.id vg.vehiculo.id %}" style="display:inline;"
                       onsubmit="return confirm('¿Desvincular el vehículo {{ vg.vehiculo }}?\n\nSe borrarán los gastos imputados a la cuenta.');">
                     {% csrf_token %}
