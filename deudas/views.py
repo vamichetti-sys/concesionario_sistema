@@ -227,7 +227,9 @@ def deudas_situacion(request):
 
     if tab == "vendidos":
         # Vehículos ya VENDIDOS (salieron de stock) que todavía tienen saldo de
-        # gastos de ingreso pendiente.
+        # gastos de ingreso pendiente. Se muestra UN renglón por auto con el
+        # TOTAL de gastos de ingreso adeudados (suma de todos los conceptos),
+        # no un renglón por concepto.
         from vehiculos.models import FichaVehicular
         fichas = (
             FichaVehicular.objects
@@ -239,20 +241,25 @@ def deudas_situacion(request):
                 mapa = ficha.mapa_gastos_ingreso()
             except Exception:
                 continue
+            saldo_veh = Decimal("0")
+            conceptos_deuda = []
             for concepto_label, monto in mapa.items():
                 if not monto or Decimal(monto) <= 0:
                     continue
                 saldo = ficha.saldo_por_concepto(concepto_label) or Decimal("0")
                 if saldo > 0:
-                    filas.append({
-                        "vehiculo": ficha.vehiculo,
-                        "estado_vehiculo": ficha.vehiculo.get_estado_display(),
-                        "concepto": concepto_label,
-                        "ente": "—",
-                        "monto": saldo,
-                        "estado": "Vendido — adeuda gastos",
-                    })
-                    total += saldo
+                    saldo_veh += saldo
+                    conceptos_deuda.append(concepto_label)
+            if saldo_veh > 0:
+                filas.append({
+                    "vehiculo": ficha.vehiculo,
+                    "estado_vehiculo": ficha.vehiculo.get_estado_display(),
+                    "concepto": ", ".join(conceptos_deuda) or "Gastos de ingreso",
+                    "ente": "—",
+                    "monto": saldo_veh,
+                    "estado": "Vendido — adeuda gastos",
+                })
+                total += saldo_veh
         filas.sort(key=lambda f: f["monto"], reverse=True)
     elif tab == "proveedores":
         qs = (
