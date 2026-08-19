@@ -8,6 +8,13 @@
 <!-- 1. BOTONES + 2. RECORDATORIOS -->
 {% include "inicio/_dashboard_top.html" %}
 
+<div class="d-flex justify-content-end mb-4">
+    <a href="{% url 'resumen_general_pdf' %}" target="_blank" class="btn btn-primary">
+        <i data-lucide="file-text" style="width:16px;height:16px;margin-right:6px;"></i>
+        Resumen general (PDF)
+    </a>
+</div>
+
 <!-- ===============================
      3. ATENCIÓN REQUERIDA
 =============================== -->
