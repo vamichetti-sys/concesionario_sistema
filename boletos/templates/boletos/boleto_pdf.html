@@ -157,23 +157,28 @@ html, body {
     <div class="boleto-body">
         <p>En la ciudad de Rojas, Provincia de Buenos Aires, a los {{ constancia.fecha_texto }},
         <strong>HUGO ALBERTO AMICHETTI</strong>, DNI 13.814.200, CUIL {{ vendedor.cuil }},
-        con domicilio en Larrea 255, Rojas, deja constancia de lo siguiente:</p>
+        con domicilio en Larrea 255, Rojas, en adelante &ldquo;el concesionario&rdquo;, deja constancia
+        de lo siguiente:</p>
 
-        <p><strong>1°</strong> - Los vehículos se entregan con <strong>libre deuda de patentes e
-        infracciones</strong> a la fecha de entrega de la documentación, conforme al certificado de
-        libre de multas correspondiente.</p>
+        <p><strong>PRIMERO — Vehículo entregado por el concesionario (dominio {{ constancia.dominio }}).</strong>
+        El vehículo se entrega con <strong>libre deuda de patentes e infracciones</strong>, según el
+        informe remitido por el Registro de la Propiedad Automotor correspondiente a su radicación,
+        vigente al momento de la entrega. En consecuencia, no se realizará el seguimiento de multas o
+        infracciones que pudieran surgir con posterioridad. Se deja constancia, por medio del presente
+        acuerdo, que <strong>no estarán a cargo del concesionario</strong> las infracciones adeudadas
+        por el rodado cuyo hecho generador de la obligación de pago sea anterior a la entrega efectiva
+        del vehículo, pero que sean comunicadas al mencionado Registro con posterioridad a la fecha de
+        expedición del certificado de libre deuda; quedando dichas infracciones a cargo del comprador.</p>
 
-        <p><strong>2°</strong> - Respecto del vehículo que <strong>Hugo Alberto Amichetti entrega al
-        comprador</strong> (dominio {{ constancia.dominio }}): cualquier multa o infracción que
-        aparezca o sea notificada con posterioridad a la entrega —aun cuando su hecho generador fuera
-        anterior a la entrega o a la compra— <strong>no será responsabilidad de Hugo Alberto
-        Amichetti</strong>, quedando a cargo del comprador.</p>
+        <p><strong>SEGUNDO — Vehículo entregado por el comprador como parte de pago (permuta).</strong>
+        El vehículo que el comprador entregue como parte de pago deberá encontrarse libre de infracciones
+        y de deuda de patentes al momento de la transacción. Rige a su respecto la cláusula anterior en
+        idéntico sentido: <strong>toda multa o infracción informada al Registro correspondiente con
+        posterioridad a la entrega del respectivo libre deuda correrá a cargo del concesionario</strong>
+        y no le será reclamada al comprador.</p>
 
-        <p><strong>3°</strong> - Respecto del vehículo que <strong>el comprador entrega a Hugo Alberto
-        Amichetti en permuta</strong>: cualquier multa o infracción que aparezca o sea notificada con
-        posterioridad a la entrega —aun cuando su hecho generador fuera anterior— <strong>no será
-        responsabilidad del comprador</strong> que lo entregó, quedando a cargo de Hugo Alberto
-        Amichetti.</p>
+        <p><strong>TERCERO —</strong> Ambas partes prestan plena conformidad a lo aquí establecido,
+        firmando al pie en prueba de aceptación.</p>
 
         <p><strong>Comprador:</strong> {{ constancia.cliente_nombre }} — DNI {{ constancia.cliente_dni }}.</p>
     </div>
