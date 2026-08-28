@@ -98,6 +98,13 @@ def _contexto_boleto(boleto):
     nombre_completo = (cliente.nombre_completo or "").strip()
     partes = nombre_completo.split(" ", 1)
 
+    # Datos para la 2ª hoja (constancia de libre deuda / infracciones).
+    _MESES = [
+        "enero", "febrero", "marzo", "abril", "mayo", "junio",
+        "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
+    ]
+    _hoy = date.today()
+
     return {
         "boleto": boleto,
         "clausulas": clausulas,
@@ -107,12 +114,19 @@ def _contexto_boleto(boleto):
             "nombre": "HUGO ALBERTO",
             "direccion": "LARREA 255",
             "dni": "13814200",
+            "cuil": "20-13814200-1",
         },
         "comprador": {
             "apellido": partes[0] if partes else "",
             "nombre": partes[1] if len(partes) > 1 else "",
             "direccion": cliente.direccion or "",
             "dni": cliente.dni_cuit or "",
+        },
+        "constancia": {
+            "fecha_texto": f"{_hoy.day} días del mes de {_MESES[_hoy.month - 1]} de {_hoy.year}",
+            "dominio": (boleto.vehiculo.dominio if boleto.vehiculo else "") or "________",
+            "cliente_nombre": nombre_completo or "________",
+            "cliente_dni": cliente.dni_cuit or "________",
         },
     }
 

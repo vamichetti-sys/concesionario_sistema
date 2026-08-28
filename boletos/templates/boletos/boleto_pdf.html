@@ -142,5 +142,60 @@ html, body {
     </div>
 
 </div>
+
+<!-- ================= PÁGINA 2: CONSTANCIA DE LIBRE DEUDA ================= -->
+<div class="boleto-page" style="page-break-before: always;">
+
+    <div class="header-top">
+        <div class="empresa">HUGO AMICHETTI AUTOMOTORES</div>
+        <div class="sub">AUTOMOTORES NUEVOS Y USADOS</div>
+        <div class="direccion">LARREA 255, ROJAS BS AS (2705)</div>
+    </div>
+
+    <div class="titulo-boleto">Constancia de Entrega — Libre de Multas e Infracciones</div>
+
+    <div class="boleto-body">
+        <p>En la ciudad de Rojas, Provincia de Buenos Aires, a los {{ constancia.fecha_texto }},
+        <strong>HUGO ALBERTO AMICHETTI</strong>, DNI 13.814.200, CUIL {{ vendedor.cuil }},
+        con domicilio en Larrea 255, Rojas, deja constancia de lo siguiente:</p>
+
+        <p><strong>1°</strong> - Los vehículos se entregan con <strong>libre deuda de patentes e
+        infracciones</strong> a la fecha de entrega de la documentación, conforme al certificado de
+        libre de multas correspondiente.</p>
+
+        <p><strong>2°</strong> - Respecto del vehículo que <strong>Hugo Alberto Amichetti entrega al
+        comprador</strong> (dominio {{ constancia.dominio }}): cualquier multa o infracción que
+        aparezca o sea notificada con posterioridad a la entrega —aun cuando su hecho generador fuera
+        anterior a la entrega o a la compra— <strong>no será responsabilidad de Hugo Alberto
+        Amichetti</strong>, quedando a cargo del comprador.</p>
+
+        <p><strong>3°</strong> - Respecto del vehículo que <strong>el comprador entrega a Hugo Alberto
+        Amichetti en permuta</strong>: cualquier multa o infracción que aparezca o sea notificada con
+        posterioridad a la entrega —aun cuando su hecho generador fuera anterior— <strong>no será
+        responsabilidad del comprador</strong> que lo entregó, quedando a cargo de Hugo Alberto
+        Amichetti.</p>
+
+        <p><strong>Comprador:</strong> {{ constancia.cliente_nombre }} — DNI {{ constancia.cliente_dni }}.</p>
+    </div>
+
+    <div class="boleto-firmas">
+        <div class="firma-col">
+            <div class="firma-linea"></div>
+            <strong>Firma y aclaración</strong><br>
+            Hugo Alberto Amichetti
+        </div>
+        <div class="firma-col">
+            <div class="firma-linea"></div>
+            <strong>Firma y aclaración</strong><br>
+            Comprador
+        </div>
+    </div>
+
+    <div class="boleto-pie">
+        <div>Tel: 2474660154 - 2475465115</div>
+        <div>www.amichettiautomotores.com</div>
+    </div>
+
+</div>
 </body>
 </html>
