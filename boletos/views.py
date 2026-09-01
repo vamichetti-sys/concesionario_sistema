@@ -461,7 +461,9 @@ def _generar_pdf_lote_pagares_3_por_hoja(pagares):
         c.drawString(x, y, f"{cl.nombre_completo.upper()}, DNI/CUIT {cl.dni_cuit or ''}, con domicilio en {cl.direccion or ''}")
         y -= 0.5*cm
 
-        firma_y = y_bottom + 1.0*cm
+        # Firma justo debajo del texto (sin dejar un hueco grande, que es un
+        # riesgo legal), pero sin subir por encima de una posición mínima.
+        firma_y = max(y - 0.7*cm, y_bottom + 1.0*cm)
         c.setStrokeColor(colors.black); c.setLineWidth(0.5)
         c.line(x, firma_y, x + w*0.35, firma_y)
         c.setFont("Helvetica", 6.5); c.setFillColor(colors.HexColor("#555555"))
@@ -471,7 +473,8 @@ def _generar_pdf_lote_pagares_3_por_hoja(pagares):
 
         vbw = 3*cm; vbh = 1.1*cm
         vbx = x + w/2 - vbw/2
-        vby = y_bottom + 0.3*cm
+        # El recuadro "VENCE EL" acompaña al bloque de firma (no queda al fondo).
+        vby = firma_y - 0.8*cm
         c.setStrokeColor(AZUL); c.setLineWidth(0.8)
         c.rect(vbx, vby, vbw, vbh)
         c.setFont("Helvetica-Bold", 6.5); c.setFillColor(AZUL)
