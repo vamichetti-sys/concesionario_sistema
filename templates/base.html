@@ -302,25 +302,46 @@
         /* =========================
            FORMULARIOS
         ========================= */
+        /* Accesibilidad: campos de escritura más notables (visión limitada):
+           letra más grande, borde marcado con contraste y foco bien visible. */
         .form-control,
         .form-select {
-            height: 42px;
-            padding: 8px 14px;
-            font-size: 14px;
+            height: 46px;
+            padding: 9px 14px;
+            font-size: 16px;
+            font-weight: 500;
+            color: #111827;
             border-radius: 10px;
-            border: 1.5px solid #e5e7eb;
+            border: 2px solid #6b7280;
             background: #ffffff;
-            transition: all 0.2s ease;
+            transition: all 0.15s ease;
+        }
+
+        .form-control::placeholder,
+        textarea.form-control::placeholder {
+            color: #64748b;
+            opacity: 1;
         }
 
         .form-control:focus,
         .form-select:focus {
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            border-color: #2563eb;
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.22);
+            color: #111827;
+        }
+
+        /* Campos compactos (en tablas, filtros, etc.) también legibles. */
+        .form-control-sm,
+        .form-select-sm {
+            font-size: 14px;
+            border-width: 2px;
+            height: auto;
+            min-height: 38px;
         }
 
         textarea.form-control {
             min-height: 80px;
+            height: auto;
             resize: vertical;
         }
 
