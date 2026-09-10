@@ -339,21 +339,35 @@
             min-height: 38px;
         }
 
-        /* Ícono/prefijo de los buscadores y campos ($, %, lupa): que combine
-           con el nuevo borde marcado, para que no queden desparejos. */
+        /* Buscadores y campos con ícono/prefijo ($, %, lupa): que se vean
+           igual que los campos de escritura (blanco, borde 2px marcado). */
         .input-group-text {
-            border: 2px solid #6b7280;
-            background: #f3f4f6;
-            color: #374151;
+            border: 2px solid #6b7280 !important;
+            background: #ffffff !important;
+            color: #6b7280;
             font-size: 16px;
             font-weight: 500;
         }
         .input-group .form-control,
         .input-group .form-select {
+            height: 46px;
+            font-size: 16px;
             border-color: #6b7280;
         }
+        /* alto parejo de los campos compactos con ícono */
+        .input-group-sm .form-control,
+        .input-group-sm .form-select,
+        .input-group-sm .input-group-text {
+            height: 40px;
+            font-size: 14px;
+        }
+        /* foco: se ilumina todo el buscador en conjunto */
         .input-group:focus-within .input-group-text {
+            border-color: #2563eb !important;
+        }
+        .input-group:focus-within .form-control {
             border-color: #2563eb;
+            box-shadow: none;
         }
 
         textarea.form-control {
