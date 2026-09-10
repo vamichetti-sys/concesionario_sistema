@@ -44,3 +44,6 @@ backup_*
 # =========================
 .DS_Store
 backups/
+
+# El comando de backup es codigo, no un archivo de datos
+!inicio/management/commands/backup_datos.py
