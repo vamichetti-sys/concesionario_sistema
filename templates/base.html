@@ -403,22 +403,54 @@
             z-index: 1200 !important;
         }
 
+        /* Buscadores select2 (vehículo / cliente): iguales a los campos. */
         .select2-container--default .select2-selection--single {
-            height: 42px;
+            height: 46px;
             border-radius: 10px;
-            border: 1.5px solid #e5e7eb;
+            border: 2px solid #6b7280;
             background: #ffffff;
             padding: 8px 14px;
         }
 
         .select2-container--default .select2-selection__rendered {
-            line-height: 24px;
-            font-size: 14px;
-            color: #374151;
+            line-height: 28px;
+            font-size: 16px;
+            font-weight: 500;
+            color: #111827;
+        }
+
+        .select2-container--default .select2-selection__placeholder {
+            color: #64748b;
         }
 
         .select2-container--default .select2-selection__arrow {
-            height: 40px;
+            height: 44px;
+        }
+
+        /* Foco/abierto: se resalta en azul como los demás campos. */
+        .select2-container--default.select2-container--focus .select2-selection--single,
+        .select2-container--default.select2-container--open .select2-selection--single {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.22);
+        }
+
+        /* Cajita de búsqueda dentro del desplegable + lista de opciones. */
+        .select2-dropdown {
+            border: 2px solid #6b7280;
+            border-radius: 10px;
+        }
+        .select2-container--default .select2-search--dropdown .select2-search__field {
+            border: 2px solid #6b7280;
+            border-radius: 8px;
+            font-size: 15px;
+            padding: 8px 10px;
+        }
+        .select2-container--default .select2-results__option {
+            font-size: 15px;
+            padding: 9px 12px;
+        }
+        .select2-container--default .select2-results__option--highlighted[aria-selected] {
+            background-color: #2563eb;
         }
 
         /* =========================
