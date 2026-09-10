@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, login_not_required
+from django.views.decorators.cache import never_cache
 from django.db.models import Sum, Count, Q
 from django.utils import timezone
 from datetime import timedelta
@@ -16,8 +17,27 @@ from vehiculos.services import actualizar_gastos_por_vencimientos
 
 
 # ==========================================================
+# 🔐 CSRF FAILURE — manejador amigable
+# ==========================================================
+@login_not_required
+def csrf_failure(request, reason=""):
+    """En vez de la pantalla de 'Prohibido (403)' de Django, avisamos y
+    devolvemos al login (o a la página anterior) con un token fresco.
+    El caso típico es un token vencido (página vieja / tras un deploy)."""
+    messages.error(
+        request,
+        "Tu sesión de seguridad expiró. Recargá la página e ingresá de nuevo."
+    )
+    if not request.user.is_authenticated:
+        return redirect("ingreso")
+    referer = request.META.get("HTTP_REFERER")
+    return redirect(referer if referer else "inicio")
+
+
+# ==========================================================
 # 🔐 INGRESO (LOGIN)
 # ==========================================================
+@never_cache  # el login siempre fresco → el token CSRF nunca queda viejo
 @login_not_required  # única vista pública del sistema
 def ingreso(request):
     if request.method == 'POST':

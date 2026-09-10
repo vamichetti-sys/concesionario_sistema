@@ -282,6 +282,10 @@ SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SAMESITE = "Lax"
 SESSION_COOKIE_SAMESITE = "Lax"
 
+# Si el token CSRF falla (típico: token vencido en el login), en vez de la
+# pantalla "Prohibido (403)" mostramos un aviso y devolvemos al login.
+CSRF_FAILURE_VIEW = "inicio.views.csrf_failure"
+
 # ==========================================================
 # SEGURIDAD HTTPS (PRODUCCIÓN)
 # ==========================================================
