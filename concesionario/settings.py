@@ -23,7 +23,10 @@ SECRET_KEY = os.getenv(
     "django-insecure-concesionario-local-dev"  # Solo para desarrollo local
 )
 
-DEBUG = os.getenv("DEBUG", "False") == "True"
+# DEBUG se puede activar en local (DEBUG=True), pero en Render SIEMPRE queda
+# apagado: Render setea la variable RENDER automáticamente y la usamos como
+# candado para que nunca se cuele DEBUG=True en producción (riesgo de seguridad).
+DEBUG = (os.getenv("DEBUG", "False") == "True") and (os.getenv("RENDER") is None)
 
 # ==========================================================
 # ALLOWED HOSTS (RENDER + LOCAL)
@@ -45,8 +48,13 @@ ALLOWED_HOSTS.append(".onrender.com")
 CSRF_TRUSTED_ORIGINS = [
     "http://127.0.0.1:8000",
     "http://localhost:8000",
-    "https://concesionario-k516.onrender.com",
+    # Comodín para cualquier subdominio de Render (evita errores por el nombre
+    # exacto; antes había un typo: 'k516' en vez de 'k5i6').
+    "https://*.onrender.com",
 ]
+# Si Render expone un hostname propio, también lo confiamos explícitamente.
+if RENDER_HOST:
+    CSRF_TRUSTED_ORIGINS.append(f"https://{RENDER_HOST}")
 
 
 # ==========================================================
