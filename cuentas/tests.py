@@ -6,7 +6,9 @@ excedente (que no se pierda) y la bitácora de auditoría.
 from decimal import Decimal
 from datetime import date
 
-from django.test import TestCase
+from django.test import TestCase, override_settings
+from django.urls import reverse
+from django.contrib.auth.models import User
 
 from clientes.models import Cliente
 from cuentas.models import (
@@ -16,6 +18,7 @@ from cuentas.models import (
     Pago,
     PagoCuota,
     MovimientoCuenta,
+    Refinanciacion,
 )
 
 
@@ -157,3 +160,84 @@ class BitacoraTests(BaseCuentaTest):
         except Exception as exc:  # pragma: no cover
             self.fail(f"log() no debería romper: {exc}")
         self.assertEqual(self.cuenta.bitacora.count(), 1)
+
+
+@override_settings(SECURE_SSL_REDIRECT=False)
+class RefinanciacionTests(BaseCuentaTest):
+    """La refinanciación es de lo más sensible: no debe duplicar deuda y debe
+    poder revertirse sin perder datos."""
+
+    def setUp(self):
+        super().setUp()
+        # Superuser: el middleware de permisos deja pasar a los admin/superuser.
+        self.user = User.objects.create_user(
+            "tester_refin", password="x", is_superuser=True, is_staff=True
+        )
+        self.client.force_login(self.user)
+
+    def test_refinanciar_solo_el_plan(self):
+        plan, _, _ = self._plan_con_dos_cuotas()  # 120.000
+        r = self.client.post(
+            reverse("cuentas:refinanciar_plan", args=[plan.id]),
+            {"base_modo": "plan", "interes": "10",
+             "cantidad_cuotas": "2", "fecha_inicio": "2026-03-01"},
+        )
+        self.assertEqual(r.status_code, 302)
+        self.cuenta.refresh_from_db()
+        # 120.000 + 10% = 132.000
+        self.assertEqual(self.cuenta.deuda_total_real, Decimal("132000"))
+
+    def test_refinanciar_toda_la_deuda_no_duplica(self):
+        plan, _, _ = self._plan_con_dos_cuotas()  # 120.000
+        MovimientoCuenta.objects.create(
+            cuenta=self.cuenta, tipo="debe", monto=Decimal("20000"),
+            origen="gestoria", descripcion="gestoria",
+        )
+        MovimientoCuenta.objects.create(
+            cuenta=self.cuenta, tipo="debe", monto=Decimal("10000"),
+            origen="manual", descripcion="ajuste",
+        )
+        self.cuenta.recalcular_saldo()
+        self.assertEqual(self.cuenta.deuda_total_real, Decimal("150000"))
+
+        r = self.client.post(
+            reverse("cuentas:refinanciar_plan", args=[plan.id]),
+            {"base_modo": "total", "interes": "10",
+             "cantidad_cuotas": "3", "fecha_inicio": "2026-03-01"},
+        )
+        self.assertEqual(r.status_code, 302)
+        self.cuenta.refresh_from_db()
+        # 150.000 + 10% = 165.000, SIN duplicar gestoría/ajustes
+        self.assertEqual(self.cuenta.deuda_total_real, Decimal("165000"))
+
+    def test_revertir_restaura_el_plan(self):
+        plan, _, _ = self._plan_con_dos_cuotas()  # 120.000
+        self.client.post(
+            reverse("cuentas:refinanciar_plan", args=[plan.id]),
+            {"base_modo": "plan", "interes": "20",
+             "cantidad_cuotas": "1", "fecha_inicio": "2026-03-01"},
+        )
+        refin = Refinanciacion.objects.get(plan=plan)
+        r = self.client.post(reverse("cuentas:revertir_refinanciacion", args=[refin.id]))
+        self.assertEqual(r.status_code, 302)
+        refin.refresh_from_db()
+        self.cuenta.refresh_from_db()
+        self.assertTrue(refin.revertida)
+        self.assertEqual(self.cuenta.deuda_total_real, Decimal("120000"))
+        self.assertEqual(plan.cuotas.filter(estado="pendiente").count(), 2)
+
+    def test_revertir_bloqueado_si_ya_se_cobro(self):
+        plan, _, _ = self._plan_con_dos_cuotas()
+        self.client.post(
+            reverse("cuentas:refinanciar_plan", args=[plan.id]),
+            {"base_modo": "plan", "interes": "0",
+             "cantidad_cuotas": "2", "fecha_inicio": "2026-03-01"},
+        )
+        refin = Refinanciacion.objects.get(plan=plan)
+        nueva = CuotaPlan.objects.get(id=refin.cuotas_nuevas[0])
+        pago = self._nuevo_pago(Decimal("10000"))
+        PagoCuota.objects.create(pago=pago, cuota=nueva, monto_aplicado=Decimal("10000"))
+        self.client.post(reverse("cuentas:revertir_refinanciacion", args=[refin.id]))
+        refin.refresh_from_db()
+        # No se revierte si ya se cobró una cuota nueva (protege los pagos).
+        self.assertFalse(refin.revertida)
