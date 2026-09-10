@@ -339,6 +339,23 @@
             min-height: 38px;
         }
 
+        /* Ícono/prefijo de los buscadores y campos ($, %, lupa): que combine
+           con el nuevo borde marcado, para que no queden desparejos. */
+        .input-group-text {
+            border: 2px solid #6b7280;
+            background: #f3f4f6;
+            color: #374151;
+            font-size: 16px;
+            font-weight: 500;
+        }
+        .input-group .form-control,
+        .input-group .form-select {
+            border-color: #6b7280;
+        }
+        .input-group:focus-within .input-group-text {
+            border-color: #2563eb;
+        }
+
         textarea.form-control {
             min-height: 80px;
             height: auto;
