@@ -381,10 +381,19 @@
         }
 
         label {
-            font-weight: 500;
-            color: #374151;
-            margin-bottom: 6px;
-            font-size: 13px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 5px;
+            font-size: 14.5px;
+        }
+
+        /* Campos auto-completados (solo lectura): fondo suave para que se note
+           que no se escriben, pero el texto bien legible. */
+        .form-control[readonly],
+        .form-select[readonly] {
+            background: #f3f4f6;
+            color: #111827;
+            font-weight: 600;
         }
 
         /* =========================
