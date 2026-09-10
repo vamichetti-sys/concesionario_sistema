@@ -1,7 +1,10 @@
+import logging
 from datetime import date
 from decimal import Decimal
 
 from vehiculos.models import FichaVehicular
+
+logger = logging.getLogger("concesionario.cuentas")
 
 
 def recalcular_cuentas_vinculadas(vehiculo):
@@ -28,7 +31,10 @@ def recalcular_cuentas_vinculadas(vehiculo):
             if cc is not None:
                 cuentas[cc.pk] = cc
     except Exception:
-        pass
+        logger.warning(
+            "No se pudo obtener la cuenta por venta del vehículo %s",
+            getattr(vehiculo, "pk", "?"), exc_info=True,
+        )
 
     # Cuentas donde el vehículo figura como permuta
     try:
@@ -38,13 +44,21 @@ def recalcular_cuentas_vinculadas(vehiculo):
         ).distinct():
             cuentas[cc.pk] = cc
     except Exception:
-        pass
+        logger.warning(
+            "No se pudieron obtener las cuentas de permuta del vehículo %s",
+            getattr(vehiculo, "pk", "?"), exc_info=True,
+        )
 
     for cc in cuentas.values():
         try:
             cc.recalcular_saldo()
         except Exception:
-            pass
+            # No interrumpimos el flujo, pero dejamos rastro: si un saldo no se
+            # recalcula, queda mal y hay que poder verlo en los logs.
+            logger.error(
+                "Falló recalcular_saldo de la cuenta corriente %s (cliente %s)",
+                cc.pk, getattr(cc, "cliente_id", "?"), exc_info=True,
+            )
 
 
 def actualizar_gastos_por_vencimientos():
