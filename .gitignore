@@ -43,3 +43,4 @@ backup_*
 # SISTEMA OPERATIVO
 # =========================
 .DS_Store
+backups/
