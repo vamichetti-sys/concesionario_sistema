@@ -206,7 +206,6 @@ def marcar_portada(request, foto_id):
 # ==========================================================
 # TOGGLE PUBLICACIÓN EN PLATAFORMA (AJAX)
 # ==========================================================
-@csrf_exempt
 @login_required
 def toggle_publicacion(request, vehiculo_id, plataforma):
     vehiculo = get_object_or_404(Vehiculo, id=vehiculo_id)

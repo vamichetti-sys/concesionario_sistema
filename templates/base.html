@@ -688,6 +688,42 @@
 </head>
 <body>
 
+{# Token CSRF disponible en toda página (fija la cookie csrftoken). #}
+<span style="display:none">{% csrf_token %}</span>
+<script>
+// Que TODOS los fetch() del sistema manden el token CSRF automáticamente.
+// Así los endpoints internos no necesitan @csrf_exempt (seguridad).
+(function () {
+    function getCookie(name) {
+        var m = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+        return m ? m.pop() : '';
+    }
+    var _fetch = window.fetch;
+    if (!_fetch) return;
+    window.fetch = function (url, opts) {
+        opts = opts || {};
+        try {
+            var method = (opts.method || 'GET').toUpperCase();
+            var u = (typeof url === 'string') ? url : (url && url.url) || '';
+            var sameOrigin = u.indexOf('http') !== 0 || u.indexOf(window.location.origin) === 0;
+            if (sameOrigin && ['POST', 'PUT', 'PATCH', 'DELETE'].indexOf(method) !== -1) {
+                var token = getCookie('csrftoken');
+                var h = opts.headers;
+                if (h instanceof Headers) {
+                    if (!h.has('X-CSRFToken')) h.set('X-CSRFToken', token);
+                } else {
+                    h = h || {};
+                    if (!h['X-CSRFToken'] && !h['x-csrftoken']) h['X-CSRFToken'] = token;
+                    opts.headers = h;
+                }
+                if (opts.credentials === undefined) opts.credentials = 'same-origin';
+            }
+        } catch (e) { /* no romper el fetch por esto */ }
+        return _fetch(url, opts);
+    };
+})();
+</script>
+
 <!-- ===============================
      SIDEBAR
 =============================== -->

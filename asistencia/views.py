@@ -134,7 +134,6 @@ def calendario_empleado(request, empleado_id):
 # ==========================================================
 # MARCAR / MODIFICAR ASISTENCIA (AJAX)
 # ==========================================================
-@csrf_exempt
 @login_required
 def marcar_asistencia(request):
     if request.method == "POST":

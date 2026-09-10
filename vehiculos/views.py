@@ -1395,7 +1395,6 @@ SITUACIONES_PROVEEDOR = {"prov_directo", "prov_reintegro"}
 SITUACIONES_CLIENTE = {"cli_directo", "cli_concesion", "cli_adelanto", "pendiente"}
 
 
-@csrf_exempt
 @transaction.atomic
 def registrar_pago_gasto(request):
     if request.method != "POST":
@@ -2936,7 +2935,6 @@ def guardar_ficha_parcial(request, vehiculo_id):
 # ==========================================================
 # MANTENIMIENTOS
 # ==========================================================
-@csrf_exempt
 def agregar_mantenimiento(request, vehiculo_id):
     vehiculo = get_object_or_404(Vehiculo, id=vehiculo_id)
 
@@ -2963,8 +2961,10 @@ def agregar_mantenimiento(request, vehiculo_id):
     return JsonResponse({"ok": False}, status=400)
 
 
-@csrf_exempt
 def eliminar_mantenimiento(request, pk):
+    # Solo por POST: borrar con GET es peligroso (prefetch/enlaces).
+    if request.method != "POST":
+        return JsonResponse({"ok": False, "error": "método no permitido"}, status=405)
     mant = get_object_or_404(Mantenimiento, pk=pk)
     mant.delete()
     return JsonResponse({"ok": True})
