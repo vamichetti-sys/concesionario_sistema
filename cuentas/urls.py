@@ -148,6 +148,11 @@ urlpatterns = [
         name="recibo_pago_pdf"
     ),
     path(
+        "<int:cuenta_id>/resumen-deuda/",
+        views.resumen_deuda_pdf,
+        name="resumen_deuda_pdf"
+    ),
+    path(
         "pago/<int:pago_id>/editar/",
         views.editar_pago,
         name="editar_pago"

@@ -1273,6 +1273,160 @@ def recibo_pago_pdf(request, pago_id):
 
 
 # ==========================================================
+# RESUMEN DE DEUDA DE UNA CUENTA CORRIENTE (PDF)
+# ==========================================================
+@login_required
+def resumen_deuda_pdf(request, cuenta_id):
+    """PDF con el detalle de lo que adeuda ESTA cuenta corriente:
+    cuotas del plan, gastos de ingreso, gestoría y ajustes; con el total."""
+    from django.db.models import Sum
+    from django.http import HttpResponse
+
+    cuenta = get_object_or_404(CuentaCorriente, id=cuenta_id)
+    hoy = date.today()
+
+    def money(v):
+        return "$ " + f"{Decimal(v or 0):,.0f}".replace(",", ".")
+
+    # ── 1) Cuotas pendientes de los planes ────────────────
+    planes_data = []
+    total_planes = Decimal("0")
+    for plan in cuenta.planes.order_by("id"):
+        filas = []
+        for c in plan.cuotas.order_by("numero"):
+            saldo = c.saldo_pendiente
+            if saldo > 0:
+                filas.append([
+                    f"Cuota {c.numero}",
+                    c.vencimiento.strftime("%d/%m/%Y") if c.vencimiento else "—",
+                    money(c.monto),
+                    money(saldo),
+                ])
+                total_planes += saldo
+        if filas:
+            planes_data.append((plan, filas))
+
+    # ── 2) Gestoría y ajustes pendientes (movimientos) ────
+    def _pend(origenes, tipos_debe, tipos_haber):
+        debe = cuenta.movimientos.filter(
+            origen__in=origenes, tipo__in=tipos_debe
+        ).aggregate(t=Sum("monto"))["t"] or Decimal("0")
+        haber = cuenta.movimientos.filter(
+            origen__in=origenes, tipo__in=tipos_haber
+        ).aggregate(t=Sum("monto"))["t"] or Decimal("0")
+        return max(debe - haber, Decimal("0"))
+
+    gestoria_pend = _pend(["gestoria"], ["debe"], ["haber"])
+    ajustes_pend = _pend(["manual", "ajuste"], ["debe", "deuda"], ["haber", "pago"])
+
+    # ── 3) Gastos de ingreso que adeuda el cliente ────────
+    gastos_data = []
+    total_gastos = Decimal("0")
+    for veh in cuenta._vehiculos_para_gastos():
+        ficha = getattr(veh, "ficha", None)
+        if not ficha:
+            continue
+        filas = []
+        try:
+            mapa = ficha.mapa_gastos_ingreso()
+        except Exception:
+            continue
+        for concepto, monto in mapa.items():
+            if monto and Decimal(monto) > 0:
+                saldo = Decimal(monto) - ficha.total_pagado_por_concepto(
+                    concepto, situaciones=ficha.SIT_CLIENTE_PAGADO
+                )
+                if saldo > 0:
+                    filas.append([concepto, money(saldo)])
+                    total_gastos += saldo
+        if filas:
+            gastos_data.append((veh, filas))
+
+    total_deuda = cuenta.deuda_total_real
+
+    # ── PDF ───────────────────────────────────────────────
+    response = HttpResponse(content_type="application/pdf")
+    response["Content-Disposition"] = f'inline; filename="resumen_deuda_cuenta_{cuenta.id}.pdf"'
+    doc = SimpleDocTemplate(
+        response, pagesize=A4,
+        topMargin=1.5 * cm, bottomMargin=1.5 * cm, leftMargin=2 * cm, rightMargin=2 * cm,
+    )
+    styles = getSampleStyleSheet()
+    st_tit = ParagraphStyle("t", fontSize=16, textColor=COLOR_AZUL, alignment=1, fontName="Helvetica-Bold", spaceAfter=2)
+    st_sub = ParagraphStyle("s", fontSize=10, alignment=1, spaceAfter=12, textColor=COLOR_GRIS_TEXTO)
+    st_sec = ParagraphStyle("sec", fontSize=12, textColor=COLOR_AZUL, fontName="Helvetica-Bold", spaceBefore=14, spaceAfter=6)
+    st_n = styles["Normal"]
+
+    def tabla(cols, filas, anchos, total_row=None):
+        data = [cols] + filas + ([total_row] if total_row else [])
+        t = Table(data, colWidths=anchos, repeatRows=1)
+        est = [
+            ("BACKGROUND", (0, 0), (-1, 0), COLOR_AZUL),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("FONTSIZE", (0, 0), (-1, -1), 9),
+            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, COLOR_GRIS]),
+            ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#e5e7eb")),
+            ("ALIGN", (-1, 0), (-1, -1), "RIGHT"),
+            ("TOPPADDING", (0, 0), (-1, -1), 5), ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+        ]
+        if total_row:
+            est += [("BACKGROUND", (0, -1), (-1, -1), colors.HexColor("#e2e8f0")),
+                    ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold")]
+        t.setStyle(TableStyle(est))
+        return t
+
+    cliente = cuenta.cliente
+    el = [
+        Paragraph("AMICHETTI AUTOMOTORES", st_tit),
+        Paragraph(f"Resumen de deuda · {hoy.strftime('%d/%m/%Y')}", st_sub),
+        Paragraph(f"<b>Cliente:</b> {cliente.nombre_completo if cliente else '—'}", st_n),
+        Paragraph(f"<b>Estado de la cuenta:</b> {cuenta.get_estado_display()}", st_n),
+    ]
+
+    # Plan de pago
+    el.append(Paragraph("Plan de pago — cuotas pendientes", st_sec))
+    if planes_data:
+        for plan, filas in planes_data:
+            desc = plan.descripcion or f"Plan #{plan.pk}"
+            el.append(Paragraph(f"<b>{desc}</b>", st_n))
+            el.append(tabla(["Cuota", "Vencimiento", "Monto", "Saldo"], filas,
+                            [4 * cm, 4 * cm, 4.5 * cm, 4.5 * cm]))
+            el.append(Spacer(1, 6))
+        el.append(Paragraph(f"Subtotal cuotas pendientes: <b>{money(total_planes)}</b>", st_n))
+    else:
+        el.append(Paragraph("Sin cuotas pendientes.", st_n))
+
+    # Gastos de ingreso
+    if gastos_data:
+        el.append(Paragraph("Gastos de ingreso adeudados", st_sec))
+        for veh, filas in gastos_data:
+            dom = f" ({veh.dominio})" if veh.dominio else ""
+            el.append(Paragraph(f"<b>{veh.marca} {veh.modelo}{dom}</b>", st_n))
+            el.append(tabla(["Concepto", "Saldo"], filas, [12 * cm, 5 * cm]))
+            el.append(Spacer(1, 6))
+        el.append(Paragraph(f"Subtotal gastos de ingreso: <b>{money(total_gastos)}</b>", st_n))
+
+    # Gestoría / ajustes
+    otros = []
+    if gestoria_pend > 0:
+        otros.append(["Gestoría pendiente", money(gestoria_pend)])
+    if ajustes_pend > 0:
+        otros.append(["Ajustes / gastos extra", money(ajustes_pend)])
+    if otros:
+        el.append(Paragraph("Otros conceptos", st_sec))
+        el.append(tabla(["Concepto", "Saldo"], otros, [12 * cm, 5 * cm]))
+
+    # TOTAL
+    el.append(Spacer(1, 14))
+    el.append(tabla(["", ""], [], [12 * cm, 5 * cm],
+                    total_row=["DEUDA TOTAL DE LA CUENTA", money(total_deuda)]))
+
+    doc.build(el)
+    return response
+
+
+# ==========================================================
 # EDITAR CUOTA
 # ==========================================================
 @login_required

@@ -12,8 +12,16 @@
         <i data-lucide="arrow-left" style="width:16px;height:16px;margin-right:6px;"></i>
         Volver a cuentas corrientes
     </a>
-    <h3 class="fw-bold mb-1">Cuenta Corriente</h3>
-    <p class="text-muted mb-0">Cliente: <strong>{{ cuenta.cliente }}</strong> · Venta: <strong>#{{ cuenta.venta.id }}</strong></p>
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+        <div>
+            <h3 class="fw-bold mb-1">Cuenta Corriente</h3>
+            <p class="text-muted mb-0">Cliente: <strong>{{ cuenta.cliente }}</strong> · Venta: <strong>#{{ cuenta.venta.id }}</strong></p>
+        </div>
+        <a href="{% url 'cuentas:resumen_deuda_pdf' cuenta.id %}" target="_blank" class="btn btn-outline-primary">
+            <i data-lucide="file-text" style="width:16px;height:16px;margin-right:6px;"></i>
+            Resumen de deuda (PDF)
+        </a>
+    </div>
 </div>
 
 <!-- ===============================
