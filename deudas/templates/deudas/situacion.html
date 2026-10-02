@@ -48,6 +48,14 @@
 </ul>
 
 <div class="card p-4">
+    {% if tab == 'vendidos' %}
+    <div class="d-flex justify-content-end mb-3">
+        <a href="{% url 'deudas:pdf_vendidos' %}" class="btn btn-outline-danger btn-sm" target="_blank">
+            <i data-lucide="file-text" style="width:15px;height:15px;margin-right:6px;"></i>
+            Imprimir PDF
+        </a>
+    </div>
+    {% endif %}
     {% if filas %}
     <div class="table-responsive">
         <table class="table align-middle mb-0">

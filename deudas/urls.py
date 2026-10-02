@@ -19,4 +19,9 @@ urlpatterns = [
         views.deudas_situacion,
         name="situacion"
     ),
+    path(
+        "vendidos/pdf/",
+        views.pdf_vendidos_con_deuda,
+        name="pdf_vendidos"
+    ),
 ]

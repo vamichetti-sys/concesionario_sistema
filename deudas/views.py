@@ -207,6 +207,82 @@ def pdf_listado_deudas(request):
 #          proveedores me deben / saldadas.
 # La gestión del pago se hace SOLO en la ficha del vehículo.
 # ==========================================================
+def _vendidos_con_deuda_filas():
+    """(filas, total) de los vehículos VENDIDOS que todavía adeudan gastos de
+    ingreso. Un renglón por auto con el total, el comprador y los conceptos.
+    Lo usan la solapa 'Vendidos con deuda' y su PDF (para que coincidan)."""
+    from decimal import Decimal
+    filas = []
+    total = Decimal("0")
+    fichas = (
+        FichaVehicular.objects
+        .filter(vehiculo__estado="vendido")
+        .select_related("vehiculo")
+    )
+    for ficha in fichas:
+        try:
+            mapa = ficha.mapa_gastos_ingreso()
+        except Exception:
+            continue
+        saldo_veh = Decimal("0")
+        conceptos = []  # [(label, saldo)]
+        for label, monto in mapa.items():
+            if not monto or Decimal(monto) <= 0:
+                continue
+            saldo = ficha.saldo_por_concepto(label) or Decimal("0")
+            if saldo > 0:
+                saldo_veh += saldo
+                conceptos.append((label, saldo))
+        if saldo_veh > 0:
+            comprador = ""
+            venta = getattr(ficha.vehiculo, "venta", None)
+            if venta and venta.cliente:
+                comprador = str(venta.cliente)
+            if not comprador:
+                comprador = ficha.titular or "—"
+            filas.append({
+                "vehiculo": ficha.vehiculo,
+                "estado_vehiculo": ficha.vehiculo.get_estado_display(),
+                "comprador": comprador,
+                "conceptos": conceptos,
+                "concepto": ", ".join(l for l, _ in conceptos) or "Gastos de ingreso",
+                "ente": "—",
+                "monto": saldo_veh,
+                "estado": "Vendido — adeuda gastos",
+            })
+            total += saldo_veh
+    filas.sort(key=lambda f: f["monto"], reverse=True)
+    return filas, total
+
+
+@login_required
+def pdf_vendidos_con_deuda(request):
+    """PDF del listado 'Vendidos con deuda'."""
+    from reportes.pdf_utils import render_pdf_listado
+
+    def money(v):
+        return "$ " + f"{v:,.0f}".replace(",", ".")
+
+    filas, total = _vendidos_con_deuda_filas()
+    rows = []
+    for f in filas:
+        v = f["vehiculo"]
+        dom = f" ({v.dominio})" if v.dominio else ""
+        detalle = "  ·  ".join(f"{l}: {money(s)}" for l, s in f["conceptos"])
+        rows.append([f"{v.marca} {v.modelo}{dom}", f["comprador"], detalle, money(f["monto"])])
+    if not rows:
+        rows = [["Sin vehículos vendidos con deuda", "—", "—", "$ 0"]]
+
+    return render_pdf_listado(
+        filename="vendidos_con_deuda.pdf",
+        titulo="Vendidos con deuda",
+        subtitulo="AMICHETTI AUTOMOTORES",
+        columnas=["Vehículo", "Comprador / Titular", "Detalle de la deuda", "Total"],
+        filas=rows,
+        totales=["TOTAL", "", "", money(total)],
+    )
+
+
 @login_required
 def deudas_situacion(request):
     from decimal import Decimal
@@ -227,49 +303,9 @@ def deudas_situacion(request):
 
     if tab == "vendidos":
         # Vehículos ya VENDIDOS (salieron de stock) que todavía tienen saldo de
-        # gastos de ingreso pendiente. Se muestra UN renglón por auto con el
-        # TOTAL de gastos de ingreso adeudados (suma de todos los conceptos),
-        # no un renglón por concepto.
-        from vehiculos.models import FichaVehicular
-        fichas = (
-            FichaVehicular.objects
-            .filter(vehiculo__estado="vendido")
-            .select_related("vehiculo")
-        )
-        for ficha in fichas:
-            try:
-                mapa = ficha.mapa_gastos_ingreso()
-            except Exception:
-                continue
-            saldo_veh = Decimal("0")
-            conceptos_deuda = []
-            for concepto_label, monto in mapa.items():
-                if not monto or Decimal(monto) <= 0:
-                    continue
-                saldo = ficha.saldo_por_concepto(concepto_label) or Decimal("0")
-                if saldo > 0:
-                    saldo_veh += saldo
-                    conceptos_deuda.append(concepto_label)
-            if saldo_veh > 0:
-                # A quién le corresponde la deuda: comprador (cliente de la
-                # venta) o, si no está, el titular de la ficha.
-                comprador = ""
-                venta = getattr(ficha.vehiculo, "venta", None)
-                if venta and venta.cliente:
-                    comprador = str(venta.cliente)
-                if not comprador:
-                    comprador = ficha.titular or "—"
-                filas.append({
-                    "vehiculo": ficha.vehiculo,
-                    "estado_vehiculo": ficha.vehiculo.get_estado_display(),
-                    "comprador": comprador,
-                    "concepto": ", ".join(conceptos_deuda) or "Gastos de ingreso",
-                    "ente": "—",
-                    "monto": saldo_veh,
-                    "estado": "Vendido — adeuda gastos",
-                })
-                total += saldo_veh
-        filas.sort(key=lambda f: f["monto"], reverse=True)
+        # gastos de ingreso pendiente. Un renglón por auto con el TOTAL adeudado.
+        # Misma lógica que usa el PDF (ver _vendidos_con_deuda_filas).
+        filas, total = _vendidos_con_deuda_filas()
     elif tab == "proveedores":
         qs = (
             ReintegroProveedor.objects
