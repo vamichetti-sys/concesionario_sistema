@@ -26,6 +26,7 @@ def render_pdf_listado(
     filas: list,
     totales: list = None,
     pie: str = "",
+    col_weights: list = None,
 ) -> HttpResponse:
     """
     Arma un PDF tipo 'listado mensual' con un encabezado, una tabla
@@ -95,7 +96,7 @@ def render_pdf_listado(
     if ncols == 1:
         col_widths = [total_w]
     else:
-        weights = [2.0] + [1.0] * (ncols - 1)
+        weights = col_weights or [2.0] + [1.0] * (ncols - 1)
         sw = sum(weights)
         col_widths = [total_w * w / sw for w in weights]
 

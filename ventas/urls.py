@@ -83,6 +83,16 @@ urlpatterns = [
         name="detalle_comision_vendedor"
     ),
     path(
+        "comisiones/pdf/",
+        views.comisiones_resumen_pdf,
+        name="comisiones_resumen_pdf"
+    ),
+    path(
+        "comisiones/<int:user_id>/pdf/",
+        views.comision_vendedor_pdf,
+        name="comision_vendedor_pdf"
+    ),
+    path(
         "comisiones/registrar/",
         views.registrar_comision,
         name="registrar_comision"

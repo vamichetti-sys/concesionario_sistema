@@ -29,3 +29,38 @@ class ComisionTests(TestCase):
         m.delete()
         cta.refresh_from_db()
         self.assertEqual(cta.saldo, Decimal("0"))
+
+
+from django.test import override_settings
+from django.urls import reverse
+
+
+@override_settings(SECURE_SSL_REDIRECT=False)
+class ComisionesPdfTests(TestCase):
+    def setUp(self):
+        admin = User.objects.create_user(
+            "admin_test", password="x", is_superuser=True, is_staff=True)
+        self.client.force_login(admin)
+        self.vendedor = User.objects.create_user("juan", first_name="Juan")
+        cuenta = CuentaVendedor.objects.create(vendedor=self.vendedor)
+        MovimientoComision.objects.create(
+            cuenta=cuenta, tipo="comision", monto=Decimal("50000"), descripcion="venta Focus")
+        MovimientoComision.objects.create(
+            cuenta=cuenta, tipo="pago", monto=Decimal("20000"))
+
+    def test_resumen_general_pdf(self):
+        r = self.client.get(reverse("ventas:comisiones_resumen_pdf"))
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r["Content-Type"], "application/pdf")
+        self.assertTrue(r.content.startswith(b"%PDF"))
+
+    def test_resumen_vendedor_pdf(self):
+        r = self.client.get(reverse("ventas:comision_vendedor_pdf", args=[self.vendedor.id]))
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(r.content.startswith(b"%PDF"))
+
+    def test_boton_imprimir_en_pantallas(self):
+        r = self.client.get(reverse("ventas:comisiones_vendedores"))
+        self.assertContains(r, reverse("ventas:comisiones_resumen_pdf"))
+        r = self.client.get(reverse("ventas:detalle_comision_vendedor", args=[self.vendedor.id]))
+        self.assertContains(r, reverse("ventas:comision_vendedor_pdf", args=[self.vendedor.id]))

@@ -561,3 +561,114 @@ def editar_movimiento_comision(request, movimiento_id):
             movimiento.save()  # recalcula el saldo
             messages.success(request, "Comisión actualizada.")
     return redirect("ventas:detalle_comision_vendedor", user_id=user_id)
+
+# ==========================================================
+# PDFs DE COMISIONES (resumen general y detalle por vendedor)
+# ==========================================================
+def _money(v):
+    from decimal import Decimal
+    try:
+        return f"$ {Decimal(v or 0):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    except Exception:
+        return "$ 0,00"
+
+
+def _totales_cuenta(cuenta):
+    from decimal import Decimal
+    from django.db.models import Sum
+    com = cuenta.movimientos.filter(tipo="comision").aggregate(t=Sum("monto"))["t"] or Decimal("0")
+    pag = cuenta.movimientos.filter(tipo="pago").aggregate(t=Sum("monto"))["t"] or Decimal("0")
+    return com, pag
+
+
+@solo_admin
+def comisiones_resumen_pdf(request):
+    """PDF con una fila por vendedor: ventas, comisiones, pagado y saldo."""
+    from decimal import Decimal
+    from django.contrib.auth.models import User
+    from reportes.pdf_utils import render_pdf_listado
+
+    ids = set(
+        Venta.objects.exclude(vendido_por__isnull=True)
+        .values_list("vendido_por_id", flat=True)
+    )
+    ids |= set(CuentaVendedor.objects.values_list("vendedor_id", flat=True))
+    usuarios = User.objects.filter(id__in=ids).order_by("first_name", "username")
+
+    filas = []
+    t_com = t_pag = t_saldo = Decimal("0")
+    t_ventas = 0
+    for u in usuarios:
+        if u.username.lower() in VENDEDORES_SIN_COMISION:
+            continue
+        cuenta, _ = CuentaVendedor.objects.get_or_create(vendedor=u)
+        com, pag = _totales_cuenta(cuenta)
+        saldo = com - pag
+        n_ventas = Venta.objects.filter(vendido_por=u).count()
+        filas.append([
+            u.get_full_name() or u.username,
+            n_ventas,
+            _money(com),
+            _money(pag),
+            _money(saldo),
+        ])
+        t_ventas += n_ventas
+        t_com += com
+        t_pag += pag
+        t_saldo += saldo
+
+    hoy = timezone.localdate()
+    return render_pdf_listado(
+        filename=f"resumen_comisiones_{hoy:%Y%m%d}.pdf",
+        titulo="Resumen de comisiones",
+        subtitulo=f"Al {hoy:%d/%m/%Y}",
+        columnas=["Vendedor", "Ventas", "Comisiones", "Pagado", "Saldo a pagar"],
+        filas=filas,
+        totales=["TOTAL", t_ventas, _money(t_com), _money(t_pag), _money(t_saldo)],
+    )
+
+
+@solo_admin
+def comision_vendedor_pdf(request, user_id):
+    """PDF con los movimientos (comisiones y pagos) de un vendedor."""
+    from django.contrib.auth.models import User
+    from reportes.pdf_utils import render_pdf_listado
+
+    vendedor = get_object_or_404(User, id=user_id)
+    cuenta, _ = CuentaVendedor.objects.get_or_create(vendedor=vendedor)
+    movimientos = (
+        cuenta.movimientos
+        .select_related("venta", "venta__vehiculo")
+        .order_by("fecha", "id")
+    )
+
+    filas = []
+    for m in movimientos:
+        concepto = "Comisión" if m.tipo == "comision" else "Pago"
+        if m.descripcion:
+            concepto += f" – {m.descripcion}"
+        veh = "—"
+        if m.venta and m.venta.vehiculo:
+            v = m.venta.vehiculo
+            veh = f"{v.marca} {v.modelo}" + (f" ({v.dominio})" if v.dominio else "")
+        filas.append([
+            m.fecha.strftime("%d/%m/%Y") if m.fecha else "—",
+            concepto,
+            veh,
+            _money(m.monto) if m.tipo == "comision" else "—",
+            _money(m.monto) if m.tipo == "pago" else "—",
+        ])
+
+    com, pag = _totales_cuenta(cuenta)
+    nombre = vendedor.get_full_name() or vendedor.username
+    hoy = timezone.localdate()
+    return render_pdf_listado(
+        filename=f"comisiones_{vendedor.username}_{hoy:%Y%m%d}.pdf",
+        titulo=f"Comisiones – {nombre}",
+        subtitulo=f"Al {hoy:%d/%m/%Y}",
+        columnas=["Fecha", "Concepto", "Vehículo", "Comisión", "Pago"],
+        filas=filas,
+        totales=["TOTALES", "", "", _money(com), _money(pag)],
+        col_weights=[0.9, 2.2, 1.8, 1.1, 1.1],
+        pie=f"Saldo a favor del vendedor: <b>{_money(com - pag)}</b>",
+    )

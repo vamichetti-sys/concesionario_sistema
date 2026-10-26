@@ -18,6 +18,10 @@
             <i data-lucide="arrow-left" style="width:16px;height:16px;margin-right:6px;"></i>
             Volver a Ventas
         </a>
+        <a href="{% url 'ventas:comisiones_resumen_pdf' %}" target="_blank" class="btn btn-outline-primary">
+            <i data-lucide="printer" style="width:16px;height:16px;margin-right:6px;"></i>
+            Imprimir resumen
+        </a>
         <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevaComision">
             <i data-lucide="plus" style="width:16px;height:16px;margin-right:6px;"></i>
             Cargar comisión
