@@ -27,3 +27,15 @@ def cloud_opt(url, size="800"):
 def cloud_thumb(url):
     """Versión miniatura (150px) para strips."""
     return cloud_opt(url, "150")
+
+
+@register.filter
+def cloud_download(url):
+    """URL que fuerza la descarga (Cloudinary fl_attachment), en buena calidad."""
+    url = str(url)
+    if "res.cloudinary.com" not in url:
+        return url
+    parts = url.split("/upload/")
+    if len(parts) == 2:
+        return f"{parts[0]}/upload/fl_attachment,q_auto/{parts[1]}"
+    return url

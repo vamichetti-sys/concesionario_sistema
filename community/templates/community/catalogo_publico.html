@@ -90,6 +90,17 @@
             color: rgba(255,255,255,0.7); font-size: 14px; margin-top: 12px;
         }
 
+        .btn-descargar {
+            display: inline-block; margin-top: 10px; padding: 6px 14px;
+            border: 1px solid #002855; border-radius: 8px; color: #002855;
+            font-size: 13px; font-weight: 600; text-decoration: none;
+        }
+        .btn-descargar:hover { background: #002855; color: #fff; }
+        .lightbox .lightbox-download {
+            margin-top: 12px; color: #fff; border-color: rgba(255,255,255,0.6);
+        }
+        .lightbox .lightbox-download:hover { background: #fff; color: #002855; }
+
         .footer {
             text-align: center; padding: 32px; color: #9ca3af; font-size: 13px;
         }
@@ -137,6 +148,9 @@
                     <span>{{ item.vehiculo.kilometros|floatformat:0 }} km</span>
                     {% endif %}
                 </div>
+                <a class="btn-descargar" href="{% url 'community:catalogo_fotos_zip' item.vehiculo.id %}">
+                    &#11015; Descargar fotos ({{ item.fotos_list|length }})
+                </a>
             </div>
 
             <!-- Strip de fotos -->
@@ -167,6 +181,7 @@
     <button class="nav-btn next-btn" onclick="navLightbox(1)">&#8250;</button>
     <img id="lightbox-img" src="" alt="">
     <div class="counter" id="lightbox-counter"></div>
+    <a id="lightbox-download" class="btn-descargar lightbox-download" href="#" download>&#11015; Descargar esta foto</a>
 </div>
 
 <div class="footer">
@@ -179,6 +194,12 @@
 var galeriaData = [
     {% for item in catalogo %}
     [{% for foto in item.fotos_list %}"{{ foto.imagen.url|cloud_opt:'1200' }}"{% if not forloop.last %},{% endif %}{% endfor %}]{% if not forloop.last %},{% endif %}
+    {% endfor %}
+];
+
+var galeriaDescarga = [
+    {% for item in catalogo %}
+    [{% for foto in item.fotos_list %}"{{ foto.imagen.url|cloud_download }}"{% if not forloop.last %},{% endif %}{% endfor %}]{% if not forloop.last %},{% endif %}
     {% endfor %}
 ];
 
@@ -210,6 +231,7 @@ function mostrarFoto() {
     var fotos = galeriaData[currentCard];
     document.getElementById('lightbox-img').src = fotos[currentFoto];
     document.getElementById('lightbox-counter').textContent = (currentFoto + 1) + ' / ' + fotos.length;
+    document.getElementById('lightbox-download').href = galeriaDescarga[currentCard][currentFoto];
 }
 
 // Cerrar con ESC
