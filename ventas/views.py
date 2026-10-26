@@ -624,13 +624,15 @@ def comisiones_resumen_pdf(request):
         subtitulo=f"Al {hoy:%d/%m/%Y}",
         columnas=["Vendedor", "Ventas", "Comisiones", "Pagado", "Saldo a pagar"],
         filas=filas,
-        totales=["TOTAL", t_ventas, _money(t_com), _money(t_pag), _money(t_saldo)],
+        totales=["TOTAL A PAGAR", "", "", "", _money(t_saldo)],
+        compacto=True,
     )
 
 
 @solo_admin
 def comision_vendedor_pdf(request, user_id):
     """PDF con los movimientos (comisiones y pagos) de un vendedor."""
+    from decimal import Decimal
     from django.contrib.auth.models import User
     from reportes.pdf_utils import render_pdf_listado
 
@@ -643,7 +645,9 @@ def comision_vendedor_pdf(request, user_id):
     )
 
     filas = []
+    saldo = Decimal("0")
     for m in movimientos:
+        saldo += m.monto if m.tipo == "comision" else -m.monto
         concepto = "Comisión" if m.tipo == "comision" else "Pago"
         if m.descripcion:
             concepto += f" – {m.descripcion}"
@@ -657,6 +661,7 @@ def comision_vendedor_pdf(request, user_id):
             veh,
             _money(m.monto) if m.tipo == "comision" else "—",
             _money(m.monto) if m.tipo == "pago" else "—",
+            _money(saldo),
         ])
 
     com, pag = _totales_cuenta(cuenta)
@@ -666,9 +671,9 @@ def comision_vendedor_pdf(request, user_id):
         filename=f"comisiones_{vendedor.username}_{hoy:%Y%m%d}.pdf",
         titulo=f"Comisiones – {nombre}",
         subtitulo=f"Al {hoy:%d/%m/%Y}",
-        columnas=["Fecha", "Concepto", "Vehículo", "Comisión", "Pago"],
+        columnas=["Fecha", "Concepto", "Vehículo", "Comisión", "Pago", "Saldo"],
         filas=filas,
-        totales=["TOTALES", "", "", _money(com), _money(pag)],
-        col_weights=[0.9, 2.2, 1.8, 1.1, 1.1],
-        pie=f"Saldo a favor del vendedor: <b>{_money(com - pag)}</b>",
+        totales=["TOTAL A PAGAR", "", "", "", "", _money(com - pag)],
+        col_weights=[0.9, 2.1, 1.7, 1.1, 1.1, 1.1],
+        compacto=True,
     )

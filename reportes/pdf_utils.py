@@ -27,6 +27,7 @@ def render_pdf_listado(
     totales: list = None,
     pie: str = "",
     col_weights: list = None,
+    compacto: bool = False,
 ) -> HttpResponse:
     """
     Arma un PDF tipo 'listado mensual' con un encabezado, una tabla
@@ -46,12 +47,15 @@ def render_pdf_listado(
     )
 
     styles = getSampleStyleSheet()
+    # compacto=True: letra y espacios más chicos (resúmenes cortos).
+    k = 0.8 if compacto else 1.0
+    pad = 4 if compacto else 8
     title_style = ParagraphStyle(
-        "title", fontSize=16, textColor=COLOR_AZUL,
+        "title", fontSize=16 * k, leading=19 * k, textColor=COLOR_AZUL,
         alignment=1, fontName="Helvetica-Bold", spaceAfter=4,
     )
     subtitle_style = ParagraphStyle(
-        "subtitle", fontSize=11, alignment=1, spaceAfter=14,
+        "subtitle", fontSize=11 * k, alignment=1, spaceAfter=14 * k,
     )
     pie_style = ParagraphStyle(
         "pie", fontSize=9, alignment=1, spaceBefore=12, textColor=colors.grey,
@@ -70,12 +74,12 @@ def render_pdf_listado(
 
     # Estilos de celda. Usamos Paragraph para que el texto AJUSTE (wrap)
     # dentro de su columna y nunca se encime con la de al lado.
-    head_sty = ParagraphStyle("h", fontName="Helvetica-Bold", fontSize=10,
-                              leading=12.5, textColor=colors.white)
+    head_sty = ParagraphStyle("h", fontName="Helvetica-Bold", fontSize=10 * k,
+                              leading=12.5 * k, textColor=colors.white)
     head_sty_r = ParagraphStyle("hr", parent=head_sty, alignment=2)
-    cell_sty = ParagraphStyle("c", fontName="Helvetica", fontSize=9.5, leading=12)
+    cell_sty = ParagraphStyle("c", fontName="Helvetica", fontSize=9.5 * k, leading=12 * k)
     cell_sty_r = ParagraphStyle("cr", parent=cell_sty, alignment=2)
-    tot_sty = ParagraphStyle("t", fontName="Helvetica-Bold", fontSize=10.5, leading=13)
+    tot_sty = ParagraphStyle("t", fontName="Helvetica-Bold", fontSize=10.5 * k, leading=13 * k)
     tot_sty_r = ParagraphStyle("tr", parent=tot_sty, alignment=2)
 
     def fila_par(valores, sty_norm, sty_right):
@@ -107,10 +111,10 @@ def render_pdf_listado(
         ("LINEBELOW",  (0, 0), (-1, -1), 0.4, colors.HexColor("#e2e8f0")),
         ("BOX",        (0, 0), (-1, -1), 0.5, colors.HexColor("#cbd5e1")),
         ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, COLOR_GRIS]),
-        ("TOPPADDING",    (0, 0), (-1, -1), 8),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
-        ("LEFTPADDING",   (0, 0), (-1, -1), 12),
-        ("RIGHTPADDING",  (0, 0), (-1, -1), 12),
+        ("TOPPADDING",    (0, 0), (-1, -1), pad),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), pad),
+        ("LEFTPADDING",   (0, 0), (-1, -1), 12 * k),
+        ("RIGHTPADDING",  (0, 0), (-1, -1), 12 * k),
     ]
     if totales:
         style += [
