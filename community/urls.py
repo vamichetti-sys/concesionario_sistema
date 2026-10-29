@@ -11,6 +11,5 @@ urlpatterns = [
     path("vehiculo/<int:vehiculo_id>/toggle/<str:plataforma>/", views.toggle_publicacion, name="toggle_publicacion"),
     path("catalogo/", views.catalogo_publico, name="catalogo_publico"),
     path("catalogo/pdf/", views.catalogo_pdf, name="catalogo_pdf"),
-    path("catalogo/<int:vehiculo_id>/fotos.zip", views.catalogo_fotos_zip, name="catalogo_fotos_zip"),
     path("resumen/pdf/", views.resumen_publicaciones_pdf, name="resumen_publicaciones_pdf"),
 ]

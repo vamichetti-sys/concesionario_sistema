@@ -91,7 +91,7 @@
         }
 
         .btn-descargar {
-            display: inline-block; margin-top: 10px; padding: 6px 14px;
+            display: inline-block; background: none; cursor: pointer; margin-top: 10px; padding: 6px 14px;
             border: 1px solid #002855; border-radius: 8px; color: #002855;
             font-size: 13px; font-weight: 600; text-decoration: none;
         }
@@ -148,9 +148,11 @@
                     <span>{{ item.vehiculo.kilometros|floatformat:0 }} km</span>
                     {% endif %}
                 </div>
-                <a class="btn-descargar" href="{% url 'community:catalogo_fotos_zip' item.vehiculo.id %}">
+                <button type="button" class="btn-descargar" rel="nofollow"
+                        data-nombre="{{ item.vehiculo.marca }}_{{ item.vehiculo.modelo }}_{{ item.vehiculo.dominio }}"
+                        onclick="descargarFotos({{ forloop.counter0 }}, this)">
                     &#11015; Descargar fotos ({{ item.fotos_list|length }})
-                </a>
+                </button>
             </div>
 
             <!-- Strip de fotos -->
@@ -189,7 +191,39 @@
     Consulte disponibilidad y precio.
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
+// Descarga todas las fotos de un vehículo en un ZIP armado EN EL NAVEGADOR
+// (el servidor no hace nada: las fotos se bajan directo de Cloudinary).
+async function descargarFotos(cardIdx, btn) {
+    var urls = galeriaData[cardIdx];
+    var base = (btn.dataset.nombre || 'fotos').replace(/[^A-Za-z0-9_-]+/g, '_');
+    var textoOriginal = btn.innerHTML;
+    btn.disabled = true;
+    try {
+        if (typeof JSZip === 'undefined') throw new Error('sin JSZip');
+        var zip = new JSZip();
+        for (var i = 0; i < urls.length; i++) {
+            btn.textContent = 'Preparando ' + (i + 1) + ' / ' + urls.length + '...';
+            var resp = await fetch(urls[i]);
+            if (!resp.ok) continue;
+            var blob = await resp.blob();
+            var ext = (blob.type.split('/')[1] || 'jpg').replace('jpeg', 'jpg');
+            zip.file(base + '_' + String(i + 1).padStart(2, '0') + '.' + ext, blob);
+        }
+        var contenido = await zip.generateAsync({type: 'blob'});
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(contenido);
+        a.download = base + '_fotos.zip';
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(function () { URL.revokeObjectURL(a.href); }, 10000);
+    } catch (e) {
+        alert('No se pudieron descargar las fotos. Abrí una foto y usá "Descargar esta foto".');
+    }
+    btn.disabled = false;
+    btn.innerHTML = textoOriginal;
+}
+
 // Construir array de fotos por vehículo
 var galeriaData = [
     {% for item in catalogo %}

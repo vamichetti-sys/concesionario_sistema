@@ -247,45 +247,6 @@ def catalogo_publico(request):
 
 
 # ==========================================================
-# DESCARGAR TODAS LAS FOTOS DE UN VEHÍCULO (ZIP, PÚBLICO)
-# ==========================================================
-@login_not_required
-def catalogo_fotos_zip(request, vehiculo_id):
-    """ZIP con las fotos de un vehículo del catálogo público (solo en stock)."""
-    import os
-    import re
-    import zipfile
-    from django.http import Http404
-
-    vehiculo = get_object_or_404(Vehiculo, id=vehiculo_id, estado="stock")
-    fotos = list(vehiculo.fotos.all())
-    if not fotos:
-        raise Http404("El vehículo no tiene fotos")
-
-    base = f"{vehiculo.marca}_{vehiculo.modelo}_{vehiculo.dominio or vehiculo.id}"
-    base = re.sub(r"[^A-Za-z0-9_-]+", "_", base).strip("_")
-
-    buffer = BytesIO()
-    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_STORED) as zf:
-        for n, foto in enumerate(fotos, start=1):
-            try:
-                url = foto.imagen.url
-                if url.startswith("http"):
-                    data = urllib.request.urlopen(url, timeout=20).read()
-                else:
-                    with foto.imagen.open("rb") as fh:
-                        data = fh.read()
-            except Exception:
-                continue  # si una foto falla, se arma el ZIP con el resto
-            ext = os.path.splitext(url.split("?")[0])[1].lower() or ".jpg"
-            zf.writestr(f"{base}_{n:02d}{ext}", data)
-
-    response = HttpResponse(buffer.getvalue(), content_type="application/zip")
-    response["Content-Disposition"] = f'attachment; filename="{base}_fotos.zip"'
-    return response
-
-
-# ==========================================================
 # PDF CATÁLOGO (SIN PRECIO)
 # ==========================================================
 @login_not_required
